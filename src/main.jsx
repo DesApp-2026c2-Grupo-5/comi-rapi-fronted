@@ -1,18 +1,19 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { ThemeProvider } from '@mui/material';
+/**
+ * Propósito: Punto de entrada de la aplicación React que renderiza el componente App.
+ * Contenido: Renderiza <App /> dentro de ReactDOM.createRoot.
+ * Dependencias: react, react-dom/client, App.jsx, bootstrap CSS.
+ * Uso: Se ejecuta al cargar la app (referenciado en index.html como /src/main.jsx).
+ */
 
-import { customMuiTheme } from './config/customMuiTheme';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
 
-import { App } from './App';
-import './index.css'
-import { Provider } from 'react-redux';
-import { store } from './store/store';
+// Importar CSS de Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <Provider store={store}>
-    <ThemeProvider theme={customMuiTheme}>
-      <App />
-    </ThemeProvider>
-  </Provider>
-)
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

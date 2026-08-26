@@ -1,16 +1,72 @@
-# Desarrollo de Aplicaciones - Universidad Nacional de Hurlingham - Template para armar un proyecto de FE basado en React
-La organización de este repo se creó usando Vite (https://vitejs.dev/). Integra los siguientes packages (además de React, claro):
-- Material UI.
-- Redux (usado a título demostrativo en un solo componente).
-- React Router.
-- Axios.
+# Comi-Rapi Frontend
 
-## Cómo trabajar con este template
-Loguearse con un usuario de Github. Entrar a este repo, pulsar el botón "Use this template" que van a ver arriba a la derecha. Se abre un menucito con dos opciones, elegir la primera, "Create a new repository". Llenar los datos que pide la página siguiente, y darle a "Create repository".  
-Eso va a crear un repo en el usuario o la orga que hayan elegido, con el contenido del template en un único commit inicial. 
+Aplicación web de delivery de comida construida con React + Vite.
 
-Clonarse el repo, en la carpeta principal de la copia local ejecutar `npm install` para instalar las dependencias. 
+## Características
 
-Para levantar la app en modo desarrollo, `npm run dev`.
+- **Framework**: React 18 con Vite
+- **Enrutamiento**: React Router DOM v6
+- **Estado global**: Context API (AuthContext, CarritoContext, SucursalContext)
+- **Estilos**: CSS puro con variables CSS
+- **Lenguaje**: JavaScript
 
-Obviamente las funcionalidades están solamente a modo de ejemplo. Se puede empezar agregando la funcionalidad de nuestro proyecto, y después a medida que este va creciendo, ir borrando el código de ejemplo.
+## Roles de usuario
+
+### Cliente (mock)
+- Email: `cliente@test.com`
+- Contraseña: `123456`
+
+### Administrador (mock)
+- Email: `admin@test.com`
+- Contraseña: `123456`
+
+## Instalación y ejecución
+
+```bash
+# Instalar dependencias
+npm install
+
+# Ejecutar en modo desarrollo
+npm run dev
+
+# Build para producción
+npm run build
+
+# Vista previa del build
+npm run preview
+```
+
+## Estructura del proyecto
+
+```
+src/
+├── api/            # Servicios para consumir el backend (mock)
+├── components/     # Componentes reutilizables
+│   ├── comunes/    # Navbar, Footer, Loader, ProtectedRoute
+│   ├── cliente/    # ProductoCard, ItemCarrito, etc.
+│   └── admin/      # PanelAdmin, ListaProductos, etc.
+├── context/        # Contextos de React (Auth, Carrito, Sucursal)
+├── hooks/          # Custom hooks (useAuth, useCarrito, useSucursal)
+├── pages/          # Páginas principales
+│   ├── comunes/    # Login, Registro
+│   ├── cliente/    # Inicio, Catálogo, Carrito, etc.
+│   └── admin/      # Dashboard, Gestión de Productos, etc.
+├── routes/         # Configuración de rutas
+├── services/       # Servicios y lógica de negocio
+├── styles/         # Estilos globales y variables CSS
+└── utils/          # Utilidades y constantes
+```
+
+## Variables de entorno
+
+El archivo `.env` contiene:
+
+```
+VITE_API_URL=http://localhost:3000/api
+```
+
+## Notas
+
+- Todos los datos son mock y están preparados para ser reemplazados por llamadas a la API real.
+- Los `alert()` son solo para simular acciones y serán reemplazados por llamadas a la API.
+- El proyecto utiliza CSS puro sin frameworks externos.
