@@ -1,0 +1,67 @@
+/**
+ * Propósito: Resetear los tokens de color que Bootstrap usa en sus estados de botón
+ *            (base, hover, active, focus) para que TODOS los botones custom de
+ *            Comi-Rapi mantengan la identidad naranja/roja en cualquier estado.
+ * Contenido: Definición de las variables CSS --bs-btn-* por clase de botón custom.
+ * Dependencias: Debe importarse DESPUÉS de bootstrap.min.css. Se importa en main.jsx.
+ * Uso: Importado desde src/main.jsx.
+ *
+ * MOTIVO: los <Button> de react-bootstrap sin variant asumen "primary" y aplican la
+ * clase .btn-primary (azul #0d6efd). Aunque los estados base se coloreaban con CSS
+ * propio, los estados :hover, :active y :focus de Bootstrap usan estos tokens y
+ * volvían al azul por defecto. Con este archivo los tokens se sobrescriben con los
+ * colores de la marca y el azul desaparece en cualquier estado.
+ */
+
+/* ============ Rojo Comi-Rapi (#E63946) ============ */
+.boton-ordenar,
+.envio-boton,
+.producto-boton,
+.resumen-boton,
+.boton-volver-btn {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #e63946;
+  --bs-btn-border-color: #e63946;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #c1272d;
+  --bs-btn-hover-border-color: #c1272d;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #a81d22;
+  --bs-btn-active-border-color: #a81d22;
+  --bs-btn-disabled-bg: #e63946;
+  --bs-btn-disabled-border-color: #e63946;
+  --bs-btn-focus-shadow-rgb: 230, 57, 70;
+}
+
+/* ============ Naranja Comi-Rapi (#FF9F1C) ============ */
+.filtro-pill.filtro-activo,
+.carrito-boton-vacio {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #ff9f1c;
+  --bs-btn-border-color: #ff9f1c;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #e88900;
+  --bs-btn-hover-border-color: #e88900;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #d47f00;
+  --bs-btn-active-border-color: #d47f00;
+  --bs-btn-disabled-bg: #ff9f1c;
+  --bs-btn-disabled-border-color: #ff9f1c;
+  --bs-btn-focus-shadow-rgb: 255, 159, 28;
+}
+
+/* ============ Filtros inactivos (blanco) ============ */
+.filtro-pill.filtro-inactivo {
+  --bs-btn-color: #2b2b2b;
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: #f1c27d;
+  --bs-btn-hover-color: #2b2b2b;
+  --bs-btn-hover-bg: #fff5e6;
+  --bs-btn-hover-border-color: #ff9f1c;
+  --bs-btn-active-color: #2b2b2b;
+  --bs-btn-active-bg: #ffe6c2;
+  --bs-btn-active-border-color: #ff9f1c;
+  --bs-btn-disabled-bg: #fff;
+  --bs-btn-disabled-border-color: #f1c27d;
+  --bs-btn-focus-shadow-rgb: 255, 159, 28;
+}

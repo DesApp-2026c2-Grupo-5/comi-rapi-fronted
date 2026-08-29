@@ -12,6 +12,9 @@ import App from './App';
 // Importar CSS de Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+// Tokens de color propios de Comi-Rapi (deben ir DESPUÉS de Bootstrap)
+import './styles/comirapi.css';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
