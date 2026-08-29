@@ -1,0 +1,169 @@
+/**
+ * Propósito: CSS extra de la página de Detalle de Pedido, alineado con el estilo de Comi-Rapi.
+ * Contenido: Card redondeada con sombra suave, header naranja, badge pill, tabla moderna,
+ *            boxes de información, botón "Volver" visual y total destacado.
+ * Dependencias: DetallePedido.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/pages/cliente/DetallePedido.jsx.
+ */
+
+/* ============ Botón "Volver a Mis Pedidos" ============ */
+.boton-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2b2b2b;
+  font-weight: 600;
+  background-color: #fff;
+  border: 2px solid #f1c27d;
+  border-radius: 50px;
+  padding: 0.5rem 1.15rem;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.boton-volver:hover {
+  background-color: #ff9f1c;
+  border-color: #ff9f1c;
+  color: #fff;
+  text-decoration: none;
+}
+
+.boton-volver-arrow {
+  font-weight: 900;
+}
+
+/* ============ Card principal ============ */
+.detalle-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.detalle-card-header {
+  background-color: #ff9f1c;
+  color: #fff;
+  border: none;
+  padding: 1.1rem 1.5rem;
+}
+
+.detalle-card-header h4 {
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* ============ Badge de estado ============ */
+.badge-estado {
+  border-radius: 50px;
+  padding: 0.5em 1.1em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============ Información (cliente / sucursal) ============ */
+.detalle-info {
+  background-color: #fff8ef;
+  border: 2px solid #ffe9c9;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  height: 100%;
+}
+
+.detalle-etiqueta {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #e88900;
+  margin-bottom: 0.25rem;
+}
+
+.detalle-valor {
+  font-weight: 700;
+  color: #2b2b2b;
+  font-size: 1.05rem;
+}
+
+.detalle-valor-secundario {
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+/* ============ Título de productos ============ */
+.detalle-tabla-titulo {
+  font-weight: 800;
+  color: #2b2b2b;
+}
+
+/* ============ Tabla moderna ============ */
+.detalle-tabla {
+  margin-bottom: 0;
+}
+
+.detalle-tabla thead th {
+  background-color: #2b2b2b;
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  border: none;
+  padding: 0.85rem 1rem;
+}
+
+.detalle-tabla tbody td {
+  border-color: #ffe9c9;
+  vertical-align: middle;
+  padding: 0.8rem 1rem;
+}
+
+.detalle-tabla tbody tr:last-child td {
+  border-bottom: 2px solid #ffe9c9;
+}
+
+.detalle-tabla tbody tr:hover {
+  background-color: #fffaf0;
+}
+
+/* ============ Total destacado ============ */
+.detalle-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff5e6;
+  border: 2px solid #ffe9c9;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #2b2b2b;
+}
+
+.detalle-total .text-danger {
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+/* ============ Estado "no encontrado" ============ */
+.detalle-no-encontrado {
+  font-weight: 900;
+  color: #2b2b2b;
+}
+
+.boton-volver-btn {
+  background-color: #e63946;
+  border: none;
+  border-radius: 50px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 0.7rem 2rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.boton-volver-btn:hover {
+  background-color: #c1272d;
+}

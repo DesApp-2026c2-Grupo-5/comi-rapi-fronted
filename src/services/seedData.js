@@ -55,13 +55,55 @@ export const productosMock = [
     imagen: 'https://via.placeholder.com/300x200?text=Limonada',
     descripcion: 'Limonada natural recién preparada.',
   },
+  {
+    id: 7,
+    nombre: 'Combo Doble',
+    precio: 3200,
+    categoria: 'Combos',
+    imagen: 'https://via.placeholder.com/300x200?text=Combo+Doble',
+    descripcion: 'Hamburguesa doble, papas fritas y bebida incluida.',
+  },
+  {
+    id: 8,
+    nombre: 'Papas Fritas Grandes',
+    precio: 900,
+    categoria: 'Papas',
+    imagen: 'https://via.placeholder.com/300x200?text=Papas+Fritas',
+    descripcion: 'Porción grande de papas crujientes con sal.',
+  },
+  {
+    id: 9,
+    nombre: 'Papas Cheddar',
+    precio: 1200,
+    categoria: 'Papas',
+    imagen: 'https://via.placeholder.com/300x200?text=Papas+Cheddar',
+    descripcion: 'Papas con abundante cheddar fundido y cebollín.',
+  },
+  {
+    id: 10,
+    nombre: 'Lava Cake',
+    precio: 1100,
+    categoria: 'Postres',
+    imagen: 'https://via.placeholder.com/300x200?text=Lava+Cake',
+    descripcion: 'Bizcocho de chocolate con centro fundido.',
+  },
+  {
+    id: 11,
+    nombre: 'Cheesecake',
+    precio: 1300,
+    categoria: 'Postres',
+    imagen: 'https://via.placeholder.com/300x200?text=Cheesecake',
+    descripcion: 'Cheesecake cremoso con salsa de frutos rojos.',
+  },
 ];
 
 // Datos mock de categorías (MOCK - reemplazar con llamadas a la API en producción)
 export const categoriasMock = [
   { id: 1, nombre: 'Hamburguesas', descripcion: 'Nuestras deliciosas hamburguesas' },
-  { id: 2, nombre: 'Pizzas', descripcion: 'Pizzas artesanales al horno' },
-  { id: 3, nombre: 'Bebidas', descripcion: 'Bebidas frías y calientes' },
+  { id: 2, nombre: 'Combos', descripcion: 'Combos con papas y bebida' },
+  { id: 3, nombre: 'Papas', descripcion: 'Papas fritas para compartir' },
+  { id: 4, nombre: 'Bebidas', descripcion: 'Bebidas frías y calientes' },
+  { id: 5, nombre: 'Postres', descripcion: 'El mejor cierre para tu pedido' },
 ];
 
 // Datos mock de sucursales (MOCK - reemplazar con llamadas a la API en producción)

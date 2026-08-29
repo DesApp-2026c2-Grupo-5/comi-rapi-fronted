@@ -1,0 +1,46 @@
+/**
+ * Propósito: CSS extra de la página de Catálogo, alineado con el estilo de Comi-Rapi.
+ * Contenido: Título bold oscuro, pills de filtro naranja/blanco y aviso de categoría vacía.
+ * Dependencias: Catalogo.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/pages/cliente/Catalogo.jsx.
+ */
+
+/* ============ Título ============ */
+.catalogo-titulo {
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #2b2b2b;
+}
+
+/* ============ Filtros (pills) ============ */
+.filtro-pill {
+  border-radius: 50px;
+  font-weight: 600;
+  padding: 0.5rem 1.4rem;
+}
+
+.filtro-pill.filtro-activo {
+  background-color: #ff9f1c;
+  border-color: #ff9f1c;
+  color: #fff;
+}
+
+.filtro-pill.filtro-inactivo {
+  background-color: #fff;
+  border: 2px solid #f1c27d;
+  color: #2b2b2b;
+}
+
+.filtro-pill.filtro-inactivo:hover {
+  background-color: #fff5e6;
+  border-color: #ff9f1c;
+  color: #2b2b2b;
+}
+
+/* ============ Aviso de categoría vacía ============ */
+.cat-aviso {
+  background-color: #fff;
+  border: 2px dashed #f1c27d;
+  border-radius: 12px;
+  color: #7a5c2e;
+}

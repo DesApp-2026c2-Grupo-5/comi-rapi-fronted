@@ -26,9 +26,18 @@ const Navbar = () => {
   const isAdmin = user?.rol === ROLES.ADMIN;
 
   return (
-    <BSNavbar bg="dark" variant="dark" expand="lg" sticky="top">
+    <BSNavbar
+      variant="light"
+      expand="lg"
+      sticky="top"
+      style={{ backgroundColor: '#ff9f1c' }}
+    >
       <Container>
-        <BSNavbar.Brand as={Link} to={isCliente ? '/cliente/inicio' : '/admin/dashboard'}>
+        <BSNavbar.Brand
+          as={Link}
+          to={isCliente ? '/cliente/inicio' : '/admin/dashboard'}
+          className="fw-bold fs-4"
+        >
           Comi-Rapi
         </BSNavbar.Brand>
         <BSNavbar.Toggle aria-controls="main-navbar" />
@@ -51,10 +60,10 @@ const Navbar = () => {
             )}
           </Nav>
           <Nav className="d-flex align-items-center gap-2">
-            <BSNavbar.Text className="text-light me-2">
+            <BSNavbar.Text className="me-2 fw-semibold">
               {user?.nombre}
             </BSNavbar.Text>
-            <Button variant="outline-light" size="sm" onClick={handleLogout}>
+            <Button variant="outline-dark" size="sm" onClick={handleLogout}>
               Cerrar sesión
             </Button>
           </Nav>

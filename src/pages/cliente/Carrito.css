@@ -1,0 +1,37 @@
+/**
+ * Propósito: CSS extra de la página del Carrito, alineado con el estilo de Comi-Rapi.
+ * Contenido: Título bold, card de carrito vacío y botón del estado vacío.
+ * Dependencias: Carrito.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/pages/cliente/Carrito.jsx.
+ */
+
+/* ============ Título ============ */
+.carrito-titulo {
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #2b2b2b;
+}
+
+/* ============ Carrito vacío ============ */
+.carrito-vacio {
+  max-width: 480px;
+  border: 2px dashed #f1c27d;
+  border-radius: 18px;
+  background-color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.carrito-vacio h4 {
+  color: #2b2b2b;
+}
+
+.carrito-boton-vacio {
+  background-color: #ff9f1c;
+  border: none;
+  font-weight: 700;
+  padding: 0.7rem 2rem;
+}
+
+.carrito-boton-vacio:hover {
+  background-color: #e88900;
+}

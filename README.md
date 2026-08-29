@@ -7,7 +7,7 @@ Aplicación web de delivery de comida construida con React + Vite.
 - **Framework**: React 18 con Vite
 - **Enrutamiento**: React Router DOM v6
 - **Estado global**: Context API (AuthContext, CarritoContext, SucursalContext)
-- **Estilos**: CSS puro con variables CSS
+- **Estilos**: React Bootstrap (Bootstrap 5 con componentes de react-bootstrap)
 - **Lenguaje**: JavaScript
 
 ## Roles de usuario
@@ -53,7 +53,7 @@ src/
 │   └── admin/      # Dashboard, Gestión de Productos, etc.
 ├── routes/         # Configuración de rutas
 ├── services/       # Servicios y lógica de negocio
-├── styles/         # Estilos globales y variables CSS
+├── styles/         # CSS personalizado adicional por componente/página
 └── utils/          # Utilidades y constantes
 ```
 
@@ -69,4 +69,4 @@ VITE_API_URL=http://localhost:3000/api
 
 - Todos los datos son mock y están preparados para ser reemplazados por llamadas a la API real.
 - Los `alert()` son solo para simular acciones y serán reemplazados por llamadas a la API.
-- El proyecto utiliza CSS puro sin frameworks externos.
+- El proyecto utiliza React Bootstrap (Bootstrap 5) con CSS personalizado extra por componente cuando hace falta.

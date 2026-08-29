@@ -1,0 +1,292 @@
+/**
+ * Propósito: CSS extra de la página de Inicio (hero con hamburguesa flotante,
+ *            categorías circulares, sección de envío a domicilio).
+ * Contenido: Estilos del hero naranja, burger CSS puro, ingredientes volando,
+ *            categories circulares, badges y botones redondeados.
+ * Dependencias: Inicio.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/pages/cliente/Inicio.jsx.
+ */
+
+/* ============ 1. HERO ============ */
+.inicio-hero {
+  background-color: #ff9f1c;
+  color: #fff;
+  padding: 3rem 0 2.5rem;
+  overflow: hidden;
+}
+
+/* Título grande blanco (COMI / RAPI) */
+.inicio-hero-titulo {
+  color: #fff;
+  font-weight: 900;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  line-height: 1;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+/* Columna central del hero (contiene la hamburguesa flotante) */
+.hero-cola-burger {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============ Hamburguesa flotante (CSS puro) ============ */
+.burger-flotante {
+  width: 240px;
+  position: relative;
+  z-index: 2;
+  animation: flotar 3.2s ease-in-out infinite;
+}
+
+.burger {
+  position: relative;
+  z-index: 2;
+}
+
+.pan-superior {
+  height: 52px;
+  background:
+    radial-gradient(circle at 22% 35%, #ffe0b2 0 2px, transparent 3px),
+    radial-gradient(circle at 60% 50%, #ffe0b2 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 28%, #ffe0b2 0 2px, transparent 3px),
+    radial-gradient(circle at 45% 60%, #ffe0b2 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 70%, #ffe0b2 0 2px, transparent 3px),
+    #f0a04b;
+  border-radius: 45px 45px 12px 12px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+}
+
+.ingrediente-lechuga {
+  height: 18px;
+  margin: -6px 10px 0;
+  background: #66bb6a;
+  border-radius: 50% 45% 50% 45%;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ingrediente-tomate {
+  height: 15px;
+  margin: 3px 4px 0;
+  background: #e53935;
+  border-radius: 10px 10px 6px 6px;
+}
+
+.ingrediente-queso {
+  height: 11px;
+  margin: -7px 14px 0;
+  background: #fdd835;
+  border-radius: 4px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08);
+}
+
+.carne {
+  height: 36px;
+  margin: 4px 12px 0;
+  background: #795548;
+  border-radius: 14px;
+  box-shadow: inset 0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.pan-inferior {
+  height: 44px;
+  margin: -6px 8px 0;
+  background: #e8893f;
+  border-radius: 0 0 32px 32px;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* Sombra suave bajo la hamburguesa */
+.burger-flotante::before {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -34px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.16);
+  filter: blur(5px);
+  z-index: -1;
+  animation: sombra 3.2s ease-in-out infinite;
+}
+
+/* ============ Ingredientes volando ============ */
+.ingrediente-volador {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  animation: volar 4s ease-in-out infinite;
+}
+
+.iv-lechuga { width: 24px; height: 13px; background: #8bc34a; border-radius: 60% 40% 60% 40%; }
+.iv-tomate  { width: 16px; height: 16px; background: #ef5350; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15); }
+.iv-queso   { width: 20px; height: 10px; background: #fdd835; border-radius: 4px; }
+.iv-carne   { width: 18px; height: 12px; background: #795548; border-radius: 7px; }
+.iv-semilla { width: 7px; height: 7px; background: #ffe0b2; }
+
+.i1 { left: -6%; top: 22%; animation-delay: 0s; }
+.i2 { right: -8%; top: 12%; animation-delay: 0.6s; }
+.i3 { left: -14%; bottom: 18%; animation-delay: 1.2s; }
+.i4 { right: -4%; bottom: 26%; animation-delay: 1.8s; }
+.i5 { left: 55%; top: -16%; animation-delay: 0.9s; }
+.i6 { right: 22%; top: -10%; animation-delay: 2.4s; }
+
+/* ============ Animaciones ============ */
+@keyframes flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes sombra {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  50% { transform: scaleX(0.75); opacity: 0.55; }
+}
+
+@keyframes volar {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(6px, -14px) rotate(18deg); }
+  50% { transform: translate(-5px, -26px) rotate(45deg); }
+  75% { transform: translate(-10px, -10px) rotate(-12deg); }
+}
+
+/* ============ Badge de Google Play ============ */
+.badge-google-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #1c1c1c;
+  color: #fff;
+  border-radius: 12px;
+  padding: 8px 18px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.badge-google-play:hover {
+  color: #fff;
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.badge-google-play .gp-texto-pequeno {
+  font-size: 0.7rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.badge-google-play .gp-texto-grande {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* Botón ORDENAR redondo */
+.boton-ordenar {
+  background-color: #e63946;
+  border: none;
+  border-radius: 50px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  padding: 0.9rem 2.8rem;
+  font-size: 1.1rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.boton-ordenar:hover {
+  background-color: #c1272d;
+}
+
+/* ============ 2. Categorías ============ */
+.seccion-titulo {
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #2b2b2b;
+  text-align: center;
+}
+
+.seccion-titulo.text-white {
+  color: #fff;
+}
+
+.categoria-enlace {
+  text-decoration: none;
+  color: #2b2b2b;
+}
+
+.categoria-enlace:hover {
+  color: #e63946;
+}
+
+.categoria-circulo {
+  width: 130px;
+  height: 130px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  border: 6px solid #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  transition: transform 0.2s ease;
+}
+
+.categoria-circulo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.categoria-circulo:hover {
+  transform: scale(1.07);
+}
+
+.categoria-nombre {
+  font-weight: 600;
+}
+
+/* ============ 4. Envío a domicilio ============ */
+.envio-section {
+  background-color: #ff9f1c;
+  color: #fff;
+}
+
+.envio-subtitulo {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.envio-boton {
+  background-color: #e63946;
+  border: none;
+  border-radius: 50px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 0.9rem 2.4rem;
+  font-size: 1.05rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.envio-boton:hover {
+  background-color: #c1272d;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 767.98px) {
+  .inicio-hero {
+    padding-top: 2.5rem;
+  }
+
+  .hero-cola-burger {
+    min-height: 260px;
+  }
+
+  .burger-flotante {
+    width: 200px;
+  }
+}
