@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Spinner, Alert, Button } from 'react-bootstrap';
+import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
 import { productosMock } from '../../services/seedData';
 
@@ -40,7 +41,10 @@ const EditarProducto = () => {
     return (
       <Container className="py-5 text-center">
         <h2>Producto no encontrado</h2>
-        <Link to="/admin/productos"><Button variant="danger" className="mt-3">Volver a productos</Button></Link>
+        <Link to="/admin/productos"><Button variant="secondary" className="mt-3">
+          <FaArrowLeft className="me-1" aria-hidden="true" />
+          Volver a productos
+        </Button></Link>
       </Container>
     );
   }

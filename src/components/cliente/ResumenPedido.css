@@ -1,6 +1,6 @@
 /**
  * Propósito: Estilos del resumen del pedido, alineados con el diseño de Comi-Rapi.
- * Contenido: Card redondeada con sombra suave, header naranja, divisor y botón rojo grande.
+ * Contenido: Card redondeada con sombra suave, header naranja, divisor y botón verde grande.
  * Dependencias: ResumenPedido.jsx (se importa al final del mismo).
  * Uso: Importado desde src/components/cliente/ResumenPedido.jsx.
  */
@@ -33,17 +33,17 @@
 }
 
 .resumen-boton {
-  background-color: #e63946;
+  background-color: #22c55e;
   border: none;
   border-radius: 50px;
   font-weight: 800;
   letter-spacing: 1px;
   padding: 0.9rem;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);
 }
 
 .resumen-boton:hover {
-  background-color: #c1272d;
+  background-color: #16a34a;
 }
 
 /* El resumen queda fijo al scrollear solo en desktop */

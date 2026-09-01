@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
+import { FaUserPlus } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 
 const AdminRegister = () => {
@@ -77,7 +78,8 @@ const AdminRegister = () => {
                 placeholder="Mínimo 6 caracteres"
               />
             </Form.Group>
-            <Button variant="danger" type="submit" className="w-100 mb-3" disabled={loading}>
+            <Button variant="primary" type="submit" className="w-100 mb-3" disabled={loading}>
+              <FaUserPlus className="me-1" aria-hidden="true" />
               {loading ? 'Creando cuenta...' : 'Registrarse'}
             </Button>
           </Form>

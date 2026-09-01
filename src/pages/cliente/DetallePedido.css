@@ -155,15 +155,55 @@
 }
 
 .boton-volver-btn {
-  background-color: #e63946;
-  border: none;
+  background-color: #fff4e2;
+  color: #b55d00;
+  border: 1px solid #f1c27d;
   border-radius: 50px;
   font-weight: 700;
   letter-spacing: 1px;
   padding: 0.7rem 2rem;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px rgba(240, 127, 16, 0.2);
 }
 
 .boton-volver-btn:hover {
-  background-color: #c1272d;
+  background-color: #ffe6c2;
+  color: #b55d00;
+  border-color: #ff9f1c;
+}
+
+/* ============ Línea de tiempo de estados ============ */
+.timeline {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.4rem;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 2px;
+  background-color: #ffe9c9;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+
+.timeline-punto {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.timeline-contenido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.95rem;
 }

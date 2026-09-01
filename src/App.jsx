@@ -10,6 +10,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CarritoProvider } from './context/CarritoContext';
 import { SucursalProvider } from './context/SucursalContext';
+import { PedidoProvider } from './context/PedidoContext';
+import { DireccionProvider } from './context/DireccionContext';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/comunes/Navbar';
 import Footer from './components/comunes/Footer';
@@ -20,13 +22,17 @@ function App() {
       <AuthProvider>
         <CarritoProvider>
           <SucursalProvider>
-            <div className="d-flex flex-column min-vh-100">
-              <Navbar />
-              <main className="flex-grow-1">
-                <AppRoutes />
-              </main>
-              <Footer />
-            </div>
+            <PedidoProvider>
+              <DireccionProvider>
+                <div className="d-flex flex-column min-vh-100">
+                  <Navbar />
+                  <main className="flex-grow-1">
+                    <AppRoutes />
+                  </main>
+                  <Footer />
+                </div>
+              </DireccionProvider>
+            </PedidoProvider>
           </SucursalProvider>
         </CarritoProvider>
       </AuthProvider>

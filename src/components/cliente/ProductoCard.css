@@ -40,7 +40,7 @@
 }
 
 .producto-boton {
-  background-color: #e63946;
+  background-color: #ff9f1c;
   border: none;
   border-radius: 50px;
   font-weight: 700;
@@ -49,5 +49,5 @@
 }
 
 .producto-boton:hover {
-  background-color: #c1272d;
+  background-color: #e88900;
 }

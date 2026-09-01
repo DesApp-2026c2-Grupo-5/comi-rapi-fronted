@@ -6,10 +6,11 @@
  *
  * CAMBIOS REALIZADOS:
  *  - Estilo alineado con la home de Comi-Rapi: card con bordes redondeados,
- *    sombra suave, precio en rojo y botón "Añadir" redondo rojo.
+ *    sombra suave, precio destacado y botón "Añadir" redondo naranja.
  */
 
 import { Card, Button } from 'react-bootstrap';
+import { FaCartPlus } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
 import './ProductoCard.css';
@@ -36,6 +37,7 @@ const ProductoCard = ({ producto }) => {
         </Card.Text>
         <Card.Text className="fw-bold producto-precio">{formatPrice(producto.precio)}</Card.Text>
         <Button className="producto-boton w-100" onClick={handleAgregar}>
+          <FaCartPlus aria-hidden="true" />
           Añadir
         </Button>
       </Card.Body>

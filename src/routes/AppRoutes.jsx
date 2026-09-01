@@ -24,12 +24,15 @@ import Carrito from '../pages/cliente/Carrito';
 import ConfirmacionPedido from '../pages/cliente/ConfirmacionPedido';
 import MisPedidos from '../pages/cliente/MisPedidos';
 import DetallePedido from '../pages/cliente/DetallePedido';
+import MisDirecciones from '../pages/cliente/MisDirecciones';
 
 // Páginas admin
 import Dashboard from '../pages/admin/Dashboard';
 import GestionProductos from '../pages/admin/GestionProductos';
 import EditarProducto from '../pages/admin/EditarProducto';
 import GestionPedidos from '../pages/admin/GestionPedidos';
+import GestionSucursales from '../pages/admin/GestionSucursales';
+import EditarSucursal from '../pages/admin/EditarSucursal';
 
 /**
  * Definición de rutas de la aplicación.
@@ -57,6 +60,7 @@ const AppRoutes = () => {
         <Route path="/cliente/confirmacion" element={<ConfirmacionPedido />} />
         <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />
         <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
+        <Route path="/cliente/mis-direcciones" element={<MisDirecciones />} />
       </Route>
 
       {/* Rutas protegidas de administrador */}
@@ -66,6 +70,9 @@ const AppRoutes = () => {
         <Route path="/admin/producto/editar/:id" element={<EditarProducto />} />
         <Route path="/admin/producto/nuevo" element={<EditarProducto />} />
         <Route path="/admin/pedidos" element={<GestionPedidos />} />
+        <Route path="/admin/sucursales" element={<GestionSucursales />} />
+        <Route path="/admin/sucursal/nuevo" element={<EditarSucursal />} />
+        <Route path="/admin/sucursal/editar/:id" element={<EditarSucursal />} />
       </Route>
 
       {/* Ruta 404 - redirige a login */}

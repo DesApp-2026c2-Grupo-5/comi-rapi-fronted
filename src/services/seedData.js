@@ -1,8 +1,8 @@
 /**
  * Propósito: Contener todos los datos mock/semilla para desarrollo del proyecto.
- * Contenido: Arrays de productos, categorías, sucursales y pedidos mockeados.
+ * Contenido: Arrays de productos, categorías, sucursales, pedidos y pedidos pendientes mockeados.
  * Dependencias: Ninguna.
- * Uso: import { productosMock, categoriasMock, sucursalesMock, pedidosMock } from '../services/seedData';
+ * Uso: import { productosMock, categoriasMock, sucursalesMock, pedidosMock, pedidosPendientesMock } from '../services/seedData';
  */
 
 // Datos mock de productos (MOCK - reemplazar con llamadas a la API en producción)
@@ -111,59 +111,96 @@ export const sucursalesMock = [
   {
     id: 1,
     nombre: 'Sucursal Centro',
-    direccion: 'Av. Principal 123, Centro',
+    direccion: 'Av. Principal 123',
+    lat: -34.6037,
+    lng: -58.3816,
+    horario: 'Lun-Dom 10:00-23:00',
+    telefono: '011-1234-5678',
     estado: 'activo',
-    pedidosPendientes: 3,
   },
   {
     id: 2,
     nombre: 'Sucursal Norte',
-    direccion: 'Calle Norte 456, Barrio Norte',
+    direccion: 'Calle Norte 456',
+    lat: -34.5926,
+    lng: -58.3912,
+    horario: 'Lun-Vie 10:00-22:00',
+    telefono: '011-8765-4321',
     estado: 'activo',
-    pedidosPendientes: 1,
   },
   {
     id: 3,
     nombre: 'Sucursal Sur',
-    direccion: 'Av. Sur 789, Barrio Sur',
+    direccion: 'Av. Sur 789',
+    lat: -34.6123,
+    lng: -58.3718,
+    horario: 'Lun-Sab 11:00-00:00',
+    telefono: '011-5678-1234',
     estado: 'activo',
-    pedidosPendientes: 5,
   },
 ];
 
-// Datos mock de pedidos (MOCK - reemplazar con llamadas a la API en producción)
+// Datos mock de pedidos pendientes por sucursal (MOCK - reemplazar con llamadas a la API en producción).
+// Se usa para la lógica de asignación de la sucursal óptima al cliente.
+export const pedidosPendientesMock = [
+  { id: 1, sucursalId: 1, estado: 'pendiente' },
+  { id: 2, sucursalId: 1, estado: 'pendiente' },
+  { id: 3, sucursalId: 2, estado: 'pendiente' },
+];
+
+// Datos mock de pedidos con estados e historial completo (MOCK - reemplazar con llamadas a la API en producción).
 export const pedidosMock = [
   {
-    id: 1001,
-    cliente: { nombre: 'Juan Pérez', email: 'cliente@test.com' },
+    id: 1,
+    cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Hamburguesa Clásica', cantidad: 2, precio: 1500 },
-      { nombre: 'Coca-Cola 500ml', cantidad: 1, precio: 800 },
+      { nombre: 'Hamburguesa', cantidad: 2, precio: 1500 },
+      { nombre: 'Papas fritas', cantidad: 1, precio: 800 },
     ],
     total: 3800,
-    estado: 'Pendiente',
-    sucursal: 'Sucursal Centro',
+    sucursal: { id: 1, nombre: 'Sucursal Centro', direccion: 'Av. Principal 123' },
+    estado: 'entregado',
+    fecha: '2026-08-20T18:30:00Z',
+    historialEstados: [
+      { estado: 'pendiente', fecha: '2026-08-20T18:30:00Z' },
+      { estado: 'confirmado', fecha: '2026-08-20T18:32:00Z' },
+      { estado: 'en_preparacion', fecha: '2026-08-20T18:35:00Z' },
+      { estado: 'listo_para_entregar', fecha: '2026-08-20T18:50:00Z' },
+      { estado: 'en_camino', fecha: '2026-08-20T19:00:00Z' },
+      { estado: 'entregado', fecha: '2026-08-20T19:20:00Z' },
+    ],
   },
   {
-    id: 1002,
-    cliente: { nombre: 'María López', email: 'maria@test.com' },
+    id: 2,
+    cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Pizza Muzzarella', cantidad: 1, precio: 2500 },
-      { nombre: 'Limonada Natural', cantidad: 2, precio: 600 },
+      { nombre: 'Pizza', cantidad: 1, precio: 2500 },
     ],
-    total: 3700,
-    estado: 'Confirmado',
-    sucursal: 'Sucursal Norte',
+    total: 2500,
+    sucursal: { id: 2, nombre: 'Sucursal Norte', direccion: 'Calle Norte 456' },
+    estado: 'en_camino',
+    fecha: '2026-08-25T12:15:00Z',
+    historialEstados: [
+      { estado: 'pendiente', fecha: '2026-08-25T12:15:00Z' },
+      { estado: 'confirmado', fecha: '2026-08-25T12:17:00Z' },
+      { estado: 'en_preparacion', fecha: '2026-08-25T12:20:00Z' },
+      { estado: 'listo_para_entregar', fecha: '2026-08-25T12:40:00Z' },
+      { estado: 'en_camino', fecha: '2026-08-25T12:50:00Z' },
+    ],
   },
   {
-    id: 1003,
-    cliente: { nombre: 'Carlos García', email: 'carlos@test.com' },
+    id: 3,
+    cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Hamburguesa Doble', cantidad: 1, precio: 2200 },
+      { nombre: 'Combo', cantidad: 1, precio: 3200 },
     ],
-    total: 2200,
-    estado: 'Entregado',
-    sucursal: 'Sucursal Sur',
+    total: 3200,
+    sucursal: { id: 1, nombre: 'Sucursal Centro', direccion: 'Av. Principal 123' },
+    estado: 'pendiente',
+    fecha: '2026-08-25T19:00:00Z',
+    historialEstados: [
+      { estado: 'pendiente', fecha: '2026-08-25T19:00:00Z' },
+    ],
   },
 ];
 
@@ -171,4 +208,32 @@ export const pedidosMock = [
 export const usuariosMock = [
   { id: 1, nombre: 'Cliente Test', email: 'cliente@test.com', password: '123456', rol: 'CLIENTE' },
   { id: 2, nombre: 'Admin Test', email: 'admin@test.com', password: '123456', rol: 'ADMIN' },
+];
+
+// Datos mock de direcciones de clientes (MOCK - reemplazar con llamadas a la API en producción).
+// Sin latitud ni longitud: las direcciones del cliente son textuales, solo la sucursal usa
+// coordenadas para la lógica de asignación.
+export const direccionesMock = [
+  {
+    id: 1,
+    clienteId: 'cliente@test.com',
+    nombre: 'Casa',
+    direccion: 'Av. Siempreviva 1234',
+    ciudad: 'Capital Federal',
+    codigoPostal: '1406',
+    referencia: 'Casa verde',
+    esPrincipal: true,
+    estado: 'activo',
+  },
+  {
+    id: 2,
+    clienteId: 'cliente@test.com',
+    nombre: 'Trabajo',
+    direccion: 'Calle Falsa 456',
+    ciudad: 'Capital Federal',
+    codigoPostal: '1425',
+    referencia: 'Oficina',
+    esPrincipal: false,
+    estado: 'activo',
+  },
 ];

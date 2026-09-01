@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
+import { FaSave } from 'react-icons/fa';
 import { categoriasMock } from '../../services/seedData';
 
 const FormularioProducto = ({ producto, onGuardar }) => {
@@ -88,7 +89,8 @@ const FormularioProducto = ({ producto, onGuardar }) => {
               placeholder="https://ejemplo.com/imagen.jpg"
             />
           </Form.Group>
-          <Button variant="danger" type="submit" className="w-100">
+          <Button variant="primary" type="submit" className="w-100">
+            <FaSave className="me-1" aria-hidden="true" />
             Guardar cambios
           </Button>
         </Form>

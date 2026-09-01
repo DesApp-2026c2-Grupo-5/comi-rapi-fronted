@@ -8,6 +8,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Container } from 'react-bootstrap';
+import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { productosMock } from '../../services/seedData';
 import { formatPrice } from '../../utils/formatters';
 
@@ -30,7 +31,10 @@ const ListaProductos = () => {
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="mb-0">Gestión de Productos</h2>
-        <Button variant="danger" onClick={handleNuevo}>Agregar nuevo producto</Button>
+        <Button variant="primary" onClick={handleNuevo}>
+          <FaPlus className="me-1" aria-hidden="true" />
+          Agregar nuevo producto
+        </Button>
       </div>
       <Table striped bordered hover responsive className="shadow-sm">
         <thead className="table-dark">
@@ -51,9 +55,11 @@ const ListaProductos = () => {
               <td>{producto.categoria}</td>
               <td>
                 <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(producto.id)}>
+                  <FaEdit className="me-1" aria-hidden="true" />
                   Editar
                 </Button>
                 <Button variant="danger" size="sm" onClick={() => handleEliminar(producto.id, producto.nombre)}>
+                  <FaTrashAlt className="me-1" aria-hidden="true" />
                   Eliminar
                 </Button>
               </td>

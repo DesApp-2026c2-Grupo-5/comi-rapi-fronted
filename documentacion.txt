@@ -1,0 +1,552 @@
+========================================================
+ COMI-RAPI FRONTEND - DOCUMENTACION COMPLETA
+========================================================
+Version del proyecto: comi-rapi-fronted (React + Vite)
+
+Este documento cubre TODA la aplicacion:
+  - Parte de CLIENTE
+  - Parte de ADMINISTRACION (admin)
+  - Infraestructura (rutas, autenticacion, contextos, datos mock)
+
+--------------------------------------------------------
+ 1. INFORMACION GENERAL
+--------------------------------------------------------
+Nombre comercial: Comi-Rapi
+Descripcion: Aplicacion web de pedidos de comida rapida (tipo
+  PedidosYa/Rappi) con entrega a domicilio, asignacion automatica
+  de sucursal y seguimiento de pedidos.
+
+Stack:
+  - Vite + React 18 (JavaScript, funcional con hooks)
+  - react-bootstrap (UI)
+  - react-router-dom v6 (navegacion)
+  - react-icons (iconos Font Awesome: importar desde 'react-icons/fa')
+
+Ejecucion:
+  - npm install
+  - npm run dev            (desarrollo)
+  - npm run build          (build de produccion)
+  - npm run lint           (ESLint - ver nota al final)
+
+No hay backend: TODOS los datos son MOCK (ver seccion 6). Las
+llamadas a la API estan simuladas con delay y operan sobre copias
+en memoria de los datos semilla.
+
+Usuarios de prueba (seed):
+  - Cliente:  cliente@test.com / 123456
+  - Admin:    admin@test.com / 123456
+
+Idioma de la UI: es-AR (precios en pesos argentinos con formatPrice,
+cantidades giradas como "Agrega", "hace", etc.).
+
+Regla de diseno: NO se usan emojis en la interfaz. Los estados y
+botones se representan con iconos SVG inline o react-icons.
+
+--------------------------------------------------------
+ 2. ESTRUCTURA DE CARPETAS
+--------------------------------------------------------
+src/
+  main.jsx                     Punto de entrada (monta <App />)
+  App.jsx                      Router + contextos + Navbar + Footer
+  routes/
+    AppRoutes.jsx              Definicion de todas las rutas
+  pages/
+    comunes/
+      Login.jsx                Login de cliente    (ruta /login)
+      Login.css                Estilos compartidos de autenticacion
+      Registro.jsx             Registro de cliente (ruta /registro)
+    cliente/
+      Inicio.jsx               Home del cliente    (/cliente/inicio)
+      Catalogo.jsx             Catalogo con filtros (/cliente/catalogo)
+      Carrito.jsx              Carrito de compras  (/cliente/carrito)
+      ConfirmacionPedido.jsx   Exito del pedido    (/cliente/confirmacion)
+      MisPedidos.jsx           Historial de pedidos (/cliente/mis-pedidos)
+      DetallePedido.jsx        Detalle con timeline (/cliente/pedido/:id)
+      MisDirecciones.jsx       CRUD de direcciones (/cliente/mis-direcciones)
+    admin/
+      AdminLogin.jsx           Login de admin      (/admin-login)
+      AdminRegister.jsx        Registro de admin   (/admin-registro)
+      Dashboard.jsx            Dashboard admin     (/admin/dashboard)
+      GestionProductos.jsx     Lista de productos  (/admin/productos)
+      EditarProducto.jsx       Crear/editar producto
+      GestionPedidos.jsx       Pedidos del admin   (/admin/pedidos)
+      GestionSucursales.jsx    Tabla de sucursales (/admin/sucursales)
+      EditarSucursal.jsx       Crear/editar sucursal
+  components/
+    comunes/
+      Navbar.jsx               Barra naranja con iconos y rol
+      Navbar.css
+      ProtectedRoute.jsx       Guarda rutas por rol
+      Footer.jsx               Pie de pagina oscuro
+      IconoEstado.jsx          SVG de estados de pedido + IconoCheck
+    cliente/
+      ProductoCard.jsx         Tarjeta de producto del catalogo
+      ItemCarrito.jsx          Item del carrito (imagen, cantidad, eliminar)
+      ResumenPedido.jsx        Resumen (subtotal, envio, total, sucursal)
+      FormularioDireccion.jsx  Alta/edicion de direccion
+    admin/
+      PanelAdmin.jsx           Tarjetas de estadisticas
+      ListaProductos.jsx       Tabla de productos con acciones
+      FormularioProducto.jsx   Formulario de producto
+      FormularioSucursal.jsx   Formulario de sucursal
+      PedidosPendientes.jsx    Stepper de estados de pedido (admin)
+      PedidosPendientes.css
+  context/
+    AuthContext.jsx            Autenticacion y roles
+    CarritoContext.jsx         Carrito de compras
+    SucursalContext.jsx        Sucursales y asignacion
+    PedidoContext.jsx          Pedidos y transiciones de estado
+    DireccionContext.jsx       Direcciones del cliente
+  hooks/                       Envoltorios de `useContext`
+    useAuth.js, useCarrito.js, useSucursal.js,
+    usePedidos.js, useDirecciones.js
+  api/                         Capa de servicios mock
+    auth.js, carrito.js, categorias.js,
+    productos.js, pedidos.js, sucursales.js
+  services/
+    seedData.js                Todos los datos semilla (MOCK)
+    estadosPedido.js           Logica de transiciones validas
+    asignacionSucursal.js      Sucursal optima por carga de pedidos
+  utils/
+    constants.js               Roles, estados, variantes de Badge, colores
+    helpers.js                 delay(), generateId(), filterByProperty()
+    formatters.js              formatPrice(), formatDate()
+    validators.js              validateEmail(), validatePassword(), validateProducto()
+
+Archivos de estilo propios por pagina (ademas de los .css citados):
+  Inicio.css, Catalogo.css, Carrito.css, DetallePedido.css,
+  ProductoCard.css, ItemCarrito.css, ResumenPedido.css.
+
+--------------------------------------------------------
+ 3. RUTAS (src/routes/AppRoutes.jsx)
+--------------------------------------------------------
+Publicas:
+  /                    -> redirige a /login
+  /login               -> Login (cliente)
+  /registro            -> Registro (cliente)
+  /admin-login         -> AdminLogin
+  /admin-registro      -> AdminRegister
+  *                    -> redirige a /login
+
+Protegidas CLIENTE (ProtectedRoute requiredRole="CLIENTE"):
+  /cliente/inicio            -> Inicio
+  /cliente/catalogo          -> Catalogo
+  /cliente/carrito           -> Carrito
+  /cliente/confirmacion      -> ConfirmacionPedido
+  /cliente/mis-pedidos       -> MisPedidos
+  /cliente/pedido/:id        -> DetallePedido
+  /cliente/mis-direcciones   -> MisDirecciones
+
+Protegidas ADMIN (ProtectedRoute requiredRole="ADMIN"):
+  /admin/dashboard           -> Dashboard
+  /admin/productos           -> GestionProductos
+  /admin/producto/editar/:id -> EditarProducto
+  /admin/producto/nuevo      -> EditarProducto (modo alta)
+  /admin/pedidos             -> GestionPedidos
+  /admin/sucursales          -> GestionSucursales
+  /admin/sucursal/nuevo      -> EditarSucursal
+  /admin/sucursal/editar/:id -> EditarSucursal
+
+--------------------------------------------------------
+ 4. AUTENTICACION Y ROLES
+--------------------------------------------------------
+ROLES definidos en utils/constants.js:
+  ROLES.CLIENTE = 'CLIENTE'
+  ROLES.ADMIN   = 'ADMIN'
+
+Flow de login (AuthContext):
+  - login(email, password)        -> loginCliente (api/auth.js)
+  - loginAdministrador(...)       -> loginAdmin
+  - register(datos)               -> registroCliente
+  - registerAdmin(datos)          -> registroAdmin
+  - logout()                      -> limpia estado y localStorage
+  - Al loguearse/registrarse correctamente se guarda el usuario en
+    localStorage ('user'). Al montar la app se restaura la sesion.
+  - En api/auth.js el login valida contra usuariosMock buscando
+    email+password+rol. La password nunca se persiste.
+
+Roles y UI:
+  AuthContext expone isAuthenticated, isAdmin, isCliente.
+  La Navbar muestra menus diferentes por rol:
+    Cliente: Inicio, Catalogo, Carrito, Mis Pedidos, Mis direcciones.
+    Admin:   Dashboard, Productos, Pedidos, Sucursales.
+
+Proteccion de rutas (components/comunes/ProtectedRoute.jsx):
+  - Si no esta autenticado -> redirige a /login
+  - Si el rol no coincide -> redirige a la home del rol que corresponda
+    (/cliente/inicio o /admin/dashboard)
+  - Soporta modo wrapper (con children) y modo outlet (rutas anidadas).
+
+Pisos de autenticacion (App.jsx -> pages/*Login con estilo Comi-Rapi):
+  - Fondo crema con degradado (auth-comirapi-bg)
+  - Card con cabecera naranja degradada, marca circular animada,
+    inputs con icono (FaEnvelope, FaLock), boton submit pill naranja
+    (btn-submit-comirapi) y banner de credenciales demo (auth-demo).
+  - Cliente: icono FaHamburger. Admin: icono FaUserShield.
+
+--------------------------------------------------------
+ 5. CONTEXTOS GLOBALES (orden de anidado en App.jsx)
+--------------------------------------------------------
+BrowserRouter > AuthProvider > CarritoProvider > SucursalProvider >
+PedidoProvider > DireccionProvider > (Navbar + AppRoutes + Footer)
+
+AuthContext:
+  Estado: user, loading. Funciones: login, loginAdministrador, register,
+  registerAdmin, logout. Derivados: isAuthenticated, isAdmin, isCliente.
+  Usado por Navbar, ProtectedRoute, Carrito y todas las paginas.
+
+CarritoContext:
+  Estado: items (array de { producto, cantidad }).
+  Funciones: agregarAlCarrito(producto, cantidad=1), eliminarDelCarrito(id),
+  actualizarCantidad(id, n) (n<=0 elimina), vaciarCarrito().
+  Derivados: totalItems, total (suma precio*cantidad).
+  Nota: usa alert() como feedback simulado.
+
+SucursalContext:
+  Estado: sucursales, sucursalAsignada, pedidosPendientes, loading.
+  Funciones: obtenerSucursales (carga desde api), cargarSucursales
+  (carga y asigna la optima al montar), asignarSucursalOptima,
+  cambiarSucursal(id), agregarSucursal, actualizarSucursal, eliminarSucursal.
+  Derivado: sucursalesCercanas (solo activas).
+  Las sucursales tienen: id, nombre, direccion, lat, lng, horario,
+  telefono, estado ('activo'|'inactivo').
+
+PedidoContext:
+  Estado: pedidos (pedidosMock), pedidoActual.
+  Funciones: crearPedido(datos, sucursalAsignada) -> estado inicial
+  'pendiente' + historial; confirmarPedido(id) -> PENDIENTE a CONFIRMADO
+  (simula el pago); cambiarEstado(id, nuevoEstado); obtenerPedidosPendientes()
+  (devuelve los 'pendiente' y 'confirmado').
+  Cada pedido guarda: id, cliente (email), productos, total, direccion,
+  sucursal (objeto completo), estado, fecha, historialEstados
+  (array de { estado, fecha }).
+
+DireccionContext:
+  Estado: direcciones (direccionesMock).
+  Funciones: cargarDirecciones(clienteId) (activas de un cliente),
+  obtenerDireccionPrincipal(clienteId), agregarDireccion(datos),
+  editarDireccion(id, datos), eliminarDireccion(id) (baja logica a
+  'inactivo'), seleccionarDireccionPrincipal(id).
+  Reglas: UNA direccion principal por cliente (al marcar/guardar una
+  se desmarcan las demas). Si es la unica activa, pasa a principal
+  automaticamente. Las direcciones del cliente son TEXTUALES (nombre,
+  direccion, ciudad, codigoPostal, referencia, esPrincipal, estado);
+  no usan coordenadas (solo la sucursal usa lat/lng).
+
+--------------------------------------------------------
+ 6. DATOS MOCK Y CAPA API
+--------------------------------------------------------
+services/seedData.js exporta:
+  productosMock      11 productos { id, nombre, precio, categoria, imagen, descripcion }
+  categoriasMock     5 categorias  { id, nombre, descripcion }
+  sucursalesMock     3 sucursales  { id, nombre, direccion, lat, lng, horario, telefono, estado }
+  pedidosPendientesMock   Pedidos 'pendiente' por sucursalId (para asignacion)
+  pedidosMock        3 pedidos con historialEstados completo
+  usuariosMock       2 usuarios    { id, nombre, email, password, rol }
+  direccionesMock    2 direcciones de cliente@test.com (Casa principal, Trabajo)
+
+api/ (servicios mock, cada uno usa delay() y una copia mutable local):
+  auth.js        loginCliente, loginAdmin, registroCliente, registroAdmin
+  carrito.js     agregarAlCarrito, obtenerCarrito, vaciarCarrito
+  categorias.js  obtenerCategorias
+  productos.js   obtenerProductos, obtenerProductoPorId, crearProducto,
+                 editarProducto, eliminarProducto
+  pedidos.js     crearPedido, obtenerPedidos, obtenerPedidoPorId, confirmarPedido
+  sucursales.js  obtenerSucursales, obtenerSucursalPorId, crearSucursal,
+                 actualizarSucursal, eliminarSucursal
+  Todos devuelven { success, data|error } con delays de 200-500ms.
+
+Observacion: algunos modulos (Carrito, PedidoContext, ListaProductos,
+EditarProducto) usan los datos mock del seedData directamente en lugar de
+la capa api. En produccion se debe unificar todo detras de la capa api.
+
+utils/:
+  constants.js   ROLES, ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO,
+                 VARIANTE_ESTADO_PEDIDO, COLOR_ESTADO_PEDIDO,
+                 ESTADO_SUCURSAL, ESTADO_DIRECCION, LIMITES_LAT/LNG
+  helpers.js     delay(ms), generateId(), filterByProperty(array, prop, valor)
+  formatters.js  formatPrice (ARS es-AR), formatDate (fecha larga es-AR)
+  validators.js  validateEmail, validatePassword (>= 6), validateProducto
+
+--------------------------------------------------------
+ 7. ESTADOS DE PEDIDO (core del negocio)
+--------------------------------------------------------
+Ciclo de vida (ESTADOS_PEDIDO en utils/constants.js, valores en
+minuscula y sin tildes en el codigo):
+
+  pendiente -> confirmado -> en_preparacion -> listo_para_entregar
+            -> en_camino -> entregado
+  (desde pendiente hasta en_camino, cualquiera puede ir a 'cancelado')
+
+Transiciones validas (services/estadosPedido.js):
+  pendiente            -> confirmado | cancelado
+  confirmado           -> en_preparacion | cancelado
+  en_preparacion       -> listo_para_entregar | cancelado
+  listo_para_entregar  -> en_camino | cancelado
+  en_camino            -> entregado | cancelado
+  entregado            -> (final)
+  cancelado            -> (final)
+
+Funciones:
+  puedeTransicionar(estadoActual, nuevoEstado) -> boolean
+  obtenerEstadosSiguientes(estadoActual)       -> array
+
+Presentacion:
+  ETIQUETAS_ESTADO_PEDIDO   -> "Pendiente", "Confirmado", etc.
+  VARIANTE_ESTADO_PEDIDO    -> variante de Badge de Bootstrap
+  COLOR_ESTADO_PEDIDO       -> color hex para los SVG de la timeline
+  IconoEstado (comunes/IconoEstado.jsx) -> SVG inline por estado:
+    pendiente = reloj, confirmado = check, en_preparacion = fuego,
+    listo_para_entregar = caja, en_camino = bicicleta,
+    entregado = check en circulo, cancelado = cruz.
+    Ademas exporta <IconoCheck /> (check simple) usado en la confirmacion.
+
+Flujo de creacion (desde el carrito):
+  crearPedido() deja el pedido en 'pendiente' con historial en
+  PedidoContext y luego confirmarPedido() simula el pago y lo pasa a
+  'confirmado'. Ver seccion 9 (Carrito).
+
+--------------------------------------------------------
+ 8. ASIGNACION AUTOMATICA DE SUCURSAL
+--------------------------------------------------------
+Servicio: services/asignacionSucursal.js -> asignarSucursalOptima().
+
+Reglas:
+  1. Filtra las sucursales con estado 'activo'.
+  2. Ordena por id (para desempatar a favor de la de menor id).
+  3. Elige la sucursal con MENOS pedidos pendientes. Si no se pasan
+     pedidos, usa la propiedad 'pedidosPendientes' de cada sucursal.
+  4. Devuelve null si no hay sucursales.
+
+Usos:
+  - SucursalContext.cargarSucursales la asigna al cliente al montar.
+  - Carrito.jsx la ejecuta al confirmar el pedido, usando las sucursales
+    activas del contexto y los pedidos 'pendiente'/'confirmado' de
+    PedidoContext.obtenerPedidosPendientes().
+
+El cliente NO elige sucursal: la aplicacion la asigna solo (como en
+PedidosYa). En la confirmacion y en Mis Pedidos se muestra que pedido
+quedo asignado a que sucursal.
+
+--------------------------------------------------------
+ 9. PARTE DE CLIENTE (detalle por pantalla)
+--------------------------------------------------------
+9.1 Inicio (/cliente/inicio) - src/pages/cliente/Inicio.jsx + Inicio.css
+  - Hero naranja (fondo #FF9F1C) con texto "COMI" y "RAPI" separados y
+    una hamburguesa flotante en el centro hecha con CSS puro, con
+    ingredientes que vuelan (decoracion animada).
+  - Badge "Google Play" a la izquierda y boton "ORDENAR" a la derecha.
+  - Seccion "Nuestras Categorias": 5 circulos (Hamburguesas, Combos,
+    Papas, Bebidas, Postres) usando placeholders de imagen.
+  - "Favoritos de la semana": 3 productos reutilizando <ProductoCard />.
+  - Seccion "Envio a domicilio rapido": fondo naranja, texto blanco y
+    boton "PIDE AHORA" con icono de bicicleta (SVG inline).
+  - El footer oscuro lo provee el componente global <Footer />.
+
+9.2 Catalogo (/cliente/catalogo) - Catalogo.jsx + Catalogo.css
+  - Titulo grande "Nuestro Catalogo".
+  - Filtros de categoria en pills (Todos + categoriasMock).
+  - Grid responsive de <ProductoCard /> (md=3, lg=4 columnas).
+  - Aviso si no hay productos en la categoria.
+
+9.3 ProductoCard - components/cliente/ProductoCard.jsx + ProductoCard.css
+  - Card redondeada con sombra, imagen arriba, nombre, descripcion,
+    precio destacado (formatPrice) y boton "Añadir" redondo naranja (100%).
+  - Al click llama a agregarAlCarrito(producto, 1) y muestra alert.
+
+9.4 Carrito (/cliente/carrito) - Carrito.jsx + Carrito.css
+  - Titulo "Tu Carrito". Estado vacio con card y boton al catalogo.
+  - Lista de <ItemCarrito /> mas boton "Vaciar carrito".
+  - <ResumenPedido onConfirmar={handleConfirmarPedido} />.
+  - Si el cliente no tiene direccion principal: banner de alerta con
+    link a /cliente/mis-direcciones, y al confirmar se bloquea con
+    alert('Agrega una direccion antes de confirmar').
+  - Confirmacion (flujo automatico):
+      1. Filtra sucursales activas del SucursalContext.
+      2. Obtiene pedidos pendientes de PedidoContext.
+      3. asignarSucursalOptima() -> sucursal con menos carga.
+      4. crearPedido({ cliente, productos, total, direccion }, sucursal)
+         -> estado 'pendiente'.
+      5. confirmarPedido(id) -> pasa a 'confirmado' (pago simulado).
+      6. vaciarCarrito() y navega a /cliente/confirmacion.
+
+9.5 ItemCarrito - components/cliente/ItemCarrito.jsx + ItemCarrito.css
+  - Card con imagen, nombre, precio unitario, input de cantidad (1-20),
+    subtotal y boton circular de eliminar (SVG de cruz inline).
+  - Las cantidades se actualizan con actualizarCantidad.
+
+9.6 ResumenPedido - components/cliente/ResumenPedido.jsx + ResumenPedido.css
+  - Props: onConfirmar, items, total, sucursal (todos opcionales).
+  - Sin props -> usa el carrito (modo carrito). En modo lectura recibe
+    items/total/sucursal (modo confirmacion): no muestra boton.
+  - Simula envio (MOCK): GRATIS a partir de $10.000, $350 si supera.
+  - Si recibe sucursal, muestra el bloque "Sucursal asignada".
+
+9.7 ConfirmacionPedido (/cliente/confirmacion) - ConfirmacionPedido.jsx
+  - Si no hay pedidoActual (recarga) avisa y ofrece ir al catalogo.
+  - Check verde grande (<IconoCheck />), numero de pedido, fecha,
+    estado (Badge) y bloques destacados:
+      "Tu pedido sera preparado en" -> sucursal asignada.
+      "Entregamos en" -> direccion principal usada (nombre, direccion,
+        ciudad/CP y referencia).
+  - <ResumenPedido /> modo lectura + boton "Ver mis pedidos".
+
+9.8 MisPedidos (/cliente/mis-pedidos) - MisPedidos.jsx
+  - Filtra los pedidos del cliente por email de usuario.
+  - Cada pedido: header con numero y Badge de estado con icono
+    (IconoEstado + VARIANTE_ESTADO_PEDIDO), fecha, productos, total,
+    sucursal y boton "Ver detalle".
+  - Estado vacio con CTA al catalogo.
+
+9.9 DetallePedido (/cliente/pedido/:id) - DetallePedido.jsx + DetallePedido.css
+  - Busca el pedido por id en PedidoContext; si no existe avisa.
+  - Header con numero y Badge de estado con icono.
+  - Cliente y sucursal asignada (nombre + direccion).
+  - Tabla de productos con cantidades y subtotales, total destacado.
+  - "Historial del pedido": timeline vertical con cada { estado, fecha }
+    del historialEstados, seteando de COLOR_ESTADO_PEDIDO para el SVG.
+
+9.10 MisDirecciones (/cliente/mis-direcciones) - MisDirecciones.jsx
+  - Lista de direcciones activas del cliente. Solo crea/edita inline
+    (sin ruta aparte) usando <FormularioDireccion />.
+  - Boton "Agregar direccion" (FaPlus). Badge "Principal" (FaStar) en
+    la direccion principal.
+  - Acciones por direccion: Editar (FaEdit), Marcar como principal
+    (si no lo es), Eliminar (baja logica con confirmacion).
+  - Campos del formulario: Nombre*, Direccion*, Ciudad, Codigo postal,
+    Referencia y checkbox "Usar como direccion principal".
+  - Si no hay direcciones: card vacia con CTA.
+
+9.11 Auth cliente (login/registro)
+  - Login/AdminLogin comparten Login.css (ver seccion 4).
+  - Registro (/registro) y AdminRegister (/admin-registro) mantienen el
+    layout basico de Bootstrap (Container+Card). Tras registrarse,
+    navegan a /cliente/inicio o /admin/dashboard segun el rol.
+
+--------------------------------------------------------
+ 10. PARTE DE ADMIN (detalle por pantalla)
+--------------------------------------------------------
+10.1 Dashboard (/admin/dashboard) - Dashboard.jsx + PanelAdmin.jsx
+  - Renderiza <PanelAdmin />: titulo "Panel de Administracion" y
+    3 tarjetas resumen (Total de productos = 12, Pedidos pendientes = 5,
+    Sucursales = 3) con valores estaticos de demo.
+
+10.2 GestionProductos (/admin/productos) - GestionProductos.jsx +
+     ListaProductos.jsx
+  - Tabla (Table striped/bordered/hover) con ID, Nombre, Precio
+    (formatPrice), Categoria y Acciones (Editar / Eliminar).
+  - Los datos salen de productosMock (seedData) directamente.
+  - "Eliminar" muestra alert simulado (no modifica datos).
+  - Boton "Agregar nuevo producto" -> navega a /admin/producto/nuevo.
+
+10.3 EditarProducto (/admin/producto/nuevo | /admin/producto/editar/:id)
+  - Si viene id, lo busca en productosMock; si no existe, "Producto no
+    encontrado" con link de vuelta.
+  - Reutiliza <FormularioProducto /> (ver siguiente).
+  - "Guardar" muestra alert simulado ('guardado correctamente').
+
+10.4 FormularioProducto - components/admin/FormularioProducto.jsx
+  - Campos controlados: Nombre*, Precio*, Categoria* (select de
+    categoriasMock) y URL de imagen (default = placeholder).
+  - Valida obligatorios con alert y llama a onGuardar(datos).
+
+10.5 GestionPedidos (/admin/pedidos) - GestionPedidos.jsx +
+     PedidosPendientes.jsx + PedidosPendientes.css
+  - Tarjeta con titulo "Pedidos Pendientes" y stepper de estados.
+  - Flujo del stepper:
+      - Estados: pendiente (reloj), confirmado (check), en_preparacion
+        (fuego), listo_para_entregar (caja), en_camino (bicicleta),
+        entregado (bandera final). Nodo cancelado aparte.
+      - El estado ACTUAL tiene animacion (late en naranja).
+      - Los estados FUTUROS se ven oscurecidos/dimmed y se encienden al
+        ser alcanzados.
+      - El estado siguiente es clicable (FaArrowRight) y hay un gran
+        boton de avance para pasar al siguiente estado permitido
+        (segun estadosPedido.puedeTransicionar / obtenerEstadosSiguientes).
+      - Boton "Cancelar pedido" (rojo) disponible mientras el pedido
+        pueda cancelarse; cambia el estado a 'cancelado'.
+      - Usa PedidoContext.cambiarEstado y PedidoContext.pedidos.
+  - NOTA: muestra todos los pedidos del seed (permite ver el flujo
+    completo en un mismo admin). En una version real deberia listar solo
+    los 'pendiente'/'confirmado' de la sucursal del admin.
+
+10.6 GestionSucursales (/admin/sucursales) - GestionSucursales.jsx
+  - Tabla con ID, Nombre, Direccion, Telefono, Estado (Badge Activo/
+    Inactivo segun ESTADO_SUCURSAL) y Acciones.
+  - Carga con useSucursal().obtenerSucursales() (contexto), con Spinner.
+  - "Agregar nueva sucursal" -> /admin/sucursal/nuevo.
+  - "Eliminar" con window.confirm y mensaje de resultado (simulado).
+  - Mensajes de exito con Alert dismissible.
+
+10.7 EditarSucursal (/admin/sucursal/nuevo | /admin/sucursal/editar/:id)
+  - Obtiene la sucursal a editar del contexto (useSucursal) por id.
+  - En modo creacion o edicion delega en <FormularioSucursal />.
+  - Al guardar llama a agregarSucursal o actualizarSucursal del contexto
+    y navega de vuelta a /admin/sucursales. Muestra errores con Alert.
+
+10.8 FormularioSucursal - components/admin/FormularioSucursal.jsx
+  - Campos: Nombre*, Direccion*, Latitud*, Longitud* (con validacion de
+    rangos LIMITES_LAT/LIMITES_LNG), Horario, Telefono y Estado
+    (Activo/Inactivo).
+  - Botones Guardar / Cancelar (cancelar vuelve a sucursales).
+  - En modo creacion, tras guardar limpia el formulario.
+
+10.9 Auth admin
+  - AdminLogin (/admin-login) con estilo Comi-Rapi (Login.css).
+  - AdminRegister (/admin-registro) layout basico de Bootstrap.
+
+--------------------------------------------------------
+ 11. NAVEGACION Y ESTILO GLOBAL
+--------------------------------------------------------
+Navbar (comunes/Navbar.jsx + Navbar.css):
+  - Barra sticky con degradado naranja (linear-gradient 90deg
+    #f07f10 -> #ff9f1c -> #ffb347) y sombra.
+  - Marca "Comi-Rapi" (FaHamburger) que rota un poco al hover; click
+    va a la home del rol.
+  - Enlaces por rol con iconos react-icons (FaHome, FaUtensils,
+    FaShoppingCart, FaReceipt, FaMapMarkerAlt para cliente; FaTachometerAlt,
+    FaHamburger, FaReceipt, FaStore para admin).
+  - Hover animado: pill translucido, subrayado animado, icono que rota,
+    leve elevacion. Pagina activa: pill blanco con texto naranja oscuro
+    (#b55d00) via NavLink.isActive.
+  - Zona de usuario: FaUserCircle + nombre, boton "Cerrar sesion" pill
+    (btn-logout-comirapi) que hace logout y navega a /login.
+
+Footer (comunes/Footer.jsx): bg-dark, "© 2026 Comi-Rapi - Todos los
+derechos reservados".
+
+Identidad de marca (paleta):
+  - Naranjas: #f07f10, #ff9f1c, #ffb347
+  - Naranja oscuro de acento: #b55d00
+  Botones: sistema semantico de colores (tema global src/styles/comirapi.css
+  aplicado sobre Bootstrap):
+  - Naranja (#ff9f1c) = primary / CTA de marca (añadir, ordenar, guardar).
+  - Verde (#22c55e) = success / confirmar-avanzar (confirmar pedido, avanzar estado).
+  - Rojo (#e63946) = danger / destructivo (eliminar, cancelar, vaciar carrito).
+  - Crema (#fff4e2) = secondary / neutro (volver, cancelar formulario, editar).
+  - Blanco con texto naranja = CTAs del hero (ORDENAR / PIDE AHORA).
+  - Contornos (outline-danger/success/secondary): cada uno con su color, se rellenan al hover.
+  - Forma: todos los .btn son pills (border-radius 999px) con iconos react-icons.
+
+Estilos por pagina (resumen):
+  - Catalogo/ProductoCard/ItemCarrito/ResumenPedido/DetallePedido/Inicio:
+    cards redondeadas, sombras suaves, botones pill con colores semanticos.
+  - Stepper admin (PedidosPendientes.css): animaciones con keyframes,
+    estado actual pulsante naranja, futuros con opacidad reducida.
+
+--------------------------------------------------------
+ 12. NOTAS Y PENDIENTES (MOCK / produccion)
+--------------------------------------------------------
+- Todos los datos son mock: crear/editar/eliminar productos y sucursales
+  operan sobre copias en memoria o solo muestran alert simulados. No hay
+  persistencia real (recargar la pagina restaura el seedData).
+- Productos: la gestion admin lee productosMock directamente; la capa
+  api/productos.js existe pero el admin no la consume todavia.
+- PanelAdmin muestra valores hardcodeados de demo (12/5/3).
+- PedidosPendientes admin muestra todos los pedidos del seed para
+  demostrar el flujo; en produccion debe filtrar los propios.
+- Registro (cliente/admin) no persiste usuarios nuevos (solo los
+  simula); para ingresar usar los usuarios de prueba (seccion 1).
+- ESLint (npm run lint) reporta avisos/errores preexistentes en todo el
+  proyecto (imports de React sin usar, prop-types, etc.). Se decidio NO
+  modificar esos archivos por ahora; el build de Vite no se ve afectado.

@@ -1,0 +1,166 @@
+/**
+ * Propósito: Estilos de las páginas de autenticación (Login y AdminLogin) con la
+ *            identidad visual Comi-Rapi (naranjas y degradados de la navbar).
+ * Contenido: Fondo cálido con degradado, card con cabecera naranja y marca, inputs
+ *            con ícono, botón submit tipo pill degradado naranja y demo destacado.
+ * Dependencias: Login.jsx y AdminLogin.jsx (se importa desde cada página).
+ * Uso: Importado desde src/pages/comunes/Login.jsx y src/pages/admin/AdminLogin.jsx.
+ */
+
+/* ============ Fondo de la página ============ */
+.auth-comirapi-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 82vh;
+  padding: 2.5rem 1rem;
+  background: linear-gradient(160deg, #fff6ea 0%, #ffe3c2 100%);
+}
+
+/* ============ Card de login ============ */
+.auth-card-comirapi {
+  width: 100%;
+  max-width: 430px;
+  border: none;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 18px 42px rgba(240, 127, 16, 0.2);
+  background: #fff;
+}
+
+/* ============ Cabecera naranja con marca ============ */
+.auth-card-header {
+  background: linear-gradient(90deg, #f07f10, #ff9f1c 55%, #ffb347);
+  color: #fff;
+  text-align: center;
+  padding: 2rem 1.5rem 1.6rem;
+}
+
+.auth-brand-ico {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 1.9rem;
+  transition: transform 0.3s ease;
+}
+
+.auth-card-header:hover .auth-brand-ico {
+  transform: rotate(-12deg) scale(1.08);
+}
+
+.auth-card-header h2 {
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: 1px;
+  font-size: 1.5rem;
+}
+
+.auth-card-header p {
+  margin: 0.25rem 0 0;
+  opacity: 0.92;
+  font-weight: 500;
+  font-size: 0.92rem;
+}
+
+/* ============ Cuerpo de la card ============ */
+.auth-card-body {
+  padding: 1.75rem 1.75rem 1.5rem;
+}
+
+/* Inputs con ícono a la izquierda */
+.auth-input-group {
+  position: relative;
+}
+
+.auth-input-group .form-control {
+  padding-left: 2.65rem;
+  border-radius: 0.8rem;
+  border-color: #f2d4b0;
+  background-color: #fffdf9;
+  font-weight: 500;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.auth-input-group .form-control:focus {
+  border-color: #f07f10;
+  box-shadow: 0 0 0 0.2rem rgba(240, 127, 16, 0.18);
+  background-color: #fff;
+}
+
+.auth-input-group .form-label {
+  color: #5c4300;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.auth-input-ico {
+  position: absolute;
+  left: 0.9rem;
+  top: 2.15rem;
+  transform: translateY(-50%);
+  color: #f07f10;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+/* ============ Botón submit pill naranja ============ */
+.btn-submit-comirapi {
+  border: none;
+  background: linear-gradient(90deg, #f07f10, #ff9f1c);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 50px;
+  padding: 0.65rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+
+.btn-submit-comirapi:hover {
+  background: linear-gradient(90deg, #e06d05, #ff9f1c);
+  color: #fff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(240, 127, 16, 0.4);
+}
+
+.btn-submit-comirapi:disabled {
+  filter: saturate(0.6);
+  opacity: 0.85;
+}
+
+/* ============ Enlaces ============ */
+.auth-enlace {
+  color: #b55d00;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.auth-enlace:hover {
+  color: #f07f10;
+  text-decoration: underline;
+}
+
+/* ============ Banner de credenciales demo ============ */
+.auth-demo {
+  background: #fff4e2;
+  border: 1px dashed #f07f10;
+  color: #8a4b00;
+  border-radius: 0.8rem;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.6rem 0.8rem;
+  margin-top: 1.1rem;
+}
+
+.auth-demo strong {
+  color: #b55d00;
+}

@@ -20,6 +20,7 @@
 
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
+import { FaShoppingCart } from 'react-icons/fa';
 import { productosMock } from '../../services/seedData';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Inicio.css';
@@ -130,7 +131,8 @@ const Inicio = () => {
             {/* Botón ORDENAR (abajo a la derecha) */}
             <Col md={6} className="text-center text-md-end">
               <Link to="/cliente/catalogo">
-                <Button className="boton-ordenar" size="lg">
+                <Button className="boton-ordenar d-inline-flex align-items-center gap-2" size="lg">
+                  <FaShoppingCart aria-hidden="true" />
                   ORDENAR
                 </Button>
               </Link>

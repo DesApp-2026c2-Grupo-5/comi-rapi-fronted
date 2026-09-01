@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Card, Button, Row, Col } from 'react-bootstrap';
+import { FaCartPlus } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
 
@@ -32,7 +33,10 @@ const ProductoDetalle = ({ producto }) => {
             <Card.Text className="flex-grow-1">{producto.descripcion}</Card.Text>
             <Card.Text className="fw-bold text-danger fs-3">{formatPrice(producto.precio)}</Card.Text>
             <div>
-              <Button variant="danger" onClick={handleAgregar}>Agregar al carrito</Button>
+              <Button variant="primary" onClick={handleAgregar}>
+                <FaCartPlus aria-hidden="true" />
+                Agregar al carrito
+              </Button>
             </div>
           </Card.Body>
         </Col>

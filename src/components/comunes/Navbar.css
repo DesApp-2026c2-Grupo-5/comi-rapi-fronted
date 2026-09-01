@@ -1,0 +1,129 @@
+/**
+ * Propósito: Estilos de la barra de navegación (Comi-Rapi). Los enlaces del menú
+ *            "cobran vida" al pasar el mouse: pill con fondo, subrayado animado,
+ *            ícono que rota y leve elevación.
+ * Contenido: Barra naranja con degradado, marca animada, enlaces pill, usuario y
+ *            botón de cerrar sesión estilo pill.
+ * Dependencias: Navbar.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/comunes/Navbar.jsx.
+ */
+
+/* ============ Barra principal ============ */
+.navbar-comirapi {
+  background: linear-gradient(90deg, #f07f10, #ff9f1c 55%, #ffb347);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+/* Toggler (menú móvil) en blanco para contrastar con el naranja */
+.navbar-comirapi .navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.navbar-comirapi .navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.35);
+}
+.navbar-comirapi .navbar-toggler-icon {
+  filter: invert(1);
+}
+
+/* ============ Marca / logo ============ */
+.navbar-brand-comirapi {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #fff !important;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-decoration: none;
+  transition: transform 0.25s ease;
+}
+.navbar-brand-comirapi:hover {
+  transform: scale(1.04);
+}
+.navbar-brand-comirapi .brand-ico {
+  color: #fff;
+  transition: transform 0.3s ease;
+}
+.navbar-brand-comirapi:hover .brand-ico {
+  transform: rotate(-14deg) scale(1.2);
+}
+
+/* ============ Enlaces del menú ============ */
+.nav-enlace {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #fff !important;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  padding: 0.5rem 1rem !important;
+  border-radius: 50px;
+  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+}
+.nav-enlace::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0.28rem;
+  width: 0;
+  height: 2px;
+  transform: translateX(-50%);
+  background: #fff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.nav-enlace .nav-enlace-ico {
+  transition: transform 0.25s ease;
+}
+.nav-enlace:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+}
+.nav-enlace:hover::after {
+  width: 55%;
+}
+.nav-enlace:hover .nav-enlace-ico {
+  transform: rotate(10deg) scale(1.15);
+}
+.nav-enlace.activo {
+  background-color: #fff;
+  color: #b55d00 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.nav-enlace.activo::after {
+  display: none;
+}
+
+/* ============ Zona del usuario ============ */
+.navbar-user-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.navbar-user-ico {
+  font-size: 1.3rem;
+}
+
+.btn-logout-comirapi {
+  border-radius: 50px;
+  border: 2px solid #fff;
+  color: #fff;
+  background: transparent;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.btn-logout-comirapi:hover {
+  background: #fff;
+  color: #b55d00 !important;
+  border-color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
