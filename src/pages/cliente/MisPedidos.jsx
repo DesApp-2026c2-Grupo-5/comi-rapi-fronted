@@ -1,8 +1,11 @@
 /**
- * Propósito: Página de historial de pedidos del cliente con estado destacado.
- * Contenido: Componente MisPedidos con cards de pedidos (número, fecha, total, sucursal, estado).
+ * Propósito: Página de historial de pedidos del cliente con estado destacado y stepper
+ *            de estados (mismo visual que el admin: iconos que se encienden/apagan).
+ * Contenido: Componente MisPedidos con cards de pedidos (número, fecha, total, sucursal,
+ *            stepper de progreso y estado), con el detalle en otra página.
  * Dependencias: react-bootstrap (Container, Card, Badge, Button), react-router-dom,
- *               hooks/usePedidos, hooks/useAuth, utils/constants.js, utils/formatters.js.
+ *               hooks/usePedidos, hooks/useAuth, utils/constants.js, utils/formatters.js,
+ *               componentes/comunes/HistorialStepper.
  * Uso: Ruta "/cliente/mis-pedidos" → <MisPedidos />
  */
 
@@ -15,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import IconoEstado from '../../components/comunes/IconoEstado';
+import HistorialStepper from '../../components/comunes/HistorialStepper';
 
 const MisPedidos = () => {
   const { pedidos } = usePedidos();
@@ -63,8 +67,14 @@ const MisPedidos = () => {
                   <strong>Sucursal:</strong>{' '}
                   {pedido.sucursal?.nombre || pedido.sucursal || '-'}
                 </p>
+
+                <div className="historial-box">
+                  <span className="historial-titulo">Progreso del pedido</span>
+                  <HistorialStepper pedido={pedido} />
+                </div>
+
                 <Link to={`/cliente/pedido/${pedido.id}`}>
-                  <Button variant="outline-secondary" size="sm">
+                  <Button variant="outline-secondary" size="sm" className="mt-2">
                   <FaEye aria-hidden="true" />
                   Ver detalle
                 </Button>

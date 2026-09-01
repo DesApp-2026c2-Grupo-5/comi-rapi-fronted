@@ -1,10 +1,10 @@
 /**
- * Propósito: Página de detalle de un pedido con datos, sucursal asignada y línea de tiempo
- *            de estados (historial completo).
- * Contenido: Componente DetallePedido con Card, Table, Badge y timeline vertical de estados.
+ * Propósito: Página de detalle de un pedido con datos, sucursal asignada y stepper de
+ *            estados (el mismo visual que usa el admin: iconos que se encienden/apagan).
+ * Contenido: Componente DetallePedido con Card, Table, Badge y stepper horizontal de estados.
  * Dependencias: react-bootstrap (Container, Card, Table, Badge, Button, Row, Col),
  *               react-router-dom, hooks/usePedidos, utils/constants.js, utils/formatters.js,
- *               DetallePedido.css.
+ *               componentes/comunes/HistorialStepper, DetallePedido.css.
  * Uso: Ruta "/cliente/pedido/:id" → <DetallePedido />
  */
 
@@ -13,25 +13,11 @@ import { useParams, Link } from 'react-router-dom';
 import { Container, Card, Table, Badge, Button, Row, Col } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
-import {
-  ETIQUETAS_ESTADO_PEDIDO,
-  VARIANTE_ESTADO_PEDIDO,
-  COLOR_ESTADO_PEDIDO,
-} from '../../utils/constants';
-import { formatPrice, formatDate } from '../../utils/formatters';
+import { ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
+import { formatPrice } from '../../utils/formatters';
 import IconoEstado from '../../components/comunes/IconoEstado';
+import HistorialStepper from '../../components/comunes/HistorialStepper';
 import './DetallePedido.css';
-
-// Formatea fecha y hora (dd/mm/aaaa hh:mm)
-const formatFechaHora = (fecha) => {
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(fecha));
-};
 
 const DetallePedido = () => {
   const { id } = useParams();
@@ -124,24 +110,10 @@ const DetallePedido = () => {
             <span className="text-danger">{formatPrice(pedido.total)}</span>
           </div>
 
-          {/* Línea de tiempo de estados */}
-          <h5 className="detalle-tabla-titulo mb-3">Historial del pedido</h5>
-          <div className="timeline">
-            {(pedido.historialEstados || []).map((hist, idx) => (
-              <div key={idx} className="timeline-item">
-                <span className="timeline-punto">
-                  <IconoEstado
-                    estado={hist.estado}
-                    size={18}
-                    color={COLOR_ESTADO_PEDIDO[hist.estado]}
-                  />
-                </span>
-                <div className="timeline-contenido">
-                  <strong>{ETIQUETAS_ESTADO_PEDIDO[hist.estado] || hist.estado}</strong>
-                  <span className="text-muted ms-2">{formatFechaHora(hist.fecha)}</span>
-                </div>
-              </div>
-            ))}
+          {/* Stepper de estados (mismo visual que el admin) */}
+          <div className="historial-box">
+            <span className="historial-titulo">Progreso del pedido</span>
+            <HistorialStepper pedido={pedido} />
           </div>
         </Card.Body>
       </Card>

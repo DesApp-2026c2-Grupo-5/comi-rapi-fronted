@@ -61,7 +61,7 @@ src/
       Carrito.jsx              Carrito de compras  (/cliente/carrito)
       ConfirmacionPedido.jsx   Exito del pedido    (/cliente/confirmacion)
       MisPedidos.jsx           Historial de pedidos (/cliente/mis-pedidos)
-      DetallePedido.jsx        Detalle con timeline (/cliente/pedido/:id)
+      DetallePedido.jsx        Detalle con stepper (/cliente/pedido/:id)
       MisDirecciones.jsx       CRUD de direcciones (/cliente/mis-direcciones)
     admin/
       AdminLogin.jsx           Login de admin      (/admin-login)
@@ -79,6 +79,8 @@ src/
       ProtectedRoute.jsx       Guarda rutas por rol
       Footer.jsx               Pie de pagina oscuro
       IconoEstado.jsx          SVG de estados de pedido + IconoCheck
+      HistorialStepper.jsx     Stepper de estados compartido (cliente + admin)
+      HistorialStepper.css
     cliente/
       ProductoCard.jsx         Tarjeta de producto del catalogo
       ItemCarrito.jsx          Item del carrito (imagen, cantidad, eliminar)
@@ -395,7 +397,7 @@ quedo asignado a que sucursal.
   - Filtra los pedidos del cliente por email de usuario.
   - Cada pedido: header con numero y Badge de estado con icono
     (IconoEstado + VARIANTE_ESTADO_PEDIDO), fecha, productos, total,
-    sucursal y boton "Ver detalle".
+    sucursal y stepper de progreso (HistorialStepper, solo lectura).
   - Estado vacio con CTA al catalogo.
 
 9.9 DetallePedido (/cliente/pedido/:id) - DetallePedido.jsx + DetallePedido.css
@@ -403,8 +405,10 @@ quedo asignado a que sucursal.
   - Header con numero y Badge de estado con icono.
   - Cliente y sucursal asignada (nombre + direccion).
   - Tabla de productos con cantidades y subtotales, total destacado.
-  - "Historial del pedido": timeline vertical con cada { estado, fecha }
-    del historialEstados, seteando de COLOR_ESTADO_PEDIDO para el SVG.
+  - "Progreso del pedido": stepper horizontal (HistorialStepper, solo lectura)
+    con el MISMO visual que el admin: iconos que se encienden en verde a medida
+    que el pedido avanza, el estado actual late en naranja y los futuros quedan
+    oscurecidos. Se apagan/encienden segun el estado del pedido.
 
 9.10 MisDirecciones (/cliente/mis-direcciones) - MisDirecciones.jsx
   - Lista de direcciones activas del cliente. Solo crea/edita inline
@@ -453,7 +457,8 @@ quedo asignado a que sucursal.
 10.5 GestionPedidos (/admin/pedidos) - GestionPedidos.jsx +
      PedidosPendientes.jsx + PedidosPendientes.css
   - Tarjeta con titulo "Pedidos Pendientes" y stepper de estados.
-  - Flujo del stepper:
+  - Flujo del stepper (componente compartido HistorialStepper,
+    en clientes/comunes; en admin, ademas, el siguiente estado es clicable):
       - Estados: pendiente (reloj), confirmado (check), en_preparacion
         (fuego), listo_para_entregar (caja), en_camino (bicicleta),
         entregado (bandera final). Nodo cancelado aparte.
