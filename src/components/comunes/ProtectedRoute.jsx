@@ -17,7 +17,12 @@ import { useAuth } from '../../hooks/useAuth';
  * @param {React.ReactNode} [children] - Componentes hijos (modo wrapper).
  */
 const ProtectedRoute = ({ requiredRole, children }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, hydrated } = useAuth();
+
+  // Esperar a que se verifique localStorage antes de decidir
+  if (!hydrated) {
+    return null;
+  }
 
   // Si no está autenticado, redirigir a login
   if (!isAuthenticated) {

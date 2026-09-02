@@ -18,10 +18,13 @@ import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
+  ESTADOS_VISIBLES_CLIENTE,
 } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import HistorialStepper from '../comunes/HistorialStepper';
 import './PedidosPendientes.css';
+
+const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDIDO.CANCELADO);
 
 // Acción amigable para el botón de avance según el próximo estado
 const ACCIONES_SIGUIENTE = {
