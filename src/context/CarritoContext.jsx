@@ -1,90 +1,82 @@
-/**
- * Propósito: Contexto del carrito de compras para manejar ítems, totales y operaciones del carrito.
- * Contenido: CarritoProvider, CarritoContext, con funciones agregar, eliminar, vaciar, etc.
- * Dependencias: React (createContext, useState, useCallback, useMemo).
- * Uso: <CarritoProvider> envuelve la app en App.jsx. Consumir con useCarrito().
- */
-
 import React, { createContext, useState, useCallback, useMemo } from 'react';
+import { calcularPrecioUnitario } from '../services/personalizacionConfig';
+import { compararPersonalizacion, generarIdLinea, personalizacionVacia } from '../utils/personalizacionHelpers';
 
-// Se crea el contexto
 export const CarritoContext = createContext(null);
 
-/**
- * Proveedor del contexto del carrito.
- * @param {React.ReactNode} children - Componentes hijos.
- */
 export const CarritoProvider = ({ children }) => {
-  // Estado de los ítems del carrito: [{ producto, cantidad }]
   const [items, setItems] = useState([]);
 
-  /**
-   * Agrega un producto al carrito. Si ya existe, incrementa la cantidad.
-   * @param {object} producto - Producto a agregar { id, nombre, precio, ... }.
-   * @param {number} cantidad - Cantidad a agregar (default: 1).
-   */
-  const agregarAlCarrito = useCallback((producto, cantidad = 1) => {
+  const agregarAlCarrito = useCallback((producto, cantidad = 1, personalizacion = null) => {
+    const pers = personalizacion || personalizacionVacia();
+    const extras = pers.extras || [];
+    const acomp = pers.acompanamientos || [];
+    const precioUnitarioPersonalizado = calcularPrecioUnitario(producto.precio, extras, acomp);
+
     setItems((prevItems) => {
-      const existente = prevItems.find((item) => item.producto.id === producto.id);
+      const existente = prevItems.find(
+        (item) => item.producto.id === producto.id && compararPersonalizacion(item.personalizacion, pers)
+      );
       if (existente) {
         return prevItems.map((item) =>
-          item.producto.id === producto.id
-            ? { ...item, cantidad: item.cantidad + cantidad }
-            : item
+          item.idLinea === existente.idLinea ? { ...item, cantidad: item.cantidad + cantidad } : item
         );
       }
-      return [...prevItems, { producto, cantidad }];
+      return [
+        ...prevItems,
+        {
+          idLinea: generarIdLinea(producto.id),
+          producto,
+          cantidad,
+          personalizacion: pers,
+          precioUnitarioPersonalizado,
+        },
+      ];
     });
-    // Mostrar alerta simulando la acción
     alert(`"${producto.nombre}" agregado al carrito.`);
   }, []);
 
-  /**
-   * Elimina un producto del carrito por su ID.
-   * @param {number} productoId - ID del producto a eliminar.
-   */
-  const eliminarDelCarrito = useCallback((productoId) => {
-    setItems((prevItems) => prevItems.filter((item) => item.producto.id !== productoId));
+  const eliminarDelCarrito = useCallback((idLineaOrProductoId) => {
+    setItems((prevItems) => {
+      const byLinea = prevItems.filter((item) => item.idLinea !== idLineaOrProductoId);
+      if (byLinea.length !== prevItems.length) return byLinea;
+      return prevItems.filter((item) => String(item.producto.id) !== String(idLineaOrProductoId));
+    });
   }, []);
 
-  /**
-   * Actualiza la cantidad de un producto en el carrito.
-   * @param {number} productoId - ID del producto.
-   * @param {number} nuevaCantidad - Nueva cantidad.
-   */
-  const actualizarCantidad = useCallback((productoId, nuevaCantidad) => {
+  const actualizarCantidad = useCallback((idLineaOrProductoId, nuevaCantidad) => {
     if (nuevaCantidad <= 0) {
-      setItems((prevItems) => prevItems.filter((item) => item.producto.id !== productoId));
+      setItems((prev) => {
+        const byLinea = prev.filter((item) => item.idLinea !== idLineaOrProductoId);
+        if (byLinea.length !== prev.length) return byLinea;
+        return prev.filter((item) => String(item.producto.id) !== String(idLineaOrProductoId));
+      });
       return;
     }
     setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.producto.id === productoId ? { ...item, cantidad: nuevaCantidad } : item
-      )
+      prevItems.map((item) => {
+        if (item.idLinea === idLineaOrProductoId || String(item.producto.id) === String(idLineaOrProductoId)) {
+          if (item.idLinea === idLineaOrProductoId) return { ...item, cantidad: nuevaCantidad };
+          const othersSameId = prevItems.filter((x) => String(x.producto.id) === String(idLineaOrProductoId));
+          if (othersSameId.length === 1) return { ...item, cantidad: nuevaCantidad };
+        }
+        return item;
+      })
     );
   }, []);
 
-  /**
-   * Vacía todo el carrito.
-   */
   const vaciarCarrito = useCallback(() => {
     setItems([]);
     alert('Carrito vaciado.');
   }, []);
 
-  // Total de ítems
-  const totalItems = useMemo(
-    () => items.reduce((total, item) => total + item.cantidad, 0),
-    [items]
-  );
+  const totalItems = useMemo(() => items.reduce((total, item) => total + item.cantidad, 0), [items]);
 
-  // Total en dinero
   const total = useMemo(
-    () => items.reduce((total, item) => total + item.producto.precio * item.cantidad, 0),
+    () => items.reduce((t, item) => t + (item.precioUnitarioPersonalizado ?? item.producto.precio) * item.cantidad, 0),
     [items]
   );
 
-  // Valor del contexto
   const value = useMemo(
     () => ({
       items,

@@ -93,14 +93,37 @@ const DetallePedido = () => {
               </tr>
             </thead>
             <tbody>
-              {pedido.productos.map((prod, idx) => (
-                <tr key={idx}>
-                  <td>{prod.nombre}</td>
-                  <td>{prod.cantidad}</td>
-                  <td>{formatPrice(prod.precio)}</td>
-                  <td>{formatPrice(prod.precio * prod.cantidad)}</td>
-                </tr>
-              ))}
+              {pedido.productos.map((prod, idx) => {
+                const tieneDesglose = (prod.extras && prod.extras.length > 0) || (prod.sin && prod.sin.length > 0) || (prod.acompanamientos && prod.acompanamientos.length > 0) || (prod.condimentos && prod.condimentos.length > 0);
+                return (
+                  <React.Fragment key={idx}>
+                    <tr>
+                      <td>{prod.nombre}</td>
+                      <td>{prod.cantidad}</td>
+                      <td>{formatPrice(prod.precio)}</td>
+                      <td>{formatPrice(prod.precio * prod.cantidad)}</td>
+                    </tr>
+                    {tieneDesglose && (
+                      <tr>
+                        <td colSpan={4} className="small text-muted" style={{ background: '#fff8ef' }}>
+                          {prod.extras?.map((ex) => (
+                            <div key={ex.id}>› Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</div>
+                          ))}
+                          {prod.acompanamientos?.map((ac) => (
+                            <div key={ac.id}>› Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</div>
+                          ))}
+                          {prod.sin?.map((s) => (
+                            <div key={s}>› <strong>Sin {s}</strong></div>
+                          ))}
+                          {prod.condimentos?.map((c) => (
+                            <div key={c.nombre}>› {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span></div>
+                          ))}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </Table>
 

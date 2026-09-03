@@ -1,0 +1,17 @@
+.modal-personalizar-content{ border:2px solid #ffe9c9; border-radius:18px; overflow:hidden; }
+.personalizar-imagen{ width:220px; height:150px; object-fit:cover; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,.12); }
+.btn-cerrar{ position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:#2b2b2b; font-size:1.4rem; line-height:1; display:flex; align-items:center; justify-content:center; }
+.btn-cerrar:hover{ background:#ffe9c9; }
+.btn-seleccionar{ background:#fff4e2; border:1px solid #f1c27d; color:#b55d00; border-radius:999px; font-weight:700; font-size:.8rem; padding:.3rem 1rem; }
+.btn-seleccionar:hover{ background:#ffe6c2; color:#b55d00; border-color:#ff9f1c; }
+.btn-volver{ width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:#2b2b2b; font-size:1.3rem; }
+.fila-grupo{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0e0c0; }
+.fila-grupo:last-child{ border-bottom:none; }
+.badge-grupo{ font-size:.75rem; color:#6c757d; }
+.card-comi-grupo{ border:2px solid #ffe9c9; border-radius:14px; background:#fff; padding:8px 14px; }
+.fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #f0e0c0; }
+.fila-opcion:last-child{ border-bottom:none; }
+.pill-control{ background:#f1f1f5; border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
+.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
+.pill-control button:hover{ background:#ff9f1c; color:#fff; }
+.pill-control span{ min-width:18px; text-align:center; font-weight:700; }

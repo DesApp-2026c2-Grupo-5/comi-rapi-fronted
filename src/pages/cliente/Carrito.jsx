@@ -73,7 +73,12 @@ const Carrito = () => {
         productos: items.map((item) => ({
           nombre: item.producto.nombre,
           cantidad: item.cantidad,
-          precio: item.producto.precio,
+          precio: item.precioUnitarioPersonalizado ?? item.producto.precio,
+          precioBase: item.producto.precio,
+          extras: item.personalizacion?.extras || [],
+          sin: item.personalizacion?.sin || [],
+          acompanamientos: item.personalizacion?.acompanamientos || [],
+          condimentos: item.personalizacion?.condimentos || [],
         })),
         total,
         direccion,
@@ -130,7 +135,7 @@ const Carrito = () => {
           <Col lg={8} className="mb-4 mb-lg-0">
             <div className="d-flex flex-column gap-3">
               {items.map((item) => (
-                <ItemCarrito key={item.producto.id} item={item} />
+                <ItemCarrito key={item.idLinea || item.producto.id} item={item} />
               ))}
             </div>
 

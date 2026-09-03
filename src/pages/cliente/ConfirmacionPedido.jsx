@@ -16,7 +16,7 @@ import { usePedidos } from '../../hooks/usePedidos';
 import { ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { IconoCheck } from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatPrice } from '../../utils/formatters';
 
 const ConfirmacionPedido = () => {
   const { pedidoActual } = usePedidos();
@@ -100,6 +100,31 @@ const ConfirmacionPedido = () => {
               )}
             </Card.Body>
           </Card>
+
+          {/* Desglose de productos con personalización */}
+          {pedidoActual.productos.some((p) => p.extras?.length || p.sin?.length || p.acompanamientos?.length || p.condimentos?.length) && (
+            <div className="card shadow-sm mb-3">
+              <div className="card-body">
+                {pedidoActual.productos.map((p, idx) => (
+                  <div key={idx} className={idx < pedidoActual.productos.length - 1 ? 'mb-3 pb-3 border-bottom' : ''}>
+                    <div className="fw-bold small">{p.nombre} x{p.cantidad}</div>
+                    {p.extras?.map((ex) => (
+                      <div key={ex.id} className="small text-muted">› Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</div>
+                    ))}
+                    {p.acompanamientos?.map((ac) => (
+                      <div key={ac.id} className="small text-muted">› Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</div>
+                    ))}
+                    {p.sin?.map((s) => (
+                      <div key={s} className="small text-muted">› <strong>Sin {s}</strong></div>
+                    ))}
+                    {p.condimentos?.map((c) => (
+                      <div key={c.nombre} className="small text-muted">› {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span></div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Resumen de productos */}
           <ResumenPedido

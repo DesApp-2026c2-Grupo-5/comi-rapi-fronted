@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup Carrito + Detalle + Confirmación (2 líneas)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+  --gris-pill:#f1f1f5; --gris-text:#6c757d;
+}
+body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#2b2b2b; }
+.btn{ border-radius:999px; font-weight:600; gap:.5rem; display:inline-flex; align-items:center; justify-content:center; transition:transform .2s, box-shadow .25s; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-bg:var(--naranja); --bs-btn-border-color:var(--naranja); --bs-btn-hover-bg:var(--naranja-hover); --bs-btn-hover-border-color:var(--naranja-hover); box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.btn-success{ --bs-btn-bg:var(--verde); --bs-btn-border-color:var(--verde); --bs-btn-hover-bg:var(--verde-hover); --bs-btn-hover-border-color:var(--verde-hover); box-shadow:0 4px 12px rgba(34,197,94,.25); }
+.btn-outline-danger{ --bs-btn-color:var(--rojo); --bs-btn-border-color:var(--rojo); }
+.card-comi{ border:2px solid var(--borde-card); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.08); overflow:hidden; }
+.precio-destacado{ color:var(--rojo); font-weight:800; font-size:1.15rem; }
+.badge-comi{ background:var(--crema); color:var(--naranja-osc); border:1px solid var(--crema-borde); font-weight:700; }
+.pill-control{ background:var(--gris-pill); border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
+.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
+.pill-control button:hover{ background:var(--naranja); color:#fff; }
+.pill-control span{ min-width:18px; text-align:center; font-weight:700; }
+.desglose{ font-size:.82rem; color:var(--gris-text); line-height:1.6; }
+.desglose strong{ color:#2b2b2b; }
+.item-header{ border-bottom:1px solid var(--borde-card); }
+.id-linea{ font-size:.65rem; letter-spacing:.5px; color:#a08040; background:var(--crema); border:1px solid var(--crema-borde); border-radius:999px; padding:2px 8px; font-weight:700; }
+.carrito-titulo{ font-weight:900; letter-spacing:3px; color:#2b2b2b; }
+.resumen-card{ border:2px solid var(--borde-card); border-radius:18px; overflow:hidden; }
+.resumen-titulo{ background:#fff; font-weight:800; border-bottom:2px solid var(--borde-card); }
+.resumen-total{ color:var(--rojo); font-weight:900; font-size:1.25rem; }
+.resumen-divisor{ border-color:var(--borde-card); opacity:1; }
+.resumen-boton{ background:var(--verde); border:none; border-radius:999px; font-weight:700; }
+.detalle-card{ border:none; border-radius:20px; box-shadow:0 12px 30px rgba(0,0,0,.08); overflow:hidden; background:#fff; }
+.detalle-card-header{ background:var(--naranja); color:#fff; border:none; padding:1.1rem 1.5rem; }
+.detalle-info{ background:#fff8ef; border:2px solid var(--borde-card); border-radius:14px; padding:1rem 1.25rem; height:100%; }
+.detalle-etiqueta{ display:block; font-size:.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--naranja-hover); margin-bottom:.25rem; }
+.detalle-valor{ font-weight:700; color:#2b2b2b; font-size:1.05rem; }
+.detalle-valor-secundario{ color:var(--gris-text); font-size:.95rem; }
+.detalle-total{ display:flex; justify-content:space-between; align-items:center; background:#fff5e6; border:2px solid var(--borde-card); border-radius:14px; padding:1rem 1.25rem; font-weight:800; font-size:1.1rem; }
+.boton-volver{ display:inline-flex; align-items:center; gap:.5rem; color:#2b2b2b; font-weight:600; background:#fff; border:2px solid var(--crema-borde); border-radius:50px; padding:.5rem 1.15rem; text-decoration:none; }
+.historial-box{ margin-top:1.1rem; padding:1rem 1.1rem 1.1rem; background:#fdf8f0; border:2px solid var(--borde-card); border-radius:16px; }
+.historial-titulo{ display:block; font-weight:800; color:#2b2b2b; margin-bottom:.6rem; }
+.historial-stepper{ display:flex; align-items:center; flex-wrap:wrap; gap:.3rem .15rem; }
+.historial-conector{ flex:0 0 auto; width:2rem; height:4px; border-radius:4px; background:#e2e2e2; }
+.historial-conector.activo{ background:#198754; }
+.estado-step{ display:flex; flex-direction:column; align-items:center; gap:.3rem; min-width:3.9rem; padding:.5rem .4rem; border:none; background:none; border-radius:14px; text-align:center; }
+.estado-step .estado-step-icono{ font-size:2.05rem; color:#d8d8d8; }
+.estado-step .estado-step-etiqueta{ font-size:.66rem; font-weight:700; line-height:1.1; color:#b0b0b0; text-transform:uppercase; letter-spacing:.4px; }
+.estado-step.completado .estado-step-icono{ color:#198754; }
+.estado-step.completado .estado-step-etiqueta{ color:#198754; }
+.estado-step.actual{ background:rgba(255,159,28,.12); }
+.estado-step.actual .estado-step-icono{ color:var(--naranja); transform:scale(1.3); filter:drop-shadow(0 0 7px rgba(255,159,28,.55)); animation:estado-latido 2s ease-in-out infinite; }
+.estado-step.actual .estado-step-etiqueta{ color:#c07000; font-weight:900; }
+@keyframes estado-latido{ 0%,100%{ transform:scale(1.3);} 50%{ transform:scale(1.42);} }
+.section-label{ font-size:.7rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--naranja-osc); background:var(--crema); border:1px solid var(--crema-borde); border-radius:999px; padding:4px 12px; }
+</style>
+</head>
+<body>
+
+<div class="container py-4" style="max-width:1120px;">
+
+  <!-- CARRITO -->
+  <div class="d-flex align-items-center gap-2 mb-1">
+    <h1 class="carrito-titulo mb-0" style="font-size:1.7rem;">Tu Carrito</h1>
+    <span class="badge bg-dark rounded-pill ms-2">2 productos</span>
+  </div>
+  <p class="text-muted small mb-3">Vista <code>Carrito.jsx</code> — Resumen a la derecha como en el original (<code>Col lg=8 + Col lg=4</code>)</p>
+
+  <span class="section-label mb-3 d-inline-block"><i class="fa-solid fa-cart-shopping me-1"></i> CARRITO — 2 líneas, merge por personalización</span>
+
+  <div class="row">
+    <!-- Lista productos lg=8 -->
+    <div class="col-lg-8 mb-4 mb-lg-0">
+      <div class="d-flex flex-column gap-3">
+        <!-- LINEA 1 -->
+        <div class="card-comi">
+          <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="id-linea"><i class="fa-solid fa-fingerprint me-1"></i> Línea #a1f3 — idLinea</span>
+              <span class="badge badge-comi"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Personalizado</span>
+            </div>
+            <div class="d-flex gap-3 align-items-center item-header pb-3">
+              <img src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=200&h=150&fit=crop" class="rounded-3" style="width:72px; height:72px; object-fit:cover; border:1px solid var(--borde-card);">
+              <div class="flex-grow-1">
+                <div class="fw-bold small">Grand Doble McBacon</div>
+                <div class="text-muted" style="font-size:.78rem;">Precio base: $18.100</div>
+                <div class="text-muted" style="font-size:.72rem;">Precio unit. personalizado: <strong style="color:var(--naranja-osc);">$24.800</strong> <span>(base + Bacon $2.700 + Pileta $4.000)</span></div>
+              </div>
+              <div class="text-end">
+                <div class="fw-bold precio-destacado">$24.800</div>
+                <div class="d-flex align-items-center gap-1 justify-content-end mt-1">
+                  <span class="pill-control py-1 px-1" style="transform:scale(.9);">
+                    <button style="width:24px;height:24px;">−</button>
+                    <span style="font-size:.85rem;">1</span>
+                    <button style="width:24px;height:24px;">+</button>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="desglose pt-2">
+              <div>› Extra: <strong>Bacon</strong> (+$2.700) x1</div>
+              <div>› Acompañamiento: <strong>Pileta de Cheddar</strong> (+$4.000) x1</div>
+              <div>› <strong>Sin Queso Cheddar en fetas</strong></div>
+              <div>› Sobre de Ketchup x1 <span class="text-muted">(sin costo)</span></div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top" style="border-color:var(--borde-card) !important;">
+              <small class="text-muted">Subtotal: $24.800 x1</small>
+              <button class="btn btn-outline-danger btn-sm px-3 py-1" style="font-size:.75rem;"><i class="fa-solid fa-xmark"></i> Eliminar</button>
+            </div>
+          </div>
+        </div>
+        <!-- LINEA 2 -->
+        <div class="card-comi">
+          <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="id-linea" style="background:#f8f9fa; border-color:#dee2e6; color:#6c757d;"><i class="fa-solid fa-minus me-1"></i> Línea #b7e2 — simple</span>
+              <span class="badge bg-light text-muted border">Sin personalizar</span>
+            </div>
+            <div class="d-flex gap-3 align-items-center item-header pb-3">
+              <img src="https://via.placeholder.com/200x150?text=Coca-Cola" class="rounded-3" style="width:72px; height:72px; object-fit:cover; border:1px solid var(--borde-card);">
+              <div class="flex-grow-1">
+                <div class="fw-bold small">Coca-Cola 500ml</div>
+                <div class="text-muted" style="font-size:.78rem;">Precio: $800</div>
+                <div class="text-muted" style="font-size:.72rem;">Bebidas — no requiere personalización</div>
+              </div>
+              <div class="text-end">
+                <div class="fw-bold precio-destacado">$1.600</div>
+                <div class="d-flex align-items-center gap-1 justify-content-end mt-1">
+                  <span class="pill-control py-1 px-1" style="transform:scale(.9);">
+                    <button style="width:24px;height:24px;">−</button>
+                    <span style="font-size:.85rem;">2</span>
+                    <button style="width:24px;height:24px;">+</button>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="desglose pt-2"><em class="text-muted">Sin extras — producto simple</em></div>
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top" style="border-color:var(--borde-card) !important;">
+              <small class="text-muted">Subtotal: $800 x2</small>
+              <button class="btn btn-outline-danger btn-sm px-3 py-1" style="font-size:.75rem;"><i class="fa-solid fa-xmark"></i> Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="text-center text-md-end mt-3">
+        <button class="btn btn-outline-danger rounded-pill px-4"><i class="fa-solid fa-trash"></i> Vaciar carrito</button>
+      </div>
+      <div class="card mt-3 p-3" style="background:var(--crema-card); border:2px dashed var(--crema-borde); border-radius:12px;">
+        <strong class="small d-block mb-1"><i class="fa-solid fa-code-merge me-1" style="color:var(--naranja);"></i> Merge</strong>
+        <span class="small text-muted">Mismo producto + misma personalización → <span class="badge bg-success">cantidad++ ($49.600)</span> — Distinta personalización → <span class="badge badge-comi">nueva línea</span> con otro <code>idLinea</code></span>
+      </div>
+    </div>
+
+    <!-- Resumen lg=4 DERECHA -->
+    <div class="col-lg-4">
+      <div class="card resumen-card shadow-sm">
+        <div class="card-header resumen-titulo"><h5 class="mb-0" style="font-weight:800;">Resumen del Pedido</h5></div>
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Subtotal</span><strong>$26.400</strong></div>
+          <div class="d-flex justify-content-between mb-3"><span class="text-muted small">Envío</span><strong class="text-success">Gratis</strong></div>
+          <hr class="resumen-divisor">
+          <div class="d-flex justify-content-between align-items-center"><strong>Total</strong><strong class="resumen-total">$26.400</strong></div>
+          <div class="mt-3 p-3" style="background:#fff8ef; border:2px solid var(--borde-card); border-radius:12px;">
+            <span class="d-block text-uppercase fw-bold text-warning" style="font-size:.72rem; letter-spacing:1px;">Sucursal asignada</span>
+            <strong class="d-block">Sucursal Norte</strong><span class="text-muted small">Calle Norte 456</span>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <button class="btn resumen-boton w-100 py-2 text-white"><i class="fa-solid fa-check"></i> Confirmar Pedido</button>
+          <small class="text-muted d-block text-center mt-2" style="font-size:.7rem;">Al confirmar → <code>PENDIENTE → CONFIRMADO</code> y redirige a <code>/cliente/confirmacion</code></small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-5" style="border-color:var(--borde-card); opacity:1;">
+
+  <!-- DETALLE PEDIDO -->
+  <span class="section-label mb-3 d-inline-block"><i class="fa-solid fa-receipt me-1"></i> DETALLE DEL PEDIDO — con progreso original</span>
+  <p class="text-muted small mb-3">Vista <code>DetallePedido.jsx</code> — <code>HistorialStepper</code> idéntico al admin</p>
+
+  <div class="card detalle-card">
+    <div class="card-header detalle-card-header d-flex justify-content-between align-items-center">
+      <h4 class="mb-0" style="font-weight:900; letter-spacing:1px;">Pedido #1042</h4>
+      <span class="badge bg-success d-inline-flex align-items-center gap-1" style="border-radius:50px; padding:.5em 1.1em;"><i class="fa-solid fa-check-circle"></i> Confirmado</span>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <div class="detalle-info">
+            <span class="detalle-etiqueta">Cliente</span>
+            <p class="detalle-valor mb-0">cliente@test.com</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="detalle-info">
+            <span class="detalle-etiqueta">Sucursal asignada</span>
+            <p class="detalle-valor mb-0">Sucursal Norte</p>
+            <p class="detalle-valor-secundario mb-0">Calle Norte 456</p>
+          </div>
+        </div>
+      </div>
+
+      <h5 class="mb-3" style="font-weight:800;">Productos</h5>
+      <div class="table-responsive">
+        <table class="table detalle-tabla mb-0" style="font-size:.88rem;">
+          <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            <tr><td>Grand Doble McBacon</td><td>1</td><td>$24.800</td><td>$24.800</td></tr>
+            <tr><td colspan="4" class="desglose ps-3 py-2" style="background:var(--crema-card);">
+              <div>› Extra: Bacon (+$2.700) x1</div>
+              <div>› Acompañamiento: Pileta de Cheddar (+$4.000) x1</div>
+              <div>› <strong>Sin Queso Cheddar en fetas</strong></div>
+              <div>› Sobre de Ketchup x1 <span class="text-muted">(sin costo)</span></div>
+            </td></tr>
+            <tr><td>Coca-Cola 500ml</td><td>2</td><td>$800</td><td>$1.600</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="detalle-total mt-4 mb-4"><span>Total</span><span class="text-danger" style="font-size:1.35rem; font-weight:900;">$26.400</span></div>
+
+      <div class="historial-box">
+        <span class="historial-titulo">Progreso del pedido</span>
+        <div class="historial-stepper">
+          <div class="estado-step completado" title="Pendiente - 03/09/2026 14:10"><i class="fa-regular fa-clock estado-step-icono"></i><span class="estado-step-etiqueta">Pendiente</span></div>
+          <span class="historial-conector activo"></span>
+          <div class="estado-step actual" title="Confirmado - 03/09/2026 14:11"><i class="fa-solid fa-check-circle estado-step-icono"></i><span class="estado-step-etiqueta">Confirmado</span></div>
+          <span class="historial-conector"></span>
+          <div class="estado-step" title="En preparación"><i class="fa-solid fa-fire estado-step-icono"></i><span class="estado-step-etiqueta">En preparación</span></div>
+          <span class="historial-conector"></span>
+          <div class="estado-step" title="Listo para entregar"><i class="fa-solid fa-box estado-step-icono"></i><span class="estado-step-etiqueta">Listo</span></div>
+          <span class="historial-conector"></span>
+          <div class="estado-step" title="En camino"><i class="fa-solid fa-motorcycle estado-step-icono"></i><span class="estado-step-etiqueta">En camino</span></div>
+          <span class="historial-conector"></span>
+          <div class="estado-step" title="Entregado"><i class="fa-solid fa-flag-checkered estado-step-icono"></i><span class="estado-step-etiqueta">Entregado</span></div>
+        </div>
+      </div>
+      <small class="text-muted d-block mt-2" style="font-size:.72rem;">El stepper es <code>HistorialStepper.jsx</code> — el estado actual late en naranja, los completados en verde.</small>
+    </div>
+  </div>
+
+  <hr class="my-5" style="border-color:var(--borde-card); opacity:1;">
+
+  <!-- CONFIRMACIÓN - NO ES POPUP -->
+  <span class="section-label mb-3 d-inline-block"><i class="fa-solid fa-circle-check me-1"></i> CONFIRMACIÓN — NO es popup, es página <code>/cliente/confirmacion</code></span>
+  <div class="alert py-2 small mb-3" style="background:#e8f5e9; border:1px solid #a5d6a7; color:#1b5e20;">
+    <i class="fa-solid fa-circle-info me-1"></i> En el flujo real <strong>NO hay popup</strong>. Al dar <em>Confirmar Pedido</em> se hace <code>crearPedido → confirmarPedido → vaciarCarrito() → navigate('/cliente/confirmacion')</code>. La imagen que enviaste es exactamente esa página.
+  </div>
+  <p class="text-muted small mb-3">Vista <code>ConfirmacionPedido.jsx</code> — replica 1:1 de tu captura</p>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card text-center shadow mb-4" style="border-radius:20px; overflow:hidden; border:none;">
+        <div class="card-body p-5">
+          <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width:70px; height:70px;"><i class="fa-solid fa-check" style="font-size:34px;"></i></div>
+          <h1 class="h3 mb-2" style="font-weight:800;">¡Pedido confirmado!</h1>
+          <p class="text-muted mb-0"><strong>Número de pedido:</strong> #1042</p>
+          <p class="text-muted mb-0"><strong>Fecha:</strong> 3 de septiembre de 2026</p>
+          <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">Confirmado</span></p>
+
+          <div class="mt-4 p-3 text-start" style="background:#fff8ef; border:2px solid var(--borde-card); border-radius:12px;">
+            <span class="d-block text-uppercase fw-bold text-warning" style="font-size:.72rem; letter-spacing:1px;">Tu pedido será preparado en</span>
+            <strong class="d-block fs-5">Sucursal Norte</strong><span class="text-muted">Calle Norte 456</span>
+          </div>
+          <div class="mt-3 p-3 text-start" style="background:#fff8ef; border:2px solid var(--borde-card); border-radius:12px;">
+            <span class="d-block text-uppercase fw-bold text-warning" style="font-size:.72rem; letter-spacing:1px;">Entregamos en</span>
+            <strong class="d-block fs-5">Casa</strong>
+            <span class="text-muted d-block">Av. Siempreviva 1234</span>
+            <span class="text-muted d-block">Capital Federal - CP 1406</span>
+            <span class="text-muted d-block">Ref: Casa verde</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card resumen-card shadow-sm">
+        <div class="card-header resumen-titulo"><h5 class="mb-0" style="font-weight:800;">Resumen del Pedido</h5></div>
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Subtotal</span><strong>$26.400</strong></div>
+          <div class="d-flex justify-content-between mb-3"><span class="text-muted small">Envío</span><strong class="text-success">Gratis</strong></div>
+          <hr class="resumen-divisor">
+          <div class="d-flex justify-content-between align-items-center"><strong>Total</strong><strong class="resumen-total">$26.400</strong></div>
+          <div class="mt-3 p-3" style="background:#fff8ef; border:2px solid var(--borde-card); border-radius:12px;">
+            <span class="d-block text-uppercase fw-bold text-warning" style="font-size:.72rem; letter-spacing:1px;">Sucursal asignada</span>
+            <strong class="d-block">Sucursal Norte</strong><span class="text-muted">Calle Norte 456</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-4 d-flex gap-2 justify-content-center">
+        <a href="#" class="btn btn-primary rounded-pill px-4"><i class="fa-solid fa-receipt"></i> Ver mis pedidos</a>
+        <a href="#" class="btn btn-outline-secondary rounded-pill px-4"><i class="fa-solid fa-utensils"></i> Ir al catálogo</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center text-muted mt-5" style="font-size:.72rem;">Mockup estático — <code>mockup/carrito-personalizado.html</code> — Abrí con doble click. No modifica la app.</p>
+</div>
+</body>
+</html>

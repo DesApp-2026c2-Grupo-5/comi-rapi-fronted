@@ -42,20 +42,10 @@ body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,H
 </head>
 <body>
 
-<!-- NAV MOCKUP -->
-<nav class="mockup-nav py-2">
-  <div class="container d-flex flex-wrap gap-2 align-items-center justify-content-between">
-    <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP</span></span>
-    <div class="d-flex flex-wrap gap-2">
-      <button class="btn btn-sm btn-primary tab-btn active" data-vista="principal"><i class="fa-solid fa-burger"></i> Principal</button>
-      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="extra">Extra</button>
-      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="personalizar">Personalizar</button>
-      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="acompanar">Acompañar</button>
-      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="condimentos">Condimentos</button>
-      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="carrito">Carrito / Detalle</button>
-    </div>
-  </div>
-</nav>
+<div class="text-center py-3" style="background:rgba(255,250,240,.9); border-bottom:2px solid var(--borde-card);">
+  <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP — Modal Personalización</span></span>
+  <div class="small text-muted">Así se ve el popup al hacer click en <strong>Añadir</strong> — sin navegación superior, solo botones internos <em>Seleccionar / Volver / Aceptar</em></div>
+</div>
 
 <div class="container py-4" style="max-width:520px;">
 
@@ -284,7 +274,10 @@ body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,H
     </div>
   </div>
 
-  <p class="text-center text-muted mt-4" style="font-size:.75rem;">Mockup estático — abrir con doble click. No modifica la app. Para implementar ver <code>documentacion/plan-personalizacion-producto.md</code></p>
+  <div class="text-center mt-4">
+    <a href="./carrito-personalizado.html" class="btn btn-success btn-sm"><i class="fa-solid fa-cart-shopping"></i> Ver carrito con 2 líneas (merge) → carrito-personalizado.html</a>
+  </div>
+  <p class="text-center text-muted mt-3" style="font-size:.75rem;">Mockup estático — abrir con doble click. No modifica la app. Para implementar ver <code>documentacion/plan-personalizacion-producto.md</code></p>
 </div>
 
 <script>

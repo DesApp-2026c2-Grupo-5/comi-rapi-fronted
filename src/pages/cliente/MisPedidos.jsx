@@ -61,7 +61,18 @@ const MisPedidos = () => {
               </Card.Header>
               <Card.Body>
                 <p className="mb-1"><strong>Fecha:</strong> {formatDate(pedido.fecha)}</p>
-                <p className="mb-1"><strong>Productos:</strong> {pedido.productos.map((p) => p.nombre).join(', ')}</p>
+                <div className="mb-1">
+                  <strong>Productos:</strong>
+                  {pedido.productos.map((p, i) => (
+                    <div key={i} className="ms-2 small">
+                      <span>{p.nombre} x{p.cantidad}</span>
+                      {p.extras?.length > 0 && <span className="text-muted"> — {p.extras.map((e) => `${e.nombre} (+${formatPrice(e.precio)})`).join(', ')}</span>}
+                      {p.sin?.length > 0 && <span className="text-muted"> — Sin {p.sin.join(', ')}</span>}
+                      {p.acompanamientos?.length > 0 && <span className="text-muted"> — {p.acompanamientos.map((a) => a.nombre).join(', ')}</span>}
+                      {p.condimentos?.length > 0 && <span className="text-muted"> — {p.condimentos.map((c) => c.nombre).join(', ')}</span>}
+                    </div>
+                  ))}
+                </div>
                 <p className="mb-1"><strong>Total:</strong> {formatPrice(pedido.total)}</p>
                 <p className="mb-2">
                   <strong>Sucursal:</strong>{' '}
