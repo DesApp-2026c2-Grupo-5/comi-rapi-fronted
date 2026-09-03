@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup Personalización de Producto</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+/* ===== Tema Comi-Rapi (extraído de src/styles/comirapi.css + ProductoCard.css) ===== */
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+  --gris-pill:#f1f1f5; --gris-text:#6c757d;
+}
+body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#2b2b2b; }
+.btn{ border-radius:999px; font-weight:600; gap:.5rem; display:inline-flex; align-items:center; justify-content:center; transition:transform .2s, box-shadow .25s; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-bg:var(--naranja); --bs-btn-border-color:var(--naranja); --bs-btn-hover-bg:var(--naranja-hover); --bs-btn-hover-border-color:var(--naranja-hover); box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.btn-success{ --bs-btn-bg:var(--verde); --bs-btn-border-color:var(--verde); --bs-btn-hover-bg:var(--verde-hover); --bs-btn-hover-border-color:var(--verde-hover); box-shadow:0 4px 12px rgba(34,197,94,.25); }
+.btn-secondary{ --bs-btn-color:var(--naranja-osc); --bs-btn-bg:var(--crema); --bs-btn-border-color:var(--crema-borde); --bs-btn-hover-bg:#ffe6c2; --bs-btn-hover-color:var(--naranja-osc); --bs-btn-hover-border-color:var(--naranja); }
+.btn-outline-secondary{ --bs-btn-color:#8a5a2b; --bs-btn-border-color:#d4b98f; --bs-btn-hover-bg:var(--crema); --bs-btn-hover-color:var(--naranja-osc); }
+.card-comi{ border:2px solid var(--borde-card); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.08); overflow:hidden; }
+.precio-destacado{ color:var(--rojo); font-weight:800; font-size:1.25rem; }
+.hero-naranja{ background: linear-gradient(90deg,#f07f10,#ff9f1c,#ffb347); color:#fff; }
+.badge-comi{ background:var(--crema); color:var(--naranja-osc); border:1px solid var(--crema-borde); font-weight:700; }
+.pill-control{ background:var(--gris-pill); border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
+.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
+.pill-control button:hover{ background:var(--naranja); color:#fff; }
+.pill-control span{ min-width:18px; text-align:center; font-weight:700; }
+.fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #f0e0c0; }
+.fila-opcion:last-child{ border-bottom:none; }
+.tab-btn.active{ background:var(--naranja) !important; color:#fff !important; border-color:var(--naranja) !important; }
+.mockup-nav{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(255,250,240,.9); border-bottom:2px solid var(--borde-card); }
+.vista{ display:none; }
+.vista.activa{ display:block; animation:fade .2s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+.desglose{ font-size:.88rem; color:var(--gris-text); }
+.desglose strong{ color:#2b2b2b; }
+</style>
+</head>
+<body>
+
+<!-- NAV MOCKUP -->
+<nav class="mockup-nav py-2">
+  <div class="container d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP</span></span>
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-primary tab-btn active" data-vista="principal"><i class="fa-solid fa-burger"></i> Principal</button>
+      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="extra">Extra</button>
+      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="personalizar">Personalizar</button>
+      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="acompanar">Acompañar</button>
+      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="condimentos">Condimentos</button>
+      <button class="btn btn-sm btn-outline-secondary tab-btn" data-vista="carrito">Carrito / Detalle</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4" style="max-width:520px;">
+
+  <!-- INFO MOCKUP -->
+  <div class="alert alert-warning py-2 small" style="background:var(--crema); border-color:var(--crema-borde); color:var(--naranja-osc);">
+    <strong>Mockup interactivo</strong> — Navegá entre vistas. Los controles <code>- 0 +</code> recalculan el total en vivo. Estilos 100% Comi-Rapi (naranja/crema/verde), no fucsia PedidosYa.
+  </div>
+
+  <!-- ===== VISTA PRINCIPAL (Img 1) ===== -->
+  <div id="vista-principal" class="vista activa">
+    <div class="card-comi">
+      <!-- Header producto -->
+      <div class="text-center p-3 position-relative">
+        <button class="btn btn-sm position-absolute top-0 end-0 m-2" style="background:var(--gris-pill); width:36px; height:36px; border-radius:50%;" title="Cerrar (solo visual)"><i class="fa-solid fa-xmark"></i></button>
+        <img src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400&h=300&fit=crop" alt="Grand Doble McBacon" class="rounded-4" style="width:220px; height:150px; object-fit:cover; box-shadow:0 8px 20px rgba(0,0,0,.12);">
+        <button class="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-2" style="background:#fff; border:1px solid #eee; width:36px; height:36px; border-radius:50%;"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+      <div class="px-3 pb-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 class="fw-bold mb-1">Grand Doble McBacon</h5>
+            <p class="text-muted small mb-0" style="max-width:320px;">Hamburguesa con doble carne 100% vacuna, bacon premium, queso cheddar, cebolla, kétchup y mostaza en un pan más grande con semillas.</p>
+          </div>
+          <div class="text-end ms-2">
+            <div class="fw-bold" id="precio-base" style="font-size:1.1rem;">$18.100</div>
+            <div class="text-muted" style="font-size:.7rem;">Sin impuestos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grupos -->
+      <div class="mx-3 mb-3 p-2 card-comi" style="border-radius:14px;">
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="fw-bold small">Extra</div>
+            <div class="text-muted" style="font-size:.75rem;" id="badge-extra">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm px-3 py-1" style="font-size:.8rem;" data-vista="extra">Seleccionar</button>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="fw-bold small">Personalizar</div>
+            <div class="text-muted" style="font-size:.75rem;" id="badge-personalizar">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm px-3 py-1" style="font-size:.8rem;" data-vista="personalizar">Seleccionar</button>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="fw-bold small">Acompaña tu orden con</div>
+            <div class="text-muted" style="font-size:.75rem;" id="badge-acompanar">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm px-3 py-1" style="font-size:.8rem;" data-vista="acompanar">Seleccionar</button>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2">
+          <div>
+            <div class="fw-bold small">Condimentos adicionales</div>
+            <div class="text-muted" style="font-size:.75rem;" id="badge-condimentos">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm px-3 py-1" style="font-size:.8rem;" data-vista="condimentos">Seleccionar</button>
+        </div>
+      </div>
+
+      <!-- Unidades -->
+      <div class="mx-3 mb-3 p-3 card-comi d-flex justify-content-between align-items-center" style="border-radius:14px;">
+        <span class="fw-bold small">Unidades</span>
+        <span class="pill-control">
+          <button onclick="cambiarUnidades(-1)">−</button>
+          <span id="unidades">1</span>
+          <button onclick="cambiarUnidades(1)">+</button>
+        </span>
+      </div>
+
+      <!-- CTA -->
+      <div class="p-3 pt-0">
+        <button class="btn btn-primary w-100 py-3 fw-bold" style="font-size:1rem;">
+          <span class="badge bg-white me-2" style="color:var(--naranja); border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;" id="cta-unidades">1</span>
+          Agregar a mi pedido
+          <span class="ms-auto" id="cta-total">$18.100</span>
+        </button>
+        <p class="text-center text-muted mt-2 mb-0" style="font-size:.75rem;">El total se recalcula al agregar extras/acompañamientos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VISTA EXTRA (Img 2) ===== -->
+  <div id="vista-extra" class="vista">
+    <div class="d-flex align-items-center mb-3">
+      <button class="btn btn-sm me-2" style="background:var(--gris-pill); width:36px; height:36px; border-radius:50%;" data-vista="principal"><i class="fa-solid fa-chevron-left"></i></button>
+      <h6 class="fw-bold mb-0 flex-grow-1 text-center">Extra</h6>
+      <span style="width:36px;"></span>
+    </div>
+    <p class="fw-bold small">Elige entre 0 y 6</p>
+    <div class="card-comi p-3">
+      <div class="fila-opcion">
+        <span class="small">Extra: Tomate (+ $2.000)</span>
+        <span class="pill-control"><button onclick="cambiar('extra','tomate',-1)">−</button><span id="extra-tomate">0</span><button onclick="cambiar('extra','tomate',1)">+</button></span>
+      </div>
+      <div class="fila-opcion">
+        <span class="small">Extra: Bacon (+ $2.700)</span>
+        <span class="pill-control"><button onclick="cambiar('extra','bacon',-1)">−</button><span id="extra-bacon">0</span><button onclick="cambiar('extra','bacon',1)">+</button></span>
+      </div>
+      <div class="fila-opcion">
+        <span class="small">Extra: Queso Cheddar en fetas (+ $2.000)</span>
+        <span class="pill-control"><button onclick="cambiar('extra','cheddar',-1)">−</button><span id="extra-cheddar">0</span><button onclick="cambiar('extra','cheddar',1)">+</button></span>
+      </div>
+    </div>
+    <button class="btn btn-primary w-100 mt-3 py-3 fw-bold" data-vista="principal">Aceptar</button>
+  </div>
+
+  <!-- ===== VISTA PERSONALIZAR (Img 3) ===== -->
+  <div id="vista-personalizar" class="vista">
+    <div class="d-flex align-items-center mb-3">
+      <button class="btn btn-sm me-2" style="background:var(--gris-pill); width:36px; height:36px; border-radius:50%;" data-vista="principal"><i class="fa-solid fa-chevron-left"></i></button>
+      <h6 class="fw-bold mb-0 flex-grow-1 text-center">Personalizar</h6>
+      <span style="width:36px;"></span>
+    </div>
+    <p class="fw-bold small">Elige entre 0 y 7 — quitar no descuenta</p>
+    <div class="card-comi p-3">
+      <div class="fila-opcion"><span class="small">Sin Pan XL</span><span class="pill-control"><button onclick="toggleSin('pan')">−</button><span id="sin-pan">0</span><button onclick="toggleSin('pan')">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sin Mostaza</span><span class="pill-control"><button onclick="toggleSin('mostaza')">−</button><span id="sin-mostaza">0</span><button onclick="toggleSin('mostaza')">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sin Ketchup</span><span class="pill-control"><button onclick="toggleSin('ketchup')">−</button><span id="sin-ketchup">0</span><button onclick="toggleSin('ketchup')">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sin Cebolla</span><span class="pill-control"><button onclick="toggleSin('cebolla')">−</button><span id="sin-cebolla">0</span><button onclick="toggleSin('cebolla')">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sin Bacon</span><span class="pill-control"><button onclick="toggleSin('bacon')">−</button><span id="sin-bacon">0</span><button onclick="toggleSin('bacon')">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sin Queso Cheddar en fetas</span><span class="pill-control"><button onclick="toggleSin('queso')">−</button><span id="sin-queso">0</span><button onclick="toggleSin('queso')">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sin Carne</span><span class="pill-control"><button onclick="toggleSin('carne')">−</button><span id="sin-carne">0</span><button onclick="toggleSin('carne')">+</button></span></div>
+    </div>
+    <button class="btn btn-primary w-100 mt-3 py-3 fw-bold" data-vista="principal">Aceptar</button>
+  </div>
+
+  <!-- ===== VISTA ACOMPAÑAR (Img 4) ===== -->
+  <div id="vista-acompanar" class="vista">
+    <div class="d-flex align-items-center mb-3">
+      <button class="btn btn-sm me-2" style="background:var(--gris-pill); width:36px; height:36px; border-radius:50%;" data-vista="principal"><i class="fa-solid fa-chevron-left"></i></button>
+      <h6 class="fw-bold mb-0 flex-grow-1 text-center">Acompaña tu orden con</h6>
+      <span style="width:36px;"></span>
+    </div>
+    <p class="fw-bold small">Elige entre 0 y 3</p>
+    <div class="card-comi p-3">
+      <div class="fila-opcion"><span class="small">Pileta de Cheddar (+ $4.000)</span><span class="pill-control"><button onclick="cambiar('acompanar','cheddar',-1)">−</button><span id="acompanar-cheddar">0</span><button onclick="cambiar('acompanar','cheddar',1)">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Hamburguesa Con Queso (+ $7.100)</span><span class="pill-control"><button onclick="cambiar('acompanar','burger',-1)">−</button><span id="acompanar-burger">0</span><button onclick="cambiar('acompanar','burger',1)">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Papas Fritas Grandes (+ $5.300)</span><span class="pill-control"><button onclick="cambiar('acompanar','papas',-1)">−</button><span id="acompanar-papas">0</span><button onclick="cambiar('acompanar','papas',1)">+</button></span></div>
+    </div>
+    <button class="btn btn-primary w-100 mt-3 py-3 fw-bold" data-vista="principal">Aceptar</button>
+  </div>
+
+  <!-- ===== VISTA CONDIMENTOS (Img 5) ===== -->
+  <div id="vista-condimentos" class="vista">
+    <div class="d-flex align-items-center mb-3">
+      <button class="btn btn-sm me-2" style="background:var(--gris-pill); width:36px; height:36px; border-radius:50%;" data-vista="principal"><i class="fa-solid fa-chevron-left"></i></button>
+      <h6 class="fw-bold mb-0 flex-grow-1 text-center">Condimentos adicionales</h6>
+      <span style="width:36px;"></span>
+    </div>
+    <p class="fw-bold small">Elige entre 0 y 2 — sin costo</p>
+    <div class="card-comi p-3">
+      <div class="fila-opcion"><span class="small">Sobre de Ketchup</span><span class="pill-control"><button onclick="cambiar('condimento','ketchup',-1)">−</button><span id="condimento-ketchup">0</span><button onclick="cambiar('condimento','ketchup',1)">+</button></span></div>
+      <div class="fila-opcion"><span class="small">Sobre de Mayonesa</span><span class="pill-control"><button onclick="cambiar('condimento','mayonesa',-1)">−</button><span id="condimento-mayonesa">0</span><button onclick="cambiar('condimento','mayonesa',1)">+</button></span></div>
+    </div>
+    <button class="btn btn-primary w-100 mt-3 py-3 fw-bold" data-vista="principal">Aceptar</button>
+  </div>
+
+  <!-- ===== VISTA CARRITO / DETALLE ===== -->
+  <div id="vista-carrito" class="vista">
+    <h6 class="fw-bold mb-3">Cómo se ve en Carrito y Detalle del pedido</h6>
+
+    <!-- ItemCarrito mock -->
+    <div class="card-comi mb-3">
+      <div class="p-3">
+        <div class="d-flex gap-3 align-items-center">
+          <img src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=200&h=150&fit=crop" class="rounded-3" style="width:70px; height:70px; object-fit:cover;">
+          <div class="flex-grow-1">
+            <div class="fw-bold small">Grand Doble McBacon</div>
+            <div class="text-muted small">Precio base: $18.100</div>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold precio-destacado" id="carrito-total">$18.100</div>
+            <div class="text-muted small" id="carrito-cantidad">x1</div>
+          </div>
+        </div>
+        <hr style="border-color:var(--borde-card); opacity:1;">
+        <div id="carrito-desglose" class="desglose">
+          <em class="text-muted">Sin extras aún — agregá desde Extra / Acompañar</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- ResumenPedido mock -->
+    <div class="card-comi mb-3">
+      <div class="p-3 border-bottom" style="border-color:var(--borde-card) !important;">
+        <strong class="small">Resumen del Pedido</strong>
+      </div>
+      <div class="p-3">
+        <div class="d-flex justify-content-between small mb-2"><span class="text-muted">Subtotal</span><strong id="resumen-subtotal">$18.100</strong></div>
+        <div class="d-flex justify-content-between small mb-2"><span class="text-muted">Envío</span><strong class="text-success">Gratis</strong></div>
+        <hr style="border-color:var(--borde-card); opacity:1;">
+        <div class="d-flex justify-content-between align-items-center"><strong>Total</strong><strong class="precio-destacado" id="resumen-total">$18.100</strong></div>
+        <div class="mt-3 p-3" style="background:var(--crema-card); border:2px solid var(--borde-card); border-radius:12px;">
+          <span class="d-block text-uppercase fw-bold" style="font-size:.7rem; color:var(--naranja); letter-spacing:1px;">Sucursal asignada</span>
+          <strong class="d-block small">Sucursal Centro</strong><span class="text-muted small">Av. Principal 123</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle tabla mock -->
+    <div class="card-comi">
+      <div class="p-3 border-bottom" style="border-color:var(--borde-card) !important;">
+        <strong class="small">Detalle — Pedido #1042</strong> <span class="badge bg-success ms-2">Confirmado</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.85rem;">
+          <thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead>
+          <tbody id="tabla-detalle">
+            <tr><td>Grand Doble McBacon</td><td>1</td><td>$18.100</td><td>$18.100</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-3">
+        <div id="detalle-desglose" class="desglose small"></div>
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top" style="border-color:var(--borde-card) !important;">
+          <strong>Total</strong><strong class="precio-destacado" id="detalle-total">$18.100</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert mt-3 py-2 small" style="background:var(--crema); border-color:var(--crema-borde); color:var(--naranja-osc);">
+      <i class="fa-solid fa-circle-info me-1"></i> En el código real esto se renderiza en <code>ItemCarrito.jsx</code>, <code>ResumenPedido.jsx</code>, <code>DetallePedido.jsx:96</code> y <code>MisPedidos.jsx:64</code>.
+    </div>
+  </div>
+
+  <p class="text-center text-muted mt-4" style="font-size:.75rem;">Mockup estático — abrir con doble click. No modifica la app. Para implementar ver <code>documentacion/plan-personalizacion-producto.md</code></p>
+</div>
+
+<script>
+// ===== Estado =====
+const PRECIOS = {
+  extra:{ tomate:2000, bacon:2700, cheddar:2000 },
+  acompanar:{ cheddar:4000, burger:7100, papas:5300 },
+};
+const NOMBRES = {
+  extra:{ tomate:'Tomate', bacon:'Bacon', cheddar:'Queso Cheddar en fetas' },
+  acompanar:{ cheddar:'Pileta de Cheddar', burger:'Hamburguesa Con Queso', papas:'Papas Fritas Grandes' },
+  condimento:{ ketchup:'Sobre de Ketchup', mayonesa:'Sobre de Mayonesa' },
+  sin:{ pan:'Pan XL', mostaza:'Mostaza', ketchup:'Ketchup', cebolla:'Cebolla', bacon:'Bacon', queso:'Queso Cheddar en fetas', carne:'Carne' }
+};
+let state = {
+  unidades:1, base:18100,
+  extra:{ tomate:0, bacon:0, cheddar:0 },
+  acompanar:{ cheddar:0, burger:0, papas:0 },
+  condimento:{ ketchup:0, mayonesa:0 },
+  sin:{ pan:0, mostaza:0, ketchup:0, cebolla:0, bacon:0, queso:0, carne:0 }
+};
+
+function formatPrice(n){ return '$' + n.toLocaleString('es-AR'); }
+
+function cambiar(grupo,key,delta){
+  let v = state[grupo][key] + delta;
+  v = Math.max(0, Math.min(6, v));
+  if(grupo==='acompanar') v = Math.max(0, Math.min(3, v));
+  if(grupo==='condimento') v = Math.max(0, Math.min(2, v));
+  state[grupo][key]=v;
+  document.getElementById(grupo+'-'+key).textContent=v;
+  actualizar();
+}
+function toggleSin(key){
+  state.sin[key] = state.sin[key] ? 0 : 1;
+  document.getElementById('sin-'+key).textContent = state.sin[key];
+  actualizar();
+}
+function cambiarUnidades(d){
+  state.unidades = Math.max(1, Math.min(20, state.unidades + d));
+  document.getElementById('unidades').textContent = state.unidades;
+  document.getElementById('cta-unidades').textContent = state.unidades;
+  actualizar();
+}
+function calcularTotal(){
+  let extras = Object.entries(state.extra).reduce((s,[k,v])=> s + PRECIOS.extra[k]*v, 0);
+  let acomp = Object.entries(state.acompanar).reduce((s,[k,v])=> s + PRECIOS.acompanar[k]*v, 0);
+  return (state.base + extras + acomp) * state.unidades;
+}
+function actualizar(){
+  const total = calcularTotal();
+  document.getElementById('cta-total').textContent = formatPrice(total);
+  document.getElementById('carrito-total').textContent = formatPrice(total);
+  document.getElementById('carrito-cantidad').textContent = 'x'+state.unidades;
+  document.getElementById('resumen-subtotal').textContent = formatPrice(total);
+  document.getElementById('resumen-total').textContent = formatPrice(total);
+  document.getElementById('detalle-total').textContent = formatPrice(total);
+
+  // badges principal
+  const extraCount = Object.values(state.extra).reduce((a,b)=>a+b,0);
+  const extraCosto = Object.entries(state.extra).reduce((s,[k,v])=> s + PRECIOS.extra[k]*v, 0);
+  document.getElementById('badge-extra').textContent = extraCount ? `${extraCount} seleccionados (+${formatPrice(extraCosto*state.unidades)})` : '—';
+  document.getElementById('badge-extra').style.color = extraCount ? 'var(--verde)' : '';
+
+  const sinCount = Object.values(state.sin).reduce((a,b)=>a+b,0);
+  const sinNombres = Object.entries(state.sin).filter(([,v])=>v).map(([k])=> NOMBRES.sin[k]);
+  document.getElementById('badge-personalizar').textContent = sinCount ? sinNombres.join(', ') : '—';
+  document.getElementById('badge-personalizar').style.color = sinCount ? 'var(--naranja-osc)' : '';
+
+  const acompCount = Object.values(state.acompanar).reduce((a,b)=>a+b,0);
+  const acompCosto = Object.entries(state.acompanar).reduce((s,[k,v])=> s + PRECIOS.acompanar[k]*v, 0);
+  document.getElementById('badge-acompanar').textContent = acompCount ? `${acompCount} seleccionados (+${formatPrice(acompCosto*state.unidades)})` : '—';
+  document.getElementById('badge-acompanar').style.color = acompCount ? 'var(--verde)' : '';
+
+  const condCount = Object.values(state.condimento).reduce((a,b)=>a+b,0);
+  const condNombres = Object.entries(state.condimento).filter(([,v])=>v).map(([k,v])=> `${NOMBRES.condimento[k]} x${v}`);
+  document.getElementById('badge-condimentos').textContent = condCount ? condNombres.join(', ') : '—';
+
+  // desglose carrito
+  let html='';
+  Object.entries(state.extra).forEach(([k,v])=>{ if(v) html += `<div>› Extra: ${NOMBRES.extra[k]} (+${formatPrice(PRECIOS.extra[k])}) x${v}</div>`; });
+  Object.entries(state.acompanar).forEach(([k,v])=>{ if(v) html += `<div>› Acompañamiento: ${NOMBRES.acompanar[k]} (+${formatPrice(PRECIOS.acompanar[k])}) x${v}</div>`; });
+  Object.entries(state.sin).forEach(([k,v])=>{ if(v) html += `<div>› <strong>Sin ${NOMBRES.sin[k]}</strong></div>`; });
+  Object.entries(state.condimento).forEach(([k,v])=>{ if(v) html += `<div>› ${NOMBRES.condimento[k]} x${v} <span class="text-muted">(sin costo)</span></div>`; });
+  document.getElementById('carrito-desglose').innerHTML = html || '<em class="text-muted">Sin extras aún — agregá desde Extra / Acompañar</em>';
+  document.getElementById('detalle-desglose').innerHTML = html ? `<div class="mt-2 p-2 rounded" style="background:var(--crema-card); border:1px solid var(--borde-card);">${html}</div>` : '';
+
+  // tabla detalle precio unitario
+  let unit = state.base + Object.entries(state.extra).reduce((s,[k,v])=> s+PRECIOS.extra[k]*v,0) + Object.entries(state.acompanar).reduce((s,[k,v])=> s+PRECIOS.acompanar[k]*v,0);
+  document.getElementById('tabla-detalle').innerHTML = `<tr><td>Grand Doble McBacon</td><td>${state.unidades}</td><td>${formatPrice(unit)}</td><td>${formatPrice(total)}</td></tr>`;
+}
+
+// navegación vistas
+document.querySelectorAll('[data-vista]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const v = btn.getAttribute('data-vista');
+    document.querySelectorAll('.vista').forEach(el=> el.classList.remove('activa'));
+    document.getElementById('vista-'+v).classList.add('activa');
+    document.querySelectorAll('.tab-btn').forEach(b=> b.classList.remove('active','btn-primary'), b.classList.add('btn-outline-secondary'));
+    const tab = document.querySelector(`.tab-btn[data-vista="${v}"]`);
+    if(tab){ tab.classList.add('active','btn-primary'); tab.classList.remove('btn-outline-secondary'); }
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+});
+actualizar();
+</script>
+</body>
+</html>
