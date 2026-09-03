@@ -21,6 +21,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   // Estado de carga
   const [loading, setLoading] = useState(false);
+  // Indica si ya se verificó localStorage al cargar la app
+  const [hydrated, setHydrated] = useState(false);
 
   /**
    * Inicia sesión como cliente.
@@ -118,6 +120,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('user');
       }
     }
+    setHydrated(true);
   }, []);
 
   // Verificar si el usuario está autenticado
@@ -134,6 +137,7 @@ export const AuthProvider = ({ children }) => {
     () => ({
       user,
       loading,
+      hydrated,
       isAuthenticated,
       isAdmin,
       isCliente,
@@ -143,7 +147,7 @@ export const AuthProvider = ({ children }) => {
       registerAdmin,
       logout,
     }),
-    [user, loading, isAuthenticated, isAdmin, isCliente, login, loginAdministrador, register, registerAdmin, logout]
+    [user, loading, hydrated, isAuthenticated, isAdmin, isCliente, login, loginAdministrador, register, registerAdmin, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
