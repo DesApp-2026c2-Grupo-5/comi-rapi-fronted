@@ -65,8 +65,12 @@
     font-size: 0.85rem;
   }
 
+  /* Botones compactos en móvil (sin el tamaño "lg" de escritorio) */
   .btn-historial-avanzar,
   .btn-historial-cancelar {
     width: 100%;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.2px;
   }
 }

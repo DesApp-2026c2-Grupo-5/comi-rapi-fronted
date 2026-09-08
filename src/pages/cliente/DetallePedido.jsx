@@ -15,6 +15,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
+import { calcularCostoEnvio } from '../../services/envio';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import HistorialStepper from '../../components/comunes/HistorialStepper';
 import './DetallePedido.css';
@@ -40,6 +41,9 @@ const DetallePedido = () => {
   }
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
+  // Costo de envío guardado en el pedido (los seed más viejos lo calculan).
+  const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
+  const totalConEnvio = pedido.total + costoEnvio;
 
   return (
     <Container className="py-5">
@@ -127,10 +131,18 @@ const DetallePedido = () => {
             </tbody>
           </Table>
 
-          {/* Total destacado */}
-          <div className="detalle-total mt-4 mb-4">
+          {/* Total destacado (subtotal + envío) */}
+          <div className="detalle-subtotal-envio mt-4 mb-2">
+            <span>Subtotal</span>
+            <span>{formatPrice(pedido.total)}</span>
+          </div>
+          <div className="detalle-subtotal-envio mb-2">
+            <span>Envío</span>
+            <span>{costoEnvio === 0 ? 'Gratis' : formatPrice(costoEnvio)}</span>
+          </div>
+          <div className="detalle-total mt-2 mb-4">
             <span>Total</span>
-            <span className="text-danger">{formatPrice(pedido.total)}</span>
+            <span className="text-danger">{formatPrice(totalConEnvio)}</span>
           </div>
 
           {/* Stepper de estados (mismo visual que el admin) */}

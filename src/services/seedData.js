@@ -100,6 +100,7 @@ export const productosMock = [
 // Datos mock de categorías (MOCK - reemplazar con llamadas a la API en producción)
 export const categoriasMock = [
   { id: 1, nombre: 'Hamburguesas', descripcion: 'Nuestras deliciosas hamburguesas' },
+  { id: 6, nombre: 'Pizzas', descripcion: 'Pizzas artesanales al horno de barro' },
   { id: 2, nombre: 'Combos', descripcion: 'Combos con papas y bebida' },
   { id: 3, nombre: 'Papas', descripcion: 'Papas fritas para compartir' },
   { id: 4, nombre: 'Bebidas', descripcion: 'Bebidas frías y calientes' },
@@ -200,6 +201,22 @@ export const pedidosMock = [
     fecha: '2026-08-25T19:00:00Z',
     historialEstados: [
       { estado: 'pendiente', fecha: '2026-08-25T19:00:00Z' },
+    ],
+  },
+  {
+    id: 4,
+    cliente: 'cliente@test.com',
+    productos: [
+      { nombre: 'Pizza Muzzarella', cantidad: 1, precio: 2500 },
+      { nombre: 'Papas Fritas Grandes', cantidad: 2, precio: 900 },
+    ],
+    total: 4300,
+    sucursal: { id: 3, nombre: 'Sucursal Sur', direccion: 'Av. Sur 789' },
+    estado: 'confirmado',
+    fecha: '2026-08-26T13:20:00Z',
+    historialEstados: [
+      { estado: 'pendiente', fecha: '2026-08-26T13:20:00Z' },
+      { estado: 'confirmado', fecha: '2026-08-26T13:25:00Z' },
     ],
   },
 ];

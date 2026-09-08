@@ -5,7 +5,7 @@
  * Uso: import { puedeTransicionar, obtenerEstadosSiguientes } from '../services/estadosPedido';
  *
  * Flujo permitido:
- *   pendiente        → confirmado | cancelado
+ *   pendiente        → (sin acciones del admin; el pago/backend lo pasa a confirmado)
  *   confirmado       → en_preparacion | cancelado
  *   en_preparacion   → listo_para_entregar | cancelado
  *   listo_para_entregar → en_camino | cancelado
@@ -17,8 +17,10 @@
 import { ESTADOS_PEDIDO } from '../utils/constants';
 
 // Mapa de transiciones válidas por estado actual.
+// PENDIENTE no tiene transiciones para el admin: el paso a CONFIRMADO lo realiza el
+// pago del cliente (context/PedidoContext.confirmarPedido) / el backend en el futuro.
 const transiciones = {
-  [ESTADOS_PEDIDO.PENDIENTE]: [ESTADOS_PEDIDO.CONFIRMADO, ESTADOS_PEDIDO.CANCELADO],
+  [ESTADOS_PEDIDO.PENDIENTE]: [],
   [ESTADOS_PEDIDO.CONFIRMADO]: [ESTADOS_PEDIDO.EN_PREPARACION, ESTADOS_PEDIDO.CANCELADO],
   [ESTADOS_PEDIDO.EN_PREPARACION]: [ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR, ESTADOS_PEDIDO.CANCELADO],
   [ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR]: [ESTADOS_PEDIDO.EN_CAMINO, ESTADOS_PEDIDO.CANCELADO],

@@ -148,6 +148,16 @@
   font-weight: 900;
 }
 
+/* ============ Desglose Subtotal / Envío ============ */
+.detalle-subtotal-envio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #8a8680;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
 /* ============ Estado "no encontrado" ============ */
 .detalle-no-encontrado {
   font-weight: 900;

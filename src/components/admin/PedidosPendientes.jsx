@@ -26,10 +26,10 @@ import './PedidosPendientes.css';
 
 const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDIDO.CANCELADO);
 
-// Acción amigable para el botón de avance según el próximo estado
+// Acción amigable para el botón de avance según el próximo estado.
+// Los pedidos en PENDIENTE no tienen acciones (el pago/backend los confirma).
 const ACCIONES_SIGUIENTE = {
-  [ESTADOS_PEDIDO.CONFIRMADO]: 'Confirmar pedido',
-  [ESTADOS_PEDIDO.EN_PREPARACION]: 'Iniciar preparación',
+  [ESTADOS_PEDIDO.EN_PREPARACION]: 'Iniciar Preparación',
   [ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR]: 'Marcar listo para entregar',
   [ESTADOS_PEDIDO.EN_CAMINO]: 'Enviar al repartidor',
   [ESTADOS_PEDIDO.ENTREGADO]: 'Confirmar entrega',
@@ -84,49 +84,52 @@ const PedidosPendientes = () => {
               <p className="fw-bold text-danger mb-2">Total: {formatPrice(pedido.total)}</p>
 
               {/* Stepper visual + acciones de un clic */}
-              <div className="historial-box">
-                <span className="historial-titulo">Progreso del pedido</span>
-                <HistorialStepper
-                  pedido={pedido}
-                  onCambiar={(estadoDestino) => handleCambiarEstado(pedido, estadoDestino)}
-                />
+<div className="historial-box">
+                  <span className="historial-titulo">Progreso del pedido</span>
+                  <HistorialStepper
+                    pedido={pedido}
+                    onCambiar={(estadoDestino) => handleCambiarEstado(pedido, estadoDestino)}
+                  />
 
-                <div className="historial-acciones">
-                  {principal ? (
-                    <>
-                      <span className="historial-acciones-ayuda">Avanzá el pedido con un clic:</span>
-                      <Button
-                        size="lg"
-                        className="btn-historial-avanzar"
-                        onClick={() => handleCambiarEstado(pedido, principal)}
-                      >
-                        {ACCIONES_SIGUIENTE[principal] ||
-                          `Pasar a ${ETIQUETAS_ESTADO_PEDIDO[principal]}`}
-                        <FaArrowRight className="ms-2" aria-hidden="true" />
-                      </Button>
-                    </>
-                  ) : (
-                    <span className="text-muted">
-                      {esCancelado
-                        ? 'Este pedido fue cancelado.'
-                        : pedido.estado === ESTADOS_PEDIDO.ENTREGADO
-                          ? 'Pedido finalizado.'
-                          : 'Estado final: no hay más transiciones.'}
-                    </span>
-                  )}
-                  {puedeCancelar && (
-                    <Button
-                      size="lg"
-                      variant="outline-danger"
-                      className="btn-historial-cancelar"
-                      onClick={() => handleCambiarEstado(pedido, ESTADOS_PEDIDO.CANCELADO)}
-                    >
-                      <FaTimesCircle className="me-2" aria-hidden="true" />
-                      Cancelar pedido
-                    </Button>
+                  {/* Los pedidos en PENDIENTE no exponen acciones: el pago/backend los confirma */}
+                  {pedido.estado !== ESTADOS_PEDIDO.PENDIENTE && (
+                    <div className="historial-acciones">
+                      {principal ? (
+                        <>
+                          <span className="historial-acciones-ayuda">Avanzá el pedido con un clic:</span>
+                          <Button
+                            size="lg"
+                            className="btn-historial-avanzar"
+                            onClick={() => handleCambiarEstado(pedido, principal)}
+                          >
+                            {ACCIONES_SIGUIENTE[principal] ||
+                              `Pasar a ${ETIQUETAS_ESTADO_PEDIDO[principal]}`}
+                            <FaArrowRight className="ms-2" aria-hidden="true" />
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-muted">
+                          {esCancelado
+                            ? 'Este pedido fue cancelado.'
+                            : pedido.estado === ESTADOS_PEDIDO.ENTREGADO
+                              ? 'Pedido finalizado.'
+                              : 'Estado final: no hay más transiciones.'}
+                        </span>
+                      )}
+                      {puedeCancelar && (
+                        <Button
+                          size="lg"
+                          variant="outline-danger"
+                          className="btn-historial-cancelar"
+                          onClick={() => handleCambiarEstado(pedido, ESTADOS_PEDIDO.CANCELADO)}
+                        >
+                          <FaTimesCircle className="me-2" aria-hidden="true" />
+                          Cancelar pedido
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
             </Card.Body>
           </Card>
         );

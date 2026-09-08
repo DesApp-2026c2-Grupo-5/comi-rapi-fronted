@@ -50,6 +50,7 @@ export const PedidoProvider = ({ children }) => {
       cliente: datosPedido.cliente,
       productos: datosPedido.productos,
       total: datosPedido.total,
+      costoEnvio: datosPedido.costoEnvio || 0,
       direccion: datosPedido.direccion,
       sucursal: sucursalAsignada,
       estado: ESTADOS_PEDIDO.PENDIENTE,

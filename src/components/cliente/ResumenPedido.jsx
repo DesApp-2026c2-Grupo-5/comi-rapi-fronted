@@ -4,24 +4,26 @@
  * Contenido: Componente ResumenPedido usando Card y Button de Bootstrap.
  * Dependencias: react-bootstrap (Card, Button), useCarrito hook, formatters.js, ResumenPedido.css.
  * Uso:
- *   En el carrito: <ResumenPedido onConfirmar={handler} />
- *   En la confirmación: <ResumenPedido items={productos} total={total} sucursal={sucursal} />
- *
- * CAMBIOS REALIZADOS:
- *  - El componente ahora acepta props opcionales (items, total, sucursal). Si no se pasan,
- *    usa los datos del carrito (comportamiento original del carrito).
- *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
- *  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
- *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
- */
+*   En el carrito: <ResumenPedido onConfirmar={handler} />
+  *   En la confirmación: <ResumenPedido items={productos} total={total} sucursal={sucursal} />
+  *
+  * CAMBIOS REALIZADOS:
+  *  - El componente ahora acepta props opcionales (items, total, sucursal). Si no se pasan,
+  *    usa los datos del carrito (comportamiento original del carrito).
+  *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
+  *  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
+  *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
+  *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
+  */
 
 import { Card, Button } from 'react-bootstrap';
 import { FaCheckCircle } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
+import { calcularCostoEnvio } from '../../services/envio';
 import './ResumenPedido.css';
 
-const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucursal }) => {
+const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucursal, botonTexto = 'Confirmar Pedido' }) => {
   const { items, total } = useCarrito();
 
   // Prioriza los datos recibidos por props (modo confirmación/lectura) sobre los del carrito.
@@ -30,8 +32,8 @@ const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucurs
 
   if (productos.length === 0) return null;
 
-  // MOCK - reemplazar por el cálculo real del envío cuando exista el backend.
-  const costoEnvio = montoTotal >= 10000 ? 0 : 350;
+  // Costo de envío según las reglas del servicio (MOCK - backend lo calculará).
+  const costoEnvio = calcularCostoEnvio(montoTotal);
 
   return (
     <Card className="resumen-card">
@@ -79,7 +81,7 @@ const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucurs
         <Card.Body className="pt-0">
           <Button className="resumen-boton w-100" size="lg" onClick={onConfirmar}>
             <FaCheckCircle aria-hidden="true" />
-            Confirmar Pedido
+            {botonTexto}
           </Button>
         </Card.Body>
       )}

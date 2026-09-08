@@ -12,8 +12,9 @@
  *   2. Se obtienen los pedidos pendientes (PedidoContext).
  *   3. Se ejecuta asignarSucursalOptima() → sucursal con MENOS pedidos pendientes.
  *   4. Se crea el pedido con estado PENDIENTE y la sucursal asignada.
- *   5. Se simula el pago → estado pasa a CONFIRMADO automáticamente.
- *   6. Se redirige a la página de confirmación.
+ *   5. Se redirige a la pantalla de pago (/cliente/pago) para elegir el método.
+ *   6. Si se sale del carrito sin pagar, al volver se muestra "Ir a Pagar" en lugar
+ *      de "Confirmar Pedido" (el pedido sigue PENDIENTE hasta abonar).
  */
 
 import { useMemo } from 'react';
@@ -26,6 +27,8 @@ import { usePedidos } from '../../hooks/usePedidos';
 import { useAuth } from '../../hooks/useAuth';
 import { useDirecciones } from '../../hooks/useDirecciones';
 import { asignarSucursalOptima } from '../../services/asignacionSucursal';
+import { calcularCostoEnvio } from '../../services/envio';
+import { ESTADOS_PEDIDO } from '../../utils/constants';
 import ItemCarrito from '../../components/cliente/ItemCarrito';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import './Carrito.css';
@@ -33,10 +36,13 @@ import './Carrito.css';
 const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
   const { sucursales } = useSucursal();
-  const { crearPedido, confirmarPedido, obtenerPedidosPendientes } = usePedidos();
+  const { crearPedido, obtenerPedidosPendientes, pedidoActual } = usePedidos();
   const { user } = useAuth();
   const { obtenerDireccionPrincipal } = useDirecciones();
   const navigate = useNavigate();
+
+  // Si hay un pedido PENDIENTE sin pagar, el carrito ofrece "Ir a Pagar"
+  const tienePagoPendiente = pedidoActual?.estado === ESTADOS_PEDIDO.PENDIENTE;
 
   // Dirección principal del cliente (se usa automáticamente al confirmar)
   const direccionPrincipal = useMemo(
@@ -66,8 +72,9 @@ const Carrito = () => {
       return;
     }
 
-    // 4. Crear el pedido con la sucursal asignada y la dirección del cliente (estado inicial PENDIENTE)
-    const nuevoPedido = crearPedido(
+    // 4. Crear el pedido con la sucursal asignada, la dirección del cliente y el costo de
+    //    envío calculado (estado inicial PENDIENTE)
+    crearPedido(
       {
         cliente: user?.email || 'cliente@test.com',
         productos: items.map((item) => ({
@@ -81,17 +88,19 @@ const Carrito = () => {
           condimentos: item.personalizacion?.condimentos || [],
         })),
         total,
+        costoEnvio: calcularCostoEnvio(total),
         direccion,
       },
       sucursalAsignada
     );
 
-    // 5. Simular pago: confirmar automáticamente (PENDIENTE → CONFIRMADO)
-    confirmarPedido(nuevoPedido.id);
+    // 5. Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
+    navigate('/cliente/pago');
+  };
 
-    // 6. Redirigir a la confirmación
-    vaciarCarrito();
-    navigate('/cliente/confirmacion');
+  // Ya hay un pedido PENDIENTE sin pagar: se retoma el pago directamente
+  const handleIrAPagar = () => {
+    navigate('/cliente/pago');
   };
 
   const irAlCatalogo = () => {
@@ -149,7 +158,10 @@ const Carrito = () => {
 
           {/* Resumen del pedido */}
           <Col lg={4}>
-            <ResumenPedido onConfirmar={handleConfirmarPedido} />
+            <ResumenPedido
+              onConfirmar={tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido}
+              botonTexto={tienePagoPendiente ? 'Ir a Pagar' : 'Confirmar Pedido'}
+            />
           </Col>
         </Row>
       )}

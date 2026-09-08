@@ -1,0 +1,74 @@
+/**
+ * Propósito: CSS extra de la página de pago, alineado con el estilo de Comi-Rapi.
+ * Contenido: Icono de estado, opciones de pago (Mercado Pago y Tarjeta) y aviso de procesamiento.
+ * Dependencias: Pago.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/pages/cliente/Pago.jsx.
+ */
+
+/* ============ Icono de estado del pedido ============ */
+.pago-icono-estado {
+  width: 70px;
+  height: 70px;
+}
+
+/* ============ Opciones de pago ============ */
+.pago-opcion {
+  --bs-btn-color: #2b2b2b;
+  --bs-btn-hover-transform: translateY(-2px);
+  min-height: 160px;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-radius: 16px;
+  border: 2px solid #f1c27d;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+  padding: 1.25rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.pago-opcion:hover {
+  transform: translateY(-2px);
+}
+
+.pago-opcion-ico {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.pago-opcion-desc {
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/* Mercado Pago: estilo celeste de la marca */
+.pago-opcion-mp {
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: #009ee3;
+  --bs-btn-color: #009ee3;
+  --bs-btn-hover-bg: #009ee3;
+  --bs-btn-hover-border-color: #009ee3;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #0079b8;
+  --bs-btn-active-border-color: #0079b8;
+  --bs-btn-active-color: #fff;
+}
+
+/* Tarjeta: estilo naranja de la marca */
+.pago-opcion-tarjeta {
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: #ff9f1c;
+  --bs-btn-color: #b55d00;
+  --bs-btn-hover-bg: #ff9f1c;
+  --bs-btn-hover-border-color: #ff9f1c;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #e88900;
+  --bs-btn-active-border-color: #e88900;
+  --bs-btn-active-color: #fff;
+}
+
+/* ============ Aviso de procesamiento ============ */
+.pago-procesando {
+  border: 2px dashed #f1c27d;
+  border-radius: 16px;
+}

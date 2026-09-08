@@ -9,7 +9,17 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Componentes comunes
-import ProtectedRoute from '../components/comunes/ProtectedRoute';
+import ProtectedRoute, { PublicOnlyRoute, destinoPorRol } from '../components/comunes/ProtectedRoute';
+import { useAuth } from '../hooks/useAuth';
+
+// Redirige a /login si no hay sesión, o al inicio del usuario si ya está autenticado
+const RootRedirect = () => {
+  const { isAuthenticated, user, hydrated } = useAuth();
+
+  if (!hydrated) return null;
+
+  return <Navigate to={isAuthenticated ? destinoPorRol(user) : '/login'} replace />;
+};
 
 // Páginas públicas
 import Login from '../pages/comunes/Login';
@@ -21,6 +31,7 @@ import AdminRegister from '../pages/admin/AdminRegister';
 import Inicio from '../pages/cliente/Inicio';
 import Catalogo from '../pages/cliente/Catalogo';
 import Carrito from '../pages/cliente/Carrito';
+import Pago from '../pages/cliente/Pago';
 import ConfirmacionPedido from '../pages/cliente/ConfirmacionPedido';
 import MisPedidos from '../pages/cliente/MisPedidos';
 import DetallePedido from '../pages/cliente/DetallePedido';
@@ -43,20 +54,23 @@ import EditarSucursal from '../pages/admin/EditarSucursal';
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Redirección raíz → login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Redirección raíz: según estado de sesión */}
+      <Route path="/" element={<RootRedirect />} />
 
-      {/* Rutas públicas */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<Registro />} />
-      <Route path="/admin-login" element={<AdminLogin />} />
-      <Route path="/admin-registro" element={<AdminRegister />} />
+      {/* Rutas públicas (solo accesibles sin sesión) */}
+      <Route element={<PublicOnlyRoute />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Registro />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/admin-registro" element={<AdminRegister />} />
+      </Route>
 
       {/* Rutas protegidas de cliente */}
       <Route element={<ProtectedRoute requiredRole="CLIENTE" />}>
         <Route path="/cliente/inicio" element={<Inicio />} />
         <Route path="/cliente/catalogo" element={<Catalogo />} />
         <Route path="/cliente/carrito" element={<Carrito />} />
+        <Route path="/cliente/pago" element={<Pago />} />
         <Route path="/cliente/confirmacion" element={<ConfirmacionPedido />} />
         <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />
         <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
@@ -75,8 +89,8 @@ const AppRoutes = () => {
         <Route path="/admin/sucursal/editar/:id" element={<EditarSucursal />} />
       </Route>
 
-      {/* Ruta 404 - redirige a login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Ruta 404 - redirige según estado de sesión */}
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 };

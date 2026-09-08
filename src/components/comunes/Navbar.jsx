@@ -7,7 +7,7 @@
  * Uso: <Navbar /> - Se renderiza en todas las páginas autenticadas.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Navbar as BSNavbar, Nav, Container, Button } from 'react-bootstrap';
 import {
@@ -46,8 +46,10 @@ const enlacesAdmin = [
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
 
   const handleLogout = () => {
+    setExpanded(false);
     logout();
     navigate('/login');
   };
@@ -60,9 +62,20 @@ const Navbar = () => {
   const enlaces = isCliente ? enlacesCliente : isAdmin ? enlacesAdmin : [];
 
   return (
-    <BSNavbar expand="lg" sticky="top" className="navbar-comirapi">
+    <BSNavbar
+      expand="lg"
+      sticky="top"
+      className="navbar-comirapi"
+      expanded={expanded}
+      onToggle={(nuevoEstado) => setExpanded(nuevoEstado)}
+    >
       <Container>
-        <BSNavbar.Brand as={NavLink} to={destinoInicio} className="navbar-brand-comirapi">
+        <BSNavbar.Brand
+          as={NavLink}
+          to={destinoInicio}
+          className="navbar-brand-comirapi"
+          onClick={() => setExpanded(false)}
+        >
           <FaHamburger className="brand-ico" />
           Comi-Rapi
         </BSNavbar.Brand>
@@ -75,6 +88,7 @@ const Navbar = () => {
                   to={to}
                   end
                   className={({ isActive }) => (isActive ? 'nav-enlace activo' : 'nav-enlace')}
+                  onClick={() => setExpanded(false)}
                 >
                   <Icono className="nav-enlace-ico" aria-hidden="true" />
                   {etiqueta}

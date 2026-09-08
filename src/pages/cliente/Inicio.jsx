@@ -10,7 +10,7 @@
  *  1. Hero: fondo #FF9F1C, "COMI"/"RAPI" en blanco + hamburguesa flotante centrada
  *     (no se superponen porque cada uno ocupa una columna propia en filas del Row).
  *     Badge de Google Play abajo a la izquierda y botón ORDENAR abajo a la derecha.
- *  2. Categorías: 5 cards circulares (Hamburguesas, Combos, Papas, Bebidas, Postres).
+ *  2. Categorías: 6 cards circulares (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
  *  3. Favoritos de la semana: 3 products reutilizando <ProductoCard /> para
  *     mantener un estilo idéntico con el catálogo.
  *  4. Envío a domicilio: fondo naranja, título, subtítulo y botón "PIDE AHORA" con bicicleta.
@@ -29,14 +29,15 @@ const Inicio = () => {
   // MOCK - reemplazar por llamada a la API de categorías.
   const categorias = [
     { id: 1, nombre: 'Hamburguesas', imagen: 'https://via.placeholder.com/150/C0392B/FFF?text=Hamburguesas' },
-    { id: 2, nombre: 'Combos', imagen: 'https://via.placeholder.com/150/F39C12/FFF?text=Combos' },
-    { id: 3, nombre: 'Papas', imagen: 'https://via.placeholder.com/150/F1C40F/FFF?text=Papas' },
-    { id: 4, nombre: 'Bebidas', imagen: 'https://via.placeholder.com/150/3498DB/FFF?text=Bebidas' },
-    { id: 5, nombre: 'Postres', imagen: 'https://via.placeholder.com/150/E91E63/FFF?text=Postres' },
+    { id: 2, nombre: 'Pizzas', imagen: 'https://via.placeholder.com/150/E74C3C/FFF?text=Pizzas' },
+    { id: 3, nombre: 'Combos', imagen: 'https://via.placeholder.com/150/F39C12/FFF?text=Combos' },
+    { id: 4, nombre: 'Papas', imagen: 'https://via.placeholder.com/150/F1C40F/FFF?text=Papas' },
+    { id: 5, nombre: 'Bebidas', imagen: 'https://via.placeholder.com/150/3498DB/FFF?text=Bebidas' },
+    { id: 6, nombre: 'Postres', imagen: 'https://via.placeholder.com/150/E91E63/FFF?text=Postres' },
   ];
 
   // MOCK - favoritos de la semana elegidos del seed de productos.
-  const favoritos = productosMock.filter((p) => [1, 3, 5].includes(p.id));
+  const favoritos = productosMock.filter((p) => [1, 3, 4].includes(p.id));
 
   // MODIFICADO: Icono de bicicleta (SVG inline, sin dependencias extra).
   const BicicletaIcon = () => (
@@ -147,8 +148,11 @@ const Inicio = () => {
           <h2 className="seccion-titulo mb-4">NUESTRAS CATEGORÍAS</h2>
           <Row className="justify-content-center">
             {categorias.map((cat) => (
-              <Col key={cat.id} xs={6} md={4} lg className="mb-4 text-center">
-                <Link to="/cliente/catalogo" className="categoria-enlace">
+              <Col key={cat.id} xs={6} md={4} lg={2} className="mb-4 text-center">
+                <Link
+                  to={`/cliente/catalogo?categoria=${encodeURIComponent(cat.nombre)}`}
+                  className="categoria-enlace"
+                >
                   <div className="categoria-circulo">
                     <img src={cat.imagen} alt={cat.nombre} />
                   </div>

@@ -8,32 +8,43 @@
  *
  * CAMBIOS REALIZADOS:
  *  - Título grande "Nuestro Catálogo" en tipografía bold oscura.
- *  - Filtros de categorías en forma de pills (Hamburguesas, Combos, Papas, Bebidas, Postres).
- *  - Grid responsive (3 columnas en md, 4 en lg).
- *  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
- */
+*  - Filtros de categorías en forma de pills (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
+*  - Las categorías de la home llegan por query param (?categoria=...) y se aplican al instante.
+*  - Al elegir una pill también se actualiza el query param (el filtro queda en la URL).
+*  - Grid responsive (3 columnas en md, 4 en lg).
+*  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
+*/
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert } from 'react-bootstrap';
 import { productosMock, categoriasMock } from '../../services/seedData';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Catalogo.css';
 
 const Catalogo = () => {
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todos');
-  const [productosFiltrados, setProductosFiltrados] = useState([]);
-
-  useEffect(() => {
-    if (categoriaSeleccionada === 'Todos') {
-      setProductosFiltrados(productosMock);
-    } else {
-      setProductosFiltrados(
-        productosMock.filter((p) => p.categoria === categoriaSeleccionada)
-      );
-    }
-  }, [categoriaSeleccionada]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const filtros = ['Todos', ...categoriasMock.map((c) => c.nombre)];
+
+  // Categoría activa: viene del query param (?categoria=...) o por defecto "Todos"
+  const categoriaParam = searchParams.get('categoria');
+  const categoriaSeleccionada =
+    categoriaParam && categoriasMock.some((c) => c.nombre === categoriaParam)
+      ? categoriaParam
+      : 'Todos';
+
+  const productosFiltrados = useMemo(() => {
+    if (categoriaSeleccionada === 'Todos') {
+      return productosMock;
+    }
+    return productosMock.filter((p) => p.categoria === categoriaSeleccionada);
+  }, [categoriaSeleccionada]);
+
+  // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
+  const seleccionarCategoria = (nombre) => {
+    setSearchParams(nombre === 'Todos' ? {} : { categoria: nombre }, { replace: true });
+  };
 
   return (
     <Container className="py-5">
@@ -51,7 +62,7 @@ const Catalogo = () => {
             <Button
               key={filtro}
               className={activo ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
-              onClick={() => setCategoriaSeleccionada(filtro)}
+              onClick={() => seleccionarCategoria(filtro)}
             >
               {filtro}
             </Button>
