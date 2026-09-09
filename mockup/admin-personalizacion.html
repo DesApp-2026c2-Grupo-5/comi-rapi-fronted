@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup CRUD Admin Personalización por Producto</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+  --gris-pill:#f1f1f5; --gris-text:#6c757d;
+}
+body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#2b2b2b; }
+.btn{ border-radius:999px; font-weight:600; gap:.5rem; display:inline-flex; align-items:center; justify-content:center; transition:transform .2s, box-shadow .25s; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-bg:var(--naranja); --bs-btn-border-color:var(--naranja); --bs-btn-hover-bg:var(--naranja-hover); --bs-btn-hover-border-color:var(--naranja-hover); box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.btn-success{ --bs-btn-bg:var(--verde); --bs-btn-border-color:var(--verde); --bs-btn-hover-bg:var(--verde-hover); --bs-btn-hover-border-color:var(--verde-hover); box-shadow:0 4px 12px rgba(34,197,94,.25); }
+.btn-secondary{ --bs-btn-color:var(--naranja-osc); --bs-btn-bg:var(--crema); --bs-btn-border-color:var(--crema-borde); --bs-btn-hover-bg:#ffe6c2; --bs-btn-hover-color:var(--naranja-osc); --bs-btn-hover-border-color:var(--naranja); }
+.btn-danger{ --bs-btn-bg:var(--rojo); --bs-btn-border-color:var(--rojo); }
+.btn-outline-secondary{ --bs-btn-color:#8a5a2b; --bs-btn-border-color:#d4b98f; --bs-btn-hover-bg:var(--crema); --bs-btn-hover-color:var(--naranja-osc); }
+.btn-outline-danger{ --bs-btn-color:var(--rojo); --bs-btn-border-color:var(--rojo); }
+.card-comi{ border:2px solid var(--borde-card); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.08); overflow:hidden; }
+.badge-comi{ background:var(--crema); color:var(--naranja-osc); border:1px solid var(--crema-borde); font-weight:700; }
+.badge-extra{ background:#ffc107; color:#2b2b2b; }
+.badge-acompanar{ background:var(--verde); }
+.badge-condimento{ background:#f8f9fa; color:#2b2b2b; border:1px solid #dee2e6; }
+.filtro-pill{ border-radius:50px; font-weight:600; padding:.45rem 1.1rem; font-size:.85rem; border:2px solid var(--crema-borde); background:#fff; color:#8a5a2b; cursor:pointer; }
+.filtro-pill.activo{ background:var(--naranja) !important; color:#fff !important; border-color:var(--naranja) !important; }
+.mockup-nav{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(255,250,240,.92); border-bottom:2px solid var(--borde-card); }
+.vista{ display:none; }
+.vista.activa{ display:block; animation:fade .2s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+.table-dark{ --bs-table-bg:#2b2b2b; }
+.form-control, .form-select{ border:2px solid #f1c27d; border-radius:12px; }
+.form-control:focus, .form-select:focus{ border-color:var(--naranja); box-shadow:0 0 0 .25rem rgba(255,159,28,.25); }
+.id-linea{ font-size:.68rem; background:var(--crema); border:1px solid var(--crema-borde); border-radius:999px; padding:.15rem .5rem; font-family:monospace; }
+.precio-rojo{ color:var(--rojo); font-weight:800; }
+.card-vacia{ border:2px dashed var(--crema-borde); border-radius:14px; background:var(--crema-card); }
+</style>
+</head>
+<body>
+
+<!-- Header mockup -->
+<div class="mockup-nav text-center py-3">
+  <div class="container">
+    <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP — CRUD Admin por Producto</span></span>
+    <div class="small text-muted">Gestioná <strong>Extra / Personalizar / Acompaña tu orden con / Condimentos</strong> <em>por producto</em> — <strong>Producto* obligatorio</strong> + <strong>Acompaña = selector de otro producto (editable)</strong> — estilos 100% Comi-Rapi</div>
+    <div class="mt-2 small">
+      <a href="./personalizar-producto.html" class="text-decoration-none" style="color:var(--naranja-osc)"><i class="fa-solid fa-arrow-left"></i> Modal cliente</a>
+      <span class="mx-2 text-muted">·</span>
+      <a href="./carrito-personalizado.html" class="text-decoration-none" style="color:var(--naranja-osc)">Carrito con desglose <i class="fa-solid fa-cart-shopping"></i></a>
+      <span class="mx-2 text-muted">·</span>
+      <span class="badge bg-dark">Admin</span>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4" style="max-width:1120px;">
+
+  <div class="alert py-2 small d-flex gap-2 align-items-start" style="background:var(--crema); border-color:var(--crema-borde); color:var(--naranja-osc);">
+    <i class="fa-solid fa-circle-info mt-1"></i>
+    <div>
+      <strong>Mockup interactivo — sin backend.</strong> 1) Elegí un producto arriba. 2) Filtrá por tipo con los pills. 3) Probá <em>Agregar</em> / <em>Editar</em> / <em>Eliminar</em>. Para <strong>Acompaña</strong> el precio se precarga del producto elegido y queda editable (promo). Acompañar nunca ofrece el mismo producto.
+      <br><span class="text-muted" style="font-size:.78rem;">Datos semilla: 11 productos de <code>seedData.js:9</code>. Tabla filtrada por <code>productoId</code>. Precio editable = <code>productoReferencia.precio</code> por defecto.</span>
+    </div>
+  </div>
+
+  <div class="small text-muted mb-3"><i class="fa-solid fa-location-dot me-1"></i> Ruta real: <code>/admin/personalizacion?productoId=1</code> · <code>/admin/personalizacion/nuevo</code> · <code>/admin/personalizacion/editar/:id</code></div>
+
+  <!-- ===== VISTA LISTA ===== -->
+  <div id="vista-lista" class="vista activa">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h4 class="fw-bold mb-0" style="letter-spacing:.5px;"><i class="fa-solid fa-sliders me-2" style="color:var(--naranja)"></i> Gestión de Personalización</h4>
+      <button class="btn btn-primary btn-sm px-3" id="btn-agregar-lista" onclick="irNuevo()"><i class="fa-solid fa-plus"></i> Agregar elemento</button>
+    </div>
+
+    <!-- Selector producto (obligatorio) -->
+    <div class="card-comi p-3 mb-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label fw-bold small mb-1">Producto * <span class="text-muted fw-normal">— elegí primero de qué producto son los elementos</span></label>
+          <select class="form-select" id="select-producto">
+            <option value="">— Elegí un producto —</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <div id="producto-info" class="small text-muted">
+            <i class="fa-solid fa-arrow-left me-1"></i> Seleccioná un producto para ver su tabla. Las 4 categorías viven dentro del producto.
+          </div>
+        </div>
+      </div>
+      <div class="mt-2 small" id="producto-badges"></div>
+    </div>
+
+    <!-- Filtros tipo -->
+    <div class="d-flex gap-2 flex-wrap mb-3" id="filtros-tipo">
+      <button class="filtro-pill activo" data-tipo="todos">Todos</button>
+      <button class="filtro-pill" data-tipo="extra"><i class="fa-solid fa-plus me-1"></i> Extra</button>
+      <button class="filtro-pill" data-tipo="personalizar"><i class="fa-solid fa-minus me-1"></i> Personalizar</button>
+      <button class="filtro-pill" data-tipo="acompanar"><i class="fa-solid fa-basket-shopping me-1"></i> Acompaña</button>
+      <button class="filtro-pill" data-tipo="condimento"><i class="fa-solid fa-jar me-1"></i> Condimentos</button>
+      <span class="ms-auto small text-muted align-self-center" id="contador-tipo"></span>
+    </div>
+
+    <!-- Mensaje vacío sin producto -->
+    <div id="vacio-sin-producto" class="card-vacia p-4 text-center">
+      <i class="fa-solid fa-burger fa-2x mb-2" style="color:var(--crema-borde)"></i>
+      <div class="fw-bold">Seleccioná un producto</div>
+      <div class="small text-muted">Los elementos varían por producto. Ej: <em>Hamburguesa Clásica</em> tiene Bacon $2.700, pero <em>Pizza Muzzarella</em> tiene Muzzarella extra $1.800.</div>
+      <div class="mt-2 small"><span class="badge badge-comi">Tip</span> Probá con <em>Hamburguesa Clásica</em> (6 elementos) y luego con <em>Limonada Natural</em> (vacío).</div>
+    </div>
+
+    <!-- Tabla -->
+    <div id="wrap-tabla" class="d-none">
+      <div id="alert-success" class="alert alert-success py-2 small d-none d-flex justify-content-between align-items-center">
+        <span id="alert-success-text"><i class="fa-solid fa-check me-1"></i> Elemento guardado correctamente.</span>
+        <button class="btn btn-sm btn-outline-secondary" style="border-radius:999px;" onclick="document.getElementById('alert-success').classList.add('d-none')">×</button>
+      </div>
+
+      <div class="table-responsive card-comi p-1">
+        <table class="table table-striped table-hover align-middle mb-0 small">
+          <thead class="table-dark">
+            <tr>
+              <th style="width:70px;">ID</th>
+              <th>Nombre / Producto</th>
+              <th style="width:130px;">Tipo</th>
+              <th style="width:120px;">Precio</th>
+              <th style="width:90px;">Estado</th>
+              <th style="width:180px;" class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-elementos"></tbody>
+        </table>
+      </div>
+      <div id="vacio-filtro" class="card-vacia p-3 text-center mt-2 d-none small text-muted">
+        No hay elementos de este tipo para el producto seleccionado. Cambiá el filtro o agregá el primero.
+      </div>
+      <div id="vacio-producto" class="card-vacia p-4 text-center mt-2 d-none">
+        <i class="fa-solid fa-inbox fa-2x mb-2" style="color:var(--crema-borde)"></i>
+        <div class="fw-bold">No hay elementos para este producto</div>
+        <div class="small text-muted">Este producto aún no tiene personalización. Agregá el primer elemento con <em>Agregar elemento</em>.</div>
+      </div>
+      <div class="small text-muted mt-2">
+        <span class="badge badge-comi">Extra</span> cobra &nbsp; <span class="badge bg-secondary">Personalizar</span> no cobra (Sin) &nbsp; <span class="badge badge-acompanar">Acompaña</span> cobra (selector de producto) &nbsp; <span class="badge badge-condimento">Condimento</span> no cobra
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== VISTA NUEVO ===== -->
+  <div id="vista-nuevo" class="vista">
+    <a href="#" class="small text-decoration-none d-inline-flex align-items-center mb-2" style="color:var(--rojo)" onclick="mostrarVista('lista'); return false;"><i class="fa-solid fa-chevron-left me-1"></i> Volver a lista</a>
+    <h5 class="fw-bold mb-3">Nuevo elemento <span class="badge badge-comi" id="nuevo-producto-badge"></span></h5>
+
+    <div class="card shadow-sm mx-auto" style="max-width:560px; border:2px solid var(--borde-card); border-radius:18px;">
+      <div class="card-body p-4">
+        <form id="form-nuevo" onsubmit="guardarNuevo(event)">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Producto *</label>
+            <select class="form-select" id="nuevo-producto" required>
+              <option value="">— Elegí producto —</option>
+            </select>
+            <div class="form-text" style="font-size:.75rem;">El elemento quedará dentro de este producto.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Categoría / Tipo *</label>
+            <select class="form-select" id="nuevo-tipo" required onchange="onNuevoTipoChange()">
+              <option value="">— Elegí categoría —</option>
+              <option value="extra">Extra — Agregar ingrediente (cobra)</option>
+              <option value="personalizar">Personalizar — Quitar ingrediente (no cobra)</option>
+              <option value="acompanar">Acompaña tu orden con — Upsell (cobra)</option>
+              <option value="condimento">Condimentos adicionales — Sobre (no cobra)</option>
+            </select>
+          </div>
+
+          <!-- Nombre libre (no acompañar) -->
+          <div class="mb-3" id="grupo-nombre">
+            <label class="form-label fw-bold small">Nombre *</label>
+            <input type="text" class="form-control" id="nuevo-nombre" placeholder="Ej: Bacon" />
+            <div class="form-text" style="font-size:.75rem;" id="help-nombre">Ej: Bacon, Tomate, Queso Cheddar en fetas.</div>
+          </div>
+
+          <!-- Selector producto para acompañar -->
+          <div class="mb-3 d-none" id="grupo-acompanar">
+            <label class="form-label fw-bold small">Producto a ofrecer * <span class="text-muted fw-normal">— cualquier otro menos el actual</span></label>
+            <select class="form-select" id="nuevo-referencia" onchange="onReferenciaChange()">
+              <option value="">— Elegí producto para ofrecer —</option>
+            </select>
+            <div class="form-text" style="font-size:.75rem;">Se excluye el producto que estás personalizando. Al elegir se precarga el precio (editable).</div>
+          </div>
+
+          <div class="mb-3" id="grupo-precio">
+            <label class="form-label fw-bold small">Precio $ *</label>
+            <div class="input-group">
+              <span class="input-group-text" style="border:2px solid #f1c27d; border-right:none; border-radius:12px 0 0 12px; background:var(--crema);">$</span>
+              <input type="number" class="form-control" id="nuevo-precio" min="0" step="100" placeholder="2700" style="border-left:none; border-radius:0 12px 12px 0;" />
+            </div>
+            <div class="form-text" style="font-size:.75rem;" id="help-precio">Requerido si Extra o Acompaña. Editable — para Acompaña se precarga del producto elegido.</div>
+          </div>
+
+          <div class="mb-3 form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="nuevo-activo" checked>
+            <label class="form-check-label fw-bold small" for="nuevo-activo">Activo</label>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+            <button type="button" class="btn btn-secondary flex-fill" onclick="mostrarVista('lista')"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VISTA EDITAR (demo id:104) ===== -->
+  <div id="vista-editar" class="vista">
+    <a href="#" class="small text-decoration-none d-inline-flex align-items-center mb-2" style="color:var(--rojo)" onclick="mostrarVista('lista'); return false;"><i class="fa-solid fa-chevron-left me-1"></i> Volver a lista</a>
+    <h5 class="fw-bold mb-3">Editar elemento <span class="id-linea">#104</span> <span class="badge badge-comi">Hamburguesa Clásica → Papas Cheddar</span> <span class="badge bg-success">Acompaña</span></h5>
+
+    <div class="card shadow-sm mx-auto" style="max-width:560px; border:2px solid var(--borde-card); border-radius:18px;">
+      <div class="card-body p-4">
+        <form onsubmit="guardarEditar(event)">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Producto</label>
+            <select class="form-select" disabled><option>Hamburguesa Clásica — Hamburguesas — $1.500</option></select>
+            <div class="form-text" style="font-size:.75rem;">No se cambia de producto al editar (crear uno nuevo si necesitás moverlo).</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Categoría / Tipo *</label>
+            <select class="form-select" id="editar-tipo" onchange="onEditarTipoChange()">
+              <option value="acompanar" selected>Acompaña tu orden con — Upsell (cobra)</option>
+              <option value="extra">Extra</option>
+              <option value="personalizar">Personalizar</option>
+              <option value="condimento">Condimentos</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Producto a ofrecer *</label>
+            <select class="form-select" id="editar-referencia" onchange="onEditarReferenciaChange()">
+              <option value="9" selected>Papas Cheddar — Papas — $1.200</option>
+              <option value="8">Papas Fritas Grandes — Papas — $900</option>
+              <option value="5">Coca-Cola 500ml — Bebidas — $800</option>
+              <option value="7">Combo Doble — Combos — $3.200</option>
+            </select>
+            <div class="form-text" style="font-size:.75rem;">Cambiá el producto ofrecido si querés. El precio se precarga pero queda editable.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Precio $ * <span class="text-muted fw-normal">— editable</span></label>
+            <div class="input-group">
+              <span class="input-group-text" style="border:2px solid #f1c27d; border-right:none; border-radius:12px 0 0 12px; background:var(--crema);">$</span>
+              <input type="number" class="form-control" id="editar-precio" value="1200" min="0" step="100" style="border-left:none; border-radius:0 12px 12px 0;" />
+            </div>
+            <div class="form-text" style="font-size:.75rem;">Default $1.200 del producto. Podés poner $1.500 como promo diferencial. <a href="#" onclick="document.getElementById('editar-precio').value=1500; return false;">Probar $1.500</a></div>
+          </div>
+          <div class="mb-3 form-check form-switch">
+            <input class="form-check-input" type="checkbox" checked id="editar-activo">
+            <label class="form-check-label fw-bold small" for="editar-activo">Activo</label>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
+            <button type="button" class="btn btn-secondary flex-fill" onclick="mostrarVista('lista')"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+          </div>
+        </form>
+        <hr class="my-3" style="border-color:var(--borde-card); opacity:1;">
+        <div class="small text-muted">
+          <strong>Demo acompañar filtrado:</strong> el select nunca lista <em>Hamburguesa Clásica</em> (id:1) porque es el producto que estás personalizando. Probá crear un <em>Extra → Bacon</em> y luego un <em>Acompaña → Coca-Cola</em> en la vista Nuevo.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center text-muted mt-4" style="font-size:.75rem;">Mockup estático — abrir con doble click. No modifica la app. Flujo cliente en <code>ProductoPersonalizarModal.jsx</code> consume <code>usePersonalizacion().getPorProducto(productoId)</code>. Para Acompaña usa <code>productoReferenciaId</code> + precio editable.</p>
+</div>
+
+<script>
+// ===== Datos semilla (copia de seedData.js:9) =====
+const productos = [
+  { id:1, nombre:'Hamburguesa Clásica', precio:1500, categoria:'Hamburguesas' },
+  { id:2, nombre:'Hamburguesa Doble', precio:2200, categoria:'Hamburguesas' },
+  { id:3, nombre:'Pizza Muzzarella', precio:2500, categoria:'Pizzas' },
+  { id:4, nombre:'Pizza Napolitana', precio:2800, categoria:'Pizzas' },
+  { id:5, nombre:'Coca-Cola 500ml', precio:800, categoria:'Bebidas' },
+  { id:6, nombre:'Limonada Natural', precio:600, categoria:'Bebidas' },
+  { id:7, nombre:'Combo Doble', precio:3200, categoria:'Combos' },
+  { id:8, nombre:'Papas Fritas Grandes', precio:900, categoria:'Papas' },
+  { id:9, nombre:'Papas Cheddar', precio:1200, categoria:'Papas' },
+  { id:10, nombre:'Lava Cake', precio:1100, categoria:'Postres' },
+  { id:11, nombre:'Cheesecake', precio:1300, categoria:'Postres' },
+];
+
+let elementos = [
+  { id:101, productoId:1, tipo:'extra', nombre:'Bacon', precio:2700, productoReferenciaId:null, activo:true },
+  { id:102, productoId:1, tipo:'extra', nombre:'Queso Cheddar en fetas', precio:2000, productoReferenciaId:null, activo:true },
+  { id:103, productoId:1, tipo:'personalizar', nombre:'Queso Cheddar en fetas', precio:null, productoReferenciaId:null, activo:true },
+  { id:104, productoId:1, tipo:'acompanar', nombre:'Papas Cheddar', precio:1200, productoReferenciaId:9, activo:true },
+  { id:105, productoId:1, tipo:'acompanar', nombre:'Coca-Cola 500ml', precio:800, productoReferenciaId:5, activo:true },
+  { id:106, productoId:1, tipo:'condimento', nombre:'Sobre de Ketchup', precio:null, productoReferenciaId:null, activo:true },
+  { id:107, productoId:1, tipo:'condimento', nombre:'Sobre de Mayonesa', precio:null, productoReferenciaId:null, activo:false },
+  { id:301, productoId:3, tipo:'extra', nombre:'Muzzarella extra', precio:1800, productoReferenciaId:null, activo:true },
+  { id:302, productoId:3, tipo:'personalizar', nombre:'Albahaca', precio:null, productoReferenciaId:null, activo:true },
+  { id:303, productoId:3, tipo:'acompanar', nombre:'Papas Fritas Grandes', precio:900, productoReferenciaId:8, activo:true },
+  { id:304, productoId:3, tipo:'condimento', nombre:'Sobre de Orégano', precio:null, productoReferenciaId:null, activo:true },
+  { id:201, productoId:2, tipo:'extra', nombre:'Bacon', precio:2700, productoReferenciaId:null, activo:true },
+];
+
+let state = { productoId: '', filtroTipo:'todos' };
+
+function formatPrice(n){ if(n==null) return '—'; return '$' + Number(n).toLocaleString('es-AR'); }
+function getProducto(id){ return productos.find(p=>p.id===Number(id)); }
+
+function poblarSelects(){
+  const sel = document.getElementById('select-producto');
+  const selNuevo = document.getElementById('nuevo-producto');
+  productos.forEach(p=>{
+    const opt = document.createElement('option'); opt.value=p.id; opt.textContent=`${p.nombre} — ${p.categoria} — ${formatPrice(p.precio)}`;
+    sel.appendChild(opt.cloneNode(true)); selNuevo.appendChild(opt);
+  });
+  // preselección demo
+  document.getElementById('select-producto').value = '1';
+  state.productoId='1';
+}
+
+function poblarReferencia(productoId, selectId){
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = '<option value="">— Elegí producto para ofrecer —</option>';
+  productos.filter(p=> p.id !== Number(productoId)).forEach(p=>{
+    const o=document.createElement('option'); o.value=p.id; o.textContent=`${p.nombre} — ${p.categoria} — ${formatPrice(p.precio)}`;
+    sel.appendChild(o);
+  });
+}
+
+function actualizarProductoInfo(){
+  const pid = state.productoId;
+  const info = document.getElementById('producto-info');
+  const badges = document.getElementById('producto-badges');
+  if(!pid){
+    info.innerHTML = '<i class="fa-solid fa-arrow-left me-1"></i> Seleccioná un producto para ver su tabla. Las 4 categorías viven dentro del producto.';
+    badges.innerHTML='';
+    return;
+  }
+  const p = getProducto(pid);
+  const elems = elementos.filter(e=> e.productoId===Number(pid));
+  const counts = { extra: elems.filter(e=>e.tipo==='extra').length, personalizar: elems.filter(e=>e.tipo==='personalizar').length, acompanar: elems.filter(e=>e.tipo==='acompanar').length, condimento: elems.filter(e=>e.tipo==='condimento').length };
+  info.innerHTML = `<strong>${p.nombre}</strong> <span class="badge badge-comi ms-1">${p.categoria}</span> <span class="text-muted">— ${formatPrice(p.precio)} base</span> <span class="ms-2"><i class="fa-solid fa-layer-group me-1"></i>${elems.length} elementos</span>`;
+  badges.innerHTML = `<span class="badge badge-extra me-1">Extra: ${counts.extra}</span> <span class="badge bg-secondary me-1">Personalizar: ${counts.personalizar}</span> <span class="badge bg-success me-1">Acompaña: ${counts.acompanar}</span> <span class="badge badge-condimento">Condimentos: ${counts.condimento}</span> <span class="text-muted ms-2" style="font-size:.78rem;">Filtra por tipo abajo</span>`;
+}
+
+function renderTabla(){
+  const wrap = document.getElementById('wrap-tabla');
+  const vacioSin = document.getElementById('vacio-sin-producto');
+  const vacioProd = document.getElementById('vacio-producto');
+  const vacioFiltro = document.getElementById('vacio-filtro');
+  const tbody = document.getElementById('tbody-elementos');
+  const btnAgregar = document.getElementById('btn-agregar-lista');
+  const contador = document.getElementById('contador-tipo');
+
+  if(!state.productoId){
+    vacioSin.classList.remove('d-none'); wrap.classList.add('d-none'); btnAgregar.disabled=true; btnAgregar.classList.add('opacity-50');
+    contador.textContent='';
+    return;
+  }
+  vacioSin.classList.add('d-none'); wrap.classList.remove('d-none'); btnAgregar.disabled=false; btnAgregar.classList.remove('opacity-50');
+
+  let elems = elementos.filter(e=> e.productoId===Number(state.productoId));
+  const totalProd = elems.length;
+  if(totalProd===0){
+    tbody.innerHTML=''; vacioProd.classList.remove('d-none'); vacioFiltro.classList.add('d-none'); contador.textContent='0 elementos';
+    actualizarProductoInfo(); return;
+  }
+  vacioProd.classList.add('d-none');
+
+  if(state.filtroTipo!=='todos') elems = elems.filter(e=> e.tipo===state.filtroTipo);
+  contador.textContent = `${elems.length} de ${totalProd} — filtro: ${state.filtroTipo}`;
+
+  if(elems.length===0){
+    tbody.innerHTML=''; vacioFiltro.classList.remove('d-none'); actualizarProductoInfo(); return;
+  }
+  vacioFiltro.classList.add('d-none');
+
+  tbody.innerHTML = elems.map(e=>{
+    const pRef = e.productoReferenciaId ? getProducto(e.productoReferenciaId) : null;
+    let nombreHtml='';
+    if(e.tipo==='acompanar'){
+      nombreHtml = pRef ? `→ <strong>${pRef.nombre}</strong> <span class="badge badge-comi ms-1">${pRef.categoria}</span>` : `→ <span class="text-danger">⚠️ Producto eliminado (id:${e.productoReferenciaId})</span>`;
+    } else if(e.tipo==='personalizar'){
+      nombreHtml = `Sin <strong>${e.nombre}</strong> <span class="text-muted" style="font-size:.78rem;">(no descuenta)</span>`;
+    } else if(e.tipo==='condimento'){
+      nombreHtml = `${e.nombre} <span class="text-muted" style="font-size:.78rem;">(sin costo)</span>`;
+    } else {
+      nombreHtml = `Extra: <strong>${e.nombre}</strong>`;
+    }
+
+    const tipoBadge = e.tipo==='extra' ? '<span class="badge badge-extra">Extra</span>' : e.tipo==='personalizar' ? '<span class="badge bg-secondary">Personalizar</span>' : e.tipo==='acompanar' ? '<span class="badge bg-success">Acompaña</span>' : '<span class="badge badge-condimento">Condimento</span>';
+    const precioHtml = (e.tipo==='extra' || e.tipo==='acompanar') ? `<span class="precio-rojo">${formatPrice(e.precio)}</span>` : '<span class="text-muted">—</span>';
+    const estadoBadge = e.activo ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-secondary">Inactivo</span>';
+
+    return `<tr>
+      <td><span class="id-linea">#${e.id}</span></td>
+      <td>${nombreHtml}</td>
+      <td>${tipoBadge}</td>
+      <td>${precioHtml}</td>
+      <td>${estadoBadge}</td>
+      <td class="text-end text-nowrap">
+        <button class="btn btn-secondary btn-sm me-1" onclick="editarDemo(${e.id})"><i class="fa-solid fa-pen"></i> Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarElemento(${e.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+  actualizarProductoInfo();
+}
+
+function eliminarElemento(id){
+  const e = elementos.find(x=>x.id===id);
+  const p = getProducto(e.productoId);
+  const label = e.tipo==='acompanar' ? `→ ${getProducto(e.productoReferenciaId)?.nombre || e.nombre}` : e.nombre;
+  if(!confirm(`¿Eliminar "${label}" de "${p.nombre}"?\n\nTipo: ${e.tipo}\nID: #${e.id}`)) return;
+  elementos = elementos.filter(x=>x.id!==id);
+  document.getElementById('alert-success-text').innerHTML = `<i class="fa-solid fa-check me-1"></i> "${label}" eliminado de <strong>${p.nombre}</strong>.`;
+  document.getElementById('alert-success').classList.remove('d-none');
+  renderTabla();
+}
+
+function mostrarVista(v){
+  document.querySelectorAll('.vista').forEach(el=> el.classList.remove('activa'));
+  document.getElementById('vista-'+v).classList.add('activa');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(v==='lista') renderTabla();
+  if(v==='nuevo'){
+    document.getElementById('nuevo-producto').value = state.productoId || '';
+    onNuevoProductoChange();
+  }
+}
+
+// Nuevo form lógica
+function onNuevoProductoChange(){
+  const pid = document.getElementById('nuevo-producto').value;
+  poblarReferencia(pid, 'nuevo-referencia');
+  document.getElementById('nuevo-producto-badge').textContent = pid ? getProducto(pid).nombre : '';
+}
+function onNuevoTipoChange(){
+  const t = document.getElementById('nuevo-tipo').value;
+  const grupoNombre = document.getElementById('grupo-nombre');
+  const grupoAcomp = document.getElementById('grupo-acompanar');
+  const grupoPrecio = document.getElementById('grupo-precio');
+  const helpNombre = document.getElementById('help-nombre');
+  const helpPrecio = document.getElementById('help-precio');
+  if(t==='acompanar'){
+    grupoNombre.classList.add('d-none'); grupoAcomp.classList.remove('d-none');
+    grupoPrecio.classList.remove('d-none'); helpPrecio.textContent='Se precarga del producto elegido, editable para promo.';
+    // si ya hay referencia seleccionada, precargar
+    onReferenciaChange();
+  } else if(t==='personalizar' || t==='condimento'){
+    grupoNombre.classList.remove('d-none'); grupoAcomp.classList.add('d-none');
+    grupoPrecio.classList.add('d-none'); helpNombre.textContent = t==='personalizar' ? 'Ej: Queso, Lechuga, Pan — se mostrará como "Sin X"' : 'Ej: Sobre de Ketchup';
+    document.getElementById('nuevo-nombre').placeholder = t==='personalizar' ? 'Ej: Queso Cheddar en fetas' : 'Ej: Sobre de Ketchup';
+  } else if(t==='extra'){
+    grupoNombre.classList.remove('d-none'); grupoAcomp.classList.add('d-none');
+    grupoPrecio.classList.remove('d-none'); helpPrecio.textContent='Requerido — suma al total. Ej: 2700';
+    document.getElementById('nuevo-nombre').placeholder='Ej: Bacon';
+  } else {
+    grupoNombre.classList.remove('d-none'); grupoAcomp.classList.add('d-none'); grupoPrecio.classList.remove('d-none');
+  }
+}
+function onReferenciaChange(){
+  const refId = document.getElementById('nuevo-referencia').value;
+  if(refId){ document.getElementById('nuevo-precio').value = getProducto(refId).precio; }
+}
+function onEditarTipoChange(){
+  // demo simplificada: si cambia a acompañar muestra precio editable
+}
+function onEditarReferenciaChange(){
+  const refId = document.getElementById('editar-referencia').value;
+  if(refId) document.getElementById('editar-precio').value = getProducto(refId).precio;
+}
+function onEditarReferenciaChange(){ const v=document.getElementById('editar-referencia').value; if(v) document.getElementById('editar-precio').value=getProducto(v).precio; }
+
+function guardarNuevo(e){
+  e.preventDefault();
+  const pid = document.getElementById('nuevo-producto').value;
+  const tipo = document.getElementById('nuevo-tipo').value;
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
+  const refId = document.getElementById('nuevo-referencia').value;
+  const precioVal = document.getElementById('nuevo-precio').value;
+  const activo = document.getElementById('nuevo-activo').checked;
+  if(!pid){ alert('Elegí el producto.'); return; }
+  if(!tipo){ alert('Elegí la categoría / tipo.'); return; }
+  if(tipo==='acompanar'){
+    if(!refId){ alert('Elegí el producto a ofrecer.'); return; }
+    if(Number(refId)===Number(pid)){ alert('No podés ofrecer el mismo producto que estás personalizando.'); return; }
+    if(!precioVal || Number(precioVal)<0){ alert('Precio requerido para Acompaña.'); return; }
+    const pRef = getProducto(refId);
+    if(elementos.some(x=> x.productoId===Number(pid) && x.tipo==='acompanar' && x.productoReferenciaId===Number(refId))){ alert('Ya existe ese upsell para este producto.'); return; }
+    elementos.push({ id: Date.now(), productoId:Number(pid), tipo, nombre: pRef.nombre, precio:Number(precioVal), productoReferenciaId:Number(refId), activo });
+  } else {
+    if(!nombre || nombre.length<2){ alert('Nombre requerido (2+ caracteres).'); return; }
+    if((tipo==='extra') && (!precioVal || Number(precioVal)<=0)){ alert('Precio requerido para Extra.'); return; }
+    if(elementos.some(x=> x.productoId===Number(pid) && x.tipo===tipo && x.nombre.toLowerCase()===nombre.toLowerCase())){ alert('Ya existe un elemento con ese nombre en este producto y categoría.'); return; }
+    elementos.push({ id: Date.now(), productoId:Number(pid), tipo, nombre, precio: (tipo==='extra'? Number(precioVal): null), productoReferenciaId:null, activo });
+  }
+  state.productoId = pid;
+  document.getElementById('select-producto').value = pid;
+  mostrarVista('lista');
+  document.getElementById('alert-success-text').innerHTML = `<i class="fa-solid fa-check me-1"></i> Elemento guardado en <strong>${getProducto(pid).nombre}</strong> — ${tipo}.`;
+  document.getElementById('alert-success').classList.remove('d-none');
+  renderTabla();
+  e.target.reset(); document.getElementById('nuevo-activo').checked=true;
+  onNuevoTipoChange();
+}
+function guardarEditar(e){
+  e.preventDefault();
+  // demo: solo precio y referencia
+  const refId = document.getElementById('editar-referencia').value;
+  const precio = document.getElementById('editar-precio').value;
+  const idx = elementos.findIndex(x=>x.id===104);
+  if(idx!==-1){ elementos[idx].productoReferenciaId=Number(refId); elementos[idx].precio=Number(precio); elementos[idx].nombre=getProducto(refId).nombre; }
+  mostrarVista('lista');
+  document.getElementById('alert-success-text').innerHTML = `<i class="fa-solid fa-check me-1"></i> Elemento <span class="id-linea">#104</span> actualizado — nuevo precio ${formatPrice(precio)}.`;
+  document.getElementById('alert-success').classList.remove('d-none');
+  renderTabla();
+}
+function editarDemo(id){
+  // para demo, si es 104 va a editar, otros simula alert
+  if(id===104){ mostrarVista('editar'); return; }
+  const e = elementos.find(x=>x.id===id);
+  alert(`Editar #${id} — ${e.tipo}: ${e.nombre}\n\nEn la app real navega a /admin/personalizacion/editar/${id}?productoId=${e.productoId}`);
+}
+function irNuevo(){
+  if(!state.productoId){ alert('Elegí primero el producto arriba.'); document.getElementById('select-producto').focus(); return; }
+  mostrarVista('nuevo');
+}
+
+// Eventos
+document.getElementById('select-producto').addEventListener('change', (ev)=>{
+  state.productoId = ev.target.value;
+  document.getElementById('alert-success').classList.add('d-none');
+  renderTabla();
+});
+document.getElementById('nuevo-producto').addEventListener('change', onNuevoProductoChange);
+document.querySelectorAll('#filtros-tipo .filtro-pill').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#filtros-tipo .filtro-pill').forEach(b=> b.classList.remove('activo'));
+    btn.classList.add('activo');
+    state.filtroTipo = btn.getAttribute('data-tipo');
+    renderTabla();
+  });
+});
+// Init
+poblarSelects();
+poblarReferencia('', 'nuevo-referencia');
+renderTabla();
+onNuevoTipoChange();
+</script>
+</body>
+</html>

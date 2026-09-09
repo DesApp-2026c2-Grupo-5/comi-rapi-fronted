@@ -12,6 +12,7 @@ import { CarritoProvider } from './context/CarritoContext';
 import { SucursalProvider } from './context/SucursalContext';
 import { PedidoProvider } from './context/PedidoContext';
 import { DireccionProvider } from './context/DireccionContext';
+import { PersonalizacionProvider } from './context/PersonalizacionContext';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/comunes/Navbar';
 import Footer from './components/comunes/Footer';
@@ -24,13 +25,15 @@ function App() {
           <SucursalProvider>
             <PedidoProvider>
               <DireccionProvider>
-                <div className="d-flex flex-column min-vh-100">
-                  <Navbar />
-                  <main className="flex-grow-1">
-                    <AppRoutes />
-                  </main>
-                  <Footer />
-                </div>
+                <PersonalizacionProvider>
+                  <div className="d-flex flex-column min-vh-100">
+                    <Navbar />
+                    <main className="flex-grow-1">
+                      <AppRoutes />
+                    </main>
+                    <Footer />
+                  </div>
+                </PersonalizacionProvider>
               </DireccionProvider>
             </PedidoProvider>
           </SucursalProvider>

@@ -42,3 +42,23 @@ export const validateProducto = (producto) => {
   }
   return errores;
 };
+
+export const validatePersonalizacionElemento = ({ productoId, tipo, nombre, precio, productoReferenciaId, productos }) => {
+  const errores = {};
+  if (!productoId) errores.productoId = 'El producto es obligatorio';
+  else if (productos && !productos.find((p) => String(p.id) === String(productoId))) errores.productoId = 'Producto no encontrado';
+  const tiposValidos = ['extra', 'personalizar', 'acompanar', 'condimento'];
+  if (!tipo || !tiposValidos.includes(tipo)) errores.tipo = 'Tipo inválido';
+  if (tipo === 'acompanar') {
+    if (!productoReferenciaId) errores.productoReferenciaId = 'El producto a ofrecer es obligatorio';
+    else if (String(productoReferenciaId) === String(productoId)) errores.productoReferenciaId = 'No podés ofrecer el mismo producto';
+    else if (productos && !productos.find((p) => String(p.id) === String(productoReferenciaId))) errores.productoReferenciaId = 'Producto referenciado no encontrado';
+    if (precio == null || precio === '' || Number(precio) < 0) errores.precio = 'El precio debe ser >= 0';
+  } else if (tipo === 'extra') {
+    if (!nombre || nombre.trim().length < 2) errores.nombre = 'Nombre requerido (2+ caracteres)';
+    if (precio == null || precio === '' || Number(precio) <= 0) errores.precio = 'Precio requerido > 0 para Extra';
+  } else if (tipo === 'personalizar' || tipo === 'condimento') {
+    if (!nombre || nombre.trim().length < 2) errores.nombre = 'Nombre requerido (2+ caracteres)';
+  }
+  return errores;
+};

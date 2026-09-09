@@ -82,3 +82,25 @@ export const ESTADO_DIRECCION = {
 // Límites válidos para las coordenadas geográficas (latitud y longitud).
 export const LIMITES_LAT = { MIN: -90, MAX: 90 };
 export const LIMITES_LNG = { MIN: -180, MAX: 180 };
+
+// Tipos de personalización — CRUD admin por producto (relación productoId -> categorías)
+export const TIPO_PERSONALIZACION = {
+  EXTRA: 'extra',
+  PERSONALIZAR: 'personalizar',
+  ACOMPANAR: 'acompanar',
+  CONDIMENTO: 'condimento',
+};
+
+export const ETIQUETA_TIPO = {
+  [TIPO_PERSONALIZACION.EXTRA]: 'Extra',
+  [TIPO_PERSONALIZACION.PERSONALIZAR]: 'Personalizar',
+  [TIPO_PERSONALIZACION.ACOMPANAR]: 'Acompaña',
+  [TIPO_PERSONALIZACION.CONDIMENTO]: 'Condimento',
+};
+
+export const VARIANTE_TIPO = {
+  [TIPO_PERSONALIZACION.EXTRA]: 'warning',
+  [TIPO_PERSONALIZACION.PERSONALIZAR]: 'secondary',
+  [TIPO_PERSONALIZACION.ACOMPANAR]: 'success',
+  [TIPO_PERSONALIZACION.CONDIMENTO]: 'light',
+};

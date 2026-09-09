@@ -227,6 +227,37 @@ export const usuariosMock = [
   { id: 2, nombre: 'Admin Test', email: 'admin@test.com', password: '123456', rol: 'ADMIN' },
 ];
 
+// Datos mock de personalización por producto (MOCK - editable vía CRUD admin).
+// Cada elemento pertenece a un productoId y a una de las 4 categorías.
+// - extra / acompanar: cobra (precio requerido)
+// - personalizar / condimento: no cobra (precio null)
+// - acompanar: productoReferenciaId referencia a otro producto (excluye el propio)
+export const personalizacionElementosMock = [
+  // Hamburguesa Clásica id:1
+  { id: 101, productoId: 1, tipo: 'extra', nombre: 'Bacon', precio: 2700, productoReferenciaId: null, activo: true },
+  { id: 102, productoId: 1, tipo: 'extra', nombre: 'Queso Cheddar en fetas', precio: 2000, productoReferenciaId: null, activo: true },
+  { id: 103, productoId: 1, tipo: 'extra', nombre: 'Tomate', precio: 2000, productoReferenciaId: null, activo: true },
+  { id: 104, productoId: 1, tipo: 'personalizar', nombre: 'Pan XL', precio: null, productoReferenciaId: null, activo: true },
+  { id: 105, productoId: 1, tipo: 'personalizar', nombre: 'Queso Cheddar en fetas', precio: null, productoReferenciaId: null, activo: true },
+  { id: 106, productoId: 1, tipo: 'personalizar', nombre: 'Bacon', precio: null, productoReferenciaId: null, activo: true },
+  { id: 107, productoId: 1, tipo: 'acompanar', nombre: 'Papas Cheddar', precio: 1200, productoReferenciaId: 9, activo: true },
+  { id: 108, productoId: 1, tipo: 'acompanar', nombre: 'Coca-Cola 500ml', precio: 800, productoReferenciaId: 5, activo: true },
+  { id: 109, productoId: 1, tipo: 'acompanar', nombre: 'Pileta de Cheddar', precio: 4000, productoReferenciaId: 9, activo: false },
+  { id: 110, productoId: 1, tipo: 'condimento', nombre: 'Sobre de Ketchup', precio: null, productoReferenciaId: null, activo: true },
+  { id: 111, productoId: 1, tipo: 'condimento', nombre: 'Sobre de Mayonesa', precio: null, productoReferenciaId: null, activo: true },
+  // Hamburguesa Doble id:2
+  { id: 201, productoId: 2, tipo: 'extra', nombre: 'Bacon', precio: 2700, productoReferenciaId: null, activo: true },
+  { id: 202, productoId: 2, tipo: 'personalizar', nombre: 'Lechuga', precio: null, productoReferenciaId: null, activo: true },
+  // Pizza Muzzarella id:3
+  { id: 301, productoId: 3, tipo: 'extra', nombre: 'Muzzarella extra', precio: 1800, productoReferenciaId: null, activo: true },
+  { id: 302, productoId: 3, tipo: 'extra', nombre: 'Jamón', precio: 2200, productoReferenciaId: null, activo: true },
+  { id: 303, productoId: 3, tipo: 'personalizar', nombre: 'Albahaca', precio: null, productoReferenciaId: null, activo: true },
+  { id: 304, productoId: 3, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 900, productoReferenciaId: 8, activo: true },
+  { id: 305, productoId: 3, tipo: 'condimento', nombre: 'Sobre de Orégano', precio: null, productoReferenciaId: null, activo: true },
+  // Combo Doble id:7
+  { id: 701, productoId: 7, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 900, productoReferenciaId: 8, activo: true },
+];
+
 // Datos mock de direcciones de clientes (MOCK - reemplazar con llamadas a la API en producción).
 // Sin latitud ni longitud: las direcciones del cliente son textuales, solo la sucursal usa
 // coordenadas para la lógica de asignación.

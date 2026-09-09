@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useCarrito } from '../../hooks/useCarrito';
-import { getConfigParaCategoria, LIMITES, calcularPrecioUnitario } from '../../services/personalizacionConfig';
+import { usePersonalizacion } from '../../hooks/usePersonalizacion';
+import { LIMITES, calcularPrecioUnitario } from '../../services/personalizacionConfig';
 import { formatPrice } from '../../utils/formatters';
 import GrupoOpciones from './GrupoOpciones';
 import './ProductoPersonalizarModal.css';
 
 const ProductoPersonalizarModal = ({ show, onHide, producto }) => {
   const { agregarAlCarrito } = useCarrito();
-  const config = getConfigParaCategoria(producto?.categoria);
+  const { getConfigParaProducto } = usePersonalizacion();
+  const config = getConfigParaProducto(producto);
   const [vista, setVista] = useState('principal');
   const [unidades, setUnidades] = useState(1);
   const [extraCant, setExtraCant] = useState({});

@@ -19,6 +19,7 @@ import {
   FaMapMarkerAlt,
   FaTachometerAlt,
   FaStore,
+  FaSlidersH,
   FaUserCircle,
   FaSignOutAlt,
 } from 'react-icons/fa';
@@ -41,6 +42,7 @@ const enlacesAdmin = [
   { to: '/admin/productos', etiqueta: 'Productos', icono: FaHamburger },
   { to: '/admin/pedidos', etiqueta: 'Pedidos', icono: FaReceipt },
   { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore },
+  { to: '/admin/personalizacion', etiqueta: 'Personalización', icono: FaSlidersH },
 ];
 
 const Navbar = () => {
