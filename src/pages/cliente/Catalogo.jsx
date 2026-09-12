@@ -1,45 +1,53 @@
 /**
- * Propósito: Página de catálogo con filtro por categoría y grid de productos.
- * Contenido: Componente Catalogo con título grande, filtros tipo pill y grid
- *            responsive de ProductoCard.
- * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert), seedData.js,
- *               ProductoCard, Catalogo.css.
+ * Propósito: Página de catálogo con filtro por categoría y grid de productos reales.
+ * Contenido: Componente Catalogo con datos obtenidos de la API, filtros tipo pill,
+ *            búsqueda por nombre, rango de precio y grid responsive de ProductoCard.
+ * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert, Form, Spinner),
+ *               api/productos.js, api/categorias.js, ProductoCard, Catalogo.css, react-router-dom.
  * Uso: Ruta "/cliente/catalogo" → <Catalogo />
- *
- * CAMBIOS REALIZADOS:
- *  - Título grande "Nuestro Catálogo" en tipografía bold oscura.
-*  - Filtros de categorías en forma de pills (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
-*  - Las categorías de la home llegan por query param (?categoria=...) y se aplican al instante.
-*  - Al elegir una pill también se actualiza el query param (el filtro queda en la URL).
-*  - Grid responsive (3 columnas en md, 4 en lg).
-*  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
-*  - Búsqueda por nombre y rango de precio, también persistidos en la URL.
-*  - Validación de rango de precio: mínimo no puede ser negativo ni mayor al máximo y viceversa.
-* 
-*/
+ */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Container, Button, Row, Col, Alert, Form } from 'react-bootstrap';
-import { productosMock, categoriasMock } from '../../services/seedData';
+import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
+import { obtenerProductos } from '../../api/productos';
+import { obtenerCategorias } from '../../api/categorias';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Catalogo.css';
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
   const [borrador, setBorrador] = useState({ precioMin: null, precioMax: null });
   const [campoInvalido, setCampoInvalido] = useState(null);
 
-  const filtros = ['Todos', ...categoriasMock.map((c) => c.nombre)];
+  useEffect(() => {
+    Promise.all([obtenerProductos(), obtenerCategorias()]).then(
+      ([resultadoProductos, resultadoCategorias]) => {
+        if (resultadoProductos.success) {
+          setProductos(resultadoProductos.data);
+        } else {
+          setError(resultadoProductos.error || 'No se pudieron cargar los productos.');
+        }
+        if (resultadoCategorias.success) {
+          setCategorias(resultadoCategorias.data);
+        }
+        setCargando(false);
+      }
+    );
+  }, []);
 
-  // Categoría activa: viene del query param (?categoria=...) o por defecto "Todos"
+  const filtros = ['Todos', ...categorias.map((c) => c.nombre)];
+
   const categoriaParam = searchParams.get('categoria');
   const categoriaSeleccionada =
-    categoriaParam && categoriasMock.some((c) => c.nombre === categoriaParam)
+    categoriaParam && categorias.some((c) => c.nombre === categoriaParam)
       ? categoriaParam
       : 'Todos';
 
-  // Búsqueda por nombre y rango de precio, también persistidos en la URL
   const busqueda = searchParams.get('busqueda') || '';
   const precioMin = searchParams.get('precioMin') || '';
   const precioMax = searchParams.get('precioMax') || '';
@@ -48,7 +56,7 @@ const Catalogo = () => {
     const min = precioMin !== '' ? Number(precioMin) : null;
     const max = precioMax !== '' ? Number(precioMax) : null;
 
-    return productosMock.filter((p) => {
+    return productos.filter((p) => {
       if (categoriaSeleccionada !== 'Todos' && p.categoria !== categoriaSeleccionada) {
         return false;
       }
@@ -63,10 +71,8 @@ const Catalogo = () => {
       }
       return true;
     });
-  }, [categoriaSeleccionada, busqueda, precioMin, precioMax]);
+  }, [categoriaSeleccionada, busqueda, precioMin, precioMax, productos]);
 
-  // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
-  // Conserva los filtros de búsqueda y precio ya presentes en la URL.
   const seleccionarCategoria = (nombre) => {
     const next = new URLSearchParams(searchParams);
     if (nombre === 'Todos') {
@@ -87,16 +93,13 @@ const Catalogo = () => {
     setSearchParams(next, { replace: true });
   };
 
-  // Rango inválido: ambos límites presentes y numéricos, con min > max.
   const esRangoInvalido = (min, max) =>
     min !== '' && max !== '' &&
     !Number.isNaN(Number(min)) && !Number.isNaN(Number(max)) &&
     Number(min) > Number(max);
 
-  // Un precio es inválido si es numérico y negativo.
   const esNegativo = (valor) => valor !== '' && !Number.isNaN(Number(valor)) && Number(valor) < 0;
 
-  // Confirma el borrador al perder foco (o Enter) y sincroniza con searchParams.
   const confirmarPrecio = (clave) => {
     const valor = borrador[clave];
     if (valor === null) return;
@@ -122,15 +125,23 @@ const Catalogo = () => {
     setBorrador((prev) => ({ ...prev, [clave]: null }));
   };
 
+  if (cargando) {
+    return (
+      <Container className="py-5 text-center">
+        <Spinner animation="border" variant="danger" />
+      </Container>
+    );
+  }
+
   return (
     <Container className="py-5">
-      {/* Título */}
       <div className="text-center mb-4">
         <h1 className="catalogo-titulo mb-2">Nuestro Catálogo</h1>
         <p className="text-muted mb-0">Elegí tu favorito y añadilo al carrito.</p>
       </div>
 
-      {/* Filtros / categorías en forma de pills */}
+      {error && <Alert variant="danger">{error}</Alert>}
+
       <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
         {filtros.map((filtro) => {
           const activo = categoriaSeleccionada === filtro;
@@ -146,7 +157,6 @@ const Catalogo = () => {
         })}
       </div>
 
-      {/* Buscador por nombre y filtro por rango de precio */}
       <div className="catalogo-busqueda mb-4">
         <Form.Control
           type="search"
@@ -205,7 +215,6 @@ const Catalogo = () => {
         </div>
       </div>
 
-      {/* Grid de productos */}
       <Row className="justify-content-center">
         {productosFiltrados.map((producto) => (
           <Col key={producto.id} md={4} lg={3} className="mb-4">

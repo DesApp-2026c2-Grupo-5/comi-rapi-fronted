@@ -1,18 +1,25 @@
 /**
- * Propósito: Servicio mock para obtener categorías de productos.
- * Contenido: obtenerCategorias.
- * Dependencias: seedData.js (categoriasMock).
- * Uso: import { obtenerCategorias } from '../api/categorias';
+ * Propósito: Servicio de categorías contra el backend REAL (API REST).
+ * Contenido: obtenerCategorias, crearCategoria, editarCategoria, eliminarCategoria.
+ * Dependencias: client.js (request).
+ * Uso: import { obtenerCategorias, crearCategoria } from '../api/categorias';
  */
 
-import { categoriasMock } from '../services/seedData';
-import { delay } from '../utils/helpers';
+import { request } from './client';
 
-/**
- * Obtiene todas las categorías disponibles.
- * @returns {Promise<Array>} Lista de categorías.
- */
-export const obtenerCategorias = async () => {
-  await delay(200);
-  return { success: true, data: [...categoriasMock] };
-};
+export const obtenerCategorias = async () => request('/categorias');
+
+export const crearCategoria = async (datos) =>
+  request('/categorias', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+
+export const editarCategoria = async (id, datos) =>
+  request(`/categorias/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  });
+
+export const eliminarCategoria = async (id) =>
+  request(`/categorias/${id}`, { method: 'DELETE' });
