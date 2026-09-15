@@ -24,6 +24,7 @@ import {
   FaSignOutAlt,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useCarrito } from '../../hooks/useCarrito';
 import { ROLES } from '../../utils/constants';
 import './Navbar.css';
 
@@ -47,12 +48,14 @@ const enlacesAdmin = [
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { vaciarCarrito } = useCarrito();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setExpanded(false);
-    logout();
+    await logout();
+    vaciarCarrito({ silencioso: true });
     navigate('/login');
   };
 

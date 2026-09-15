@@ -65,9 +65,11 @@ export const CarritoProvider = ({ children }) => {
     );
   }, []);
 
-  const vaciarCarrito = useCallback(() => {
+  const vaciarCarrito = useCallback(({ silencioso } = {}) => {
     setItems([]);
-    alert('Carrito vaciado.');
+    if (!silencioso) {
+      alert('Carrito vaciado.');
+    }
   }, []);
 
   const totalItems = useMemo(() => items.reduce((total, item) => total + item.cantidad, 0), [items]);

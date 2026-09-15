@@ -1,6 +1,6 @@
 /**
  * Propósito: Página de registro para clientes usando Form y Card de Bootstrap.
- * Contenido: Componente Registro con formulario controlado.
+ * Contenido: Componente Registro con formulario controlado (nombre, apellido, email, teléfono, fecha de nacimiento y contraseña).
  * Dependencias: react-bootstrap (Container, Card, Form, Button, Alert), react-router-dom, useAuth hook.
  * Uso: Ruta "/registro" → <Registro />
  */
@@ -13,7 +13,10 @@ import { useAuth } from '../../hooks/useAuth';
 
 const Registro = () => {
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { register, loading } = useAuth();
@@ -23,7 +26,7 @@ const Registro = () => {
     e.preventDefault();
     setError('');
 
-    if (!nombre || !email || !password) {
+    if (!nombre || !apellido || !email || !telefono || !password) {
       setError('Por favor completa todos los campos.');
       return;
     }
@@ -33,7 +36,14 @@ const Registro = () => {
       return;
     }
 
-    const result = await register({ nombre, email, password });
+    const result = await register({
+      nombre,
+      apellido,
+      email,
+      telefono,
+      fechaNacimiento: fechaNacimiento || undefined,
+      password,
+    });
     if (result.success) {
       navigate('/cliente/inicio');
     } else {
@@ -43,7 +53,7 @@ const Registro = () => {
 
   return (
     <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
-      <Card className="shadow" style={{ width: '100%', maxWidth: '420px' }}>
+      <Card className="shadow" style={{ width: '100%', maxWidth: '450px' }}>
         <Card.Body className="p-4">
           <h2 className="text-center mb-1">Crear Cuenta</h2>
           <p className="text-center text-muted mb-4">Regístrate como cliente</p>
@@ -57,7 +67,16 @@ const Registro = () => {
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Tu nombre completo"
+                placeholder="Tu nombre"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Apellido</Form.Label>
+              <Form.Control
+                type="text"
+                value={apellido}
+                onChange={(e) => setApellido(e.target.value)}
+                placeholder="Tu apellido"
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -67,6 +86,23 @@ const Registro = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Teléfono</Form.Label>
+              <Form.Control
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="11 1234-5678"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Fecha de nacimiento</Form.Label>
+              <Form.Control
+                type="date"
+                value={fechaNacimiento}
+                onChange={(e) => setFechaNacimiento(e.target.value)}
               />
             </Form.Group>
             <Form.Group className="mb-3">

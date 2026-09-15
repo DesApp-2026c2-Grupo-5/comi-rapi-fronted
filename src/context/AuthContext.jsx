@@ -1,12 +1,28 @@
 /**
  * Propósito: Contexto de autenticación para manejar el estado del usuario y su rol en toda la app.
- * Contenido: AuthProvider, AuthContext, con funciones login, logout, register.
- * Dependencias: React (createContext, useState, useCallback), api/auth.js, utils/constants.js.
+ * Contenido: AuthProvider, AuthContext, con funciones login, loginAdministrador, register, registerAdmin, logout.
+ * Dependencias: React (createContext, useState, useCallback, useMemo, useEffect), api/auth.js, utils/constants.js.
  * Uso: <AuthProvider> envuelve toda la app en App.jsx. Consumir con useAuth().
+ *
+ * La sesión se almacena en el servidor (cookie HttpOnly); el estado local se
+ * reconstruye al montar la app consultando GET /api/auth/me.
  */
 
-import React, { createContext, useState, useCallback, useMemo } from 'react';
-import { loginCliente, loginAdmin, registroCliente, registroAdmin } from '../api/auth';
+import {
+  createContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
+import {
+  loginCliente,
+  loginAdmin,
+  registroCliente,
+  registroAdmin,
+  logout as apiLogout,
+  getCurrentUser,
+} from '../api/auth';
 import { ROLES } from '../utils/constants';
 
 // Se crea el contexto
@@ -21,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   // Estado de carga
   const [loading, setLoading] = useState(false);
-  // Indica si ya se verificó localStorage al cargar la app
+  // Indica si ya se verificó la sesión al cargar la app
   const [hydrated, setHydrated] = useState(false);
 
   /**
@@ -36,7 +52,6 @@ export const AuthProvider = ({ children }) => {
       const result = await loginCliente(email, password);
       if (result.success) {
         setUser(result.user);
-        localStorage.setItem('user', JSON.stringify(result.user));
       }
       return result;
     } finally {
@@ -56,7 +71,6 @@ export const AuthProvider = ({ children }) => {
       const result = await loginAdmin(email, password);
       if (result.success) {
         setUser(result.user);
-        localStorage.setItem('user', JSON.stringify(result.user));
       }
       return result;
     } finally {
@@ -75,7 +89,6 @@ export const AuthProvider = ({ children }) => {
       const result = await registroCliente(datos);
       if (result.success) {
         setUser(result.user);
-        localStorage.setItem('user', JSON.stringify(result.user));
       }
       return result;
     } finally {
@@ -94,7 +107,6 @@ export const AuthProvider = ({ children }) => {
       const result = await registroAdmin(datos);
       if (result.success) {
         setUser(result.user);
-        localStorage.setItem('user', JSON.stringify(result.user));
       }
       return result;
     } finally {
@@ -103,24 +115,30 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Cierra la sesión del usuario actual.
+   * Cierra la sesión del usuario actual (limpiando localmente e invalidando la sesión en el servidor).
+   * @returns {Promise<object>} Resultado de la operación.
    */
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setUser(null);
-    localStorage.removeItem('user');
+    setHydrated(true);
+    const result = await apiLogout().catch(() => ({ success: false }));
+    return result;
   }, []);
 
-  // Restaurar sesión desde localStorage al cargar la app
-  React.useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem('user');
+  // Restaurar la sesión consultando /api/auth/me al montar la app.
+  useEffect(() => {
+    let activo = true;
+    const hidratar = async () => {
+      const usuario = await getCurrentUser();
+      if (activo) {
+        setUser(usuario);
+        setHydrated(true);
       }
-    }
-    setHydrated(true);
+    };
+    hidratar();
+    return () => {
+      activo = false;
+    };
   }, []);
 
   // Verificar si el usuario está autenticado
@@ -147,7 +165,19 @@ export const AuthProvider = ({ children }) => {
       registerAdmin,
       logout,
     }),
-    [user, loading, hydrated, isAuthenticated, isAdmin, isCliente, login, loginAdministrador, register, registerAdmin, logout]
+    [
+      user,
+      loading,
+      hydrated,
+      isAuthenticated,
+      isAdmin,
+      isCliente,
+      login,
+      loginAdministrador,
+      register,
+      registerAdmin,
+      logout,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

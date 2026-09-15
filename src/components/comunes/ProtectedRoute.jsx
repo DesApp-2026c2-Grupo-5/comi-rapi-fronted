@@ -27,7 +27,7 @@ const destinoPorRol = (user) => (user?.rol === ROLES.ADMIN ? '/admin/dashboard' 
 const ProtectedRoute = ({ requiredRole, children }) => {
   const { isAuthenticated, user, hydrated } = useAuth();
 
-  // Esperar a que se verifique localStorage antes de decidir
+  // Esperar a que se verifique la sesión (cookie) antes de decidir
   if (!hydrated) {
     return null;
   }
@@ -48,13 +48,13 @@ const ProtectedRoute = ({ requiredRole, children }) => {
 
 /**
  * Ruta solo-público: redirige al inicio del usuario si ya hay una sesión activa
- * (por ejemplo, al reabrir la app con la sesión restaurada desde localStorage).
+ * (por ejemplo, al reabrir la app con la sesión restaurada desde la cookie).
  * @param {React.ReactNode} [children] - Componentes hijos (modo wrapper).
  */
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, user, hydrated } = useAuth();
 
-  // Esperar a que se verifique localStorage antes de decidir
+  // Esperar a que se verifique la sesión (cookie) antes de decidir
   if (!hydrated) {
     return null;
   }
