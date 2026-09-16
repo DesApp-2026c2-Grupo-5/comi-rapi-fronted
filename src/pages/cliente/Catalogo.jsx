@@ -18,10 +18,11 @@
 * 
 */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Container, Button, Row, Col, Alert, Form } from 'react-bootstrap';
-import { productosMock, categoriasMock } from '../../services/seedData';
+import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
+import { obtenerProductos } from '../../api/productos';
+import { obtenerCategorias } from '../../api/categorias';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Catalogo.css';
 
@@ -29,15 +30,39 @@ const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [borrador, setBorrador] = useState({ precioMin: null, precioMax: null });
   const [campoInvalido, setCampoInvalido] = useState(null);
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
-  const filtros = ['Todos', ...categoriasMock.map((c) => c.nombre)];
+  useEffect(() => {
+    const cargar = async () => {
+      setCargando(true);
+      setError('');
+      const [resProductos, resCategorias] = await Promise.all([
+        obtenerProductos(),
+        obtenerCategorias(),
+      ]);
+      if (resProductos.success) {
+        setProductos(resProductos.data);
+      } else {
+        setError(resProductos.error || 'No se pudieron cargar los productos.');
+      }
+      if (resCategorias.success) {
+        setCategorias(resCategorias.data);
+      }
+      setCargando(false);
+    };
+    cargar();
+  }, []);
 
-  // Categoría activa: viene del query param (?categoria=...) o por defecto "Todos"
+  // Categoría activa: viene del query param (?categoria=<id>) o por defecto "Todos"
   const categoriaParam = searchParams.get('categoria');
-  const categoriaSeleccionada =
-    categoriaParam && categoriasMock.some((c) => c.nombre === categoriaParam)
-      ? categoriaParam
-      : 'Todos';
+  const categoriaId = categoriaParam ? Number(categoriaParam) : null;
+  const categoriaValida = categoriaId !== null && categorias.some((c) => c.id === categoriaId);
+  const categoriaSeleccionada = categoriaValida
+    ? categorias.find((c) => c.id === categoriaId).nombre
+    : 'Todos';
 
   // Búsqueda por nombre y rango de precio, también persistidos en la URL
   const busqueda = searchParams.get('busqueda') || '';
@@ -48,8 +73,8 @@ const Catalogo = () => {
     const min = precioMin !== '' ? Number(precioMin) : null;
     const max = precioMax !== '' ? Number(precioMax) : null;
 
-    return productosMock.filter((p) => {
-      if (categoriaSeleccionada !== 'Todos' && p.categoria !== categoriaSeleccionada) {
+    return productos.filter((p) => {
+      if (categoriaValida && p.categoriaId !== categoriaId) {
         return false;
       }
       if (busqueda && !p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())) {
@@ -63,16 +88,16 @@ const Catalogo = () => {
       }
       return true;
     });
-  }, [categoriaSeleccionada, busqueda, precioMin, precioMax]);
+  }, [productos, categoriaValida, categoriaId, busqueda, precioMin, precioMax]);
 
   // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
   // Conserva los filtros de búsqueda y precio ya presentes en la URL.
-  const seleccionarCategoria = (nombre) => {
+  const seleccionarCategoria = (id) => {
     const next = new URLSearchParams(searchParams);
-    if (nombre === 'Todos') {
+    if (id === null) {
       next.delete('categoria');
     } else {
-      next.set('categoria', nombre);
+      next.set('categoria', String(id));
     }
     setSearchParams(next, { replace: true });
   };
@@ -132,15 +157,21 @@ const Catalogo = () => {
 
       {/* Filtros / categorías en forma de pills */}
       <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
-        {filtros.map((filtro) => {
-          const activo = categoriaSeleccionada === filtro;
+        <Button
+          className={categoriaSeleccionada === 'Todos' ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
+          onClick={() => seleccionarCategoria(null)}
+        >
+          Todos
+        </Button>
+        {categorias.map((cat) => {
+          const activo = categoriaSeleccionada === cat.nombre;
           return (
             <Button
-              key={filtro}
+              key={cat.id}
               className={activo ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
-              onClick={() => seleccionarCategoria(filtro)}
+              onClick={() => seleccionarCategoria(cat.id)}
             >
-              {filtro}
+              {cat.nombre}
             </Button>
           );
         })}
@@ -206,20 +237,34 @@ const Catalogo = () => {
       </div>
 
       {/* Grid de productos */}
-      <Row className="justify-content-center">
-        {productosFiltrados.map((producto) => (
-          <Col key={producto.id} md={4} lg={3} className="mb-4">
-            <ProductoCard producto={producto} />
-          </Col>
-        ))}
-      </Row>
-
-      {productosFiltrados.length === 0 && (
+      {cargando ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="danger" />
+        </div>
+      ) : error ? (
         <div className="text-center">
-          <Alert variant="light" className="cat-aviso d-inline-block">
-            No hay productos que coincidan con los filtros.
+          <Alert variant="danger" className="cat-aviso d-inline-block">
+            {error}
           </Alert>
         </div>
+      ) : (
+        <>
+          <Row className="justify-content-center">
+            {productosFiltrados.map((producto) => (
+              <Col key={producto.id} md={4} lg={3} className="mb-4">
+                <ProductoCard producto={producto} />
+              </Col>
+            ))}
+          </Row>
+
+          {productosFiltrados.length === 0 && (
+            <div className="text-center">
+              <Alert variant="light" className="cat-aviso d-inline-block">
+                No hay productos que coincidan con los filtros.
+              </Alert>
+            </div>
+          )}
+        </>
       )}
     </Container>
   );

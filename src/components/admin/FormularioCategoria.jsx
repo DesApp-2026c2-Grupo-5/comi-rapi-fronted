@@ -1,0 +1,86 @@
+/**
+ * Propósito: Formulario para crear/editar categorías usando Form de Bootstrap.
+ * Contenido: Componente FormularioCategoria con campos controlados (nombre, descripcion, activa).
+ * Dependencias: react-bootstrap (Form, Button, Card), react-icons (FaSave).
+ * Uso: <FormularioCategoria categoria={categoria} onGuardar={handler} />
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Form, Button, Card } from 'react-bootstrap';
+import { FaSave } from 'react-icons/fa';
+
+const FormularioCategoria = ({ categoria, onGuardar }) => {
+  const [nombre, setNombre] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [activa, setActiva] = useState(true);
+
+  useEffect(() => {
+    if (categoria) {
+      setNombre(categoria.nombre || '');
+      setDescripcion(categoria.descripcion || '');
+      setActiva(categoria.activa !== false);
+    }
+  }, [categoria]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!nombre.trim()) {
+      alert('El nombre es obligatorio.');
+      return;
+    }
+
+    const datosCategoria = {
+      nombre: nombre.trim(),
+      descripcion: descripcion.trim(),
+      activa,
+    };
+
+    if (onGuardar) {
+      onGuardar(datosCategoria);
+    }
+  };
+
+  return (
+    <Card className="shadow-sm" style={{ maxWidth: '500px' }}>
+      <Card.Body>
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Nombre *</Form.Label>
+            <Form.Control
+              type="text"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Nombre de la categoría"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Descripción</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Descripción de la categoría"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Check
+              type="switch"
+              id="categoria-activa"
+              label="Categoría activa"
+              checked={activa}
+              onChange={(e) => setActiva(e.target.checked)}
+            />
+          </Form.Group>
+          <Button variant="primary" type="submit" className="w-100">
+            <FaSave className="me-1" aria-hidden="true" />
+            Guardar cambios
+          </Button>
+        </Form>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export default FormularioCategoria;

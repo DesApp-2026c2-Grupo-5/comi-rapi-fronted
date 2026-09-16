@@ -1,77 +1,91 @@
 /**
- * Propósito: Servicio de autenticación (mock) para login y registro de clientes y admins.
- * Contenido: loginCliente, loginAdmin, registroCliente, registroAdmin.
- * Dependencias: seedData.js (usuariosMock), constants.js (ROLES).
+ * Propósito: Servicio de autenticación que consume el backend real (sesiones + CSRF).
+ * Contenido: obtenerUsuarioActual, loginCliente, loginAdmin, registroCliente, registroAdmin, logout.
+ * Dependencias: client.js (apiGet/apiPost), constants.js (ROLES).
  * Uso: import { loginCliente, registroCliente } from '../api/auth';
- * Nota: Estas funciones simulan llamadas a la API. En producción, reemplazar con fetch/axios.
  */
 
-import { usuariosMock } from '../services/seedData';
+import { apiGet, apiPost } from './client';
 import { ROLES } from '../utils/constants';
-import { delay } from '../utils/helpers';
 
 /**
- * Simula login de cliente.
- * @param {string} email - Email del cliente.
- * @param {string} password - Contraseña del cliente.
- * @returns {Promise<object>} Datos del usuario o error.
+ * Obtiene los datos públicos del usuario autenticado (GET /api/auth/me).
+ * Se usa al iniciar la app para restaurar la sesión server-side.
+ * @returns {Promise<{success: boolean, user?: object, error?: string}>}
  */
-export const loginCliente = async (email, password) => {
-  await delay(500);
-  const usuario = usuariosMock.find(
-    (u) => u.email === email && u.password === password && u.rol === ROLES.CLIENTE
-  );
-  if (usuario) {
-    return { success: true, user: { ...usuario, password: undefined } };
+export const obtenerUsuarioActual = async () => {
+  const result = await apiGet('/auth/me');
+  if (result.success) {
+    return { success: true, user: result.data };
   }
-  return { success: false, error: 'Credenciales incorrectas' };
+  return { success: false, error: result.error };
 };
 
 /**
- * Simula login de administrador.
- * @param {string} email - Email del admin.
- * @param {string} password - Contraseña del admin.
- * @returns {Promise<object>} Datos del usuario o error.
+ * Login común: llama al backend y valida el rol esperado.
+ * Si el usuario autenticado no tiene el rol pedido, cierra la sesión y devuelve error.
+ * @param {string} email
+ * @param {string} password
+ * @param {string} rolEsperado - ROLES.CLIENTE o ROLES.ADMIN.
  */
-export const loginAdmin = async (email, password) => {
-  await delay(500);
-  const usuario = usuariosMock.find(
-    (u) => u.email === email && u.password === password && u.rol === ROLES.ADMIN
-  );
-  if (usuario) {
-    return { success: true, user: { ...usuario, password: undefined } };
+const loginComun = async (email, password, rolEsperado) => {
+  const result = await apiPost('/auth/login', { email, password });
+  if (!result.success) {
+    return { success: false, error: result.error };
   }
-  return { success: false, error: 'Credenciales incorrectas' };
+  const usuario = result.data;
+  if (usuario.rol !== rolEsperado) {
+    await apiPost('/auth/logout', {});
+    return {
+      success: false,
+      error:
+        rolEsperado === ROLES.ADMIN
+          ? 'Las credenciales no corresponden a un administrador'
+          : 'Las credenciales no corresponden a un cliente',
+    };
+  }
+  return { success: true, user: usuario };
 };
 
 /**
- * Simula registro de cliente.
- * @param {object} datos - { nombre, email, password }.
- * @returns {Promise<object>} Datos del usuario registrado.
+ * Inicia sesión como cliente (requiere rol CLIENTE).
  */
-export const registroCliente = async (datos) => {
-  await delay(500);
-  const nuevoUsuario = {
-    id: Date.now(),
-    nombre: datos.nombre,
-    email: datos.email,
-    rol: ROLES.CLIENTE,
-  };
-  return { success: true, user: nuevoUsuario };
+export const loginCliente = (email, password) =>
+  loginComun(email, password, ROLES.CLIENTE);
+
+/**
+ * Inicia sesión como administrador (requiere rol ADMINISTRADOR).
+ */
+export const loginAdmin = (email, password) =>
+  loginComun(email, password, ROLES.ADMIN);
+
+/**
+ * Registro común: crea un usuario con el rol indicado.
+ * @param {object} datos - { nombre, apellido?, email, password, telefono? }.
+ * @param {string} rol - ROLES.CLIENTE o ROLES.ADMIN.
+ */
+const registroComun = async (datos, rol) => {
+  const result = await apiPost('/auth/registro', { ...datos, rol });
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+  return { success: true, user: result.data };
 };
 
 /**
- * Simula registro de administrador.
- * @param {object} datos - { nombre, email, password }.
- * @returns {Promise<object>} Datos del usuario registrado.
+ * Registra un cliente.
  */
-export const registroAdmin = async (datos) => {
-  await delay(500);
-  const nuevoUsuario = {
-    id: Date.now(),
-    nombre: datos.nombre,
-    email: datos.email,
-    rol: ROLES.ADMIN,
-  };
-  return { success: true, user: nuevoUsuario };
+export const registroCliente = (datos) => registroComun(datos, ROLES.CLIENTE);
+
+/**
+ * Registra un administrador.
+ */
+export const registroAdmin = (datos) => registroComun(datos, ROLES.ADMIN);
+
+/**
+ * Cierra la sesión en el backend.
+ */
+export const logout = async () => {
+  const result = await apiPost('/auth/logout', {});
+  return { success: result.success };
 };
