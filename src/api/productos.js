@@ -1,81 +1,73 @@
 /**
- * Propósito: Servicio mock para operaciones CRUD de productos (para administradores).
+ * Propósito: Servicio de productos que consume el backend real (CRUD de administradores).
  * Contenido: obtenerProductos, obtenerProductoPorId, crearProducto, editarProducto, eliminarProducto.
- * Dependencias: seedData.js (productosMock).
+ * Dependencias: client.js (apiGet/apiPost/apiPut/apiDelete).
  * Uso: import { obtenerProductos, editarProducto } from '../api/productos';
  */
 
-import { productosMock } from '../services/seedData';
-import { delay } from '../utils/helpers';
-
-// Copia mutable de los productos mock
-let productos = [...productosMock];
+import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
 /**
- * Obtiene todos los productos.
- * @returns {Promise<Array>} Lista de productos.
+ * Obtiene todos los productos activos.
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
 export const obtenerProductos = async () => {
-  await delay(300);
-  return { success: true, data: [...productos] };
+  const result = await apiGet('/productos');
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
 };
 
 /**
  * Obtiene un producto por su ID.
- * @param {number} id - ID del producto.
- * @returns {Promise<object>} Producto encontrado.
+ * @param {number|string} id - ID del producto.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const obtenerProductoPorId = async (id) => {
-  await delay(200);
-  const producto = productos.find((p) => p.id === Number(id));
-  if (producto) {
-    return { success: true, data: { ...producto } };
+  const result = await apiGet(`/productos/${id}`);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
-  return { success: false, error: 'Producto no encontrado' };
+  return { success: false, error: result.error };
 };
 
 /**
  * Crea un nuevo producto.
- * @param {object} nuevoProducto - Datos del producto.
- * @returns {Promise<object>} Producto creado.
+ * @param {object} nuevoProducto - { nombre, precio, categoriaId, tipo, imagen?, descripcion? }.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const crearProducto = async (nuevoProducto) => {
-  await delay(400);
-  const productoCreado = {
-    id: Date.now(),
-    ...nuevoProducto,
-  };
-  productos.push(productoCreado);
-  return { success: true, data: { ...productoCreado } };
+  const result = await apiPost('/productos', nuevoProducto);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
 };
 
 /**
  * Edita un producto existente.
- * @param {number} id - ID del producto a editar.
- * @param {object} datosActualizados - Nuevos datos.
- * @returns {Promise<object>} Producto actualizado.
+ * @param {number|string} id - ID del producto a editar.
+ * @param {object} datosActualizados - Campos a actualizar.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const editarProducto = async (id, datosActualizados) => {
-  await delay(400);
-  const index = productos.findIndex((p) => p.id === Number(id));
-  if (index !== -1) {
-    productos[index] = { ...productos[index], ...datosActualizados };
-    return { success: true, data: { ...productos[index] } };
+  const result = await apiPut(`/productos/${id}`, datosActualizados);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
-  return { success: false, error: 'Producto no encontrado' };
+  return { success: false, error: result.error };
 };
 
 /**
- * Elimina un producto.
- * @param {number} id - ID del producto a eliminar.
- * @returns {Promise<object>} Resultado de la operación.
+ * Elimina (baja lógica) un producto.
+ * @param {number|string} id - ID del producto a eliminar.
+ * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const eliminarProducto = async (id) => {
-  await delay(400);
-  const index = productos.findIndex((p) => p.id === Number(id));
-  if (index !== -1) {
-    productos.splice(index, 1);
+  const result = await apiDelete(`/productos/${id}`);
+  if (result.success) {
     return { success: true };
   }
-  return { success: false, error: 'Producto no encontrado' };
+  return { success: false, error: result.error };
 };

@@ -1,34 +1,51 @@
 /**
  * Propósito: Formulario para crear/editar productos usando Form de Bootstrap.
  * Contenido: Componente FormularioProducto con campos controlados.
- * Dependencias: react-bootstrap (Form, Button, Card), seedData.js (categoriasMock).
+ * Dependencias: react-bootstrap (Form, Button, Card, Spinner), react-icons, api/categorias.js.
  * Uso: <FormularioProducto producto={producto} onGuardar={handler} />
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Card } from 'react-bootstrap';
+import { Form, Button, Card, Spinner } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
-import { categoriasMock } from '../../services/seedData';
+import { obtenerCategorias } from '../../api/categorias';
 
 const FormularioProducto = ({ producto, onGuardar }) => {
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
-  const [categoria, setCategoria] = useState('');
+  const [categoriaId, setCategoriaId] = useState('');
+  const [tipo, setTipo] = useState('PRODUCTO');
   const [imagen, setImagen] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [categorias, setCategorias] = useState([]);
+  const [cargandoCategorias, setCargandoCategorias] = useState(true);
+
+  useEffect(() => {
+    const cargar = async () => {
+      const result = await obtenerCategorias();
+      if (result.success) {
+        setCategorias(result.data);
+      }
+      setCargandoCategorias(false);
+    };
+    cargar();
+  }, []);
 
   useEffect(() => {
     if (producto) {
       setNombre(producto.nombre || '');
-      setPrecio(producto.precio || '');
-      setCategoria(producto.categoria || '');
+      setPrecio(producto.precio ?? '');
+      setCategoriaId(producto.categoriaId ?? '');
+      setTipo(producto.tipo || 'PRODUCTO');
       setImagen(producto.imagen || '');
+      setDescripcion(producto.descripcion || '');
     }
   }, [producto]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!nombre.trim() || !precio || !categoria) {
+    if (!nombre.trim() || precio === '' || !categoriaId || !tipo) {
       alert('Por favor completa todos los campos obligatorios.');
       return;
     }
@@ -36,16 +53,25 @@ const FormularioProducto = ({ producto, onGuardar }) => {
     const datosProducto = {
       nombre: nombre.trim(),
       precio: Number(precio),
-      categoria,
-      imagen: imagen.trim() || 'https://via.placeholder.com/300x200?text=Producto',
+      categoriaId: Number(categoriaId),
+      tipo,
+      descripcion: descripcion.trim(),
+      imagen:
+        imagen.trim() || 'https://via.placeholder.com/300x200?text=Producto',
     };
-
-    alert(`Producto "${datosProducto.nombre}" guardado exitosamente (simulado).`);
 
     if (onGuardar) {
       onGuardar(datosProducto);
     }
   };
+
+  if (cargandoCategorias) {
+    return (
+      <div className="text-center py-4">
+        <Spinner animation="border" variant="danger" />
+      </div>
+    );
+  }
 
   return (
     <Card className="shadow-sm" style={{ maxWidth: '500px' }}>
@@ -73,12 +99,29 @@ const FormularioProducto = ({ producto, onGuardar }) => {
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Categoría *</Form.Label>
-            <Form.Select value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+            <Form.Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
               <option value="">Seleccionar categoría</option>
-              {categoriasMock.map((cat) => (
-                <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
+              {categorias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.nombre}</option>
               ))}
             </Form.Select>
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Tipo *</Form.Label>
+            <Form.Select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+              <option value="PRODUCTO">Producto</option>
+              <option value="COMBO">Combo</option>
+            </Form.Select>
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Descripción</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Descripción del producto"
+            />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>URL de imagen</Form.Label>
