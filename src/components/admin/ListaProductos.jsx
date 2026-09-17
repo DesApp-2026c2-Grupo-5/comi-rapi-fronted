@@ -45,6 +45,7 @@ const ListaProductos = () => {
     }
     const result = await eliminarProducto(id);
     if (result.success) {
+      alert(`Producto "${nombre}" eliminado.`);
       cargarProductos();
     } else {
       setError(result.error || 'No se pudo eliminar el producto.');
@@ -107,6 +108,9 @@ const ListaProductos = () => {
             ))}
           </tbody>
         </Table>
+      )}
+      {!cargando && !error && productos.length === 0 && (
+        <Alert variant="light">No hay productos todavía.</Alert>
       )}
     </Container>
   );
