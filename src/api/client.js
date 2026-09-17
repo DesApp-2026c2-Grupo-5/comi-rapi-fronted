@@ -14,7 +14,7 @@
  * Uso: import { apiGet, apiPost, apiPut, apiDelete } from './client';
  */
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const CSRF_COOKIE = 'csrf-token';
 const CSRF_HEADER = 'x-csrf-token';
