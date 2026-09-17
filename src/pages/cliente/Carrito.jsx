@@ -50,7 +50,7 @@ const Carrito = () => {
     [obtenerDireccionPrincipal, user?.email]
   );
 
-  const handleConfirmarPedido = () => {
+  const handleConfirmarPedido = async () => {
     // Sin dirección principal: el cliente no puede confirmar
     const direccion = obtenerDireccionPrincipal(user?.email);
     if (!direccion) {
@@ -72,9 +72,9 @@ const Carrito = () => {
       return;
     }
 
-    // 4. Crear el pedido con la sucursal asignada, la dirección del cliente y el costo de
-    //    envío calculado (estado inicial PENDIENTE)
-    crearPedido(
+    // 4. Crear el pedido en la API real (Postgres) con fallback a mock local.
+    //    El total se recalcula en el backend; acá se envía como referencia.
+    await crearPedido(
       {
         cliente: user?.email || 'cliente@test.com',
         productos: items.map((item) => ({
