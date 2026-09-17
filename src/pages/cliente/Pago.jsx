@@ -66,7 +66,7 @@ const Pago = () => {
     // Simular el procesamiento del pago
     await simuladorPago({ total: montoTotal, metodo });
 
-    confirmarPedido(pedidoActual.id);
+    await confirmarPedido(pedidoActual.id);
     vaciarCarrito();
     navigate('/cliente/confirmacion');
   };

@@ -8,9 +8,10 @@
  * Uso: <PedidoProvider> envuelve la app en App.jsx. Consumir con usePedidos().
  */
 
-import React, { createContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { ESTADOS_PEDIDO } from '../utils/constants';
 import { pedidosMock } from '../services/seedData';
+import * as pedidosApi from '../api/pedidos';
 
 // Se crea el contexto
 export const PedidoContext = createContext(null);
@@ -20,10 +21,30 @@ export const PedidoContext = createContext(null);
  * @param {React.ReactNode} children - Componentes hijos.
  */
 export const PedidoProvider = ({ children }) => {
-  // Todos los pedidos de la app (MOCK - reemplazar por la API real)
+  // Todos los pedidos de la app (mock inicial hasta cargar la API real)
   const [pedidos, setPedidos] = useState(pedidosMock);
   // Pedido recién creado/confirmado (se muestra en la página de confirmación)
   const [pedidoActual, setPedidoActual] = useState(null);
+  // Carga inicial desde la API (quedan los mock si la API no responde)
+  const [cargandoPedidos, setCargandoPedidos] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      setCargandoPedidos(true);
+      try {
+        const res = await pedidosApi.obtenerPedidos();
+        if (vivo && res.success && Array.isArray(res.data)) {
+          setPedidos(res.data);
+        }
+      } finally {
+        if (vivo) setCargandoPedidos(false);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   // Registra una entrada en el historial de estados de un pedido
   const agregarHistorial = (pedido, nuevoEstado, fecha = new Date().toISOString()) => {
@@ -38,35 +59,67 @@ export const PedidoProvider = ({ children }) => {
   };
 
   /**
-   * Crea un nuevo pedido con sucursal asignada y estado inicial PENDIENTE.
-   * @param {object} datosPedido - Datos del pedido { cliente, productos, total, direccion }.
+   * Crea un nuevo pedido: intenta persistirlo en la API real (Postgres) y
+   * cae a mock local si la API no responde (dev). Devuelve el pedido creado.
+   * @param {object} datosPedido - { cliente, productos, total, costoEnvio, direccion }.
    * @param {object} sucursalAsignada - Sucursal asignada automáticamente.
-   * @returns {object} Pedido creado.
    */
-  const crearPedido = useCallback((datosPedido, sucursalAsignada) => {
-    const fecha = new Date().toISOString();
-    const nuevoPedido = {
-      id: Date.now(), // MOCK - el ID real vendría del backend
-      cliente: datosPedido.cliente,
-      productos: datosPedido.productos,
-      total: datosPedido.total,
-      costoEnvio: datosPedido.costoEnvio || 0,
-      direccion: datosPedido.direccion,
-      sucursal: sucursalAsignada,
-      estado: ESTADOS_PEDIDO.PENDIENTE,
-      fecha,
-      historialEstados: [{ estado: ESTADOS_PEDIDO.PENDIENTE, fecha }],
+  const crearPedido = useCallback(async (datosPedido, sucursalAsignada) => {
+  const crearMockLocal = () => {
+      // Fallback local (sin backend o con error): mismo shape que antes
+      const fecha = new Date().toISOString();
+      const nuevoPedido = {
+        id: Date.now(),
+        cliente: datosPedido.cliente,
+        productos: datosPedido.productos,
+        total: datosPedido.total,
+        costoEnvio: datosPedido.costoEnvio || 0,
+        direccion: datosPedido.direccion,
+        sucursal: sucursalAsignada,
+        estado: ESTADOS_PEDIDO.PENDIENTE,
+        fecha,
+        historialEstados: [{ estado: ESTADOS_PEDIDO.PENDIENTE, fecha }],
+      };
+      setPedidos((prev) => [...prev, nuevoPedido]);
+      setPedidoActual(nuevoPedido);
+      return nuevoPedido;
     };
-    setPedidos((prev) => [...prev, nuevoPedido]);
-    setPedidoActual(nuevoPedido);
-    return nuevoPedido;
+    try {
+      const res = await pedidosApi.crearPedido(datosPedido, sucursalAsignada);
+      if (res.success) {
+        setPedidos((prev) => [...prev, res.data]);
+        setPedidoActual(res.data);
+        return res.data;
+      }
+      // Error real del backend (no de red): avisar, no tragarlo en silencio
+      if (!res._mock) {
+        alert(`No se pudo guardar el pedido en la base de datos: ${res.error}`);
+      }
+    } catch {
+      // Sin backend: sigue con mock local
+    }
+    return crearMockLocal();
   }, []);
 
   /**
-   * Simula el pago: pasa el pedido de PENDIENTE a CONFIRMADO automáticamente.
+   * Confirma el pago: PENDIENTE → CONFIRMADO en la API real, con fallback local.
    * @param {number} pedidoId - ID del pedido a confirmar.
    */
-  const confirmarPedido = useCallback((pedidoId) => {
+  const confirmarPedido = useCallback(async (pedidoId) => {
+    try {
+      const res = await pedidosApi.confirmarPedido(pedidoId);
+      if (res.success) {
+        setPedidos((prev) =>
+          prev.map((p) => (p.id === pedidoId ? res.data : p))
+        );
+        setPedidoActual((current) =>
+          current && current.id === pedidoId ? res.data : current
+        );
+        return res.data;
+      }
+    } catch {
+      // cae al fallback local de abajo
+    }
     setPedidos((prev) =>
       prev.map((p) =>
         p.id === pedidoId ? agregarHistorial(p, ESTADOS_PEDIDO.CONFIRMADO) : p
@@ -108,12 +161,13 @@ export const PedidoProvider = ({ children }) => {
     () => ({
       pedidos,
       pedidoActual,
+      cargandoPedidos,
       crearPedido,
       confirmarPedido,
       cambiarEstado,
       obtenerPedidosPendientes,
     }),
-    [pedidos, pedidoActual, crearPedido, confirmarPedido, cambiarEstado, obtenerPedidosPendientes]
+    [pedidos, pedidoActual, cargandoPedidos, crearPedido, confirmarPedido, cambiarEstado, obtenerPedidosPendientes]
   );
 
   return <PedidoContext.Provider value={value}>{children}</PedidoContext.Provider>;
