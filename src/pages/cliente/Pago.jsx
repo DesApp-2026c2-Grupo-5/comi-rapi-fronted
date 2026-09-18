@@ -16,7 +16,6 @@ import { FaArrowLeft, FaDollarSign, FaCreditCard, FaCheckCircle } from 'react-ic
 import { usePedidos } from '../../hooks/usePedidos';
 import { useCarrito } from '../../hooks/useCarrito';
 import { simuladorPago } from '../../services/simuladorPago';
-import { calcularTotalConEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatDate, formatPrice } from '../../utils/formatters';
 import IconoEstado from '../../components/comunes/IconoEstado';
@@ -54,7 +53,8 @@ const Pago = () => {
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedidoActual.estado] || pedidoActual.estado;
   const { sucursal } = pedidoActual;
-  const montoTotal = calcularTotalConEnvio(pedidoActual.total);
+  // El total del backend ya incluye el envío
+  const montoTotal = pedidoActual.total;
 
   // Aprueba el pago automáticamente y pasa el pedido de PENDIENTE a CONFIRMADO
   const handlePagar = async (metodo) => {
@@ -156,6 +156,7 @@ const Pago = () => {
           <ResumenPedido
             items={pedidoActual.productos}
             total={pedidoActual.total}
+            costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
           />
 

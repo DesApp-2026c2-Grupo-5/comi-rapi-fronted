@@ -41,9 +41,9 @@ const DetallePedido = () => {
   }
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
-  // Costo de envío guardado en el pedido (los seed más viejos lo calculan).
+  // El total del backend ya incluye el envío (los seed más viejos lo calculan).
   const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
-  const totalConEnvio = pedido.total + costoEnvio;
+  const subtotal = pedido.total - costoEnvio;
 
   return (
     <Container className="py-5">
@@ -131,10 +131,10 @@ const DetallePedido = () => {
             </tbody>
           </Table>
 
-          {/* Total destacado (subtotal + envío) */}
+          {/* Totales (el total del backend ya incluye el envío) */}
           <div className="detalle-subtotal-envio mt-4 mb-2">
             <span>Subtotal</span>
-            <span>{formatPrice(pedido.total)}</span>
+            <span>{formatPrice(subtotal)}</span>
           </div>
           <div className="detalle-subtotal-envio mb-2">
             <span>Envío</span>
@@ -142,7 +142,7 @@ const DetallePedido = () => {
           </div>
           <div className="detalle-total mt-2 mb-4">
             <span>Total</span>
-            <span className="text-danger">{formatPrice(totalConEnvio)}</span>
+            <span className="text-danger">{formatPrice(pedido.total)}</span>
           </div>
 
           {/* Stepper de estados (mismo visual que el admin) */}

@@ -17,7 +17,6 @@ import { ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { IconoCheck } from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import { formatDate, formatPrice } from '../../utils/formatters';
-import { calcularTotalConEnvio } from '../../services/envio';
 import './ConfirmacionPedido.css';
 
 const ConfirmacionPedido = () => {
@@ -72,7 +71,7 @@ const ConfirmacionPedido = () => {
               <p className="mt-2 mb-0">
                 <strong>Total abonado:</strong>{' '}
                 <span className="text-success fw-bold">
-                  {formatPrice(calcularTotalConEnvio(pedidoActual.total))}
+                  {formatPrice(pedidoActual.total)}
                 </span>
               </p>
 
@@ -148,6 +147,7 @@ const ConfirmacionPedido = () => {
           <ResumenPedido
             items={pedidoActual.productos}
             total={pedidoActual.total}
+            costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
           />
         </Col>
