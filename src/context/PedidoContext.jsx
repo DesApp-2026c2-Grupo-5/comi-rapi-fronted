@@ -13,6 +13,7 @@
 
 import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { ESTADOS_PEDIDO } from '../utils/constants';
+import { useAuth } from '../hooks/useAuth';
 import * as pedidosApi from '../api/pedidos';
 
 // Se crea el contexto
@@ -31,12 +32,21 @@ export const PedidoProvider = ({ children }) => {
   const [cargandoPedidos, setCargandoPedidos] = useState(false);
   // Se incrementa al confirmar un pago: el Navbar lo usa para animar "Mis Pedidos"
   const [senalPedido, setSenalPedido] = useState(0);
+  const { user, hydrated } = useAuth();
+  const emailSesion = user?.email;
 
+  // Carga inicial y ante cambios de sesión: el backend scopea por su propia
+  // cookie, acá solo se espera a la hidratación y se limpia al salir.
   useEffect(() => {
+    if (!hydrated) return;
     let vivo = true;
     (async () => {
       setCargandoPedidos(true);
       try {
+        if (!emailSesion) {
+          if (vivo) setPedidos([]);
+          return;
+        }
         const res = await pedidosApi.obtenerPedidos();
         if (vivo && res.success && Array.isArray(res.data)) {
           setPedidos(res.data);
@@ -48,7 +58,7 @@ export const PedidoProvider = ({ children }) => {
     return () => {
       vivo = false;
     };
-  }, []);
+  }, [hydrated, emailSesion]);
 
   // Inserta un pedido al inicio (recientes primero), sin duplicar por id
   const insertarPrimero = (lista, pedido) => [

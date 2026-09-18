@@ -1,11 +1,78 @@
-import React, { createContext, useState, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
 import { calcularPrecioUnitario } from '../services/personalizacionConfig';
 import { compararPersonalizacion, generarIdLinea, personalizacionVacia } from '../utils/personalizacionHelpers';
+import { useAuth } from '../hooks/useAuth';
+import {
+  leerCarrito,
+  guardarCarrito,
+  limpiarCarrito,
+  migrarCarritoInvitado,
+  sanearItems,
+  normalizarEmail,
+} from '../utils/carritoStorage';
 
 export const CarritoContext = createContext(null);
 
+/** Recalcula el precio personalizado (la config puede haber cambiado entre sesiones). */
+const recalcularPrecios = (lineas) =>
+  lineas.map((item) => {
+    const pers = item.personalizacion || personalizacionVacia();
+    return {
+      ...item,
+      personalizacion: pers,
+      precioUnitarioPersonalizado: calcularPrecioUnitario(
+        item.producto.precio,
+        pers.extras || [],
+        pers.acompanamientos || []
+      ),
+    };
+  });
+
 export const CarritoProvider = ({ children }) => {
-  const [items, setItems] = useState([]);
+  const { user } = useAuth();
+  const email = normalizarEmail(user?.email);
+
+  // Dueño actual de la clave de storage ('' = invitado)
+  const [clave, setClave] = useState(email);
+  const [items, setItems] = useState(() =>
+    recalcularPrecios(sanearItems(leerCarrito(email)))
+  );
+
+  // Cambio de usuario (login/logout/otro usuario): migrar invitado y cargar
+  // el carrito correspondiente. No borra claves ajenas: cada uno retoma lo suyo.
+  useEffect(() => {
+    if (email === clave) return;
+    if (email) {
+      setItems(recalcularPrecios(migrarCarritoInvitado(email)));
+    } else {
+      setItems(recalcularPrecios(sanearItems(leerCarrito(null))));
+    }
+    setClave(email);
+    // Solo ante cambio de usuario (clave se actualiza acá mismo).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]);
+
+  // Persistir en cada cambio bajo la clave vigente.
+  useEffect(() => {
+    guardarCarrito(clave, items);
+  }, [items, clave]);
+
+  // Sincronizar pestañas abiertas del mismo navegador.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const alExterno = (evento) => {
+      if (!evento.key || !evento.key.endsWith(clave || 'invitado')) return;
+      setItems(recalcularPrecios(sanearItems(leerCarrito(clave))));
+    };
+    window.addEventListener('storage', alExterno);
+    return () => window.removeEventListener('storage', alExterno);
+  }, [clave]);
 
   const agregarAlCarrito = useCallback((producto, cantidad = 1, personalizacion = null) => {
     const pers = personalizacion || personalizacionVacia();
@@ -33,6 +100,7 @@ export const CarritoProvider = ({ children }) => {
         },
       ];
     });
+    alert(`"${producto.nombre}" agregado al carrito.`);
   }, []);
 
   const eliminarDelCarrito = useCallback((idLineaOrProductoId) => {
@@ -66,7 +134,9 @@ export const CarritoProvider = ({ children }) => {
 
   const vaciarCarrito = useCallback(() => {
     setItems([]);
-  }, []);
+    limpiarCarrito(clave);
+    alert('Carrito vaciado.');
+  }, [clave]);
 
   const totalItems = useMemo(() => items.reduce((total, item) => total + item.cantidad, 0), [items]);
 
