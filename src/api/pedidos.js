@@ -173,15 +173,16 @@ export const obtenerPedidoPorId = async (id) => {
  * Cambia el estado de un pedido contra la API real.
  * @param {number|string} id - ID del pedido.
  * @param {string} estado - Nuevo estado (el backend valida la transición).
+ * @param {string} [medioPago] - Medio de pago ('MERCADO_PAGO' | 'TARJETA'), se persiste en el pedido.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export const cambiarEstado = async (id, estado) => {
+export const cambiarEstado = async (id, estado, medioPago) => {
   try {
     const csrf = await obtenerCsrfToken();
     const data = await requestJson(`/pedidos/${id}/estado`, {
       method: 'PATCH',
       headers: { 'x-csrf-token': csrf },
-      body: JSON.stringify({ estado }),
+      body: JSON.stringify({ estado, ...(medioPago ? { medioPago } : {}) }),
     });
     return { success: true, data: mapearPedido(data) };
   } catch (error) {
@@ -190,8 +191,8 @@ export const cambiarEstado = async (id, estado) => {
 };
 
 /**
- * Confirma un pedido (pendiente → confirmado).
+ * Confirma un pedido (pendiente → confirmado), persistiendo el medio de pago.
  */
-export const confirmarPedido = async (id) => {
-  return cambiarEstado(id, 'confirmado');
+export const confirmarPedido = async (id, medioPago) => {
+  return cambiarEstado(id, 'confirmado', medioPago);
 };
