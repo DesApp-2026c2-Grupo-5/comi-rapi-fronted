@@ -3,7 +3,7 @@
  * Contenido: Componente Carrito con ItemCarrito, ResumenPedido, estado vacío y flujo de
  *            confirmación que asigna la sucursal óptima automáticamente.
  * Dependencias: react-bootstrap (Container, Row, Col, Button, Card), react-router-dom,
- *               useCarrito hook, useSucursal hook, usePedidos hook, useAuth hook,
+ *               useCarrito hook, useSucursal hook, usePedidos hook, useDirecciones hook,
  *               services/asignacionSucursal.js, ItemCarrito, ResumenPedido, Carrito.css.
  * Uso: Ruta "/cliente/carrito" → <Carrito />
  *
@@ -24,7 +24,6 @@ import { FaUtensils, FaTrashAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useSucursal } from '../../hooks/useSucursal';
 import { usePedidos } from '../../hooks/usePedidos';
-import { useAuth } from '../../hooks/useAuth';
 import { useDirecciones } from '../../hooks/useDirecciones';
 import { asignarSucursalOptima } from '../../services/asignacionSucursal';
 import { calcularCostoEnvio } from '../../services/envio';
@@ -37,7 +36,6 @@ const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
   const { sucursales } = useSucursal();
   const { crearPedido, obtenerPedidosPendientes, pedidoActual } = usePedidos();
-  const { user } = useAuth();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const navigate = useNavigate();
 
@@ -80,11 +78,11 @@ const Carrito = () => {
       return;
     }
 
-    // 4. Crear el pedido en la API real (Postgres) con fallback a mock local.
-    //    El total se recalcula en el backend; acá se envía como referencia.
-    await crearPedido(
+    // 4. Crear el pedido en la API real (Postgres). El total se recalcula en
+    //    el backend; acá se envía como referencia. Sin fallback: si la API
+    //    falla, el contexto muestra el error y no se navega a la pantalla de pago.
+    const pedidoCreado = await crearPedido(
       {
-        cliente: user?.email || 'cliente@test.com',
         productos: items.map((item) => ({
           nombre: item.producto.nombre,
           cantidad: item.cantidad,
@@ -101,6 +99,7 @@ const Carrito = () => {
       },
       sucursalAsignada
     );
+    if (!pedidoCreado) return;
 
     // 5. Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
     navigate('/cliente/pago');
