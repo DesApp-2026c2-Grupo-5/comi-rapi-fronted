@@ -49,9 +49,9 @@ const MisPedidos = () => {
       ) : (
         misPedidos.map((pedido) => {
           const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
-          // Costo de envío guardado en el pedido (los seed más viejos lo calculan).
+          // El total del backend ya incluye el envío (los seed más viejos lo calculan).
           const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
-          const totalConEnvio = pedido.total + costoEnvio;
+          const subtotal = pedido.total - costoEnvio;
           return (
             <Card key={pedido.id} className="mb-3 shadow-sm">
               <Card.Header className="d-flex justify-content-between align-items-center">
@@ -78,7 +78,7 @@ const MisPedidos = () => {
                     </div>
                   ))}
                 </div>
-                <p className="mb-1"><strong>Subtotal:</strong> {formatPrice(pedido.total)}</p>
+                <p className="mb-1"><strong>Subtotal:</strong> {formatPrice(subtotal)}</p>
                 <p className="mb-1">
                   <strong>Envío:</strong>{' '}
                   {costoEnvio === 0 ? (
@@ -87,7 +87,7 @@ const MisPedidos = () => {
                     formatPrice(costoEnvio)
                   )}
                 </p>
-                <p className="mb-2"><strong>Total:</strong> {formatPrice(totalConEnvio)}</p>
+                <p className="mb-2"><strong>Total:</strong> {formatPrice(pedido.total)}</p>
                 <p className="mb-2">
                   <strong>Sucursal:</strong>{' '}
                   {pedido.sucursal?.nombre || pedido.sucursal || '-'}
