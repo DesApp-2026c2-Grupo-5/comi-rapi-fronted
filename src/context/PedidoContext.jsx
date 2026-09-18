@@ -84,12 +84,14 @@ export const PedidoProvider = ({ children }) => {
   }, []);
 
   /**
-   * Confirma el pago: PENDIENTE → CONFIRMADO en la API real.
+   * Confirma el pago: PENDIENTE → CONFIRMADO en la API real, persistiendo el
+   * medio de pago elegido en el pedido.
    * Si la API falla, muestra el error y devuelve null (no se simula nada).
    * @param {number} pedidoId - ID del pedido a confirmar.
+   * @param {string} [medioPago] - Medio de pago ('MERCADO_PAGO' | 'TARJETA').
    */
-  const confirmarPedido = useCallback(async (pedidoId) => {
-    const res = await pedidosApi.confirmarPedido(pedidoId);
+  const confirmarPedido = useCallback(async (pedidoId, medioPago) => {
+    const res = await pedidosApi.confirmarPedido(pedidoId, medioPago);
     if (res.success && res.data) {
       setPedidos((prev) =>
         prev.map((p) => (p.id === pedidoId ? res.data : p))

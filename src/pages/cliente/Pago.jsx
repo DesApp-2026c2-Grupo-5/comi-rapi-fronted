@@ -23,6 +23,13 @@ import IconoEstado from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import './Pago.css';
 
+// El frontend usa claves en minúscula para las opciones; el backend persiste
+// el ENUM 'MERCADO_PAGO' | 'TARJETA' (docs/reglas-negocio.md, sección 8).
+const MAPA_MEDIO_PAGO = {
+  mercado_pago: 'MERCADO_PAGO',
+  tarjeta: 'TARJETA',
+};
+
 const Pago = () => {
   const { pedidoActual, confirmarPedido } = usePedidos();
   const { vaciarCarrito } = useCarrito();
@@ -66,7 +73,8 @@ const Pago = () => {
     // Simular el procesamiento del pago
     await simuladorPago({ total: montoTotal, metodo });
 
-    const confirmado = await confirmarPedido(pedidoActual.id);
+    const medioPago = MAPA_MEDIO_PAGO[metodo];
+    const confirmado = await confirmarPedido(pedidoActual.id, medioPago);
     if (!confirmado) {
       // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE
       setPaginando(false);
