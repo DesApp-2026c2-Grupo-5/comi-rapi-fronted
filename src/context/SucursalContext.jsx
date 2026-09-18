@@ -2,27 +2,45 @@
  * Propósito: Contexto de sucursal para manejar la asignación de sucursal al cliente y la gestión
  *            de sucursales por parte del administrador.
  * Contenido: SucursalProvider, SucursalContext, con el estado de sucursales, sucursales cercanas,
- *            pedidos pendientes, la sucursal asignada y funciones de gestión (CRUD simulado).
+ *            pedidos pendientes, la sucursal asignada y funciones de gestión.
  * Dependencias: React (createContext, useState, useCallback, useMemo, useEffect),
- *               services/asignacionSucursal.js, api/sucursales.js, services/seedData.js.
+ *               services/asignacionSucursal.js, api/sucursales.js.
  * Uso: <SucursalProvider> envuelve la app en App.jsx. Consumir con useSucursal().
+ *
+ * NOTA: La lectura de sucursales consume el backend real (GET /api/sucursales).
+ * El ABM de sucursales del admin sigue simulado en memoria: el backend aún no
+ * expone endpoints de escritura (pendiente de un sprint futuro).
  */
 
 import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
-import {
-  obtenerSucursales,
-  crearSucursal,
-  actualizarSucursal,
-  eliminarSucursal,
-} from '../api/sucursales';
+import { obtenerSucursales } from '../api/sucursales';
 import { asignarSucursalOptima as asignarSucursalOptimaService } from '../services/asignacionSucursal';
 import { pedidosPendientesMock } from '../services/seedData';
 
 // Se crea el contexto
 export const SucursalContext = createContext(null);
 
-// Las sucursales conservan 'direccion' (texto), 'lat' y 'lng'. La dirección se muestra
-// en pedidos/confirmación y las coordenadas se mantienen para la lógica de asignación.
+// Las sucursales usan el shape real del backend: 'direccion' (texto), 'latitud',
+// 'longitud', 'horarios' y 'activa' (boolean). La dirección se muestra en
+// pedidos/confirmación y las coordenadas se mantienen para la lógica de asignación.
+
+/**
+ * Convierte el shape del formulario del admin (mock: lat/lng/horario/estado) al
+ * shape real del backend (latitud/longitud/horarios/activa) para mantener un
+ * único formato en el estado global.
+ * @param {object} datos - Datos de la sucursal a normalizar.
+ * @returns {object} Sucursal en shape real.
+ */
+const normalizarSucursal = (datos) => {
+  const { lat, lng, horario, estado, ...resto } = datos || {};
+  return {
+    ...resto,
+    latitud: resto.latitud ?? (lat !== undefined ? Number(lat) : null),
+    longitud: resto.longitud ?? (lng !== undefined ? Number(lng) : null),
+    horarios: resto.horarios ?? horario ?? null,
+    activa: resto.activa !== undefined ? Boolean(resto.activa) : estado !== 'inactivo',
+  };
+};
 
 /**
  * Proveedor del contexto de sucursal.
@@ -39,12 +57,14 @@ export const SucursalProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   /**
-   * Carga las sucursales desde la API (mock) y actualiza el estado global.
+   * Carga las sucursales desde la API real y actualiza el estado global.
+   * @param {object} [opciones]
+   * @param {boolean} [opciones.incluirInactivas=false] - Solo para ADMIN.
    */
-  const obtenerSucursalesFn = useCallback(async () => {
+  const obtenerSucursalesFn = useCallback(async (opciones) => {
     setLoading(true);
     try {
-      const result = await obtenerSucursales();
+      const result = await obtenerSucursales(opciones);
       if (result.success) {
         setSucursales(result.data);
         return result.data;
@@ -93,48 +113,50 @@ export const SucursalProvider = ({ children }) => {
   );
 
   /**
-   * Agrega una nueva sucursal al estado local (y lo persiste en el servicio mock).
+   * Agrega una nueva sucursal al estado local (simulado, sin persistencia:
+   * el backend aún no expone ABM de sucursales).
    * @param {object} sucursal - Datos de la nueva sucursal.
    * @returns {Promise<object|null>} Sucursal creada o null si falla.
    */
   const agregarSucursal = useCallback(async (sucursal) => {
-    const result = await crearSucursal(sucursal);
-    if (result.success) {
-      setSucursales((prev) => [...prev, result.data]);
-      return result.data;
-    }
-    return null;
+    if (!sucursal) return null;
+    const sucursalCreada = { id: Date.now(), ...normalizarSucursal(sucursal) };
+    setSucursales((prev) => [...prev, sucursalCreada]);
+    return sucursalCreada;
   }, []);
 
   /**
-   * Actualiza una sucursal existente en el estado local.
+   * Actualiza una sucursal en el estado local (simulado, sin persistencia).
    * @param {number} id - ID de la sucursal a actualizar.
    * @param {object} datos - Nuevos datos de la sucursal.
    * @returns {Promise<object|null>} Sucursal actualizada o null si falla.
    */
   const actualizarSucursalFn = useCallback(async (id, datos) => {
-    const result = await actualizarSucursal(id, datos);
-    if (result.success) {
-      setSucursales((prev) =>
-        prev.map((s) => (s.id === Number(id) ? result.data : s))
-      );
-      return result.data;
-    }
-    return null;
+    if (!datos) return null;
+    let actualizada = null;
+    setSucursales((prev) =>
+      prev.map((s) => {
+        if (s.id !== Number(id)) return s;
+        actualizada = { ...s, ...normalizarSucursal(datos) };
+        return actualizada;
+      })
+    );
+    return actualizada;
   }, []);
 
   /**
-   * Elimina una sucursal del estado local.
+   * Elimina una sucursal del estado local (simulado, sin persistencia).
    * @param {number} id - ID de la sucursal a eliminar.
    * @returns {Promise<boolean>} true si se eliminó correctamente.
    */
   const eliminarSucursalFn = useCallback(async (id) => {
-    const result = await eliminarSucursal(id);
-    if (result.success) {
-      setSucursales((prev) => prev.filter((s) => s.id !== Number(id)));
-      return true;
-    }
-    return false;
+    let eliminada = false;
+    setSucursales((prev) => {
+      const nuevaLista = prev.filter((s) => s.id !== Number(id));
+      eliminada = nuevaLista.length !== prev.length;
+      return nuevaLista;
+    });
+    return eliminada;
   }, []);
 
   // Cargar sucursales al montar
@@ -144,7 +166,7 @@ export const SucursalProvider = ({ children }) => {
 
   // Sucursales cercanas (solo activas) calculadas para el cliente
   const sucursalesCercanas = useMemo(
-    () => sucursales.filter((s) => s.estado === 'activo'),
+    () => sucursales.filter((s) => s.activa === true),
     [sucursales]
   );
 

@@ -3,8 +3,11 @@
  * Contenido: Tabla con todas las sucursales (ID, Nombre, Dirección, Teléfono, Estado, Acciones),
  *            botón "Agregar nueva sucursal" y acciones de Editar/Eliminar con confirmación.
  * Dependencias: react-bootstrap (Container, Table, Button, Alert, Spinner), react-router-dom (useNavigate),
- *               context/SucursalContext (useSucursal), utils/constants.js (ESTADO_SUCURSAL).
+ *               context/SucursalContext (useSucursal).
  * Uso: Ruta "/admin/sucursales" → <GestionSucursales />
+ *
+ * NOTA: La lectura consume el backend real. El ABM sigue simulado: el backend
+ * aún no expone endpoints de escritura de sucursales (sprint futuro).
  */
 
 import React, { useEffect, useState } from 'react';
@@ -12,16 +15,15 @@ import { Container, Table, Button, Alert, Spinner, Badge } from 'react-bootstrap
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSucursal } from '../../hooks/useSucursal';
-import { ESTADO_SUCURSAL } from '../../utils/constants';
 
 const GestionSucursales = () => {
   const navigate = useNavigate();
   const { sucursales, loading, obtenerSucursales, eliminarSucursal } = useSucursal();
   const [mensaje, setMensaje] = useState('');
 
-  // Recarga las sucursales al montar
+  // Recarga las sucursales al montar (incluye inactivas: vista de administración)
   useEffect(() => {
-    obtenerSucursales();
+    obtenerSucursales({ incluirInactivas: true });
   }, [obtenerSucursales]);
 
   // Redirige al formulario de nueva sucursal
@@ -90,10 +92,8 @@ const GestionSucursales = () => {
                 <td>{sucursal.direccion}</td>
                 <td>{sucursal.telefono || '-'}</td>
                 <td>
-                  <Badge
-                    bg={sucursal.estado === ESTADO_SUCURSAL.ACTIVO ? 'success' : 'secondary'}
-                  >
-                    {sucursal.estado === ESTADO_SUCURSAL.ACTIVO ? 'Activo' : 'Inactivo'}
+                  <Badge bg={sucursal.activa ? 'success' : 'secondary'}>
+                    {sucursal.activa ? 'Activo' : 'Inactivo'}
                   </Badge>
                 </td>
                 <td className="text-nowrap">

@@ -25,16 +25,21 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const [telefono, setTelefono] = useState('');
   const [estado, setEstado] = useState(ESTADO_SUCURSAL.ACTIVO);
 
-  // Precargan los datos al entrar en modo edición
+  // Precargan los datos al entrar en modo edición (shape real del backend,
+  // con fallback al shape mock para sucursales creadas en la sesión)
   useEffect(() => {
     if (sucursal) {
       setNombre(sucursal.nombre || '');
       setDireccion(sucursal.direccion || '');
-      setLat(sucursal.lat ?? '');
-      setLng(sucursal.lng ?? '');
-      setHorario(sucursal.horario || '');
+      setLat(sucursal.latitud ?? sucursal.lat ?? '');
+      setLng(sucursal.longitud ?? sucursal.lng ?? '');
+      setHorario(sucursal.horarios || sucursal.horario || '');
       setTelefono(sucursal.telefono || '');
-      setEstado(sucursal.estado || ESTADO_SUCURSAL.ACTIVO);
+      if (sucursal.activa !== undefined) {
+        setEstado(sucursal.activa ? ESTADO_SUCURSAL.ACTIVO : ESTADO_SUCURSAL.INACTIVO);
+      } else {
+        setEstado(sucursal.estado || ESTADO_SUCURSAL.ACTIVO);
+      }
     }
   }, [sucursal]);
 
