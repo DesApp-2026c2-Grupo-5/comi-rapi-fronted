@@ -46,10 +46,15 @@
   background-color: #16a34a;
 }
 
-/* El resumen queda fijo al scrollear solo en desktop */
+/* El resumen queda fijo al scrollear solo en desktop. Se limita su altura
+   para que no se superponga con el badge fijo de estado de la API
+   (position-fixed bottom-0 end-0, App.jsx), que ocupa la esquina inferior
+   derecha del viewport. */
 @media (min-width: 992px) {
   .resumen-card {
     position: sticky;
     top: 90px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
   }
 }
