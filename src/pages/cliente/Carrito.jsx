@@ -59,7 +59,7 @@ const Carrito = () => {
     }
 
     // 1. Sucursales activas (la asignación interna del servicio filtra las activas)
-    const sucursalesActivas = sucursales.filter((s) => s.estado === 'activo');
+    const sucursalesActivas = sucursales.filter((s) => s.activa === true);
 
     // 2. Pedidos pendientes para la lógica de asignación
     const pedidosPendientes = obtenerPedidosPendientes();

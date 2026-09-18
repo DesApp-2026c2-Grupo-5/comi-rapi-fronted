@@ -1,84 +1,43 @@
 /**
- * Propósito: Servicio mock para obtener y operar sucursales (CRUD simulado).
- * Contenido: obtenerSucursales, crearSucursal, actualizarSucursal, eliminarSucursal.
- * Dependencias: seedData.js (sucursalesMock), utils/helpers.js (delay, generateId).
- * Uso: import { obtenerSucursales, crearSucursal } from '../api/sucursales';
+ * Propósito: Servicio de sucursales que consume el backend real.
+ * Contenido: obtenerSucursales, obtenerSucursalPorId.
+ * Dependencias: client.js (apiGet).
+ * Uso: import { obtenerSucursales } from '../api/sucursales';
  *
- * NOTA MOCK: Las operaciones modifican una copia local en memoria. En producción
- * estas funciones deberían llamar a endpoints HTTP reales (GET/POST/PUT/DELETE).
+ * NOTA: El backend aún no expone endpoints de escritura (ABM de sucursales
+ * pendiente de un sprint futuro). El CRUD simulado del panel admin se maneja
+ * en el contexto (SucursalContext), en memoria.
  */
 
-import { sucursalesMock } from '../services/seedData';
-import { delay } from '../utils/helpers';
-
-// Copia mutable de las sucursales mock (MOCK - reemplazar por API real)
-let sucursales = [...sucursalesMock];
+import { apiGet } from './client';
 
 /**
- * Obtiene todas las sucursales disponibles.
- * @returns {Promise<{success: boolean, data: Array}>} Resultado de la operación.
+ * Obtiene las sucursales del backend.
+ * Por defecto el backend devuelve solo sucursales activas (listado público).
+ * Pasando incluirInactivas=true (ADMIN autenticado) se piden todas con ?activa=false.
+ * @param {object} [opciones]
+ * @param {boolean} [opciones.incluirInactivas=false]
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
-export const obtenerSucursales = async () => {
-  await delay(200);
-  return { success: true, data: [...sucursales] };
+export const obtenerSucursales = async (opciones = {}) => {
+  const { incluirInactivas = false } = opciones;
+  const query = incluirInactivas ? '?activa=false' : '';
+  const result = await apiGet(`/sucursales${query}`);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
 };
 
 /**
  * Obtiene una sucursal por su ID.
- * @param {number} id - ID de la sucursal.
+ * @param {number|string} id - ID de la sucursal.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>} Resultado de la operación.
  */
 export const obtenerSucursalPorId = async (id) => {
-  await delay(200);
-  const sucursal = sucursales.find((s) => s.id === Number(id));
-  if (sucursal) {
-    return { success: true, data: { ...sucursal } };
+  const result = await apiGet(`/sucursales/${id}`);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
-  return { success: false, error: 'Sucursal no encontrada' };
-};
-
-/**
- * Crea una nueva sucursal.
- * @param {object} nuevaSucursal - Datos de la sucursal a crear.
- * @returns {Promise<{success: boolean, data: object}>} Resultado de la operación.
- */
-export const crearSucursal = async (nuevaSucursal) => {
-  await delay(400);
-  const sucursalCreada = {
-    id: Date.now(),
-    ...nuevaSucursal,
-  };
-  sucursales.push(sucursalCreada);
-  return { success: true, data: { ...sucursalCreada } };
-};
-
-/**
- * Actualiza una sucursal existente.
- * @param {number} id - ID de la sucursal a actualizar.
- * @param {object} datosActualizados - Nuevos datos de la sucursal.
- * @returns {Promise<{success: boolean, data?: object, error?: string}>} Resultado de la operación.
- */
-export const actualizarSucursal = async (id, datosActualizados) => {
-  await delay(400);
-  const index = sucursales.findIndex((s) => s.id === Number(id));
-  if (index !== -1) {
-    sucursales[index] = { ...sucursales[index], ...datosActualizados };
-    return { success: true, data: { ...sucursales[index] } };
-  }
-  return { success: false, error: 'Sucursal no encontrada' };
-};
-
-/**
- * Elimina una sucursal por su ID.
- * @param {number} id - ID de la sucursal a eliminar.
- * @returns {Promise<{success: boolean, error?: string}>} Resultado de la operación.
- */
-export const eliminarSucursal = async (id) => {
-  await delay(400);
-  const index = sucursales.findIndex((s) => s.id === Number(id));
-  if (index !== -1) {
-    sucursales.splice(index, 1);
-    return { success: true };
-  }
-  return { success: false, error: 'Sucursal no encontrada' };
+  return { success: false, error: result.error };
 };
