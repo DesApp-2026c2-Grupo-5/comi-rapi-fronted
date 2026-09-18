@@ -8,8 +8,11 @@
  *               react-icons/fa, hooks/usePedidos, services/estadosPedido.js,
  *               utils/constants.js, PedidosPendientes.css.
  * Uso: <PedidosPendientes /> - Se renderiza en GestionPedidos.
+ *
+ * NOTA: El cambio de estado se persiste en la API real (PATCH /pedidos/:id/estado).
  */
 
+import { useState } from 'react';
 import { Card, Badge, Button, Container, ListGroup } from 'react-bootstrap';
 import { FaTimesCircle, FaArrowRight } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
@@ -37,16 +40,28 @@ const ACCIONES_SIGUIENTE = {
 
 const PedidosPendientes = () => {
   const { pedidos, cambiarEstado } = usePedidos();
+  // Evita doble clic mientras un cambio de estado está en curso
+  const [cambiando, setCambiando] = useState(false);
 
-  // Cambia el estado validando la transición con la lógica del servicio
-  const handleCambiarEstado = (pedido, estadoDestino) => {
-    if (puedeTransicionar(pedido.estado, estadoDestino)) {
-      cambiarEstado(pedido.id, estadoDestino);
-      alert(`Pedido #${pedido.id} cambió a: ${ETIQUETAS_ESTADO_PEDIDO[estadoDestino]}`);
-    } else {
+  // Cambia el estado validando la transición con la lógica del servicio y
+  // persistiéndola en la API real (PATCH /pedidos/:id/estado)
+  const handleCambiarEstado = async (pedido, estadoDestino) => {
+    if (cambiando) return;
+    if (!puedeTransicionar(pedido.estado, estadoDestino)) {
       alert(
         `No se puede pasar de "${ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado}" a "${ETIQUETAS_ESTADO_PEDIDO[estadoDestino] || estadoDestino}"`
       );
+      return;
+    }
+    setCambiando(true);
+    try {
+      const actualizado = await cambiarEstado(pedido.id, estadoDestino);
+      if (actualizado) {
+        alert(`Pedido #${pedido.id} cambió a: ${ETIQUETAS_ESTADO_PEDIDO[estadoDestino]}`);
+      }
+      // Si falla, el contexto ya muestra el error del backend
+    } finally {
+      setCambiando(false);
     }
   };
 

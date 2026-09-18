@@ -137,14 +137,31 @@ export const PedidoProvider = ({ children }) => {
   }, []);
 
   /**
-   * Cambia el estado de un pedido (usado por el admin o simulación).
+   * Cambia el estado de un pedido contra la API real (usado por el admin).
+   * Actualiza el estado y el historial desde la respuesta mapeada; si la API
+   * falla, no cambia nada en memoria.
    * @param {number} pedidoId - ID del pedido.
    * @param {string} nuevoEstado - Nuevo estado (debe ser una transición válida).
+   * @returns {Promise<object|null>} Pedido actualizado o null si falla.
    */
-  const cambiarEstado = useCallback((pedidoId, nuevoEstado) => {
-    setPedidos((prev) =>
-      prev.map((p) => (p.id === pedidoId ? agregarHistorial(p, nuevoEstado) : p))
-    );
+  const cambiarEstado = useCallback(async (pedidoId, nuevoEstado) => {
+    try {
+      const res = await pedidosApi.cambiarEstado(pedidoId, nuevoEstado);
+      if (res.success && res.data) {
+        setPedidos((prev) =>
+          prev.map((p) => (p.id === pedidoId ? res.data : p))
+        );
+        setPedidoActual((current) =>
+          current && current.id === pedidoId ? res.data : current
+        );
+        return res.data;
+      }
+      alert(`No se pudo cambiar el estado del pedido #${pedidoId}: ${res.error}`);
+      return null;
+    } catch (error) {
+      alert(`No se pudo cambiar el estado del pedido #${pedidoId}: ${error.message}`);
+      return null;
+    }
   }, []);
 
   /**

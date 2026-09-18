@@ -308,16 +308,19 @@ export const obtenerPedidoPorId = async (id) => {
 };
 
 /**
- * Confirma un pedido (pendiente → confirmado).
+ * Cambia el estado de un pedido contra la API real.
+ * @param {number|string} id - ID del pedido.
+ * @param {string} estado - Nuevo estado (el backend valida la transición).
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export const confirmarPedido = async (id) => {
+export const cambiarEstado = async (id, estado) => {
   try {
     await sesionOError();
     const csrf = await obtenerCsrfToken();
     const data = await requestJson(`/pedidos/${id}/estado`, {
       method: 'PATCH',
       headers: { 'x-csrf-token': csrf },
-      body: JSON.stringify({ estado: 'confirmado' }),
+      body: JSON.stringify({ estado }),
     });
     const mapeado = mapearPedido(data);
     const index = pedidos.findIndex((p) => p.id === Number(id));
@@ -328,10 +331,17 @@ export const confirmarPedido = async (id) => {
       await delay(300);
       const index = pedidos.findIndex((p) => p.id === Number(id));
       if (index !== -1) {
-        pedidos[index] = { ...pedidos[index], estado: 'confirmado' };
+        pedidos[index] = { ...pedidos[index], estado };
         return { success: true, data: { ...pedidos[index] }, _mock: true };
       }
     }
     return { success: false, error: error?.message || 'Pedido no encontrado' };
   }
+};
+
+/**
+ * Confirma un pedido (pendiente → confirmado).
+ */
+export const confirmarPedido = async (id) => {
+  return cambiarEstado(id, 'confirmado');
 };
