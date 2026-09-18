@@ -50,6 +50,12 @@ export const PedidoProvider = ({ children }) => {
     };
   }, []);
 
+  // Inserta un pedido al inicio (recientes primero), sin duplicar por id
+  const insertarPrimero = (lista, pedido) => [
+    pedido,
+    ...lista.filter((p) => p.id !== pedido.id),
+  ];
+
   /**
    * Crea un nuevo pedido persistiéndolo en la API real (Postgres).
    * Si la API falla, muestra el error y devuelve null (no se simula nada).
@@ -57,12 +63,12 @@ export const PedidoProvider = ({ children }) => {
    * @param {object} sucursalAsignada - Sucursal asignada automáticamente.
    */
   const crearPedido = useCallback(async (datosPedido, sucursalAsignada) => {
-    const res = await pedidosApi.crearPedido(datosPedido, sucursalAsignada);
-    if (res.success) {
-      setPedidos((prev) => [...prev, res.data]);
-      setPedidoActual(res.data);
-      return res.data;
-    }
+      const res = await pedidosApi.crearPedido(datosPedido, sucursalAsignada);
+      if (res.success) {
+        setPedidos((prev) => insertarPrimero(prev, res.data));
+        setPedidoActual(res.data);
+        return res.data;
+      }
     alert(`No se pudo guardar el pedido en la base de datos: ${res.error}`);
     return null;
   }, []);
