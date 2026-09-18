@@ -66,7 +66,12 @@ const Pago = () => {
     // Simular el procesamiento del pago
     await simuladorPago({ total: montoTotal, metodo });
 
-    await confirmarPedido(pedidoActual.id);
+    const confirmado = await confirmarPedido(pedidoActual.id);
+    if (!confirmado) {
+      // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE
+      setPaginando(false);
+      return;
+    }
     vaciarCarrito();
     navigate('/cliente/confirmacion');
   };

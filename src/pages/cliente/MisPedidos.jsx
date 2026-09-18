@@ -4,9 +4,12 @@
  * Contenido: Componente MisPedidos con cards de pedidos (número, fecha, total, sucursal,
  *            stepper de progreso y estado), con el detalle en otra página.
  * Dependencias: react-bootstrap (Container, Card, Badge, Button), react-router-dom,
- *               hooks/usePedidos, hooks/useAuth, utils/constants.js, utils/formatters.js,
- *               componentes/comunes/HistorialStepper.
+ *               hooks/usePedidos, utils/constants.js, utils/formatters.js,
+ *               services/envio.js, componentes/comunes (IconoEstado, HistorialStepper).
  * Uso: Ruta "/cliente/mis-pedidos" → <MisPedidos />
+ *
+ * NOTA: Los pedidos provienen de la API real; el backend ya devuelve solo los
+ * pedidos del cliente autenticado (scope por usuarioId).
  */
 
 import React from 'react';
@@ -14,7 +17,6 @@ import { Link } from 'react-router-dom';
 import { Container, Card, Badge, Button } from 'react-bootstrap';
 import { FaUtensils, FaEye } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
-import { useAuth } from '../../hooks/useAuth';
 import { ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
@@ -23,10 +25,9 @@ import HistorialStepper from '../../components/comunes/HistorialStepper';
 
 const MisPedidos = () => {
   const { pedidos } = usePedidos();
-  const { user } = useAuth();
 
-  // Solo los pedidos del cliente logueado (MOCK - el email identifica al cliente)
-  const misPedidos = pedidos.filter((p) => p.cliente === user?.email);
+  // El backend devuelve solo los pedidos del cliente autenticado
+  const misPedidos = pedidos;
 
   return (
     <Container className="py-4">
