@@ -5,9 +5,6 @@
  * Dependencias: react-bootstrap (Container, Table, Button, Alert, Spinner), react-router-dom (useNavigate),
  *               context/SucursalContext (useSucursal).
  * Uso: Ruta "/admin/sucursales" → <GestionSucursales />
- *
- * NOTA: La lectura consume el backend real. El ABM sigue simulado: el backend
- * aún no expone endpoints de escritura de sucursales (sprint futuro).
  */
 
 import React, { useEffect, useState } from 'react';
@@ -21,9 +18,9 @@ const GestionSucursales = () => {
   const { sucursales, loading, obtenerSucursales, eliminarSucursal } = useSucursal();
   const [mensaje, setMensaje] = useState('');
 
-  // Recarga las sucursales al montar (incluye inactivas: vista de administración)
+  // Recarga las sucursales al montar
   useEffect(() => {
-    obtenerSucursales({ incluirInactivas: true });
+    obtenerSucursales();
   }, [obtenerSucursales]);
 
   // Redirige al formulario de nueva sucursal
@@ -43,7 +40,7 @@ const GestionSucursales = () => {
 
     const ok = await eliminarSucursal(id);
     if (ok) {
-      setMensaje(`Sucursal "${nombre}" eliminada correctamente (simulado).`);
+      setMensaje(`Sucursal "${nombre}" eliminada correctamente.`);
     } else {
       setMensaje('No se pudo eliminar la sucursal.');
     }
@@ -92,8 +89,8 @@ const GestionSucursales = () => {
                 <td>{sucursal.direccion}</td>
                 <td>{sucursal.telefono || '-'}</td>
                 <td>
-                  <Badge bg={sucursal.activa ? 'success' : 'secondary'}>
-                    {sucursal.activa ? 'Activo' : 'Inactivo'}
+                  <Badge bg={sucursal.activa !== false ? 'success' : 'secondary'}>
+                    {sucursal.activa !== false ? 'Activo' : 'Inactivo'}
                   </Badge>
                 </td>
                 <td className="text-nowrap">

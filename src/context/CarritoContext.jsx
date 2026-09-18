@@ -33,7 +33,6 @@ export const CarritoProvider = ({ children }) => {
         },
       ];
     });
-    alert(`"${producto.nombre}" agregado al carrito.`);
   }, []);
 
   const eliminarDelCarrito = useCallback((idLineaOrProductoId) => {
@@ -67,10 +66,15 @@ export const CarritoProvider = ({ children }) => {
 
   const vaciarCarrito = useCallback(() => {
     setItems([]);
-    alert('Carrito vaciado.');
   }, []);
 
   const totalItems = useMemo(() => items.reduce((total, item) => total + item.cantidad, 0), [items]);
+
+  // Cantidad de productos distintos en el carrito (para el contador del navbar)
+  const productosDistintos = useMemo(
+    () => new Set(items.map((item) => item.producto.id)).size,
+    [items]
+  );
 
   const total = useMemo(
     () => items.reduce((t, item) => t + (item.precioUnitarioPersonalizado ?? item.producto.precio) * item.cantidad, 0),
@@ -81,13 +85,14 @@ export const CarritoProvider = ({ children }) => {
     () => ({
       items,
       totalItems,
+      productosDistintos,
       total,
       agregarAlCarrito,
       eliminarDelCarrito,
       actualizarCantidad,
       vaciarCarrito,
     }),
-    [items, totalItems, total, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, vaciarCarrito]
+    [items, totalItems, productosDistintos, total, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, vaciarCarrito]
   );
 
   return <CarritoContext.Provider value={value}>{children}</CarritoContext.Provider>;

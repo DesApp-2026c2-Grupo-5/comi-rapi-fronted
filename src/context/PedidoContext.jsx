@@ -27,6 +27,8 @@ export const PedidoProvider = ({ children }) => {
   const [pedidoActual, setPedidoActual] = useState(null);
   // Carga inicial desde la API (quedan los mock si la API no responde)
   const [cargandoPedidos, setCargandoPedidos] = useState(false);
+  // Se incrementa al confirmar un pago: el Navbar lo usa para animar "Mis Pedidos"
+  const [senalPedido, setSenalPedido] = useState(0);
 
   useEffect(() => {
     let vivo = true;
@@ -115,6 +117,7 @@ export const PedidoProvider = ({ children }) => {
         setPedidoActual((current) =>
           current && current.id === pedidoId ? res.data : current
         );
+        setSenalPedido((n) => n + 1);
         return res.data;
       }
     } catch {
@@ -130,6 +133,7 @@ export const PedidoProvider = ({ children }) => {
         ? agregarHistorial(current, ESTADOS_PEDIDO.CONFIRMADO)
         : current
     );
+    setSenalPedido((n) => n + 1);
   }, []);
 
   /**
@@ -162,12 +166,13 @@ export const PedidoProvider = ({ children }) => {
       pedidos,
       pedidoActual,
       cargandoPedidos,
+      senalPedido,
       crearPedido,
       confirmarPedido,
       cambiarEstado,
       obtenerPedidosPendientes,
     }),
-    [pedidos, pedidoActual, cargandoPedidos, crearPedido, confirmarPedido, cambiarEstado, obtenerPedidosPendientes]
+    [pedidos, pedidoActual, cargandoPedidos, senalPedido, crearPedido, confirmarPedido, cambiarEstado, obtenerPedidosPendientes]
   );
 
   return <PedidoContext.Provider value={value}>{children}</PedidoContext.Provider>;

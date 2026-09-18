@@ -73,12 +73,6 @@ export const ESTADO_SUCURSAL = {
   INACTIVO: 'inactivo',
 };
 
-// Estados posibles de una dirección de cliente. Eliminar = pasar a inactivo (baja lógica).
-export const ESTADO_DIRECCION = {
-  ACTIVO: 'activo',
-  INACTIVO: 'inactivo',
-};
-
 // Límites válidos para las coordenadas geográficas (latitud y longitud).
 export const LIMITES_LAT = { MIN: -90, MAX: 90 };
 export const LIMITES_LNG = { MIN: -180, MAX: 180 };

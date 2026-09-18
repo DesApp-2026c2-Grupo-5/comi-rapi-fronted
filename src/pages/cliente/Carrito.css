@@ -35,3 +35,17 @@
 .carrito-boton-vacio:hover {
   background-color: #e88900;
 }
+
+/* ============ Botón gestionar direcciones ============ */
+.carrito-boton-direcciones {
+  --bs-btn-bg: #fff;
+  --bs-btn-color: #b55d00;
+  --bs-btn-border-color: #ff9f1c;
+  --bs-btn-hover-bg: #ff9f1c;
+  --bs-btn-hover-border-color: #ff9f1c;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #e88900;
+  --bs-btn-active-border-color: #e88900;
+  --bs-btn-active-color: #fff;
+  font-weight: 700;
+}

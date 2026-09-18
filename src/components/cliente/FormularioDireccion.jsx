@@ -1,56 +1,63 @@
 /**
  * Propósito: Formulario para crear o editar una dirección de cliente.
- * Contenido: Componente FormularioDireccion con campos controlados (nombre, direccion,
- *            ciudad, codigoPostal, referencia y esPrincipal) y validación básica.
+ * Contenido: Componente FormularioDireccion con campos controlados (alias, calle,
+ *            altura, ciudad, codigoPostal y referencia) y validación básica.
  * Dependencias: react-bootstrap (Form, Button, Card), react (useState, useEffect).
  * Uso: <FormularioDireccion direccion={direccion} onGuardar={handler} onCancelar={handler} />
  *      - Si 'direccion' es null/undefined, se comporta en modo creación.
  *      - Si 'direccion' trae datos, precarga el formulario para edición.
+ *
+ * Contrato (DER): alias, calle, altura, ciudad, codigoPostal, referencia, latitud,
+ * longitud, activa. El cliente no carga latitud/longitud (opcionales en el backend).
  */
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { FaMapMarkedAlt, FaSave, FaTimes } from 'react-icons/fa';
 
-const FormularioDireccion = ({ direccion, clienteId, onGuardar, onCancelar }) => {
-  const [nombre, setNombre] = useState('');
-  const [direccionTexto, setDireccionTexto] = useState('');
+const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
+  const [alias, setAlias] = useState('');
+  const [calle, setCalle] = useState('');
+  const [altura, setAltura] = useState('');
   const [ciudad, setCiudad] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
   const [referencia, setReferencia] = useState('');
-  const [esPrincipal, setEsPrincipal] = useState(false);
+  const [error, setError] = useState('');
 
   // Precargan los datos al entrar en modo edición
   useEffect(() => {
     if (direccion) {
-      setNombre(direccion.nombre || '');
-      setDireccionTexto(direccion.direccion || '');
+      setAlias(direccion.alias || '');
+      setCalle(direccion.calle || '');
+      setAltura(direccion.altura ?? '');
       setCiudad(direccion.ciudad || '');
       setCodigoPostal(direccion.codigoPostal || '');
       setReferencia(direccion.referencia || '');
-      setEsPrincipal(!!direccion.esPrincipal);
     }
   }, [direccion]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
 
-    // Validaciones básicas: nombre y dirección obligatorios
-    if (!nombre.trim() || !direccionTexto.trim()) {
-      alert('El nombre y la dirección son obligatorios.');
+    if (!calle.trim()) {
+      setError('La calle es obligatoria.');
+      return;
+    }
+
+    if (altura !== '' && (!Number.isInteger(Number(altura)) || Number(altura) < 0)) {
+      setError('La altura debe ser un número entero mayor o igual a 0.');
       return;
     }
 
     const datosDireccion = {
-      nombre: nombre.trim(),
-      direccion: direccionTexto.trim(),
-      ciudad: ciudad.trim(),
-      codigoPostal: codigoPostal.trim(),
-      referencia: referencia.trim(),
-      esPrincipal,
+      alias: alias.trim() || null,
+      calle: calle.trim(),
+      altura: altura === '' ? null : Number(altura),
+      ciudad: ciudad.trim() || null,
+      codigoPostal: codigoPostal.trim() || null,
+      referencia: referencia.trim() || null,
     };
-
-    alert(`Dirección "${datosDireccion.nombre}" guardada correctamente (simulado).`);
 
     if (onGuardar) {
       onGuardar(datosDireccion);
@@ -65,22 +72,34 @@ const FormularioDireccion = ({ direccion, clienteId, onGuardar, onCancelar }) =>
           {direccion ? 'Editar dirección' : 'Nueva dirección'}
         </h5>
         <Form onSubmit={handleSubmit}>
+          {error && <div className="text-danger mb-3">{error}</div>}
           <Form.Group className="mb-3">
-            <Form.Label>Nombre *</Form.Label>
+            <Form.Label>Alias</Form.Label>
             <Form.Control
               type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Casa"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
+              placeholder="Ej: Casa, Trabajo"
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Dirección *</Form.Label>
+            <Form.Label>Calle *</Form.Label>
             <Form.Control
               type="text"
-              value={direccionTexto}
-              onChange={(e) => setDireccionTexto(e.target.value)}
-              placeholder="Ej: Av. Siempreviva 1234"
+              value={calle}
+              onChange={(e) => setCalle(e.target.value)}
+              placeholder="Ej: Av. Siempreviva"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Altura</Form.Label>
+            <Form.Control
+              type="number"
+              value={altura}
+              onChange={(e) => setAltura(e.target.value)}
+              placeholder="Ej: 1234"
+              min="0"
+              step="1"
             />
           </Form.Group>
           <Form.Group className="mb-3">
@@ -101,7 +120,7 @@ const FormularioDireccion = ({ direccion, clienteId, onGuardar, onCancelar }) =>
               placeholder="Ej: 1406"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-4">
             <Form.Label>Referencia</Form.Label>
             <Form.Control
               as="textarea"
@@ -109,14 +128,6 @@ const FormularioDireccion = ({ direccion, clienteId, onGuardar, onCancelar }) =>
               value={referencia}
               onChange={(e) => setReferencia(e.target.value)}
               placeholder="Ej: Casa verde, 2da puerta"
-            />
-          </Form.Group>
-          <Form.Group className="mb-4">
-            <Form.Check
-              type="checkbox"
-              label="Usar como dirección principal"
-              checked={esPrincipal}
-              onChange={(e) => setEsPrincipal(e.target.checked)}
             />
           </Form.Group>
           <div className="d-flex gap-2">

@@ -247,31 +247,3 @@ export const personalizacionElementosMock = [
   // Combo Doble id:7
   { id: 701, productoId: 7, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 900, productoReferenciaId: 8, activo: true },
 ];
-
-// Datos mock de direcciones de clientes (MOCK - reemplazar con llamadas a la API en producción).
-// Sin latitud ni longitud: las direcciones del cliente son textuales, solo la sucursal usa
-// coordenadas para la lógica de asignación.
-export const direccionesMock = [
-  {
-    id: 1,
-    clienteId: 'cliente@test.com',
-    nombre: 'Casa',
-    direccion: 'Av. Siempreviva 1234',
-    ciudad: 'Capital Federal',
-    codigoPostal: '1406',
-    referencia: 'Casa verde',
-    esPrincipal: true,
-    estado: 'activo',
-  },
-  {
-    id: 2,
-    clienteId: 'cliente@test.com',
-    nombre: 'Trabajo',
-    direccion: 'Calle Falsa 456',
-    ciudad: 'Capital Federal',
-    codigoPostal: '1425',
-    referencia: 'Oficina',
-    esPrincipal: false,
-    estado: 'activo',
-  },
-];

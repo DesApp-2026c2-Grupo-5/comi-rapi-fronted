@@ -39,7 +39,7 @@ const EditarSucursal = () => {
     if (id) {
       const actualizada = await actualizarSucursal(id, datosSucursal);
       if (actualizada) {
-        alert(`Sucursal "${actualizada.nombre}" actualizada correctamente (simulado).`);
+        alert(`Sucursal "${actualizada.nombre}" actualizada correctamente.`);
       } else {
         setError('No se pudo actualizar la sucursal.');
         return;
@@ -47,7 +47,7 @@ const EditarSucursal = () => {
     } else {
       const creada = await agregarSucursal(datosSucursal);
       if (creada) {
-        alert(`Sucursal "${creada.nombre}" creada correctamente (simulado).`);
+        alert(`Sucursal "${creada.nombre}" creada correctamente.`);
       } else {
         setError('No se pudo crear la sucursal.');
         return;

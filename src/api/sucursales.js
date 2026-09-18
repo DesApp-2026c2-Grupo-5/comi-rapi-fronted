@@ -1,19 +1,15 @@
 /**
- * Propósito: Servicio de sucursales que consume el backend real.
- * Contenido: obtenerSucursales, obtenerSucursalPorId.
- * Dependencias: client.js (apiGet).
- * Uso: import { obtenerSucursales } from '../api/sucursales';
- *
- * NOTA: El backend aún no expone endpoints de escritura (ABM de sucursales
- * pendiente de un sprint futuro). El CRUD simulado del panel admin se maneja
- * en el contexto (SucursalContext), en memoria.
+ * Propósito: Servicio de sucursales que consume el backend real (CRUD de administradores).
+ * Contenido: obtenerSucursales, obtenerSucursalPorId, crearSucursal, actualizarSucursal, eliminarSucursal.
+ * Dependencias: client.js (apiGet/apiPost/apiPut/apiDelete).
+ * Uso: import { obtenerSucursales, crearSucursal } from '../api/sucursales';
  */
 
-import { apiGet } from './client';
+import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
 /**
- * Obtiene las sucursales del backend.
- * Por defecto el backend devuelve solo sucursales activas (listado público).
+ * Obtiene sucursales del backend.
+ * Por defecto devuelve solo las activas (listado público).
  * Pasando incluirInactivas=true (ADMIN autenticado) se piden todas con ?activa=false.
  * @param {object} [opciones]
  * @param {boolean} [opciones.incluirInactivas=false]
@@ -32,12 +28,52 @@ export const obtenerSucursales = async (opciones = {}) => {
 /**
  * Obtiene una sucursal por su ID.
  * @param {number|string} id - ID de la sucursal.
- * @returns {Promise<{success: boolean, data?: object, error?: string}>} Resultado de la operación.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const obtenerSucursalPorId = async (id) => {
   const result = await apiGet(`/sucursales/${id}`);
   if (result.success) {
     return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Crea una nueva sucursal.
+ * @param {object} datos - { nombre, direccion, latitud?, longitud?, telefono?, horarios?, activa? }.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const crearSucursal = async (datos) => {
+  const result = await apiPost('/sucursales', datos);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Actualiza una sucursal existente (campos parciales; activa=true para reactivar).
+ * @param {number|string} id - ID de la sucursal.
+ * @param {object} datos - Campos a actualizar.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const actualizarSucursal = async (id, datos) => {
+  const result = await apiPut(`/sucursales/${id}`, datos);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Elimina (baja lógica) una sucursal: activa pasa a false.
+ * @param {number|string} id - ID de la sucursal.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const eliminarSucursal = async (id) => {
+  const result = await apiDelete(`/sucursales/${id}`);
+  if (result.success) {
+    return { success: true };
   }
   return { success: false, error: result.error };
 };

@@ -97,6 +97,70 @@
   display: none;
 }
 
+/* ============ Contador del carrito ============ */
+.nav-enlace-ico-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.carrito-badge {
+  position: absolute;
+  top: -9px;
+  right: -11px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: #e63946;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.carrito-badge-pulso {
+  animation: carrito-pop 0.4s ease-out;
+}
+
+@keyframes carrito-pop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ============ Salto de "Mis Pedidos" al confirmar un pago ============ */
+.nav-enlace-ico-pulso .nav-enlace-ico {
+  transform-origin: center;
+  animation: pedido-salto 0.8s ease-out;
+}
+
+@keyframes pedido-salto {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  25% {
+    transform: scale(1.5) translateY(-5px);
+  }
+  50% {
+    transform: scale(1.5) translateY(0);
+  }
+  70% {
+    transform: scale(1.25) translateY(-3px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* ============ Zona del usuario ============ */
 .navbar-user-nombre {
   display: inline-flex;

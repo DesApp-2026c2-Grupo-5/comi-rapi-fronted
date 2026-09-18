@@ -1,33 +1,35 @@
 /**
- * Propósito: Página de direcciones del cliente con CRUD completo (crear, editar,
- *            eliminar -baja lógica- y marcar como principal).
- * Contenido: Componente MisDirecciones con lista de tarjetas de direcciones, badge
- *            "Principal", botones de acción y formulario de alta/edición inline.
- * Dependencias: react-bootstrap (Container, Card, Button, Badge), react, hooks/useAuth,
- *               hooks/useDirecciones.
+ * Propósito: Página de direcciones del cliente con CRUD completo contra el backend
+ *            (crear, editar y eliminar -baja lógica-).
+ * Contenido: Componente MisDirecciones con lista de tarjetas de direcciones y
+ *            formulario de alta/edición inline.
+ * Dependencias: react-bootstrap (Container, Card, Button), react, hooks/useDirecciones.
  * Uso: Ruta "/cliente/mis-direcciones" → <MisDirecciones />
  */
 
-import { useState, useMemo } from 'react';
-import { Container, Card, Button, Badge } from 'react-bootstrap';
-import { FaPlus, FaMapMarkerAlt, FaStar, FaEdit, FaTrashAlt } from 'react-icons/fa';
-import { useAuth } from '../../hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { Container, Card, Button } from 'react-bootstrap';
+import { FaPlus, FaMapMarkerAlt, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useDirecciones } from '../../hooks/useDirecciones';
 import FormularioDireccion from '../../components/cliente/FormularioDireccion';
 
 const MisDirecciones = () => {
-  const { user } = useAuth();
-  const { cargarDirecciones, agregarDireccion, editarDireccion, eliminarDireccion, seleccionarDireccionPrincipal } =
-    useDirecciones();
-
-  // Direcciones activas del cliente (solo las suyas)
-  const direcciones = useMemo(
-    () => cargarDirecciones(user?.email),
-    [cargarDirecciones, user?.email]
-  );
+  const {
+    direcciones,
+    loading,
+    cargarDirecciones,
+    agregarDireccion,
+    editarDireccion,
+    eliminarDireccion,
+  } = useDirecciones();
 
   // null = mostrando lista | 'nueva' | dirección en edición
   const [enEdicion, setEnEdicion] = useState(null);
+
+  // Carga las direcciones del cliente al entrar a la página
+  useEffect(() => {
+    cargarDirecciones();
+  }, [cargarDirecciones]);
 
   const handleNueva = () => setEnEdicion('nueva');
 
@@ -36,28 +38,27 @@ const MisDirecciones = () => {
   const handleCancelar = () => setEnEdicion(null);
 
   // Guarda según modo (crear o editar) y vuelve a la lista
-  const handleGuardar = (datos) => {
-    if (enEdicion === 'nueva') {
-      agregarDireccion({ ...datos, clienteId: user?.email });
-    } else if (enEdicion) {
-      editarDireccion(enEdicion.id, { ...datos, clienteId: user?.email });
+  const handleGuardar = async (datos) => {
+    const guardada =
+      enEdicion === 'nueva'
+        ? await agregarDireccion(datos)
+        : await editarDireccion(enEdicion.id, datos);
+
+    if (!guardada) {
+      alert('No se pudo guardar la dirección.');
+      return;
     }
     setEnEdicion(null);
   };
 
-  // Elimina con confirmación (baja lógica: pasa a inactivo)
-  const handleEliminar = (direccion) => {
-    const confirmado = window.confirm(`¿Seguro que querés eliminar la dirección "${direccion.nombre}"?`);
+  // Elimina con confirmación (baja lógica: el backend marca activa = false)
+  const handleEliminar = async (direccion) => {
+    const etiqueta = direccion.alias || direccion.calle;
+    const confirmado = window.confirm(`¿Seguro que querés eliminar la dirección "${etiqueta}"?`);
     if (!confirmado) return;
 
-    const ok = eliminarDireccion(direccion.id);
-    alert(ok ? `Dirección "${direccion.nombre}" eliminada correctamente (simulado).` : 'No se pudo eliminar la dirección.');
-  };
-
-  // Marca como principal
-  const handleMarcarPrincipal = (direccion) => {
-    const ok = seleccionarDireccionPrincipal(direccion.id);
-    alert(ok ? `"${direccion.nombre}" ahora es tu dirección principal.` : 'No se pudo marcar como principal.');
+    const ok = await eliminarDireccion(direccion.id);
+    alert(ok ? `Dirección "${etiqueta}" eliminada correctamente.` : 'No se pudo eliminar la dirección.');
   };
 
   return (
@@ -75,10 +76,11 @@ const MisDirecciones = () => {
       {enEdicion !== null ? (
         <FormularioDireccion
           direccion={enEdicion === 'nueva' ? null : enEdicion}
-          clienteId={user?.email}
           onGuardar={handleGuardar}
           onCancelar={handleCancelar}
         />
+      ) : loading ? (
+        <p className="text-muted">Cargando direcciones...</p>
       ) : direcciones.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
           <h4 className="fw-bold mb-2">Todavía no tenés direcciones</h4>
@@ -96,17 +98,14 @@ const MisDirecciones = () => {
             <Card.Header className="d-flex justify-content-between align-items-center">
               <strong className="d-flex align-items-center gap-2">
                 <FaMapMarkerAlt className="text-danger" />
-                {direccion.nombre}
+                {direccion.alias || direccion.calle}
               </strong>
-              {direccion.esPrincipal && (
-                <Badge bg="success" className="d-inline-flex align-items-center gap-1">
-                  <FaStar />
-                  Principal
-                </Badge>
-              )}
             </Card.Header>
             <Card.Body>
-              <p className="mb-1"><strong>Dirección:</strong> {direccion.direccion}</p>
+              <p className="mb-1">
+                <strong>Dirección:</strong> {direccion.calle}
+                {direccion.altura ? ` ${direccion.altura}` : ''}
+              </p>
               {direccion.ciudad && (
                 <p className="mb-1"><strong>Ciudad:</strong> {direccion.ciudad}</p>
               )}
@@ -121,16 +120,6 @@ const MisDirecciones = () => {
                   <FaEdit className="me-1" />
                   Editar
                 </Button>
-                {!direccion.esPrincipal && (
-                  <Button
-                    variant="outline-success"
-                    size="sm"
-                    onClick={() => handleMarcarPrincipal(direccion)}
-                  >
-                    <FaStar className="me-1" />
-                    Marcar como principal
-                  </Button>
-                )}
                 <Button variant="outline-danger" size="sm" onClick={() => handleEliminar(direccion)}>
                   <FaTrashAlt className="me-1" />
                   Eliminar

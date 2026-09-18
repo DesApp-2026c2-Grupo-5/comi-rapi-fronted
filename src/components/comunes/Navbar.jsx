@@ -7,7 +7,7 @@
  * Uso: <Navbar /> - Se renderiza en todas las páginas autenticadas.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Navbar as BSNavbar, Nav, Container, Button } from 'react-bootstrap';
 import {
@@ -25,6 +25,8 @@ import {
   FaSignOutAlt,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useCarrito } from '../../hooks/useCarrito';
+import { usePedidos } from '../../hooks/usePedidos';
 import { ROLES } from '../../utils/constants';
 import './Navbar.css';
 
@@ -49,8 +51,28 @@ const enlacesAdmin = [
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { productosDistintos } = useCarrito();
+  const { senalPedido } = usePedidos();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [pulsoCarrito, setPulsoCarrito] = useState(false);
+  const [pulsoPedido, setPulsoPedido] = useState(false);
+
+  // Pulso del badge cada vez que cambia la cantidad de productos distintos
+  useEffect(() => {
+    if (productosDistintos === 0) return undefined;
+    setPulsoCarrito(true);
+    const timeout = setTimeout(() => setPulsoCarrito(false), 400);
+    return () => clearTimeout(timeout);
+  }, [productosDistintos]);
+
+  // Salto del ícono "Mis Pedidos" cada vez que se confirma un pago
+  useEffect(() => {
+    if (senalPedido === 0) return undefined;
+    setPulsoPedido(true);
+    const timeout = setTimeout(() => setPulsoPedido(false), 800);
+    return () => clearTimeout(timeout);
+  }, [senalPedido]);
 
   const handleLogout = () => {
     setExpanded(false);
@@ -94,7 +116,21 @@ const Navbar = () => {
                   className={({ isActive }) => (isActive ? 'nav-enlace activo' : 'nav-enlace')}
                   onClick={() => setExpanded(false)}
                 >
-                  <Icono className="nav-enlace-ico" aria-hidden="true" />
+                  <span
+                    className={`nav-enlace-ico-wrap${
+                      to === '/cliente/mis-pedidos' && pulsoPedido ? ' nav-enlace-ico-pulso' : ''
+                    }`}
+                  >
+                    <Icono className="nav-enlace-ico" aria-hidden="true" />
+                    {to === '/cliente/carrito' && productosDistintos > 0 && (
+                      <span
+                        className={`carrito-badge${pulsoCarrito ? ' carrito-badge-pulso' : ''}`}
+                        aria-label={`${productosDistintos} ${productosDistintos === 1 ? 'producto' : 'productos'} en el carrito`}
+                      >
+                        {productosDistintos}
+                      </span>
+                    )}
+                  </span>
                   {etiqueta}
                 </NavLink>
               </Nav.Item>
