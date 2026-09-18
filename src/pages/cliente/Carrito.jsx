@@ -86,6 +86,7 @@ const Carrito = () => {
       {
         cliente: user?.email || 'cliente@test.com',
         productos: items.map((item) => ({
+          productoId: item.producto.id,
           nombre: item.producto.nombre,
           cantidad: item.cantidad,
           precio: item.precioUnitarioPersonalizado ?? item.producto.precio,
