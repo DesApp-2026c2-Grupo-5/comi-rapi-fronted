@@ -11,7 +11,9 @@ import { useState, useEffect } from 'react';
 import { Container, Card, Button } from 'react-bootstrap';
 import { FaPlus, FaMapMarkerAlt, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useDirecciones } from '../../hooks/useDirecciones';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import FormularioDireccion from '../../components/cliente/FormularioDireccion';
+import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 
 const MisDirecciones = () => {
   const {
@@ -22,9 +24,14 @@ const MisDirecciones = () => {
     editarDireccion,
     eliminarDireccion,
   } = useDirecciones();
+  const { notificar } = useNotificaciones();
 
   // null = mostrando lista | 'nueva' | dirección en edición
   const [enEdicion, setEnEdicion] = useState(null);
+
+  // Dirección que espera confirmación para su eliminación
+  const [direccionAEliminar, setDireccionAEliminar] = useState(null);
+  const [confirmando, setConfirmando] = useState(false);
 
   // Carga las direcciones del cliente al entrar a la página
   useEffect(() => {
@@ -45,20 +52,28 @@ const MisDirecciones = () => {
         : await editarDireccion(enEdicion.id, datos);
 
     if (!guardada) {
-      alert('No se pudo guardar la dirección.');
+      notificar('No se pudo guardar la dirección.', 'danger');
       return;
     }
     setEnEdicion(null);
   };
 
-  // Elimina con confirmación (baja lógica: el backend marca activa = false)
-  const handleEliminar = async (direccion) => {
-    const etiqueta = direccion.alias || direccion.calle;
-    const confirmado = window.confirm(`¿Seguro que querés eliminar la dirección "${etiqueta}"?`);
-    if (!confirmado) return;
+  // Abre el modal de confirmación para eliminar (baja lógica: el backend marca activa = false)
+  const handleEliminar = (direccion) => setDireccionAEliminar(direccion);
 
-    const ok = await eliminarDireccion(direccion.id);
-    alert(ok ? `Dirección "${etiqueta}" eliminada correctamente.` : 'No se pudo eliminar la dirección.');
+  const confirmarEliminar = async () => {
+    if (!direccionAEliminar) return;
+    setConfirmando(true);
+    const etiqueta = direccionAEliminar.alias || direccionAEliminar.calle;
+    const ok = await eliminarDireccion(direccionAEliminar.id);
+    notificar(
+      ok
+        ? `Dirección "${etiqueta}" eliminada correctamente.`
+        : 'No se pudo eliminar la dirección.',
+      ok ? 'success' : 'danger'
+    );
+    setDireccionAEliminar(null);
+    setConfirmando(false);
   };
 
   return (
@@ -129,6 +144,20 @@ const MisDirecciones = () => {
           </Card>
         ))
       )}
+
+      <ConfirmarModal
+        mostrar={Boolean(direccionAEliminar)}
+        titulo="Eliminar dirección"
+        mensaje={
+          direccionAEliminar
+            ? `¿Seguro que querés eliminar la dirección "${direccionAEliminar.alias || direccionAEliminar.calle}"?`
+            : ''
+        }
+        textoConfirmar="Sí, eliminar"
+        cargando={confirmando}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setDireccionAEliminar(null)}
+      />
     </Container>
   );
 };

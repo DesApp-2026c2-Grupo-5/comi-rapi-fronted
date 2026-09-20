@@ -74,3 +74,43 @@
     letter-spacing: 0.2px;
   }
 }
+
+/* ============ Filtro rápido por estado ============ */
+.filtro-estado-bar {
+  row-gap: 0.6rem;
+}
+
+.filtro-estado-pill {
+  border-radius: 50px;
+  font-weight: 600;
+  padding: 0.4rem 1.1rem;
+}
+
+.filtro-estado-pill.filtro-estado-activo {
+  background-color: #ff9f1c;
+  border-color: #ff9f1c;
+  color: #fff;
+}
+
+.filtro-estado-pill.filtro-estado-activo:hover {
+  background-color: #e88900;
+  border-color: #e88900;
+  color: #fff;
+}
+
+/* ============ Resaltado de la card al llegar desde un banner de cancelación ============ */
+.pedido-card-foco {
+  animation: pedido-card-foco-pulso 2.6s ease;
+}
+
+@keyframes pedido-card-foco-pulso {
+  0%,
+  100% {
+    outline: 3px solid transparent;
+    box-shadow: 0 0 0 0 rgba(230, 57, 70, 0);
+  }
+  30% {
+    outline: 3px solid #e63946;
+    box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35);
+  }
+}

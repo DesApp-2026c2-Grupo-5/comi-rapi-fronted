@@ -27,7 +27,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useCarrito } from '../../hooks/useCarrito';
 import { usePedidos } from '../../hooks/usePedidos';
-import { ROLES } from '../../utils/constants';
+import { ROLES, ESTADOS_PEDIDO } from '../../utils/constants';
 import './Navbar.css';
 
 // Menú del cliente (cada enlace lleva su ícono)
@@ -52,17 +52,25 @@ const enlacesAdmin = [
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { productosDistintos } = useCarrito();
-  const { senalPedido } = usePedidos();
+  const { pedidos, senalPedido } = usePedidos();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [pulsoCarrito, setPulsoCarrito] = useState(false);
   const [pulsoPedido, setPulsoPedido] = useState(false);
+  const [pulsoPedidoBadge, setPulsoPedidoBadge] = useState(false);
+
+  // Pedidos del cliente que aún no fueron entregados ni cancelados.
+  const pedidosActivos = pedidos.filter(
+    (p) =>
+      p.estado !== ESTADOS_PEDIDO.ENTREGADO &&
+      p.estado !== ESTADOS_PEDIDO.CANCELADO
+  ).length;
 
   // Pulso del badge cada vez que cambia la cantidad de productos distintos
   useEffect(() => {
     if (productosDistintos === 0) return undefined;
     setPulsoCarrito(true);
-    const timeout = setTimeout(() => setPulsoCarrito(false), 400);
+    const timeout = setTimeout(() => setPulsoCarrito(false), 800);
     return () => clearTimeout(timeout);
   }, [productosDistintos]);
 
@@ -73,6 +81,14 @@ const Navbar = () => {
     const timeout = setTimeout(() => setPulsoPedido(false), 800);
     return () => clearTimeout(timeout);
   }, [senalPedido]);
+
+  // Pulso del número de "Mis Pedidos" cuando cambia la cantidad de pedidos activos
+  useEffect(() => {
+    if (pedidosActivos === 0) return undefined;
+    setPulsoPedidoBadge(true);
+    const timeout = setTimeout(() => setPulsoPedidoBadge(false), 800);
+    return () => clearTimeout(timeout);
+  }, [pedidosActivos]);
 
   const handleLogout = () => {
     setExpanded(false);
@@ -118,7 +134,10 @@ const Navbar = () => {
                 >
                   <span
                     className={`nav-enlace-ico-wrap${
-                      to === '/cliente/mis-pedidos' && pulsoPedido ? ' nav-enlace-ico-pulso' : ''
+                      (to === '/cliente/carrito' && pulsoCarrito) ||
+                      (to === '/cliente/mis-pedidos' && pulsoPedido)
+                        ? ' nav-enlace-ico-pulso'
+                        : ''
                     }`}
                   >
                     <Icono className="nav-enlace-ico" aria-hidden="true" />
@@ -128,6 +147,14 @@ const Navbar = () => {
                         aria-label={`${productosDistintos} ${productosDistintos === 1 ? 'producto' : 'productos'} en el carrito`}
                       >
                         {productosDistintos}
+                      </span>
+                    )}
+                    {(to === '/cliente/mis-pedidos' || to === '/admin/pedidos') && pedidosActivos > 0 && (
+                      <span
+                        className={`carrito-badge${pulsoPedidoBadge ? ' carrito-badge-pulso' : ''}`}
+                        aria-label={`${pedidosActivos} ${pedidosActivos === 1 ? 'pedido' : 'pedidos'} en curso`}
+                      >
+                        {pedidosActivos}
                       </span>
                     )}
                   </span>

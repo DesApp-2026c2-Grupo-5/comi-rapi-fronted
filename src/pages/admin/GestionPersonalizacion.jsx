@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Container, Table, Button, Alert, Spinner, Badge, Form } from 'react-bootstrap';
+import { Container, Table, Button, Spinner, Badge, Form } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { productosMock } from '../../services/seedData';
+import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { formatPrice } from '../../utils/formatters';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 
@@ -11,7 +13,7 @@ const GestionPersonalizacion = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { elementos, loading, eliminar } = usePersonalizacion();
-  const [mensaje, setMensaje] = useState('');
+  const { notificar } = useNotificaciones();
   const [filtroTipo, setFiltroTipo] = useState('todos');
 
   const productoIdParam = searchParams.get('productoId') || '';
@@ -27,12 +29,11 @@ const GestionPersonalizacion = () => {
     setFiltroTipo('todos');
     if (val) setSearchParams({ productoId: val });
     else setSearchParams({});
-    setMensaje('');
   };
 
   const handleNuevo = () => {
     if (!productoSeleccionado) {
-      alert('Elegí primero el producto.');
+      notificar('Elegí primero el producto.', 'warning');
       return;
     }
     const tipoQuery = filtroTipo !== 'todos' ? `&tipo=${filtroTipo}` : '';
@@ -41,14 +42,26 @@ const GestionPersonalizacion = () => {
 
   const handleEditar = (id) => navigate(`/admin/personalizacion/editar/${id}`);
 
-  const handleEliminar = async (el) => {
-    const prod = productosMock.find((p) => p.id === el.productoId);
-    const label = el.tipo === 'acompanar' ? `→ ${el.nombre}` : el.nombre;
-    const ok = window.confirm(`¿Eliminar "${label}" de "${prod?.nombre || 'producto #' + el.productoId}"?\nTipo: ${el.tipo} — ID #${el.id}`);
-    if (!ok) return;
-    const res = await eliminar(el.id);
-    if (res.success) setMensaje(`"${label}" eliminado correctamente.`);
-    else setMensaje(res.error || 'No se pudo eliminar.');
+  const etiquetaDe = (el) =>
+    el.tipo === 'acompanar' ? `→ ${el.nombre}` : el.nombre;
+
+  // Elemento que espera confirmación en el modal de eliminación
+  const [elementoAEliminar, setElementoAEliminar] = useState(null);
+  const [confirmando, setConfirmando] = useState(false);
+
+  const handleEliminar = (el) => setElementoAEliminar(el);
+
+  const confirmarEliminar = async () => {
+    if (!elementoAEliminar) return;
+    setConfirmando(true);
+    const res = await eliminar(elementoAEliminar.id);
+    const label = etiquetaDe(elementoAEliminar);
+    notificar(
+      res.success ? `"${label}" eliminado correctamente.` : res.error || 'No se pudo eliminar.',
+      res.success ? 'success' : 'danger'
+    );
+    setElementoAEliminar(null);
+    setConfirmando(false);
   };
 
   const elementosFiltrados = useMemo(() => {
@@ -80,12 +93,6 @@ const GestionPersonalizacion = () => {
           <FaPlus className="me-1" aria-hidden="true" /> Agregar elemento
         </Button>
       </div>
-
-      {mensaje && (
-        <Alert variant="success" dismissible onClose={() => setMensaje('')}>
-          {mensaje}
-        </Alert>
-      )}
 
       <div className="card shadow-sm p-3 mb-3" style={{ border: '2px solid #ffe9c9', borderRadius: '18px' }}>
         <div className="row g-3 align-items-end">
@@ -229,6 +236,24 @@ const GestionPersonalizacion = () => {
           )}
         </>
       )}
+
+      <ConfirmarModal
+        mostrar={Boolean(elementoAEliminar)}
+        titulo="Eliminar elemento"
+        mensaje={
+          elementoAEliminar
+            ? (() => {
+                const el = elementoAEliminar;
+                const prod = productosMock.find((p) => p.id === el.productoId);
+                return `¿Eliminar "${etiquetaDe(el)}" de "${prod?.nombre || 'producto #' + el.productoId}"? Tipo: ${el.tipo === 'acompanar' ? 'Acompaña' : el.tipo === 'personalizar' ? 'Personalizar' : el.tipo === 'condimento' ? 'Condimento' : 'Extra'} — ID #${el.id}`;
+              })()
+            : ''
+        }
+        textoConfirmar="Sí, eliminar"
+        cargando={confirmando}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setElementoAEliminar(null)}
+      />
     </Container>
   );
 };

@@ -1,0 +1,83 @@
+/**
+ * Propósito: Estilos de los banners de notificación inline de Comi-Rapi.
+ * Contenido: Banners redondeados con fondo crema, borde naranja de marca,
+ *            borde izquierdo de color según el tipo, icono, mensaje y botón de
+ *            cierre. Entran con una animación suave desde arriba.
+ * Dependencias: Se importa desde src/components/comunes/BannersNotificaciones.jsx.
+ * Uso: Importado por BannersNotificaciones.jsx.
+ */
+
+.banners-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.batch-notificacion {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  background: #fff4e2;
+  border: 2px solid #f1c27d;
+  border-left-width: 6px;
+  border-radius: 16px;
+  padding: 0.75rem 1rem 0.75rem 1.25rem;
+  font-weight: 600;
+  color: #2b2b2b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: batch-notificacion-entrada 0.3s ease-out;
+}
+
+.batch-notificacion-icono {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+}
+
+.batch-notificacion-mensaje {
+  flex: 1;
+  min-width: 0;
+}
+
+.batch-notificacion.banner-clickeable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.batch-notificacion.banner-clickeable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+  border-color: #ff9f1c;
+}
+
+.batch-notificacion-cerrar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #8a5a2b;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.batch-notificacion-cerrar:hover {
+  background: #ffe6c2;
+  color: #b55d00;
+}
+
+@keyframes batch-notificacion-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -5,9 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 import { validatePersonalizacionElemento } from '../../utils/validators';
 import { productosMock } from '../../services/seedData';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 
 const FormularioPersonalizacion = ({ elemento, productos = productosMock, productoPreseleccionado, onGuardar }) => {
   const navigate = useNavigate();
+  const { notificar } = useNotificaciones();
 
   const [productoId, setProductoId] = useState(elemento?.productoId ? String(elemento.productoId) : productoPreseleccionado ? String(productoPreseleccionado) : '');
   const [tipo, setTipo] = useState(elemento?.tipo || '');
@@ -85,7 +87,7 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
 
     const errores = validatePersonalizacionElemento({ ...datos, productos });
     if (Object.keys(errores).length > 0) {
-      alert(Object.values(errores).join('\n'));
+      notificar(Object.values(errores).join(' '), 'warning');
       return;
     }
 

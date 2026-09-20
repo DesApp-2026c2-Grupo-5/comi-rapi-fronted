@@ -8,8 +8,10 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 
 const FormularioCategoria = ({ categoria, onGuardar }) => {
+  const { notificar } = useNotificaciones();
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [activa, setActiva] = useState(true);
@@ -26,7 +28,7 @@ const FormularioCategoria = ({ categoria, onGuardar }) => {
     e.preventDefault();
 
     if (!nombre.trim()) {
-      alert('El nombre es obligatorio.');
+      notificar('El nombre es obligatorio.', 'warning');
       return;
     }
 

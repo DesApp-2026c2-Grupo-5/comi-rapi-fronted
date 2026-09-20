@@ -67,6 +67,7 @@ export const mapearPedido = (p) => {
     historialEstados: (p.historial || []).map((h) => ({
       estado: h.estado?.nombre || h.EstadoPedido?.nombre || h.estado,
       fecha: h.fechaHora || h.fecha,
+      usuarioId: h.usuarioId,
     })),
     _raw: p,
   };

@@ -25,6 +25,7 @@ import { useCarrito } from '../../hooks/useCarrito';
 import { useSucursal } from '../../hooks/useSucursal';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useDirecciones } from '../../hooks/useDirecciones';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { asignarSucursalOptima } from '../../services/asignacionSucursal';
 import { calcularCostoEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO } from '../../utils/constants';
@@ -37,6 +38,7 @@ const Carrito = () => {
   const { sucursales } = useSucursal();
   const { crearPedido, obtenerPedidosPendientes, pedidoActual } = usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
+  const { notificar } = useNotificaciones();
   const navigate = useNavigate();
 
   // Si hay un pedido PENDIENTE sin pagar, el carrito ofrece "Ir a Pagar"
@@ -60,7 +62,7 @@ const Carrito = () => {
     // Sin dirección: el cliente no puede confirmar
     const direccion = direccionSeleccionada;
     if (!direccion) {
-      alert('Agregá una dirección antes de confirmar');
+      notificar('Agregá una dirección antes de confirmar.', 'warning');
       return;
     }
 
@@ -74,7 +76,7 @@ const Carrito = () => {
     const sucursalAsignada = asignarSucursalOptima(sucursalesActivas, pedidosPendientes);
 
     if (!sucursalAsignada) {
-      alert('No hay sucursales disponibles en este momento.');
+      notificar('No hay sucursales disponibles en este momento.', 'warning');
       return;
     }
 

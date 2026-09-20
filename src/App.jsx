@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { NotificacionProvider } from './context/NotificacionContext';
 import { AuthProvider } from './context/AuthContext';
 import { CarritoProvider } from './context/CarritoContext';
 import { SucursalProvider } from './context/SucursalContext';
@@ -16,6 +17,7 @@ import { PersonalizacionProvider } from './context/PersonalizacionContext';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/comunes/Navbar';
 import Footer from './components/comunes/Footer';
+import BannersNotificaciones from './components/comunes/BannersNotificaciones';
 import { obtenerEstadoApi } from './api/health';
 
 function App() {
@@ -27,7 +29,8 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <NotificacionProvider>
+        <AuthProvider>
         <CarritoProvider>
           <SucursalProvider>
             <PedidoProvider>
@@ -36,6 +39,7 @@ function App() {
                   <div className="d-flex flex-column min-vh-100">
                     <Navbar />
                     <main className="flex-grow-1">
+                      <BannersNotificaciones />
                       <AppRoutes />
                     </main>
                     <Footer />
@@ -56,6 +60,7 @@ function App() {
           </SucursalProvider>
         </CarritoProvider>
       </AuthProvider>
+      </NotificacionProvider>
     </BrowserRouter>
   );
 }

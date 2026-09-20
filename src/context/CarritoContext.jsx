@@ -8,6 +8,7 @@ import React, {
 import { calcularPrecioUnitario } from '../services/personalizacionConfig';
 import { compararPersonalizacion, generarIdLinea, personalizacionVacia } from '../utils/personalizacionHelpers';
 import { useAuth } from '../hooks/useAuth';
+import { useNotificaciones } from '../hooks/useNotificaciones';
 import {
   leerCarrito,
   guardarCarrito,
@@ -36,6 +37,7 @@ const recalcularPrecios = (lineas) =>
 
 export const CarritoProvider = ({ children }) => {
   const { user } = useAuth();
+  const { notificar } = useNotificaciones();
   const email = normalizarEmail(user?.email);
 
   // Dueño actual de la clave de storage ('' = invitado)
@@ -100,7 +102,7 @@ export const CarritoProvider = ({ children }) => {
         },
       ];
     });
-    alert(`"${producto.nombre}" agregado al carrito.`);
+    // Sin banner: el ícono del carrito en el Navbar ya notifica con su pulso/badge
   }, []);
 
   const eliminarDelCarrito = useCallback((idLineaOrProductoId) => {
@@ -135,8 +137,8 @@ export const CarritoProvider = ({ children }) => {
   const vaciarCarrito = useCallback(() => {
     setItems([]);
     limpiarCarrito(clave);
-    alert('Carrito vaciado.');
-  }, [clave]);
+    notificar('Carrito vaciado.', 'success');
+  }, [clave, notificar]);
 
   const totalItems = useMemo(() => items.reduce((total, item) => total + item.cantidad, 0), [items]);
 

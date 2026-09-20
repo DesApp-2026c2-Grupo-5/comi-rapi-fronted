@@ -9,8 +9,10 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Spinner } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
 import { obtenerCategorias } from '../../api/categorias';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 
 const FormularioProducto = ({ producto, onGuardar }) => {
+  const { notificar } = useNotificaciones();
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
@@ -46,7 +48,7 @@ const FormularioProducto = ({ producto, onGuardar }) => {
     e.preventDefault();
 
     if (!nombre.trim() || precio === '' || !categoriaId || !tipo) {
-      alert('Por favor completa todos los campos obligatorios.');
+      notificar('Por favor completa todos los campos obligatorios.', 'warning');
       return;
     }
 

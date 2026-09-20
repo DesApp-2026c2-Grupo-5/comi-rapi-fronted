@@ -12,12 +12,17 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Button, Container, Spinner, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import { obtenerCategorias, eliminarCategoria, editarCategoria } from '../../api/categorias';
+import ConfirmarModal from '../comunes/ConfirmarModal';
 
 const ListaCategorias = () => {
   const navigate = useNavigate();
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  // Objetos { id, nombre } que esperan confirmación en el modal
+  const [categoriaAEliminar, setCategoriaAEliminar] = useState(null);
+  const [categoriaAReactivar, setCategoriaAReactivar] = useState(null);
+  const [confirmando, setConfirmando] = useState(false);
 
   const cargarCategorias = async () => {
     setCargando(true);
@@ -43,37 +48,39 @@ const ListaCategorias = () => {
     navigate('/admin/categoria/nuevo');
   };
 
-  const handleEliminar = async (id, nombre) => {
-    if (
-      !window.confirm(
-        `¿Eliminar la categoría "${nombre}"?\nLa baja es lógica: no se borra de la base ni elimina sus productos.`
-      )
-    ) {
-      return;
-    }
-    const result = await eliminarCategoria(id);
+  const handleEliminar = (id, nombre) => setCategoriaAEliminar({ id, nombre });
+
+  const confirmarEliminar = async () => {
+    if (!categoriaAEliminar) return;
+    setConfirmando(true);
+    const result = await eliminarCategoria(categoriaAEliminar.id);
     if (result.success) {
+      setCategoriaAEliminar(null);
       cargarCategorias();
     } else {
       setError(result.error || 'No se pudo eliminar la categoría.');
     }
+    setConfirmando(false);
   };
 
-  const handleReactivar = async (id, nombre) => {
-    if (!window.confirm(`¿Reactivar la categoría "${nombre}"?`)) {
-      return;
-    }
-    const result = await editarCategoria(id, { activa: true });
+  const handleReactivar = (id, nombre) => setCategoriaAReactivar({ id, nombre });
+
+  const confirmarReactivar = async () => {
+    if (!categoriaAReactivar) return;
+    setConfirmando(true);
+    const result = await editarCategoria(categoriaAReactivar.id, { activa: true });
     if (result.success) {
+      setCategoriaAReactivar(null);
       cargarCategorias();
     } else {
       setError(result.error || 'No se pudo reactivar la categoría.');
     }
+    setConfirmando(false);
   };
 
   return (
     <Container>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h2 className="mb-0">Gestión de Categorías</h2>
         <Button variant="primary" onClick={handleNuevo}>
           <FaPlus className="me-1" aria-hidden="true" />
@@ -88,7 +95,7 @@ const ListaCategorias = () => {
           <Spinner animation="border" variant="danger" />
         </div>
       ) : (
-        <Table striped bordered hover responsive className="shadow-sm">
+        <Table striped bordered hover responsive className="tabla-admin shadow-sm">
           <thead className="table-dark">
             <tr>
               <th>ID</th>
@@ -101,17 +108,17 @@ const ListaCategorias = () => {
           <tbody>
             {categorias.map((categoria) => (
               <tr key={categoria.id}>
-                <td>{categoria.id}</td>
-                <td>{categoria.nombre}</td>
-                <td>{categoria.descripcion}</td>
-                <td>
+                <td data-label="ID">{categoria.id}</td>
+                <td data-label="Nombre">{categoria.nombre}</td>
+                <td data-label="Descripción">{categoria.descripcion}</td>
+                <td data-label="Estado">
                   {categoria.activa ? (
                     <Badge bg="success">Activa</Badge>
                   ) : (
                     <Badge bg="secondary">Inactiva</Badge>
                   )}
                 </td>
-                <td>
+                <td className="columna-acciones">
                   <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(categoria.id)}>
                     <FaEdit className="me-1" aria-hidden="true" />
                     Editar
@@ -132,6 +139,34 @@ const ListaCategorias = () => {
           </tbody>
         </Table>
       )}
+
+      <ConfirmarModal
+        mostrar={Boolean(categoriaAEliminar)}
+        titulo="Eliminar categoría"
+        mensaje={
+          categoriaAEliminar
+            ? `¿Eliminar la categoría "${categoriaAEliminar.nombre}"? La baja es lógica: no se borra de la base ni elimina sus productos.`
+            : ''
+        }
+        textoConfirmar="Sí, eliminar"
+        cargando={confirmando}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setCategoriaAEliminar(null)}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(categoriaAReactivar)}
+        titulo="Reactivar categoría"
+        mensaje={
+          categoriaAReactivar
+            ? `¿Reactivar la categoría "${categoriaAReactivar.nombre}"?`
+            : ''
+        }
+        textoConfirmar="Sí, reactivar"
+        cargando={confirmando}
+        onConfirmar={confirmarReactivar}
+        onCancelar={() => setCategoriaAReactivar(null)}
+      />
     </Container>
   );
 };
