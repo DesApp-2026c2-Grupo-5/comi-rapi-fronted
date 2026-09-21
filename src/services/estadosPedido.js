@@ -4,8 +4,8 @@
  * Dependencias: utils/constants.js (ESTADOS_PEDIDO).
  * Uso: import { puedeTransicionar, obtenerEstadosSiguientes } from '../services/estadosPedido';
  *
- * Flujo permitido:
- *   pendiente        → cancelado (el cliente puede cancelar; el pago lo pasa a confirmado)
+ * Flujo permitido (espejo del backend lib/services/estados_pedido.js):
+ *   pendiente        → confirmado (vía pago/confirmación) | cancelado
  *   confirmado       → en_preparacion | cancelado
  *   en_preparacion   → listo_para_entregar
  *   listo_para_entregar → en_camino
@@ -19,10 +19,11 @@
 
 import { ESTADOS_PEDIDO } from '../utils/constants';
 
-// Mapa de transiciones válidas por estado actual.
+// Mapa de transiciones válidas por estado actual (alineado con el backend).
 // Regla: solo se cancela antes de iniciar la preparación (pendiente/confirmado).
+// PENDIENTE → CONFIRMADO se ejecuta vía confirmarPedido (pago), no desde el stepper admin.
 const transiciones = {
-  [ESTADOS_PEDIDO.PENDIENTE]: [ESTADOS_PEDIDO.CANCELADO],
+  [ESTADOS_PEDIDO.PENDIENTE]: [ESTADOS_PEDIDO.CONFIRMADO, ESTADOS_PEDIDO.CANCELADO],
   [ESTADOS_PEDIDO.CONFIRMADO]: [ESTADOS_PEDIDO.EN_PREPARACION, ESTADOS_PEDIDO.CANCELADO],
   [ESTADOS_PEDIDO.EN_PREPARACION]: [ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR],
   [ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR]: [ESTADOS_PEDIDO.EN_CAMINO],

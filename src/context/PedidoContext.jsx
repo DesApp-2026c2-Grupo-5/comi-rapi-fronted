@@ -102,6 +102,21 @@ export const PedidoProvider = ({ children }) => {
           return;
         }
 
+        // Transición → ENTREGADO (fallback admin que simula al repartidor):
+        // avisa a ambas partes para que el admin lo vea sin recargar.
+        if (
+          pedido.estado === ESTADOS_PEDIDO.ENTREGADO &&
+          previo &&
+          previo !== ESTADOS_PEDIDO.ENTREGADO
+        ) {
+          if (isAdmin) {
+            notificar(`El pedido #${pedido.id} fue entregado.`, 'success');
+          } else {
+            notificar(`Tu pedido #${pedido.id} fue entregado.`, 'success');
+          }
+          return;
+        }
+
         // Transición → CANCELADO hecha por otra persona: al admin si la canceló
         // un cliente; al cliente si la canceló el admin.
         if (
