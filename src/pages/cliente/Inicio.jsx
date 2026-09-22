@@ -42,7 +42,9 @@ const Inicio = () => {
           resCategorias.data.map((cat) => ({
             id: cat.id,
             nombre: cat.nombre,
-            imagen: `https://via.placeholder.com/150/FF9F1C/FFF?text=${encodeURIComponent(cat.nombre)}`,
+            imagen:
+              cat.imagen ||
+              `https://via.placeholder.com/150/FF9F1C/FFF?text=${encodeURIComponent(cat.nombre)}`,
           }))
         );
       }

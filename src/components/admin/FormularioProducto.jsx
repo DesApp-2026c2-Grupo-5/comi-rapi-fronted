@@ -10,6 +10,7 @@ import { Form, Button, Card, Spinner } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
 import { obtenerCategorias } from '../../api/categorias';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import SubirImagen from './SubirImagen';
 
 const FormularioProducto = ({ producto, onGuardar }) => {
   const { notificar } = useNotificaciones();
@@ -126,13 +127,21 @@ const FormularioProducto = ({ producto, onGuardar }) => {
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>URL de imagen</Form.Label>
+            <Form.Label>Imagen</Form.Label>
             <Form.Control
-              type="url"
+              type="text"
               value={imagen}
               onChange={(e) => setImagen(e.target.value)}
-              placeholder="https://ejemplo.com/imagen.jpg"
+              placeholder="/imagenes/productos/tu-imagen.jpg"
             />
+            <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
+              <SubirImagen imagen={imagen} onImagenSubida={setImagen} />
+            </div>
+            <Form.Text className="text-muted">
+              Subí una imagen desde tu dispositivo; queda guardada como archivo
+              del proyecto y se ve en el catálogo. También podés escribir la
+              ruta o pegar un link.
+            </Form.Text>
           </Form.Group>
           <Button variant="primary" type="submit" className="w-100">
             <FaSave className="me-1" aria-hidden="true" />

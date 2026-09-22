@@ -9,9 +9,11 @@
  * - Normalizar las respuestas del backend ({ success, data | error }) al formato
  *   { success, data? | error? } usado por la capa api/.
  * - Reintentar una única vez si el backend responde 403 por CSRF (token rotado/expirado).
+ * - Subir archivos (multipart) con apiPostFormData: envía un FormData sin fijar
+ *   Content-Type para que el navegador agregue el boundary correcto.
  *
  * Dependencias: Ninguna (usa fetch nativo).
- * Uso: import { apiGet, apiPost, apiPut, apiDelete } from './client';
+ * Uso: import { apiGet, apiPost, apiPut, apiDelete, apiPostFormData } from './client';
  */
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -63,7 +65,7 @@ async function obtenerTokenCsrf() {
  * Ejecuta una petición HTTP y normaliza la respuesta.
  * @param {string} method - Método HTTP (GET, POST, PUT, DELETE...).
  * @param {string} path - Ruta relativa a la API (p. ej. "/auth/login").
- * @param {object} [datos] - Cuerpo JSON (solo para métodos que lo aceptan).
+ * @param {object|FormData} [datos] - Cuerpo JSON o FormData (multipart).
  * @returns {Promise<{success: boolean, data?: any, error?: string, status?: number}>}
  */
 async function ejecutar(method, path, datos) {
@@ -71,8 +73,12 @@ async function ejecutar(method, path, datos) {
   const opciones = { method, credentials: 'include', headers: {} };
 
   if (datos !== undefined) {
-    opciones.headers['Content-Type'] = 'application/json';
-    opciones.body = JSON.stringify(datos);
+    if (datos instanceof FormData) {
+      opciones.body = datos;
+    } else {
+      opciones.headers['Content-Type'] = 'application/json';
+      opciones.body = JSON.stringify(datos);
+    }
   }
   if (METODOS_PROTEGIDOS.has(method)) {
     const token = await obtenerTokenCsrf();
@@ -113,3 +119,5 @@ export const apiGet = (path) => request('GET', path);
 export const apiPost = (path, datos) => request('POST', path, datos);
 export const apiPut = (path, datos) => request('PUT', path, datos);
 export const apiDelete = (path) => request('DELETE', path);
+export const apiPostFormData = (path, formData) =>
+  request('POST', path, formData);
