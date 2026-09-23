@@ -1,17 +1,22 @@
 /**
- * Propósito: Contexto de direcciones del cliente (permite CRUD de direcciones
- *            textuales y asegura UNA dirección principal por cliente).
+ * Propósito: Contexto de direcciones del cliente con CRUD contra el backend real.
  * Contenido: DireccionProvider, DireccionContext, con funciones cargarDirecciones,
- *            agregarDireccion, editarDireccion, eliminarDireccion,
- *            seleccionarDireccionPrincipal y obtenerDireccionPrincipal.
- * Dependencias: React (createContext, useState, useCallback, useMemo),
- *               utils/constants.js (ESTADO_DIRECCION), services/seedData.js (direccionesMock).
+ *            agregarDireccion, editarDireccion y eliminarDireccion (baja lógica).
+ * Dependencias: React (createContext, useState, useCallback, useMemo), api/direcciones.js.
  * Uso: <DireccionProvider> envuelve la app en App.jsx. Consumir con useDirecciones().
+ *
+ * El backend scopea por sesión (DER: Usuario 1:N Direccion), así que no hace falta
+ * pasar el cliente: cada cliente solo ve y gestiona sus propias direcciones.
+ * El DER no define una dirección "principal": eso se elige en el carrito.
  */
 
 import React, { createContext, useState, useCallback, useMemo } from 'react';
-import { ESTADO_DIRECCION } from '../utils/constants';
-import { direccionesMock } from '../services/seedData';
+import {
+  obtenerDirecciones,
+  crearDireccion,
+  actualizarDireccion,
+  eliminarDireccion as eliminarDireccionApi,
+} from '../api/direcciones';
 
 // Se crea el contexto
 export const DireccionContext = createContext(null);
@@ -21,178 +26,100 @@ export const DireccionContext = createContext(null);
  * @param {React.ReactNode} children - Componentes hijos.
  */
 export const DireccionProvider = ({ children }) => {
-  // Todas las direcciones de la app (MOCK - reemplazar por la API real).
-  // La "eliminación" es lógica: se marca estado 'inactivo'.
-  const [direcciones, setDirecciones] = useState(direccionesMock);
+  const [direcciones, setDirecciones] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   /**
-   * Devuelve las direcciones ACTIVAS de un cliente (selector).
-   * @param {string} clienteId - Email del cliente.
-   * @returns {Array} Direcciones activas del cliente.
+   * Carga las direcciones activas del cliente autenticado desde el backend.
+   * @returns {Promise<Array>} Direcciones cargadas.
    */
-  const cargarDirecciones = useCallback(
-    (clienteId) =>
-      direcciones.filter(
-        (d) => d.clienteId === clienteId && d.estado === ESTADO_DIRECCION.ACTIVO
-      ),
-    [direcciones]
-  );
+  const cargarDirecciones = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await obtenerDirecciones();
+      if (result.success) {
+        setDirecciones(result.data);
+        setError(null);
+        return result.data;
+      }
+      setError(result.error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   /**
-   * Devuelve la dirección PRINCIPAL activa de un cliente (la que se usa en el carrito).
-   * @param {string} clienteId - Email del cliente.
-   * @returns {object|null} Dirección principal o null si no tiene.
+   * Agrega una nueva dirección y la persiste en el backend.
+   * @param {object} datosDireccion - { calle, altura?, ciudad?, codigoPostal?, referencia?, alias? }.
+   * @returns {Promise<object|null>} Dirección creada o null si falla.
    */
-  const obtenerDireccionPrincipal = useCallback(
-    (clienteId) =>
-      direcciones.find(
-        (d) =>
-          d.clienteId === clienteId &&
-          d.estado === ESTADO_DIRECCION.ACTIVO &&
-          d.esPrincipal
-      ) || null,
-    [direcciones]
-  );
-
-  // Quita la marca "principal" a todas las direcciones de un cliente.
-  const desmarcarPrincipales = (lista, clienteId) =>
-    lista.map((d) => (d.clienteId === clienteId ? { ...d, esPrincipal: false } : d));
+  const agregarDireccion = useCallback(async (datosDireccion) => {
+    const result = await crearDireccion(datosDireccion);
+    if (result.success) {
+      setDirecciones((prev) => [...prev, result.data]);
+      setError(null);
+      return result.data;
+    }
+    setError(result.error);
+    return null;
+  }, []);
 
   /**
-   * Agrega una nueva dirección. Si es la única activa del cliente, se convierte
-   * en principal automáticamente. Si se marca principal, las demás se desmarcan.
-   * @param {object} datosDireccion - Datos de la dirección { clienteId, nombre,
-   *                                  direccion, ciudad, codigoPostal, referencia, esPrincipal }.
-   * @returns {object} Dirección creada.
-   */
-  const agregarDireccion = useCallback(
-    (datosDireccion) => {
-      // Si no hay ninguna dirección activa del cliente, esta pasa a ser la principal.
-      const tieneActivas = direcciones.some(
-        (d) =>
-          d.clienteId === datosDireccion.clienteId &&
-          d.estado === ESTADO_DIRECCION.ACTIVO
-      );
-      const esPrincipal = datosDireccion.esPrincipal || !tieneActivas;
-
-      const nuevas = {
-        id: Date.now(), // MOCK - el ID real vendría del backend
-        ...datosDireccion,
-        esPrincipal,
-        estado: ESTADO_DIRECCION.ACTIVO,
-      };
-
-      setDirecciones((prev) => {
-        const lista = esPrincipal ? desmarcarPrincipales(prev, nuevas.clienteId) : prev;
-        return [...lista, nuevas];
-      });
-
-      return nuevas;
-    },
-    [direcciones]
-  );
-
-  /**
-   * Edita una dirección existente. Si se marca principal, las demás se desmarcan.
+   * Edita una dirección existente en el backend.
    * @param {number} id - ID de la dirección.
-   * @param {object} datos - Nuevos datos de la dirección.
-   * @returns {object|null} Dirección actualizada o null si no existe.
+   * @param {object} datos - Campos a actualizar.
+   * @returns {Promise<object|null>} Dirección actualizada o null si falla.
    */
-  const editarDireccion = useCallback(
-    (id, datos) => {
-      const actual = direcciones.find((d) => d.id === Number(id));
-      if (!actual) return null;
-
-      const editada = {
-        ...actual,
-        ...datos,
-        id: actual.id,
-        clienteId: datos.clienteId || actual.clienteId,
-        estado: actual.estado,
-      };
-
+  const editarDireccion = useCallback(async (id, datos) => {
+    const result = await actualizarDireccion(id, datos);
+    if (result.success) {
       setDirecciones((prev) =>
-        prev
-          .map((d) => (d.id === actual.id ? editada : d))
-          .map((d) =>
-            datos.esPrincipal && d.clienteId === actual.clienteId && d.id !== actual.id
-              ? { ...d, esPrincipal: false }
-              : d
-          )
+        prev.map((d) => (d.id === result.data.id ? result.data : d))
       );
-
-      return editada;
-    },
-    [direcciones]
-  );
+      setError(null);
+      return result.data;
+    }
+    setError(result.error);
+    return null;
+  }, []);
 
   /**
-   * "Elimina" una dirección (baja lógica: cambia el estado a inactivo).
+   * Elimina una dirección (baja lógica: el backend marca activa = false).
    * @param {number} id - ID de la dirección a eliminar.
-   * @returns {boolean} true si se eliminó correctamente.
+   * @returns {Promise<boolean>} true si se eliminó correctamente.
    */
-  const eliminarDireccion = useCallback(
-    (id) => {
-      const objetivo = direcciones.find(
-        (d) => d.id === Number(id) && d.estado === ESTADO_DIRECCION.ACTIVO
-      );
-      if (!objetivo) return false;
-
-      setDirecciones((prev) =>
-        prev.map((d) =>
-          d.id === objetivo.id ? { ...d, estado: ESTADO_DIRECCION.INACTIVO } : d
-        )
-      );
+  const eliminarDireccion = useCallback(async (id) => {
+    const result = await eliminarDireccionApi(id);
+    if (result.success) {
+      setDirecciones((prev) => prev.filter((d) => d.id !== Number(id)));
+      setError(null);
       return true;
-    },
-    [direcciones]
-  );
-
-  /**
-   * Marca una dirección como principal (desmarca las demás del mismo cliente).
-   * @param {number} id - ID de la dirección a marcar como principal.
-   * @returns {boolean} true si se marcó correctamente.
-   */
-  const seleccionarDireccionPrincipal = useCallback(
-    (id) => {
-      const objetivo = direcciones.find(
-        (d) => d.id === Number(id) && d.estado === ESTADO_DIRECCION.ACTIVO
-      );
-      if (!objetivo) return false;
-
-      setDirecciones((prev) =>
-        prev.map((d) =>
-          d.id === objetivo.id
-            ? { ...d, esPrincipal: true }
-            : d.clienteId === objetivo.clienteId
-              ? { ...d, esPrincipal: false }
-              : d
-        )
-      );
-      return true;
-    },
-    [direcciones]
-  );
+    }
+    setError(result.error);
+    return false;
+  }, []);
 
   // Valor del contexto
   const value = useMemo(
     () => ({
       direcciones,
+      loading,
+      error,
       cargarDirecciones,
-      obtenerDireccionPrincipal,
       agregarDireccion,
       editarDireccion,
       eliminarDireccion,
-      seleccionarDireccionPrincipal,
     }),
     [
       direcciones,
+      loading,
+      error,
       cargarDirecciones,
-      obtenerDireccionPrincipal,
       agregarDireccion,
       editarDireccion,
       eliminarDireccion,
-      seleccionarDireccionPrincipal,
     ]
   );
 

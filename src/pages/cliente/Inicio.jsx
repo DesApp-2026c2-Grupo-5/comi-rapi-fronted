@@ -21,23 +21,39 @@
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { FaShoppingCart } from 'react-icons/fa';
-import { productosMock } from '../../services/seedData';
+import { useState, useEffect } from 'react';
+import { obtenerProductos } from '../../api/productos';
+import { obtenerCategorias } from '../../api/categorias';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Inicio.css';
 
 const Inicio = () => {
-  // MOCK - reemplazar por llamada a la API de categorías.
-  const categorias = [
-    { id: 1, nombre: 'Hamburguesas', imagen: 'https://via.placeholder.com/150/C0392B/FFF?text=Hamburguesas' },
-    { id: 2, nombre: 'Pizzas', imagen: 'https://via.placeholder.com/150/E74C3C/FFF?text=Pizzas' },
-    { id: 3, nombre: 'Combos', imagen: 'https://via.placeholder.com/150/F39C12/FFF?text=Combos' },
-    { id: 4, nombre: 'Papas', imagen: 'https://via.placeholder.com/150/F1C40F/FFF?text=Papas' },
-    { id: 5, nombre: 'Bebidas', imagen: 'https://via.placeholder.com/150/3498DB/FFF?text=Bebidas' },
-    { id: 6, nombre: 'Postres', imagen: 'https://via.placeholder.com/150/E91E63/FFF?text=Postres' },
-  ];
+  const [categorias, setCategorias] = useState([]);
+  const [favoritos, setFavoritos] = useState([]);
 
-  // MOCK - favoritos de la semana elegidos del seed de productos.
-  const favoritos = productosMock.filter((p) => [1, 3, 4].includes(p.id));
+  useEffect(() => {
+    const cargar = async () => {
+      const [resCategorias, resProductos] = await Promise.all([
+        obtenerCategorias(),
+        obtenerProductos(),
+      ]);
+      if (resCategorias.success) {
+        setCategorias(
+          resCategorias.data.map((cat) => ({
+            id: cat.id,
+            nombre: cat.nombre,
+            imagen:
+              cat.imagen ||
+              `https://via.placeholder.com/150/FF9F1C/FFF?text=${encodeURIComponent(cat.nombre)}`,
+          }))
+        );
+      }
+      if (resProductos.success) {
+        setFavoritos(resProductos.data.filter((p) => [1, 3, 4].includes(p.id)));
+      }
+    };
+    cargar();
+  }, []);
 
   // MODIFICADO: Icono de bicicleta (SVG inline, sin dependencias extra).
   const BicicletaIcon = () => (
@@ -150,7 +166,7 @@ const Inicio = () => {
             {categorias.map((cat) => (
               <Col key={cat.id} xs={6} md={4} lg={2} className="mb-4 text-center">
                 <Link
-                  to={`/cliente/catalogo?categoria=${encodeURIComponent(cat.nombre)}`}
+                  to={`/cliente/catalogo?categoria=${cat.id}`}
                   className="categoria-enlace"
                 >
                   <div className="categoria-circulo">

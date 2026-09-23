@@ -21,8 +21,9 @@ import { pedidosPendientesMock } from '../services/seedData';
 // Se crea el contexto
 export const SucursalContext = createContext(null);
 
-// Las sucursales conservan 'direccion' (texto), 'lat' y 'lng'. La dirección se muestra
-// en pedidos/confirmación y las coordenadas se mantienen para la lógica de asignación.
+// Las sucursales conservan 'direccion' (texto), 'latitud' y 'longitud'. La dirección se
+// muestra en pedidos/confirmación y las coordenadas se mantienen para la asignación.
+// El estado proviene del backend como booleano 'activa'.
 
 /**
  * Proveedor del contexto de sucursal.
@@ -39,12 +40,14 @@ export const SucursalProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   /**
-   * Carga las sucursales desde la API (mock) y actualiza el estado global.
+   * Carga las sucursales desde el backend y actualiza el estado global.
+   * Pide también las inactivas (el backend solo las devuelve a un ADMIN), para
+   * que la pantalla de gestión pueda mostrarlas y reactivarlas.
    */
   const obtenerSucursalesFn = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await obtenerSucursales();
+      const result = await obtenerSucursales({ incluirInactivas: true });
       if (result.success) {
         setSucursales(result.data);
         return result.data;
@@ -93,7 +96,7 @@ export const SucursalProvider = ({ children }) => {
   );
 
   /**
-   * Agrega una nueva sucursal al estado local (y lo persiste en el servicio mock).
+   * Agrega una nueva sucursal al estado local (la persiste en el backend).
    * @param {object} sucursal - Datos de la nueva sucursal.
    * @returns {Promise<object|null>} Sucursal creada o null si falla.
    */
@@ -144,7 +147,7 @@ export const SucursalProvider = ({ children }) => {
 
   // Sucursales cercanas (solo activas) calculadas para el cliente
   const sucursalesCercanas = useMemo(
-    () => sucursales.filter((s) => s.estado === 'activo'),
+    () => sucursales.filter((s) => s.activa !== false),
     [sucursales]
   );
 

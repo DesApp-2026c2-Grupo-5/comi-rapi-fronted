@@ -41,6 +41,8 @@ import MisDirecciones from '../pages/cliente/MisDirecciones';
 import Dashboard from '../pages/admin/Dashboard';
 import GestionProductos from '../pages/admin/GestionProductos';
 import EditarProducto from '../pages/admin/EditarProducto';
+import GestionCategorias from '../pages/admin/GestionCategorias';
+import EditarCategoria from '../pages/admin/EditarCategoria';
 import GestionPedidos from '../pages/admin/GestionPedidos';
 import GestionSucursales from '../pages/admin/GestionSucursales';
 import EditarSucursal from '../pages/admin/EditarSucursal';
@@ -80,11 +82,14 @@ const AppRoutes = () => {
       </Route>
 
       {/* Rutas protegidas de administrador */}
-      <Route element={<ProtectedRoute requiredRole="ADMIN" />}>
+      <Route element={<ProtectedRoute requiredRole="ADMINISTRADOR" />}>
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/productos" element={<GestionProductos />} />
         <Route path="/admin/producto/editar/:id" element={<EditarProducto />} />
         <Route path="/admin/producto/nuevo" element={<EditarProducto />} />
+        <Route path="/admin/categorias" element={<GestionCategorias />} />
+        <Route path="/admin/categoria/nuevo" element={<EditarCategoria />} />
+        <Route path="/admin/categoria/editar/:id" element={<EditarCategoria />} />
         <Route path="/admin/pedidos" element={<GestionPedidos />} />
         <Route path="/admin/sucursales" element={<GestionSucursales />} />
         <Route path="/admin/sucursal/nuevo" element={<EditarSucursal />} />

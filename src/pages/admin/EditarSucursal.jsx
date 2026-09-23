@@ -13,11 +13,13 @@ import { Container, Spinner, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioSucursal from '../../components/admin/FormularioSucursal';
 import { useSucursal } from '../../hooks/useSucursal';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 
 const EditarSucursal = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { sucursales, loading, agregarSucursal, actualizarSucursal } = useSucursal();
+  const { notificar } = useNotificaciones();
   const [sucursal, setSucursal] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -39,7 +41,7 @@ const EditarSucursal = () => {
     if (id) {
       const actualizada = await actualizarSucursal(id, datosSucursal);
       if (actualizada) {
-        alert(`Sucursal "${actualizada.nombre}" actualizada correctamente (simulado).`);
+        notificar(`Sucursal "${actualizada.nombre}" actualizada correctamente.`, 'success');
       } else {
         setError('No se pudo actualizar la sucursal.');
         return;
@@ -47,7 +49,7 @@ const EditarSucursal = () => {
     } else {
       const creada = await agregarSucursal(datosSucursal);
       if (creada) {
-        alert(`Sucursal "${creada.nombre}" creada correctamente (simulado).`);
+        notificar(`Sucursal "${creada.nombre}" creada correctamente.`, 'success');
       } else {
         setError('No se pudo crear la sucursal.');
         return;

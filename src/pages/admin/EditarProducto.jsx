@@ -1,5 +1,5 @@
 /**
- * Propósito: Página para editar o crear un producto usando la API real.
+ * Propósito: Página para editar o crear un producto usando Container de Bootstrap.
  * Contenido: Componente EditarProducto con carga de datos por ID y FormularioProducto.
  * Dependencias: react-bootstrap (Container, Spinner, Alert, Button), react-router-dom,
  *               FormularioProducto, api/productos.js.
@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Spinner, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
@@ -17,32 +17,36 @@ const EditarProducto = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [producto, setProducto] = useState(null);
-  const [productoNoEncontrado, setProductoNoEncontrado] = useState(false);
-  const [cargando, setCargando] = useState(Boolean(id));
+  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (id) {
-      obtenerProductoPorId(id).then((resultado) => {
-        if (resultado.success) {
-          setProducto(resultado.data);
+    const cargar = async () => {
+      setCargando(true);
+      setError('');
+      if (id) {
+        const result = await obtenerProductoPorId(id);
+        if (result.success) {
+          setProducto(result.data);
         } else {
-          setProductoNoEncontrado(true);
+          setProducto(null);
+          setError(result.error || 'No se pudo cargar el producto.');
         }
-        setCargando(false);
-      });
-    }
+      }
+      setCargando(false);
+    };
+    cargar();
   }, [id]);
 
   const handleGuardar = async (datosProducto) => {
-    const resultado = id
+    setError('');
+    const result = id
       ? await editarProducto(id, datosProducto)
       : await crearProducto(datosProducto);
-    if (resultado.success) {
-      alert(`Producto "${datosProducto.nombre}" guardado correctamente.`);
+    if (result.success) {
       navigate('/admin/productos');
     } else {
-      setError(resultado.error || 'No se pudo guardar el producto.');
+      setError(result.error || 'No se pudo guardar el producto.');
     }
   };
 
@@ -54,10 +58,10 @@ const EditarProducto = () => {
     );
   }
 
-  if (id && productoNoEncontrado) {
+  if (id && !producto) {
     return (
       <Container className="py-5 text-center">
-        <h2>Producto no encontrado</h2>
+        <h2>{error || 'Producto no encontrado'}</h2>
         <Link to="/admin/productos"><Button variant="secondary" className="mt-3">
           <FaArrowLeft className="me-1" aria-hidden="true" />
           Volver a productos

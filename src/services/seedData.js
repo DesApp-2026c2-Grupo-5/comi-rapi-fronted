@@ -2,7 +2,7 @@
  * Propósito: Contener todos los datos mock/semilla para desarrollo del proyecto.
  * Contenido: Arrays de productos, categorías, sucursales, pedidos y pedidos pendientes mockeados.
  * Dependencias: Ninguna.
- * Uso: import { productosMock, categoriasMock, sucursalesMock, pedidosMock, pedidosPendientesMock } from '../services/seedData';
+ * Uso: import { productosMock, sucursalesMock, pedidosMock, pedidosPendientesMock } from '../services/seedData';
  */
 
 // Datos mock de productos (MOCK - reemplazar con llamadas a la API en producción)
@@ -95,16 +95,6 @@ export const productosMock = [
     imagen: 'https://via.placeholder.com/300x200?text=Cheesecake',
     descripcion: 'Cheesecake cremoso con salsa de frutos rojos.',
   },
-];
-
-// Datos mock de categorías (MOCK - reemplazar con llamadas a la API en producción)
-export const categoriasMock = [
-  { id: 1, nombre: 'Hamburguesas', descripcion: 'Nuestras deliciosas hamburguesas' },
-  { id: 6, nombre: 'Pizzas', descripcion: 'Pizzas artesanales al horno de barro' },
-  { id: 2, nombre: 'Combos', descripcion: 'Combos con papas y bebida' },
-  { id: 3, nombre: 'Papas', descripcion: 'Papas fritas para compartir' },
-  { id: 4, nombre: 'Bebidas', descripcion: 'Bebidas frías y calientes' },
-  { id: 5, nombre: 'Postres', descripcion: 'El mejor cierre para tu pedido' },
 ];
 
 // Datos mock de sucursales (MOCK - reemplazar con llamadas a la API en producción)
@@ -256,32 +246,4 @@ export const personalizacionElementosMock = [
   { id: 305, productoId: 3, tipo: 'condimento', nombre: 'Sobre de Orégano', precio: null, productoReferenciaId: null, activo: true },
   // Combo Doble id:7
   { id: 701, productoId: 7, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 900, productoReferenciaId: 8, activo: true },
-];
-
-// Datos mock de direcciones de clientes (MOCK - reemplazar con llamadas a la API en producción).
-// Sin latitud ni longitud: las direcciones del cliente son textuales, solo la sucursal usa
-// coordenadas para la lógica de asignación.
-export const direccionesMock = [
-  {
-    id: 1,
-    clienteId: 'cliente@test.com',
-    nombre: 'Casa',
-    direccion: 'Av. Siempreviva 1234',
-    ciudad: 'Capital Federal',
-    codigoPostal: '1406',
-    referencia: 'Casa verde',
-    esPrincipal: true,
-    estado: 'activo',
-  },
-  {
-    id: 2,
-    clienteId: 'cliente@test.com',
-    nombre: 'Trabajo',
-    direccion: 'Calle Falsa 456',
-    ciudad: 'Capital Federal',
-    codigoPostal: '1425',
-    referencia: 'Oficina',
-    esPrincipal: false,
-    estado: 'activo',
-  },
 ];

@@ -93,7 +93,7 @@ const SucursalesCercanas = () => {
                       <strong>Teléfono:</strong> {sucursal.telefono || '-'}
                     </Card.Text>
                     <Card.Text className="text-muted mb-0">
-                      <strong>Horario:</strong> {sucursal.horario || '-'}
+                      <strong>Horario:</strong> {sucursal.horarios || '-'}
                     </Card.Text>
                   </Card.Body>
                 </Card>

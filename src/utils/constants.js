@@ -9,7 +9,7 @@
 
 export const ROLES = {
   CLIENTE: 'CLIENTE',
-  ADMIN: 'ADMIN',
+  ADMIN: 'ADMINISTRADOR',
 };
 
 // Estados del ciclo de vida de un pedido (valores en minúscula, igual que en los datos mock).
@@ -69,12 +69,6 @@ export const COLOR_ESTADO_PEDIDO = {
 
 // Estados posibles de una sucursal. El valor coincide con el campo 'estado' de los datos mock.
 export const ESTADO_SUCURSAL = {
-  ACTIVO: 'activo',
-  INACTIVO: 'inactivo',
-};
-
-// Estados posibles de una dirección de cliente. Eliminar = pasar a inactivo (baja lógica).
-export const ESTADO_DIRECCION = {
   ACTIVO: 'activo',
   INACTIVO: 'inactivo',
 };

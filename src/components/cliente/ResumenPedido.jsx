@@ -4,26 +4,38 @@
  * Contenido: Componente ResumenPedido usando Card y Button de Bootstrap.
  * Dependencias: react-bootstrap (Card, Button), useCarrito hook, formatters.js, ResumenPedido.css.
  * Uso:
-*   En el carrito: <ResumenPedido onConfirmar={handler} />
-  *   En la confirmación: <ResumenPedido items={productos} total={total} sucursal={sucursal} />
-  *
-  * CAMBIOS REALIZADOS:
-  *  - El componente ahora acepta props opcionales (items, total, sucursal). Si no se pasan,
-  *    usa los datos del carrito (comportamiento original del carrito).
-  *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
+ *   En el carrito: <ResumenPedido onConfirmar={handler} />
+   *   En la confirmación: <ResumenPedido items={productos} total={total} costoEnvio={costoEnvio} sucursal={sucursal} />
+   *
+   * CAMBIOS REALIZADOS:
+   *  - El componente ahora acepta props opcionales (items, total, costoEnvio, sucursal). Si no se pasan,
+   *    usa los datos del carrito (comportamiento original del carrito).
+   *  - Modo lectura: el total recibido del backend ya incluye el envío → usa la prop costoEnvio
+   *    y muestra Subtotal = total - costoEnvio. No recalcula el envío del servicio.
+   *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
   *  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
-  *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
-  *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
-  */
+ *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
+ *  - Detalle de ítems dentro de la card: nombre, cantidad, precio unitario, subtotal
+ *    de línea y desglose de personalización (patrón .desglose del mockup), en ambos modos.
+ *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
+ */
 
 import { Card, Button } from 'react-bootstrap';
 import { FaCheckCircle } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
+import DetalleItemsPedido from '../comunes/DetalleItemsPedido';
 import './ResumenPedido.css';
 
-const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucursal, botonTexto = 'Confirmar Pedido' }) => {
+const ResumenPedido = ({
+  onConfirmar,
+  items: itemsProp,
+  total: totalProp,
+  costoEnvio: costoEnvioProp,
+  sucursal,
+  botonTexto = 'Confirmar Pedido',
+}) => {
   const { items, total } = useCarrito();
 
   // Prioriza los datos recibidos por props (modo confirmación/lectura) sobre los del carrito.
@@ -32,8 +44,15 @@ const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucurs
 
   if (productos.length === 0) return null;
 
-  // Costo de envío según las reglas del servicio (MOCK - backend lo calculará).
-  const costoEnvio = calcularCostoEnvio(montoTotal);
+  // Modo lectura (total del pedido): usa el costoEnvio recibido por prop; el
+  // total del backend ya incluye el envío. Modo carrito: recalcula el envío
+  // según las reglas del servicio (MOCK - backend lo calculará).
+  const enModoLectura = totalProp !== undefined;
+  const costoEnvio = enModoLectura
+    ? costoEnvioProp ?? 0
+    : calcularCostoEnvio(montoTotal);
+  const subtotal = enModoLectura ? montoTotal - costoEnvio : montoTotal;
+  const totalFinal = enModoLectura ? montoTotal : montoTotal + costoEnvio;
 
   return (
     <Card className="resumen-card">
@@ -41,10 +60,15 @@ const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucurs
         Resumen del Pedido
       </Card.Header>
       <Card.Body className="py-3">
+        {/* Detalle de ítems (compartido con la vista admin; válido en ambos modos) */}
+        <div className="resumen-items mb-2">
+          <DetalleItemsPedido items={productos} />
+        </div>
+
         {/* Subtotal */}
         <div className="d-flex justify-content-between mb-2">
           <span className="text-muted">Subtotal</span>
-          <strong>{formatPrice(montoTotal)}</strong>
+          <strong>{formatPrice(subtotal)}</strong>
         </div>
 
         {/* Envío */}
@@ -62,7 +86,7 @@ const ResumenPedido = ({ onConfirmar, items: itemsProp, total: totalProp, sucurs
         {/* Total */}
         <div className="d-flex justify-content-between align-items-center">
           <strong>Total</strong>
-          <strong className="resumen-total">{formatPrice(montoTotal + costoEnvio)}</strong>
+          <strong className="resumen-total">{formatPrice(totalFinal)}</strong>
         </div>
 
         {/* Sucursal asignada (visible al confirmar el pedido) */}

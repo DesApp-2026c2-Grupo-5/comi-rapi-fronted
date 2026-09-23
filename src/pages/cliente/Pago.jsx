@@ -12,23 +12,33 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Card, Button, Badge, Row, Col } from 'react-bootstrap';
-import { FaArrowLeft, FaDollarSign, FaCreditCard, FaCheckCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaDollarSign, FaCreditCard, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useCarrito } from '../../hooks/useCarrito';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { simuladorPago } from '../../services/simuladorPago';
-import { calcularTotalConEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatDate, formatPrice } from '../../utils/formatters';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
+import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import './Pago.css';
 
+// El frontend usa claves en minúscula para las opciones; el backend persiste
+// el ENUM 'MERCADO_PAGO' | 'TARJETA' (docs/reglas-negocio.md, sección 8).
+const MAPA_MEDIO_PAGO = {
+  mercado_pago: 'MERCADO_PAGO',
+  tarjeta: 'TARJETA',
+};
+
 const Pago = () => {
-  const { pedidoActual, confirmarPedido } = usePedidos();
+  const { pedidoActual, confirmarPedido, cambiarEstado } = usePedidos();
   const { vaciarCarrito } = useCarrito();
+  const { notificar } = useNotificaciones();
   const navigate = useNavigate();
   const [paginando, setPaginando] = useState(false);
   const [metodoElegido, setMetodoElegido] = useState(null);
+  const [mostrarConfirmarCancelar, setMostrarConfirmarCancelar] = useState(false);
 
   // El pedido debe existir y seguir PENDIENTE para poder pagarlo
   if (!pedidoActual || pedidoActual.estado !== ESTADOS_PEDIDO.PENDIENTE) {
@@ -54,7 +64,8 @@ const Pago = () => {
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedidoActual.estado] || pedidoActual.estado;
   const { sucursal } = pedidoActual;
-  const montoTotal = calcularTotalConEnvio(pedidoActual.total);
+  // El total del backend ya incluye el envío
+  const montoTotal = pedidoActual.total;
 
   // Aprueba el pago automáticamente y pasa el pedido de PENDIENTE a CONFIRMADO
   const handlePagar = async (metodo) => {
@@ -66,9 +77,36 @@ const Pago = () => {
     // Simular el procesamiento del pago
     await simuladorPago({ total: montoTotal, metodo });
 
-    confirmarPedido(pedidoActual.id);
+    const medioPago = MAPA_MEDIO_PAGO[metodo];
+    const confirmado = await confirmarPedido(pedidoActual.id, medioPago);
+    if (!confirmado) {
+      // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE
+      setPaginando(false);
+      return;
+    }
     vaciarCarrito();
     navigate('/cliente/confirmacion');
+  };
+
+  // Cancela el pedido pendiente: pide confirmación con el modal y persiste en la API.
+  const handleImprimirConfirmar = () => setMostrarConfirmarCancelar(true);
+
+  const handleCancelarPedido = async () => {
+    if (paginando) return;
+    setPaginando(true);
+    try {
+      const cancelado = await cambiarEstado(pedidoActual.id, ESTADOS_PEDIDO.CANCELADO);
+      if (!cancelado) {
+        // El contexto ya muestra el error del backend
+        setPaginando(false);
+        return;
+      }
+      setMostrarConfirmarCancelar(false);
+      notificar(`Pedido #${pedidoActual.id} cancelado`, 'success');
+      navigate('/cliente/mis-pedidos');
+    } catch {
+      setPaginando(false);
+    }
   };
 
   const opcionesPago = [
@@ -151,17 +189,37 @@ const Pago = () => {
           <ResumenPedido
             items={pedidoActual.productos}
             total={pedidoActual.total}
+            costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
           />
 
-          <div className="text-center mt-4">
+          <div className="text-center mt-4 d-flex justify-content-center gap-2 flex-wrap">
             <Link to="/cliente/carrito">
               <Button variant="outline-secondary" className="rounded-pill px-4">
                 <FaArrowLeft aria-hidden="true" />
                 Volver al carrito
               </Button>
             </Link>
+            <Button
+              variant="outline-danger"
+              className="rounded-pill px-4"
+              onClick={handleImprimirConfirmar}
+              disabled={paginando}
+            >
+              <FaTimesCircle aria-hidden="true" />
+              Cancelar pedido
+            </Button>
           </div>
+
+          <ConfirmarModal
+            mostrar={mostrarConfirmarCancelar}
+            titulo="Cancelar pedido"
+            mensaje="¿Seguro que querés cancelar el pedido?"
+            textoConfirmar="Sí, cancelar pedido"
+            cargando={paginando}
+            onConfirmar={handleCancelarPedido}
+            onCancelar={() => setMostrarConfirmarCancelar(false)}
+          />
         </Col>
       </Row>
     </Container>

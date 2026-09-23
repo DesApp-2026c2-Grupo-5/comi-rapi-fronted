@@ -8,6 +8,10 @@
  * Uso: <HistorialStepper pedido={pedido} />               (solo lectura, cliente)
  *      <HistorialStepper pedido={pedido} onCambiar={fn} /> (admin, el siguiente estado se
  *                                                           muestra clicable y avanza al clic)
+ *      <HistorialStepper pedido={pedido} sinNodoCancelado /> (oculta el estado Cancelado;
+ *                                                           MisPedidos muestra su propio mensaje)
+ *      <HistorialStepper pedido={pedido} sinNodoPendiente /> (oculta el nodo PENDIENTE;
+ *                                                           el admin no lo muestra)
  */
 
 import { Fragment } from 'react';
@@ -53,21 +57,31 @@ const formatFechaHora = (fecha) => {
   }).format(new Date(fecha));
 };
 
-const HistorialStepper = ({ pedido, onCambiar }) => {
+const HistorialStepper = ({
+  pedido,
+  onCambiar,
+  sinNodoCancelado = false,
+  sinNodoPendiente = false,
+}) => {
   const estadosSiguientes = obtenerEstadosSiguientes(pedido.estado);
   const esCancelado = pedido.estado === ESTADOS_PEDIDO.CANCELADO;
 
+  // Flujo visual efectivo según la variante (el admin no muestra PENDIENTE)
+  const flujoEstados = sinNodoPendiente
+    ? FLUJO_ESTADOS.filter((e) => e !== ESTADOS_PEDIDO.PENDIENTE)
+    : FLUJO_ESTADOS;
+
   // Índice alcanzado dentro del flujo (si está cancelado, hasta dónde llegó antes)
-  let alcanzado = FLUJO_ESTADOS.indexOf(pedido.estado);
+  let alcanzado = flujoEstados.indexOf(pedido.estado);
   if (esCancelado) {
     const ultimoEnFlujo = [...(pedido.historialEstados || [])]
       .reverse()
-      .find((h) => FLUJO_ESTADOS.includes(h.estado));
-    alcanzado = ultimoEnFlujo ? FLUJO_ESTADOS.indexOf(ultimoEnFlujo.estado) : -1;
+      .find((h) => flujoEstados.includes(h.estado));
+    alcanzado = ultimoEnFlujo ? flujoEstados.indexOf(ultimoEnFlujo.estado) : -1;
   }
 
   // Próximo estado principal (el primer siguiente que pertenece al flujo)
-  const principal = estadosSiguientes.find((e) => FLUJO_ESTADOS.includes(e)) || null;
+  const principal = estadosSiguientes.find((e) => flujoEstados.includes(e)) || null;
   const puedeCancelar = estadosSiguientes.includes(ESTADOS_PEDIDO.CANCELADO);
   const mostrarCancelado = esCancelado || puedeCancelar;
 
@@ -121,10 +135,10 @@ const HistorialStepper = ({ pedido, onCambiar }) => {
 
   return (
     <div className="historial-stepper">
-      {FLUJO_ESTADOS.map((estado, idx) => (
+      {flujoEstados.map((estado, idx) => (
         <Fragment key={estado}>
           {renderNodo(estado, idx)}
-          {idx < FLUJO_ESTADOS.length - 1 && (
+          {idx < flujoEstados.length - 1 && (
             <span
               className={`historial-conector ${idx < alcanzado ? 'activo' : ''}`}
               aria-hidden="true"
@@ -134,7 +148,7 @@ const HistorialStepper = ({ pedido, onCambiar }) => {
       ))}
 
       {/* Nodo especial de cancelado (al final del flujo) */}
-      {mostrarCancelado && (
+      {!sinNodoCancelado && mostrarCancelado && (
         <Fragment key="cancelado-node">
           <span
             className={`historial-conector ${esCancelado ? 'riesgo' : ''}`}

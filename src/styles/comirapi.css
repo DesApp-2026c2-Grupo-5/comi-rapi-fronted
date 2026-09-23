@@ -190,3 +190,85 @@
   --bs-btn-disabled-border-color: #f1c27d;
   --bs-btn-focus-shadow-rgb: 255, 159, 28;
 }
+
+/* ============ Dashboard: tarjetas de pedidos por estado ============ */
+.panel-admin-estado {
+  cursor: pointer;
+  border-radius: 16px;
+  border: 2px solid #f1c27d;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  outline: none;
+}
+
+.panel-admin-estado:hover,
+.panel-admin-estado:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+  border-color: #ff9f1c;
+}
+
+/* ============ Tablas de gestión responsive (productos, categorías, sucursales) ============ */
+/* En desktop se ven como tabla normal; en pantallas chicas cada fila pasa a ser una
+   tarjeta con los datos apilados y la etiqueta de cada columna (data-label) a la izquierda. */
+
+@media (max-width: 767.98px) {
+  .tabla-admin thead {
+    display: none;
+  }
+
+  .tabla-admin,
+  .tabla-admin tbody,
+  .tabla-admin tr,
+  .tabla-admin td {
+    display: block;
+    width: 100%;
+  }
+
+  .tabla-admin tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .tabla-admin tr {
+    border: 1px solid #f1c27d;
+    border-radius: 14px;
+    padding: 0.25rem 0.5rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .tabla-admin tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: right;
+    padding: 0.45rem 0.25rem;
+    border-bottom: 1px dashed #ffe6c2;
+  }
+
+  .tabla-admin tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .tabla-admin tbody td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .tabla-admin td.columna-acciones {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .tabla-admin td.columna-acciones::before {
+    content: none;
+  }
+
+  .tabla-admin td.columna-acciones .btn {
+    margin: 0.15rem 0;
+  }
+}

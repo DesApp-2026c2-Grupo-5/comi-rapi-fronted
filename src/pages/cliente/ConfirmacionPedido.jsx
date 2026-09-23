@@ -17,6 +17,7 @@ import { ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { IconoCheck } from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import { formatDate, formatPrice } from '../../utils/formatters';
+import './ConfirmacionPedido.css';
 
 const ConfirmacionPedido = () => {
   const { pedidoActual } = usePedidos();
@@ -50,11 +51,13 @@ const ConfirmacionPedido = () => {
           {/* Mensaje de éxito */}
           <Card className="text-center shadow mb-4">
             <Card.Body className="p-5">
-              <div className="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4"
-                style={{ width: '70px', height: '70px' }}>
-                <IconoCheck size={34} />
+              <div className="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4 confirmacion-icono">
+                <IconoCheck size={38} />
               </div>
-              <h1 className="h3 mb-2">¡Pedido confirmado!</h1>
+              <h1 className="h3 mb-2 confirmacion-titulo">¡Pago confirmado!</h1>
+              <p className="text-muted mb-4">
+                Tu pedido quedó confirmado y ya está en preparación.
+              </p>
               <p className="text-muted mb-0">
                 <strong>Número de pedido:</strong> #{pedidoActual.id}
               </p>
@@ -65,6 +68,21 @@ const ConfirmacionPedido = () => {
                 <strong>Estado:</strong>{' '}
                 <Badge bg="success">{estadoLabel}</Badge>
               </p>
+              <p className="mt-2 mb-0">
+                <strong>Total abonado:</strong>{' '}
+                <span className="text-success fw-bold">
+                  {formatPrice(pedidoActual.total)}
+                </span>
+              </p>
+
+              <div className="mt-4">
+                <Link to="/cliente/mis-pedidos">
+                  <Button variant="primary" size="lg" className="rounded-pill px-4">
+                    <FaReceipt aria-hidden="true" />
+                    Ver mis pedidos
+                  </Button>
+                </Link>
+              </div>
 
               {/* Sucursal asignada automáticamente */}
               {sucursal && (
@@ -85,8 +103,7 @@ const ConfirmacionPedido = () => {
                   <span className="d-block text-uppercase fw-bold text-warning" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>
                     Entregamos en
                   </span>
-                  <strong className="d-block fs-5">{pedidoActual.direccion.nombre}</strong>
-                  <span className="text-muted d-block">{pedidoActual.direccion.direccion}</span>
+                  <strong className="d-block fs-5">{pedidoActual.direccion.direccion}</strong>
                   {pedidoActual.direccion.ciudad && (
                     <span className="text-muted d-block">
                       {pedidoActual.direccion.ciudad}
@@ -130,17 +147,9 @@ const ConfirmacionPedido = () => {
           <ResumenPedido
             items={pedidoActual.productos}
             total={pedidoActual.total}
+            costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
           />
-
-          <div className="text-center mt-4">
-            <Link to="/cliente/mis-pedidos">
-              <Button variant="primary" size="lg" className="rounded-pill px-4">
-                <FaReceipt aria-hidden="true" />
-                Ver mis pedidos
-              </Button>
-            </Link>
-          </div>
         </Col>
       </Row>
     </Container>

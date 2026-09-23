@@ -2,53 +2,56 @@
  * Propósito: Formulario para crear o editar una sucursal usando Form de Bootstrap.
  * Contenido: Componente FormularioSucursal con campos controlados y validaciones básicas.
  * Dependencias: react-bootstrap (Form, Button, Card), react-router-dom (useNavigate),
- *               utils/constants.js (ESTADO_SUCURSAL, LIMITES_LAT, LIMITES_LNG).
+ *               utils/constants.js (LIMITES_LAT, LIMITES_LNG).
  * Uso: <FormularioSucursal sucursal={sucursal} onGuardar={handler} />
  *      - Si 'sucursal' es null/undefined, se comporta en modo creación.
  *      - Si 'sucursal' trae datos, precarga el formulario para edición.
+ *
+ * Contrato (DER): nombre, direccion, latitud, longitud, telefono, horarios, activa.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { ESTADO_SUCURSAL, LIMITES_LAT, LIMITES_LNG } from '../../utils/constants';
+import { LIMITES_LAT, LIMITES_LNG } from '../../utils/constants';
 
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
 
   const [nombre, setNombre] = useState('');
   const [direccion, setDireccion] = useState('');
-  const [lat, setLat] = useState('');
-  const [lng, setLng] = useState('');
-  const [horario, setHorario] = useState('');
+  const [latitud, setLatitud] = useState('');
+  const [longitud, setLongitud] = useState('');
+  const [horarios, setHorarios] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [estado, setEstado] = useState(ESTADO_SUCURSAL.ACTIVO);
+  const [activa, setActiva] = useState(true);
+  const [error, setError] = useState('');
 
   // Precargan los datos al entrar en modo edición
   useEffect(() => {
     if (sucursal) {
       setNombre(sucursal.nombre || '');
       setDireccion(sucursal.direccion || '');
-      setLat(sucursal.lat ?? '');
-      setLng(sucursal.lng ?? '');
-      setHorario(sucursal.horario || '');
+      setLatitud(sucursal.latitud ?? '');
+      setLongitud(sucursal.longitud ?? '');
+      setHorarios(sucursal.horarios || '');
       setTelefono(sucursal.telefono || '');
-      setEstado(sucursal.estado || ESTADO_SUCURSAL.ACTIVO);
+      setActiva(sucursal.activa !== false);
     }
   }, [sucursal]);
 
   // Valida que las coordenadas estén dentro de los rangos geográficos válidos
   const validarCoordenadas = () => {
-    const latNum = Number(lat);
-    const lngNum = Number(lng);
+    const latNum = Number(latitud);
+    const lngNum = Number(longitud);
 
     if (latNum < LIMITES_LAT.MIN || latNum > LIMITES_LAT.MAX) {
-      alert(`La latitud debe estar entre ${LIMITES_LAT.MIN} y ${LIMITES_LAT.MAX}.`);
+      setError(`La latitud debe estar entre ${LIMITES_LAT.MIN} y ${LIMITES_LAT.MAX}.`);
       return false;
     }
     if (lngNum < LIMITES_LNG.MIN || lngNum > LIMITES_LNG.MAX) {
-      alert(`La longitud debe estar entre ${LIMITES_LNG.MIN} y ${LIMITES_LNG.MAX}.`);
+      setError(`La longitud debe estar entre ${LIMITES_LNG.MIN} y ${LIMITES_LNG.MAX}.`);
       return false;
     }
     return true;
@@ -56,15 +59,16 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
 
     // Validaciones básicas de campos requeridos
     if (!nombre.trim() || !direccion.trim()) {
-      alert('El nombre y la dirección son obligatorios.');
+      setError('El nombre y la dirección son obligatorios.');
       return;
     }
 
-    if (lat === '' || lng === '') {
-      alert('Ingresa la latitud y la longitud de la sucursal.');
+    if (latitud === '' || longitud === '') {
+      setError('Ingresá la latitud y la longitud de la sucursal.');
       return;
     }
 
@@ -75,28 +79,15 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
     const datosSucursal = {
       nombre: nombre.trim(),
       direccion: direccion.trim(),
-      lat: Number(lat),
-      lng: Number(lng),
-      horario: horario.trim() || 'Lun-Dom 10:00-22:00',
-      telefono: telefono.trim(),
-      estado,
+      latitud: Number(latitud),
+      longitud: Number(longitud),
+      horarios: horarios.trim() || null,
+      telefono: telefono.trim() || null,
+      activa,
     };
-
-    alert(`Sucursal "${datosSucursal.nombre}" guardada correctamente (simulado).`);
 
     if (onGuardar) {
       onGuardar(datosSucursal);
-    }
-
-    // Limpiar el formulario después de guardar (modo creación)
-    if (!sucursal) {
-      setNombre('');
-      setDireccion('');
-      setLat('');
-      setLng('');
-      setHorario('');
-      setTelefono('');
-      setEstado(ESTADO_SUCURSAL.ACTIVO);
     }
   };
 
@@ -108,6 +99,7 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
     <Card className="shadow-sm" style={{ maxWidth: '500px' }}>
       <Card.Body>
         <Form onSubmit={handleSubmit}>
+          {error && <div className="text-danger mb-3">{error}</div>}
           <Form.Group className="mb-3">
             <Form.Label>Nombre *</Form.Label>
             <Form.Control
@@ -130,8 +122,8 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             <Form.Label>Latitud *</Form.Label>
             <Form.Control
               type="number"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
+              value={latitud}
+              onChange={(e) => setLatitud(e.target.value)}
               placeholder="Ej: -34.6037"
               step="0.000001"
             />
@@ -140,8 +132,8 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             <Form.Label>Longitud *</Form.Label>
             <Form.Control
               type="number"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
+              value={longitud}
+              onChange={(e) => setLongitud(e.target.value)}
               placeholder="Ej: -58.3816"
               step="0.000001"
             />
@@ -150,8 +142,8 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             <Form.Label>Horario de atención</Form.Label>
             <Form.Control
               type="text"
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
+              value={horarios}
+              onChange={(e) => setHorarios(e.target.value)}
               placeholder="Ej: Lun-Dom 10:00-23:00"
             />
           </Form.Group>
@@ -166,9 +158,12 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
           </Form.Group>
           <Form.Group className="mb-4">
             <Form.Label>Estado</Form.Label>
-            <Form.Select value={estado} onChange={(e) => setEstado(e.target.value)}>
-              <option value={ESTADO_SUCURSAL.ACTIVO}>Activo</option>
-              <option value={ESTADO_SUCURSAL.INACTIVO}>Inactivo</option>
+            <Form.Select
+              value={activa ? 'activa' : 'inactiva'}
+              onChange={(e) => setActiva(e.target.value === 'activa')}
+            >
+              <option value="activa">Activo</option>
+              <option value="inactiva">Inactivo</option>
             </Form.Select>
           </Form.Group>
           <div className="d-flex gap-2">

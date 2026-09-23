@@ -1,13 +1,24 @@
 /**
- * Propósito: Página de catálogo con filtro por categoría y grid de productos reales.
- * Contenido: Componente Catalogo con datos obtenidos de la API, filtros tipo pill,
- *            búsqueda por nombre, rango de precio y grid responsive de ProductoCard.
- * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert, Form, Spinner),
- *               api/productos.js, api/categorias.js, ProductoCard, Catalogo.css, react-router-dom.
+ * Propósito: Página de catálogo con filtro por categoría y grid de productos.
+ * Contenido: Componente Catalogo con título grande, filtros tipo pill y grid
+ *            responsive de ProductoCard.
+ * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert), seedData.js,
+ *               ProductoCard, Catalogo.css.
  * Uso: Ruta "/cliente/catalogo" → <Catalogo />
- */
+ *
+ * CAMBIOS REALIZADOS:
+ *  - Título grande "Nuestro Catálogo" en tipografía bold oscura.
+*  - Filtros de categorías en forma de pills (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
+*  - Las categorías de la home llegan por query param (?categoria=...) y se aplican al instante.
+*  - Al elegir una pill también se actualiza el query param (el filtro queda en la URL).
+*  - Grid responsive (3 columnas en md, 4 en lg).
+*  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
+*  - Búsqueda por nombre y rango de precio, también persistidos en la URL.
+*  - Validación de rango de precio: mínimo no puede ser negativo ni mayor al máximo y viceversa.
+* 
+*/
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
 import { obtenerProductos } from '../../api/productos';
@@ -17,37 +28,43 @@ import './Catalogo.css';
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [borrador, setBorrador] = useState({ precioMin: null, precioMax: null });
+  const [campoInvalido, setCampoInvalido] = useState(null);
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [borrador, setBorrador] = useState({ precioMin: null, precioMax: null });
-  const [campoInvalido, setCampoInvalido] = useState(null);
 
   useEffect(() => {
-    Promise.all([obtenerProductos(), obtenerCategorias()]).then(
-      ([resultadoProductos, resultadoCategorias]) => {
-        if (resultadoProductos.success) {
-          setProductos(resultadoProductos.data);
-        } else {
-          setError(resultadoProductos.error || 'No se pudieron cargar los productos.');
-        }
-        if (resultadoCategorias.success) {
-          setCategorias(resultadoCategorias.data);
-        }
-        setCargando(false);
+    const cargar = async () => {
+      setCargando(true);
+      setError('');
+      const [resProductos, resCategorias] = await Promise.all([
+        obtenerProductos(),
+        obtenerCategorias(),
+      ]);
+      if (resProductos.success) {
+        setProductos(resProductos.data);
+      } else {
+        setError(resProductos.error || 'No se pudieron cargar los productos.');
       }
-    );
+      if (resCategorias.success) {
+        setCategorias(resCategorias.data);
+      }
+      setCargando(false);
+    };
+    cargar();
   }, []);
 
-  const filtros = ['Todos', ...categorias.map((c) => c.nombre)];
-
+  // Categoría activa: viene del query param (?categoria=<id>) o por defecto "Todos"
   const categoriaParam = searchParams.get('categoria');
-  const categoriaSeleccionada =
-    categoriaParam && categorias.some((c) => c.nombre === categoriaParam)
-      ? categoriaParam
-      : 'Todos';
+  const categoriaId = categoriaParam ? Number(categoriaParam) : null;
+  const categoriaValida = categoriaId !== null && categorias.some((c) => c.id === categoriaId);
+  const categoriaSeleccionada = categoriaValida
+    ? categorias.find((c) => c.id === categoriaId).nombre
+    : 'Todos';
 
+  // Búsqueda por nombre y rango de precio, también persistidos en la URL
   const busqueda = searchParams.get('busqueda') || '';
   const precioMin = searchParams.get('precioMin') || '';
   const precioMax = searchParams.get('precioMax') || '';
@@ -57,7 +74,7 @@ const Catalogo = () => {
     const max = precioMax !== '' ? Number(precioMax) : null;
 
     return productos.filter((p) => {
-      if (categoriaSeleccionada !== 'Todos' && p.categoria !== categoriaSeleccionada) {
+      if (categoriaValida && p.categoriaId !== categoriaId) {
         return false;
       }
       if (busqueda && !p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())) {
@@ -71,14 +88,16 @@ const Catalogo = () => {
       }
       return true;
     });
-  }, [categoriaSeleccionada, busqueda, precioMin, precioMax, productos]);
+  }, [productos, categoriaValida, categoriaId, busqueda, precioMin, precioMax]);
 
-  const seleccionarCategoria = (nombre) => {
+  // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
+  // Conserva los filtros de búsqueda y precio ya presentes en la URL.
+  const seleccionarCategoria = (id) => {
     const next = new URLSearchParams(searchParams);
-    if (nombre === 'Todos') {
+    if (id === null) {
       next.delete('categoria');
     } else {
-      next.set('categoria', nombre);
+      next.set('categoria', String(id));
     }
     setSearchParams(next, { replace: true });
   };
@@ -93,13 +112,16 @@ const Catalogo = () => {
     setSearchParams(next, { replace: true });
   };
 
+  // Rango inválido: ambos límites presentes y numéricos, con min > max.
   const esRangoInvalido = (min, max) =>
     min !== '' && max !== '' &&
     !Number.isNaN(Number(min)) && !Number.isNaN(Number(max)) &&
     Number(min) > Number(max);
 
+  // Un precio es inválido si es numérico y negativo.
   const esNegativo = (valor) => valor !== '' && !Number.isNaN(Number(valor)) && Number(valor) < 0;
 
+  // Confirma el borrador al perder foco (o Enter) y sincroniza con searchParams.
   const confirmarPrecio = (clave) => {
     const valor = borrador[clave];
     if (valor === null) return;
@@ -125,38 +147,37 @@ const Catalogo = () => {
     setBorrador((prev) => ({ ...prev, [clave]: null }));
   };
 
-  if (cargando) {
-    return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
-      </Container>
-    );
-  }
-
   return (
     <Container className="py-5">
+      {/* Título */}
       <div className="text-center mb-4">
         <h1 className="catalogo-titulo mb-2">Nuestro Catálogo</h1>
         <p className="text-muted mb-0">Elegí tu favorito y añadilo al carrito.</p>
       </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
-
+      {/* Filtros / categorías en forma de pills */}
       <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
-        {filtros.map((filtro) => {
-          const activo = categoriaSeleccionada === filtro;
+        <Button
+          className={categoriaSeleccionada === 'Todos' ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
+          onClick={() => seleccionarCategoria(null)}
+        >
+          Todos
+        </Button>
+        {categorias.map((cat) => {
+          const activo = categoriaSeleccionada === cat.nombre;
           return (
             <Button
-              key={filtro}
+              key={cat.id}
               className={activo ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
-              onClick={() => seleccionarCategoria(filtro)}
+              onClick={() => seleccionarCategoria(cat.id)}
             >
-              {filtro}
+              {cat.nombre}
             </Button>
           );
         })}
       </div>
 
+      {/* Buscador por nombre y filtro por rango de precio */}
       <div className="catalogo-busqueda mb-4">
         <Form.Control
           type="search"
@@ -215,20 +236,35 @@ const Catalogo = () => {
         </div>
       </div>
 
-      <Row className="justify-content-center">
-        {productosFiltrados.map((producto) => (
-          <Col key={producto.id} md={4} lg={3} className="mb-4">
-            <ProductoCard producto={producto} />
-          </Col>
-        ))}
-      </Row>
-
-      {productosFiltrados.length === 0 && (
+      {/* Grid de productos */}
+      {cargando ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="danger" />
+        </div>
+      ) : error ? (
         <div className="text-center">
-          <Alert variant="light" className="cat-aviso d-inline-block">
-            No hay productos que coincidan con los filtros.
+          <Alert variant="danger" className="cat-aviso d-inline-block">
+            {error}
           </Alert>
         </div>
+      ) : (
+        <>
+          <Row className="justify-content-center">
+            {productosFiltrados.map((producto) => (
+              <Col key={producto.id} md={4} lg={3} className="mb-4">
+                <ProductoCard producto={producto} />
+              </Col>
+            ))}
+          </Row>
+
+          {productosFiltrados.length === 0 && (
+            <div className="text-center">
+              <Alert variant="light" className="cat-aviso d-inline-block">
+                No hay productos que coincidan con los filtros.
+              </Alert>
+            </div>
+          )}
+        </>
       )}
     </Container>
   );

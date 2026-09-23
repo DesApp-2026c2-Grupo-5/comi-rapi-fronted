@@ -1,84 +1,79 @@
 /**
- * Propósito: Servicio mock para obtener y operar sucursales (CRUD simulado).
- * Contenido: obtenerSucursales, crearSucursal, actualizarSucursal, eliminarSucursal.
- * Dependencias: seedData.js (sucursalesMock), utils/helpers.js (delay, generateId).
+ * Propósito: Servicio de sucursales que consume el backend real (CRUD de administradores).
+ * Contenido: obtenerSucursales, obtenerSucursalPorId, crearSucursal, actualizarSucursal, eliminarSucursal.
+ * Dependencias: client.js (apiGet/apiPost/apiPut/apiDelete).
  * Uso: import { obtenerSucursales, crearSucursal } from '../api/sucursales';
- *
- * NOTA MOCK: Las operaciones modifican una copia local en memoria. En producción
- * estas funciones deberían llamar a endpoints HTTP reales (GET/POST/PUT/DELETE).
  */
 
-import { sucursalesMock } from '../services/seedData';
-import { delay } from '../utils/helpers';
-
-// Copia mutable de las sucursales mock (MOCK - reemplazar por API real)
-let sucursales = [...sucursalesMock];
+import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
 /**
- * Obtiene todas las sucursales disponibles.
- * @returns {Promise<{success: boolean, data: Array}>} Resultado de la operación.
+ * Obtiene sucursales del backend.
+ * Por defecto devuelve solo las activas (listado público).
+ * Pasando incluirInactivas=true (ADMIN autenticado) se piden todas con ?activa=false.
+ * @param {object} [opciones]
+ * @param {boolean} [opciones.incluirInactivas=false]
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
-export const obtenerSucursales = async () => {
-  await delay(200);
-  return { success: true, data: [...sucursales] };
+export const obtenerSucursales = async (opciones = {}) => {
+  const { incluirInactivas = false } = opciones;
+  const query = incluirInactivas ? '?activa=false' : '';
+  const result = await apiGet(`/sucursales${query}`);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
 };
 
 /**
  * Obtiene una sucursal por su ID.
- * @param {number} id - ID de la sucursal.
- * @returns {Promise<{success: boolean, data?: object, error?: string}>} Resultado de la operación.
+ * @param {number|string} id - ID de la sucursal.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const obtenerSucursalPorId = async (id) => {
-  await delay(200);
-  const sucursal = sucursales.find((s) => s.id === Number(id));
-  if (sucursal) {
-    return { success: true, data: { ...sucursal } };
+  const result = await apiGet(`/sucursales/${id}`);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
-  return { success: false, error: 'Sucursal no encontrada' };
+  return { success: false, error: result.error };
 };
 
 /**
  * Crea una nueva sucursal.
- * @param {object} nuevaSucursal - Datos de la sucursal a crear.
- * @returns {Promise<{success: boolean, data: object}>} Resultado de la operación.
+ * @param {object} datos - { nombre, direccion, latitud?, longitud?, telefono?, horarios?, activa? }.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export const crearSucursal = async (nuevaSucursal) => {
-  await delay(400);
-  const sucursalCreada = {
-    id: Date.now(),
-    ...nuevaSucursal,
-  };
-  sucursales.push(sucursalCreada);
-  return { success: true, data: { ...sucursalCreada } };
-};
-
-/**
- * Actualiza una sucursal existente.
- * @param {number} id - ID de la sucursal a actualizar.
- * @param {object} datosActualizados - Nuevos datos de la sucursal.
- * @returns {Promise<{success: boolean, data?: object, error?: string}>} Resultado de la operación.
- */
-export const actualizarSucursal = async (id, datosActualizados) => {
-  await delay(400);
-  const index = sucursales.findIndex((s) => s.id === Number(id));
-  if (index !== -1) {
-    sucursales[index] = { ...sucursales[index], ...datosActualizados };
-    return { success: true, data: { ...sucursales[index] } };
+export const crearSucursal = async (datos) => {
+  const result = await apiPost('/sucursales', datos);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
-  return { success: false, error: 'Sucursal no encontrada' };
+  return { success: false, error: result.error };
 };
 
 /**
- * Elimina una sucursal por su ID.
- * @param {number} id - ID de la sucursal a eliminar.
- * @returns {Promise<{success: boolean, error?: string}>} Resultado de la operación.
+ * Actualiza una sucursal existente (campos parciales; activa=true para reactivar).
+ * @param {number|string} id - ID de la sucursal.
+ * @param {object} datos - Campos a actualizar.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const actualizarSucursal = async (id, datos) => {
+  const result = await apiPut(`/sucursales/${id}`, datos);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Elimina (baja lógica) una sucursal: activa pasa a false.
+ * @param {number|string} id - ID de la sucursal.
+ * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const eliminarSucursal = async (id) => {
-  await delay(400);
-  const index = sucursales.findIndex((s) => s.id === Number(id));
-  if (index !== -1) {
-    sucursales.splice(index, 1);
+  const result = await apiDelete(`/sucursales/${id}`);
+  if (result.success) {
     return { success: true };
   }
-  return { success: false, error: 'Sucursal no encontrada' };
+  return { success: false, error: result.error };
 };

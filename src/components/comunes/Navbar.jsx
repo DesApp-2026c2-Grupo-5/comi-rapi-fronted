@@ -7,7 +7,7 @@
  * Uso: <Navbar /> - Se renderiza en todas las páginas autenticadas.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Navbar as BSNavbar, Nav, Container, Button } from 'react-bootstrap';
 import {
@@ -20,11 +20,14 @@ import {
   FaTachometerAlt,
   FaStore,
   FaSlidersH,
+  FaTags,
   FaUserCircle,
   FaSignOutAlt,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
-import { ROLES } from '../../utils/constants';
+import { useCarrito } from '../../hooks/useCarrito';
+import { usePedidos } from '../../hooks/usePedidos';
+import { ROLES, ESTADOS_PEDIDO } from '../../utils/constants';
 import './Navbar.css';
 
 // Menú del cliente (cada enlace lleva su ícono)
@@ -40,6 +43,7 @@ const enlacesCliente = [
 const enlacesAdmin = [
   { to: '/admin/dashboard', etiqueta: 'Dashboard', icono: FaTachometerAlt },
   { to: '/admin/productos', etiqueta: 'Productos', icono: FaHamburger },
+  { to: '/admin/categorias', etiqueta: 'Categorías', icono: FaTags },
   { to: '/admin/pedidos', etiqueta: 'Pedidos', icono: FaReceipt },
   { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore },
   { to: '/admin/personalizacion', etiqueta: 'Personalización', icono: FaSlidersH },
@@ -47,8 +51,44 @@ const enlacesAdmin = [
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { productosDistintos } = useCarrito();
+  const { pedidos, senalPedido } = usePedidos();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [pulsoCarrito, setPulsoCarrito] = useState(false);
+  const [pulsoPedido, setPulsoPedido] = useState(false);
+  const [pulsoPedidoBadge, setPulsoPedidoBadge] = useState(false);
+
+  // Pedidos del cliente que aún no fueron entregados ni cancelados.
+  const pedidosActivos = pedidos.filter(
+    (p) =>
+      p.estado !== ESTADOS_PEDIDO.ENTREGADO &&
+      p.estado !== ESTADOS_PEDIDO.CANCELADO
+  ).length;
+
+  // Pulso del badge cada vez que cambia la cantidad de productos distintos
+  useEffect(() => {
+    if (productosDistintos === 0) return undefined;
+    setPulsoCarrito(true);
+    const timeout = setTimeout(() => setPulsoCarrito(false), 800);
+    return () => clearTimeout(timeout);
+  }, [productosDistintos]);
+
+  // Salto del ícono "Mis Pedidos" cada vez que se confirma un pago
+  useEffect(() => {
+    if (senalPedido === 0) return undefined;
+    setPulsoPedido(true);
+    const timeout = setTimeout(() => setPulsoPedido(false), 800);
+    return () => clearTimeout(timeout);
+  }, [senalPedido]);
+
+  // Pulso del número de "Mis Pedidos" cuando cambia la cantidad de pedidos activos
+  useEffect(() => {
+    if (pedidosActivos === 0) return undefined;
+    setPulsoPedidoBadge(true);
+    const timeout = setTimeout(() => setPulsoPedidoBadge(false), 800);
+    return () => clearTimeout(timeout);
+  }, [pedidosActivos]);
 
   const handleLogout = () => {
     setExpanded(false);
@@ -92,7 +132,32 @@ const Navbar = () => {
                   className={({ isActive }) => (isActive ? 'nav-enlace activo' : 'nav-enlace')}
                   onClick={() => setExpanded(false)}
                 >
-                  <Icono className="nav-enlace-ico" aria-hidden="true" />
+                  <span
+                    className={`nav-enlace-ico-wrap${
+                      (to === '/cliente/carrito' && pulsoCarrito) ||
+                      (to === '/cliente/mis-pedidos' && pulsoPedido)
+                        ? ' nav-enlace-ico-pulso'
+                        : ''
+                    }`}
+                  >
+                    <Icono className="nav-enlace-ico" aria-hidden="true" />
+                    {to === '/cliente/carrito' && productosDistintos > 0 && (
+                      <span
+                        className={`carrito-badge${pulsoCarrito ? ' carrito-badge-pulso' : ''}`}
+                        aria-label={`${productosDistintos} ${productosDistintos === 1 ? 'producto' : 'productos'} en el carrito`}
+                      >
+                        {productosDistintos}
+                      </span>
+                    )}
+                    {(to === '/cliente/mis-pedidos' || to === '/admin/pedidos') && pedidosActivos > 0 && (
+                      <span
+                        className={`carrito-badge${pulsoPedidoBadge ? ' carrito-badge-pulso' : ''}`}
+                        aria-label={`${pedidosActivos} ${pedidosActivos === 1 ? 'pedido' : 'pedidos'} en curso`}
+                      >
+                        {pedidosActivos}
+                      </span>
+                    )}
+                  </span>
                   {etiqueta}
                 </NavLink>
               </Nav.Item>

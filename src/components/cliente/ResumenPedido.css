@@ -46,10 +46,23 @@
   background-color: #16a34a;
 }
 
-/* El resumen queda fijo al scrollear solo en desktop */
+/* Separador del detalle de ítems; los estilos de los ítems viven en
+   DetalleItemsPedido.css (componente compartido con la vista admin) */
+.resumen-items {
+  border-bottom: 2px solid #ffe9c9;
+  padding-bottom: 0.5rem;
+}
+
+/* El resumen queda fijo al scrollear solo en desktop. Se limita su altura
+   para que nunca invada el pie de la página: top 90px despeja la navbar (~70px)
+   y el colchón inferior deja el footer (~56px) y el badge fijo de estado de la
+   API (position-fixed bottom-0 end-0, App.jsx) siempre por fuera de la card,
+   incluso con muchos ítems (scroll interno). */
 @media (min-width: 992px) {
   .resumen-card {
     position: sticky;
     top: 90px;
+    max-height: calc(100vh - 170px);
+    overflow-y: auto;
   }
 }

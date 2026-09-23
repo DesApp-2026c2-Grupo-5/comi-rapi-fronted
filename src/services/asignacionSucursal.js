@@ -25,7 +25,7 @@ export const asignarSucursalOptima = (sucursales, pedidosPendientes = []) => {
   }
 
   // 1. Filtrar solo sucursales activas
-  const sucursalesActivas = sucursales.filter((s) => s.estado === 'activo');
+  const sucursalesActivas = sucursales.filter((s) => s.activa !== false);
 
   if (sucursalesActivas.length === 0) {
     return sucursales[0];

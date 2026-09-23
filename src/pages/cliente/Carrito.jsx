@@ -3,7 +3,7 @@
  * Contenido: Componente Carrito con ItemCarrito, ResumenPedido, estado vacío y flujo de
  *            confirmación que asigna la sucursal óptima automáticamente.
  * Dependencias: react-bootstrap (Container, Row, Col, Button, Card), react-router-dom,
- *               useCarrito hook, useSucursal hook, usePedidos hook, useAuth hook,
+ *               useCarrito hook, useSucursal hook, usePedidos hook, useDirecciones hook,
  *               services/asignacionSucursal.js, ItemCarrito, ResumenPedido, Carrito.css.
  * Uso: Ruta "/cliente/carrito" → <Carrito />
  *
@@ -17,15 +17,15 @@
  *      de "Confirmar Pedido" (el pedido sigue PENDIENTE hasta abonar).
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Row, Col, Button, Card, Alert } from 'react-bootstrap';
-import { FaUtensils, FaTrashAlt } from 'react-icons/fa';
+import { Container, Row, Col, Button, Card, Alert, Form } from 'react-bootstrap';
+import { FaUtensils, FaTrashAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useSucursal } from '../../hooks/useSucursal';
 import { usePedidos } from '../../hooks/usePedidos';
-import { useAuth } from '../../hooks/useAuth';
 import { useDirecciones } from '../../hooks/useDirecciones';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { asignarSucursalOptima } from '../../services/asignacionSucursal';
 import { calcularCostoEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO } from '../../utils/constants';
@@ -37,29 +37,37 @@ const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
   const { sucursales } = useSucursal();
   const { crearPedido, obtenerPedidosPendientes, pedidoActual } = usePedidos();
-  const { user } = useAuth();
-  const { obtenerDireccionPrincipal } = useDirecciones();
+  const { direcciones, cargarDirecciones } = useDirecciones();
+  const { notificar } = useNotificaciones();
   const navigate = useNavigate();
 
   // Si hay un pedido PENDIENTE sin pagar, el carrito ofrece "Ir a Pagar"
   const tienePagoPendiente = pedidoActual?.estado === ESTADOS_PEDIDO.PENDIENTE;
 
-  // Dirección principal del cliente (se usa automáticamente al confirmar)
-  const direccionPrincipal = useMemo(
-    () => obtenerDireccionPrincipal(user?.email),
-    [obtenerDireccionPrincipal, user?.email]
+  // ID de la dirección elegida para este pedido
+  const [direccionId, setDireccionId] = useState(null);
+
+  // Carga las direcciones del cliente al entrar al carrito
+  useEffect(() => {
+    cargarDirecciones();
+  }, [cargarDirecciones]);
+
+  // Dirección elegida (por defecto, la primera activa)
+  const direccionSeleccionada = useMemo(
+    () => direcciones.find((d) => d.id === direccionId) || direcciones[0] || null,
+    [direcciones, direccionId]
   );
 
-  const handleConfirmarPedido = () => {
-    // Sin dirección principal: el cliente no puede confirmar
-    const direccion = obtenerDireccionPrincipal(user?.email);
+  const handleConfirmarPedido = async () => {
+    // Sin dirección: el cliente no puede confirmar
+    const direccion = direccionSeleccionada;
     if (!direccion) {
-      alert('Agregá una dirección antes de confirmar');
+      notificar('Agregá una dirección antes de confirmar.', 'warning');
       return;
     }
 
     // 1. Sucursales activas (la asignación interna del servicio filtra las activas)
-    const sucursalesActivas = sucursales.filter((s) => s.estado === 'activo');
+    const sucursalesActivas = sucursales.filter((s) => s.activa !== false);
 
     // 2. Pedidos pendientes para la lógica de asignación
     const pedidosPendientes = obtenerPedidosPendientes();
@@ -68,16 +76,17 @@ const Carrito = () => {
     const sucursalAsignada = asignarSucursalOptima(sucursalesActivas, pedidosPendientes);
 
     if (!sucursalAsignada) {
-      alert('No hay sucursales disponibles en este momento.');
+      notificar('No hay sucursales disponibles en este momento.', 'warning');
       return;
     }
 
-    // 4. Crear el pedido con la sucursal asignada, la dirección del cliente y el costo de
-    //    envío calculado (estado inicial PENDIENTE)
-    crearPedido(
+    // 4. Crear el pedido en la API real (Postgres). El total se recalcula en
+    //    el backend; acá se envía como referencia. Sin fallback: si la API
+    //    falla, el contexto muestra el error y no se navega a la pantalla de pago.
+    const pedidoCreado = await crearPedido(
       {
-        cliente: user?.email || 'cliente@test.com',
         productos: items.map((item) => ({
+          productoId: item.producto.id,
           nombre: item.producto.nombre,
           cantidad: item.cantidad,
           precio: item.precioUnitarioPersonalizado ?? item.producto.precio,
@@ -93,6 +102,7 @@ const Carrito = () => {
       },
       sucursalAsignada
     );
+    if (!pedidoCreado) return;
 
     // 5. Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
     navigate('/cliente/pago');
@@ -128,7 +138,7 @@ const Carrito = () => {
       ) : (
         <Row>
           {/* Aviso: sin dirección no se puede confirmar */}
-          {items.length > 0 && !direccionPrincipal && (
+          {items.length > 0 && direcciones.length === 0 && (
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0">
                 No tenés direcciones guardadas.{' '}
@@ -158,6 +168,37 @@ const Carrito = () => {
 
           {/* Resumen del pedido */}
           <Col lg={4}>
+            {direcciones.length > 0 && (
+              <Card className="shadow-sm mb-3">
+                <Card.Body>
+                  <Form.Group controlId="direccionEntrega">
+                    <Form.Label className="fw-bold">Dirección de entrega</Form.Label>
+                    <Form.Select
+                      value={direccionSeleccionada?.id ?? ''}
+                      onChange={(e) => setDireccionId(Number(e.target.value))}
+                    >
+                      {direcciones.map((direccion) => (
+                        <option key={direccion.id} value={direccion.id}>
+                          {direccion.alias ? `${direccion.alias} - ` : ''}
+                          {direccion.calle}
+                          {direccion.altura ? ` ${direccion.altura}` : ''}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                  <Button
+                    as={Link}
+                    to="/cliente/mis-direcciones"
+                    variant="outline-primary"
+                    size="sm"
+                    className="carrito-boton-direcciones w-100 rounded-pill mt-3"
+                  >
+                    <FaMapMarkerAlt className="me-1" aria-hidden="true" />
+                    Gestionar direcciones
+                  </Button>
+                </Card.Body>
+              </Card>
+            )}
             <ResumenPedido
               onConfirmar={tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido}
               botonTexto={tienePagoPendiente ? 'Ir a Pagar' : 'Confirmar Pedido'}
