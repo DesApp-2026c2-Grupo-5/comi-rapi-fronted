@@ -14,15 +14,18 @@
    *    y muestra Subtotal = total - costoEnvio. No recalcula el envío del servicio.
    *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
   *  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
-  *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
-  *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
-  */
+ *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
+ *  - Detalle de ítems dentro de la card: nombre, cantidad, precio unitario, subtotal
+ *    de línea y desglose de personalización (patrón .desglose del mockup), en ambos modos.
+ *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
+ */
 
 import { Card, Button } from 'react-bootstrap';
 import { FaCheckCircle } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
+import DetalleItemsPedido from '../comunes/DetalleItemsPedido';
 import './ResumenPedido.css';
 
 const ResumenPedido = ({
@@ -57,6 +60,11 @@ const ResumenPedido = ({
         Resumen del Pedido
       </Card.Header>
       <Card.Body className="py-3">
+        {/* Detalle de ítems (compartido con la vista admin; válido en ambos modos) */}
+        <div className="resumen-items mb-2">
+          <DetalleItemsPedido items={productos} />
+        </div>
+
         {/* Subtotal */}
         <div className="d-flex justify-content-between mb-2">
           <span className="text-muted">Subtotal</span>

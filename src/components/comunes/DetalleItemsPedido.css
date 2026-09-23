@@ -1,0 +1,49 @@
+/**
+ * Propósito: Estilos del detalle de ítems compartido por el resumen del cliente
+ *            (ResumenPedido) y la vista admin (PedidosPendientes), con el
+ *            criterio visual del resumen (referencia: mockup/carrito-personalizado.html).
+ * Contenido: Lista de ítems con separadores crema, subtotal por línea y desglose
+ *            de personalización gris.
+ * Dependencias: DetalleItemsPedido.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/comunes/DetalleItemsPedido.jsx.
+ */
+
+.detalle-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ffe9c9;
+}
+
+.resumen-item:last-child {
+  border-bottom: none;
+}
+
+.resumen-item-nombre {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.resumen-item-subtotal {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.resumen-item-precio {
+  font-size: 0.78rem;
+}
+
+.resumen-desglose {
+  font-size: 0.82rem;
+  color: #6c757d;
+  line-height: 1.6;
+  margin-top: 0.25rem;
+}
+
+.resumen-desglose strong {
+  color: #2b2b2b;
+}
