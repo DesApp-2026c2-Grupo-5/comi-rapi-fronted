@@ -1,14 +1,16 @@
 /**
  * Propósito: Formulario para crear o editar una dirección de cliente.
  * Contenido: Componente FormularioDireccion con campos controlados (alias, calle,
- *            altura, ciudad, codigoPostal y referencia) y validación básica.
+ *            altura, provincia, localidad, codigoPostal y referencia) y validación básica.
  * Dependencias: react-bootstrap (Form, Button, Card), react (useState, useEffect).
  * Uso: <FormularioDireccion direccion={direccion} onGuardar={handler} onCancelar={handler} />
  *      - Si 'direccion' es null/undefined, se comporta en modo creación.
  *      - Si 'direccion' trae datos, precarga el formulario para edición.
  *
- * Contrato (DER): alias, calle, altura, ciudad, codigoPostal, referencia, latitud,
- * longitud, activa. El cliente no carga latitud/longitud (opcionales en el backend).
+ * Contrato (DER): alias, calle, altura, provincia, localidad, codigoPostal,
+ * referencia, latitud, longitud, activa. Son obligatorios: calle, altura,
+ * provincia, localidad y codigoPostal. El cliente no carga latitud/longitud
+ * (opcionales en el backend; a futuro las calcula un servicio de geolocalización).
  */
 
 import { useState, useEffect } from 'react';
@@ -19,7 +21,8 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
   const [alias, setAlias] = useState('');
   const [calle, setCalle] = useState('');
   const [altura, setAltura] = useState('');
-  const [ciudad, setCiudad] = useState('');
+  const [provincia, setProvincia] = useState('');
+  const [localidad, setLocalidad] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
   const [referencia, setReferencia] = useState('');
   const [error, setError] = useState('');
@@ -30,7 +33,8 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
       setAlias(direccion.alias || '');
       setCalle(direccion.calle || '');
       setAltura(direccion.altura ?? '');
-      setCiudad(direccion.ciudad || '');
+      setProvincia(direccion.provincia || '');
+      setLocalidad(direccion.localidad || direccion.ciudad || '');
       setCodigoPostal(direccion.codigoPostal || '');
       setReferencia(direccion.referencia || '');
     }
@@ -45,17 +49,33 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
       return;
     }
 
-    if (altura !== '' && (!Number.isInteger(Number(altura)) || Number(altura) < 0)) {
-      setError('La altura debe ser un número entero mayor o igual a 0.');
+    if (altura === '' || !Number.isInteger(Number(altura)) || Number(altura) < 0) {
+      setError('La altura es obligatoria y debe ser un número entero mayor o igual a 0.');
+      return;
+    }
+
+    if (!provincia.trim()) {
+      setError('La provincia es obligatoria.');
+      return;
+    }
+
+    if (!localidad.trim()) {
+      setError('La localidad es obligatoria.');
+      return;
+    }
+
+    if (!codigoPostal.trim()) {
+      setError('El código postal es obligatorio.');
       return;
     }
 
     const datosDireccion = {
       alias: alias.trim() || null,
       calle: calle.trim(),
-      altura: altura === '' ? null : Number(altura),
-      ciudad: ciudad.trim() || null,
-      codigoPostal: codigoPostal.trim() || null,
+      altura: Number(altura),
+      provincia: provincia.trim(),
+      localidad: localidad.trim(),
+      codigoPostal: codigoPostal.trim(),
       referencia: referencia.trim() || null,
     };
 
@@ -92,7 +112,7 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Altura</Form.Label>
+            <Form.Label>Altura *</Form.Label>
             <Form.Control
               type="number"
               value={altura}
@@ -103,16 +123,25 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Ciudad</Form.Label>
+            <Form.Label>Provincia *</Form.Label>
             <Form.Control
               type="text"
-              value={ciudad}
-              onChange={(e) => setCiudad(e.target.value)}
-              placeholder="Ej: Capital Federal"
+              value={provincia}
+              onChange={(e) => setProvincia(e.target.value)}
+              placeholder="Ej: Buenos Aires"
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Código postal</Form.Label>
+            <Form.Label>Localidad *</Form.Label>
+            <Form.Control
+              type="text"
+              value={localidad}
+              onChange={(e) => setLocalidad(e.target.value)}
+              placeholder="Ej: CABA"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Código postal *</Form.Label>
             <Form.Control
               type="text"
               value={codigoPostal}

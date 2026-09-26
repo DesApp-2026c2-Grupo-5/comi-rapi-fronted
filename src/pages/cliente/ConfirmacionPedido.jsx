@@ -17,6 +17,7 @@ import { ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { IconoCheck } from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import { formatDate, formatPrice } from '../../utils/formatters';
+import { formatearDireccion } from '../../utils/direccion';
 import './ConfirmacionPedido.css';
 
 const ConfirmacionPedido = () => {
@@ -92,7 +93,7 @@ const ConfirmacionPedido = () => {
                     Tu pedido será preparado en
                   </span>
                   <strong className="d-block fs-5">{sucursal.nombre}</strong>
-                  <span className="text-muted">{sucursal.direccion}</span>
+                  <span className="text-muted">{formatearDireccion(sucursal.direccion)}</span>
                 </div>
               )}
 

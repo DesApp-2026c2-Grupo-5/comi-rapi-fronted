@@ -40,7 +40,10 @@ export const obtenerSucursalPorId = async (id) => {
 
 /**
  * Crea una nueva sucursal.
- * @param {object} datos - { nombre, direccion, latitud?, longitud?, telefono?, horarios?, activa? }.
+ * La dirección se envía como objeto anidado (Sucursal 1:1 Direccion):
+ * { nombre, direccion: { calle, altura, provincia, localidad, codigoPostal, referencia? }, telefono?, horarios?, activa? }.
+ * latitud/longitud no se ingresan manualmente: las calcula el backend (tarea futura).
+ * @param {object} datos - Datos de la sucursal.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const crearSucursal = async (datos) => {
@@ -53,6 +56,7 @@ export const crearSucursal = async (datos) => {
 
 /**
  * Actualiza una sucursal existente (campos parciales; activa=true para reactivar).
+ * Si se actualiza la dirección, se envía como objeto anidado (Sucursal 1:1 Direccion).
  * @param {number|string} id - ID de la sucursal.
  * @param {object} datos - Campos a actualizar.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
