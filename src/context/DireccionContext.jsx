@@ -52,7 +52,7 @@ export const DireccionProvider = ({ children }) => {
 
   /**
    * Agrega una nueva dirección y la persiste en el backend.
-   * @param {object} datosDireccion - { calle, altura?, ciudad?, codigoPostal?, referencia?, alias? }.
+   * @param {object} datosDireccion - { calle, altura, provincia, localidad, codigoPostal, referencia?, alias? }.
    * @returns {Promise<object|null>} Dirección creada o null si falla.
    */
   const agregarDireccion = useCallback(async (datosDireccion) => {

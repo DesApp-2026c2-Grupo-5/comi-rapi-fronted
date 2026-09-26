@@ -100,14 +100,16 @@ function payloadBackend(datosPedido, sucursal) {
           }
         : undefined),
   }));
-  // direccionEntrega snapshot: el frontend usa {direccion, ciudad, codigoPostal, referencia}
+  // direccionEntrega snapshot: el frontend usa {direccion, localidad/ciudad, codigoPostal, referencia}.
+  // El snapshot de Pedidos conserva la columna 'ciudad'; se mapea 'localidad' a ella
+  // para que la localidad de la dirección siga quedando en el pedido.
   const dir = datosPedido.direccion || datosPedido.direccionEntrega || {};
   const direccionEntrega =
     dir.direccion || dir.calle
       ? {
           calle: dir.calle || dir.direccion,
           altura: dir.altura || null,
-          ciudad: dir.ciudad || null,
+          ciudad: dir.ciudad || dir.localidad || null,
           codigoPostal: dir.codigoPostal || null,
           referencia: dir.referencia || null,
         }

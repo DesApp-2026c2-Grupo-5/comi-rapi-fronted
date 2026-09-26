@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Card, Badge, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursal } from '../../hooks/useSucursal';
+import { formatearDireccion } from '../../utils/direccion';
 
 // Ubicación mock del cliente (MOCK - reemplazar por geolocalización real)
 const UBICACION_MOCK = 'Av. Siempre Viva 742, Ciudad';
@@ -84,7 +85,7 @@ const SucursalesCercanas = () => {
                       {esAsignada && <Badge bg="warning" text="dark">Tu sucursal</Badge>}
                     </div>
                     <Card.Text className="text-muted mb-1">
-                      <strong>Dirección:</strong> {sucursal.direccion}
+                      <strong>Dirección:</strong> {formatearDireccion(sucursal.direccion)}
                     </Card.Text>
                     <Card.Text className="text-muted mb-1">
                       <strong>Distancia estimada:</strong> {distancias[sucursal.id] || 'Calculando...'}
@@ -105,7 +106,7 @@ const SucursalesCercanas = () => {
 
       {sucursalAsignada && (
         <Alert variant="warning" className="mt-2">
-          <strong>Sucursal asignada:</strong> {sucursalAsignada.nombre} - {sucursalAsignada.direccion}.
+          <strong>Sucursal asignada:</strong> {sucursalAsignada.nombre} - {formatearDireccion(sucursalAsignada.direccion)}.
           Se asignó por tener menos pedidos pendientes (simulado).
         </Alert>
       )}

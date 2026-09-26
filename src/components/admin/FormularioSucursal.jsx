@@ -1,28 +1,34 @@
 /**
  * Propósito: Formulario para crear o editar una sucursal usando Form de Bootstrap.
  * Contenido: Componente FormularioSucursal con campos controlados y validaciones básicas.
- * Dependencias: react-bootstrap (Form, Button, Card), react-router-dom (useNavigate),
- *               utils/constants.js (LIMITES_LAT, LIMITES_LNG).
+ * Dependencias: react-bootstrap (Form, Button, Card), react-router-dom (useNavigate).
  * Uso: <FormularioSucursal sucursal={sucursal} onGuardar={handler} />
  *      - Si 'sucursal' es null/undefined, se comporta en modo creación.
  *      - Si 'sucursal' trae datos, precarga el formulario para edición.
  *
- * Contrato (DER): nombre, direccion, latitud, longitud, telefono, horarios, activa.
+ * Contrato (DER): la dirección se envía como objeto anidado
+ * `direccion: { calle, altura, provincia, localidad, codigoPostal, referencia? }`
+ * (Sucursal 1:1 Direccion — la dirección y las coordenadas se centralizan en Direccion).
+ * Son obligatorios: calle, altura, provincia, localidad y codigoPostal.
+ * latitud/longitud NO se ingresan manualmente (ni por admin ni por nadie):
+ * las calcula el backend (servicio de geolocalización, tarea futura).
  */
 
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { LIMITES_LAT, LIMITES_LNG } from '../../utils/constants';
 
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
 
   const [nombre, setNombre] = useState('');
-  const [direccion, setDireccion] = useState('');
-  const [latitud, setLatitud] = useState('');
-  const [longitud, setLongitud] = useState('');
+  const [calle, setCalle] = useState('');
+  const [altura, setAltura] = useState('');
+  const [provincia, setProvincia] = useState('');
+  const [localidad, setLocalidad] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [referencia, setReferencia] = useState('');
   const [horarios, setHorarios] = useState('');
   const [telefono, setTelefono] = useState('');
   const [activa, setActiva] = useState(true);
@@ -31,56 +37,65 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   // Precargan los datos al entrar en modo edición
   useEffect(() => {
     if (sucursal) {
+      const dir = sucursal.direccion || {};
       setNombre(sucursal.nombre || '');
-      setDireccion(sucursal.direccion || '');
-      setLatitud(sucursal.latitud ?? '');
-      setLongitud(sucursal.longitud ?? '');
+      setCalle(dir.calle || '');
+      setAltura(dir.altura ?? '');
+      setProvincia(dir.provincia || '');
+      setLocalidad(dir.localidad || dir.ciudad || '');
+      setCodigoPostal(dir.codigoPostal || '');
+      setReferencia(dir.referencia || '');
       setHorarios(sucursal.horarios || '');
       setTelefono(sucursal.telefono || '');
       setActiva(sucursal.activa !== false);
     }
   }, [sucursal]);
 
-  // Valida que las coordenadas estén dentro de los rangos geográficos válidos
-  const validarCoordenadas = () => {
-    const latNum = Number(latitud);
-    const lngNum = Number(longitud);
-
-    if (latNum < LIMITES_LAT.MIN || latNum > LIMITES_LAT.MAX) {
-      setError(`La latitud debe estar entre ${LIMITES_LAT.MIN} y ${LIMITES_LAT.MAX}.`);
-      return false;
-    }
-    if (lngNum < LIMITES_LNG.MIN || lngNum > LIMITES_LNG.MAX) {
-      setError(`La longitud debe estar entre ${LIMITES_LNG.MIN} y ${LIMITES_LNG.MAX}.`);
-      return false;
-    }
-    return true;
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
 
     // Validaciones básicas de campos requeridos
-    if (!nombre.trim() || !direccion.trim()) {
-      setError('El nombre y la dirección son obligatorios.');
+    if (!nombre.trim()) {
+      setError('El nombre es obligatorio.');
       return;
     }
 
-    if (latitud === '' || longitud === '') {
-      setError('Ingresá la latitud y la longitud de la sucursal.');
+    if (!calle.trim()) {
+      setError('La calle de la dirección es obligatoria.');
       return;
     }
 
-    if (!validarCoordenadas()) {
+    if (altura === '' || !Number.isInteger(Number(altura)) || Number(altura) < 0) {
+      setError('La altura es obligatoria y debe ser un número entero mayor o igual a 0.');
+      return;
+    }
+
+    if (!provincia.trim()) {
+      setError('La provincia es obligatoria.');
+      return;
+    }
+
+    if (!localidad.trim()) {
+      setError('La localidad es obligatoria.');
+      return;
+    }
+
+    if (!codigoPostal.trim()) {
+      setError('El código postal es obligatorio.');
       return;
     }
 
     const datosSucursal = {
       nombre: nombre.trim(),
-      direccion: direccion.trim(),
-      latitud: Number(latitud),
-      longitud: Number(longitud),
+      direccion: {
+        calle: calle.trim(),
+        altura: Number(altura),
+        provincia: provincia.trim(),
+        localidad: localidad.trim(),
+        codigoPostal: codigoPostal.trim(),
+        referencia: referencia.trim() || null,
+      },
       horarios: horarios.trim() || null,
       telefono: telefono.trim() || null,
       activa,
@@ -110,32 +125,58 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Dirección *</Form.Label>
+            <Form.Label>Calle *</Form.Label>
             <Form.Control
               type="text"
-              value={direccion}
-              onChange={(e) => setDireccion(e.target.value)}
-              placeholder="Ej: Av. Principal 123"
+              value={calle}
+              onChange={(e) => setCalle(e.target.value)}
+              placeholder="Ej: Av. Principal"
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Latitud *</Form.Label>
+            <Form.Label>Altura *</Form.Label>
             <Form.Control
               type="number"
-              value={latitud}
-              onChange={(e) => setLatitud(e.target.value)}
-              placeholder="Ej: -34.6037"
-              step="0.000001"
+              min="0"
+              value={altura}
+              onChange={(e) => setAltura(e.target.value)}
+              placeholder="Ej: 123"
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Longitud *</Form.Label>
+            <Form.Label>Provincia *</Form.Label>
             <Form.Control
-              type="number"
-              value={longitud}
-              onChange={(e) => setLongitud(e.target.value)}
-              placeholder="Ej: -58.3816"
-              step="0.000001"
+              type="text"
+              value={provincia}
+              onChange={(e) => setProvincia(e.target.value)}
+              placeholder="Ej: Buenos Aires"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Localidad *</Form.Label>
+            <Form.Control
+              type="text"
+              value={localidad}
+              onChange={(e) => setLocalidad(e.target.value)}
+              placeholder="Ej: CABA"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Código postal *</Form.Label>
+            <Form.Control
+              type="text"
+              value={codigoPostal}
+              onChange={(e) => setCodigoPostal(e.target.value)}
+              placeholder="Ej: 1406"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Referencia</Form.Label>
+            <Form.Control
+              type="text"
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="Ej: Frente a la plaza"
             />
           </Form.Group>
           <Form.Group className="mb-3">

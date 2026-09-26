@@ -121,8 +121,11 @@ const MisDirecciones = () => {
                 <strong>Dirección:</strong> {direccion.calle}
                 {direccion.altura ? ` ${direccion.altura}` : ''}
               </p>
-              {direccion.ciudad && (
-                <p className="mb-1"><strong>Ciudad:</strong> {direccion.ciudad}</p>
+              {(direccion.localidad || direccion.ciudad) && (
+                <p className="mb-1">
+                  <strong>Localidad:</strong> {direccion.localidad || direccion.ciudad}
+                  {direccion.provincia ? `, ${direccion.provincia}` : ''}
+                </p>
               )}
               {direccion.codigoPostal && (
                 <p className="mb-1"><strong>Código postal:</strong> {direccion.codigoPostal}</p>

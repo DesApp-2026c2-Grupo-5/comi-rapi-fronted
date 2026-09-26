@@ -16,6 +16,7 @@ import { usePedidos } from '../../hooks/usePedidos';
 import { ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
+import { formatearDireccion } from '../../utils/direccion';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import HistorialStepper from '../../components/comunes/HistorialStepper';
 import './DetallePedido.css';
@@ -78,7 +79,9 @@ const DetallePedido = () => {
                 <span className="detalle-etiqueta">Sucursal asignada</span>
                 <p className="detalle-valor mb-0">{pedido.sucursal?.nombre || pedido.sucursal}</p>
                 {pedido.sucursal?.direccion && (
-                  <p className="detalle-valor-secundario mb-0">{pedido.sucursal.direccion}</p>
+                  <p className="detalle-valor-secundario mb-0">
+                    {formatearDireccion(pedido.sucursal.direccion)}
+                  </p>
                 )}
               </div>
             </Col>

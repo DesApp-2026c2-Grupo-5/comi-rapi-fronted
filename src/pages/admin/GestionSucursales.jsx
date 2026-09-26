@@ -13,6 +13,7 @@ import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSucursal } from '../../hooks/useSucursal';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { formatearDireccion } from '../../utils/direccion';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 
 const GestionSucursales = () => {
@@ -93,7 +94,7 @@ const GestionSucursales = () => {
               <tr key={sucursal.id}>
                 <td data-label="ID">{sucursal.id}</td>
                 <td data-label="Nombre">{sucursal.nombre}</td>
-                <td data-label="Dirección">{sucursal.direccion}</td>
+                <td data-label="Dirección">{formatearDireccion(sucursal.direccion)}</td>
                 <td data-label="Teléfono">{sucursal.telefono || '-'}</td>
                 <td data-label="Estado">
                   <Badge bg={sucursal.activa !== false ? 'success' : 'secondary'}>
