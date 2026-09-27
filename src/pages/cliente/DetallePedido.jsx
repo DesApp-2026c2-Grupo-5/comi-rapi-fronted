@@ -11,19 +11,32 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Card, Table, Badge, Button, Row, Col } from 'react-bootstrap';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaRedo } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
-import { ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
+import { useRepetirPedido } from '../../hooks/useRepetirPedido';
+import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
 import { formatearDireccion } from '../../utils/direccion';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import HistorialStepper from '../../components/comunes/HistorialStepper';
+import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
 import './DetallePedido.css';
 
 const DetallePedido = () => {
   const { id } = useParams();
   const { pedidos } = usePedidos();
+  const {
+    repitiendoId,
+    pedidoARepetir,
+    vistaPrevia,
+    noRepetible,
+    pedirRepeticion,
+    cancelarRepeticion,
+    cerrarAviso,
+    confirmarRepeticion,
+  } = useRepetirPedido();
   const pedido = pedidos.find((p) => p.id === Number(id));
 
   if (!pedido) {
@@ -45,6 +58,9 @@ const DetallePedido = () => {
   // El total del backend ya incluye el envío (los seed más viejos lo calculan).
   const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
   const subtotal = pedido.total - costoEnvio;
+  const esFinal =
+    pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||
+    pedido.estado === ESTADOS_PEDIDO.CANCELADO;
 
   return (
     <Container className="py-5">
@@ -153,8 +169,39 @@ const DetallePedido = () => {
             <span className="historial-titulo">Progreso del pedido</span>
             <HistorialStepper pedido={pedido} />
           </div>
+
+          {esFinal && (
+            <div className="d-flex gap-2 mt-4 flex-wrap">
+              <Button
+                variant="outline-primary"
+                onClick={() => pedirRepeticion(pedido)}
+                disabled={repitiendoId === pedido.id}
+              >
+                <FaRedo className="me-1" aria-hidden="true" />
+                {repitiendoId === pedido.id ? 'Agregando...' : 'Repetir pedido'}
+              </Button>
+            </div>
+          )}
         </Card.Body>
       </Card>
+
+      <ConfirmarModal
+        mostrar={Boolean(pedidoARepetir)}
+        titulo="Repetir pedido"
+        mensaje={mensajeConfirmarRepetir(pedidoARepetir, vistaPrevia, formatPrice)}
+        textoConfirmar="Sí, repetir pedido"
+        cargando={Boolean(repitiendoId) || Boolean(vistaPrevia?.cargando)}
+        onConfirmar={confirmarRepeticion}
+        onCancelar={cancelarRepeticion}
+      />
+
+      <ConfirmarModal
+        aviso
+        mostrar={Boolean(noRepetible)}
+        titulo="No se puede repetir"
+        mensaje={mensajeNoRepetible(noRepetible)}
+        onCancelar={cerrarAviso}
+      />
     </Container>
   );
 };
