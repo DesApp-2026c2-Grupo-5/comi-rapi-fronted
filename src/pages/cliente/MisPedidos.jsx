@@ -12,11 +12,12 @@
  * pedidos del cliente autenticado (scope por usuarioId).
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Card, Badge, Button } from 'react-bootstrap';
-import { FaUtensils, FaEye, FaTimesCircle } from 'react-icons/fa';
+import { FaUtensils, FaEye, FaTimesCircle, FaRedo } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
+import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useAuth } from '../../hooks/useAuth';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
@@ -25,6 +26,7 @@ import { calcularCostoEnvio } from '../../services/envio';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import HistorialStepper from '../../components/comunes/HistorialStepper';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
 
 const MisPedidos = () => {
   const { pedidos, cambiarEstado } = usePedidos();
@@ -36,6 +38,16 @@ const MisPedidos = () => {
   const [pedidoACancelar, setPedidoACancelar] = useState(null);
   // Pedido que no puede cancelarse (se muestra el aviso "ya comenzó a prepararse")
   const [pedidoNoCancelable, setPedidoNoCancelable] = useState(null);
+  const {
+    repitiendoId,
+    pedidoARepetir,
+    vistaPrevia,
+    noRepetible,
+    pedirRepeticion,
+    cancelarRepeticion,
+    cerrarAviso,
+    confirmarRepeticion,
+  } = useRepetirPedido();
 
   // El backend devuelve solo los pedidos del cliente autenticado
   const misPedidos = pedidos;
@@ -196,6 +208,17 @@ const MisPedidos = () => {
                       {cancelandoId === pedido.id ? 'Cancelando...' : 'Cancelar'}
                     </Button>
                   )}
+                  {esFinal && (
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => pedirRepeticion(pedido)}
+                      disabled={repitiendoId === pedido.id}
+                    >
+                      <FaRedo aria-hidden="true" />
+                      {repitiendoId === pedido.id ? 'Agregando...' : 'Repetir'}
+                    </Button>
+                  )}
                 </div>
               </Card.Body>
             </Card>
@@ -225,6 +248,24 @@ const MisPedidos = () => {
             : ''
         }
         onCancelar={() => setPedidoNoCancelable(null)}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(pedidoARepetir)}
+        titulo="Repetir pedido"
+        mensaje={mensajeConfirmarRepetir(pedidoARepetir, vistaPrevia, formatPrice)}
+        textoConfirmar="Sí, repetir pedido"
+        cargando={Boolean(repitiendoId) || Boolean(vistaPrevia?.cargando)}
+        onConfirmar={confirmarRepeticion}
+        onCancelar={cancelarRepeticion}
+      />
+
+      <ConfirmarModal
+        aviso
+        mostrar={Boolean(noRepetible)}
+        titulo="No se puede repetir"
+        mensaje={mensajeNoRepetible(noRepetible)}
+        onCancelar={cerrarAviso}
       />
     </Container>
   );
