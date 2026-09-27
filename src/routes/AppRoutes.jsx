@@ -34,6 +34,7 @@ import Carrito from '../pages/cliente/Carrito';
 import Pago from '../pages/cliente/Pago';
 import ConfirmacionPedido from '../pages/cliente/ConfirmacionPedido';
 import MisPedidos from '../pages/cliente/MisPedidos';
+import HistorialPedidos from '../pages/cliente/HistorialPedidos';
 import DetallePedido from '../pages/cliente/DetallePedido';
 import MisDirecciones from '../pages/cliente/MisDirecciones';
 
@@ -77,6 +78,7 @@ const AppRoutes = () => {
         <Route path="/cliente/pago" element={<Pago />} />
         <Route path="/cliente/confirmacion" element={<ConfirmacionPedido />} />
         <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />
+        <Route path="/cliente/historial" element={<HistorialPedidos />} />
         <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
         <Route path="/cliente/mis-direcciones" element={<MisDirecciones />} />
       </Route>
