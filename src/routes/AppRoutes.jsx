@@ -49,6 +49,8 @@ import GestionSucursales from '../pages/admin/GestionSucursales';
 import EditarSucursal from '../pages/admin/EditarSucursal';
 import GestionPersonalizacion from '../pages/admin/GestionPersonalizacion';
 import EditarPersonalizacion from '../pages/admin/EditarPersonalizacion';
+import GestionPromociones from '../pages/admin/GestionPromociones';
+import EditarPromocion from '../pages/admin/EditarPromocion';
 
 /**
  * Definición de rutas de la aplicación.
@@ -99,6 +101,9 @@ const AppRoutes = () => {
         <Route path="/admin/personalizacion" element={<GestionPersonalizacion />} />
         <Route path="/admin/personalizacion/nuevo" element={<EditarPersonalizacion />} />
         <Route path="/admin/personalizacion/editar/:id" element={<EditarPersonalizacion />} />
+        <Route path="/admin/promociones" element={<GestionPromociones />} />
+        <Route path="/admin/promocion/nuevo" element={<EditarPromocion />} />
+        <Route path="/admin/promocion/editar/:id" element={<EditarPromocion />} />
       </Route>
 
       {/* Ruta 404 - redirige según estado de sesión */}

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup ABM Admin Promociones</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+}
+body{ background:#f8f9fa; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#212529; }
+.card-comi{ border:1px solid #dee2e6; border-radius:0; background:#fff; box-shadow:0 .125rem .25rem rgba(0,0,0,.075); overflow:hidden; }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:999px; font-weight:600; letter-spacing:.3px; transition:transform .2s ease, box-shadow .25s ease; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-color:#fff; --bs-btn-bg:#ff9f1c; --bs-btn-border-color:#ff9f1c; --bs-btn-hover-color:#fff; --bs-btn-hover-bg:#e88900; --bs-btn-hover-border-color:#e88900; box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.btn-secondary{ --bs-btn-color:#b55d00; --bs-btn-bg:#fff4e2; --bs-btn-border-color:#f1c27d; --bs-btn-hover-color:#b55d00; --bs-btn-hover-bg:#ffe6c2; --bs-btn-hover-border-color:#ff9f1c; }
+.btn-danger{ --bs-btn-color:#fff; --bs-btn-bg:#e63946; --bs-btn-border-color:#e63946; --bs-btn-hover-color:#fff; --bs-btn-hover-bg:#d12737; --bs-btn-hover-border-color:#d12737; box-shadow:0 4px 12px rgba(230,57,70,.25); }
+.badge-comi{ background:#e9ecef; color:#212529; border:1px solid #dee2e6; font-weight:700; }
+.mockup-nav{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(255,250,240,.92); border-bottom:2px solid var(--borde-card); }
+.vista{ display:none; }
+.vista.activa{ display:block; animation:fade .2s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+.table-dark{ --bs-table-bg:#2b2b2b; }
+.form-control, .form-select{ border:1px solid #dee2e6; border-radius:.375rem; }
+.form-control:focus, .form-select:focus{ border-color:#86b7fe; box-shadow:0 0 0 .25rem rgba(13,110,253,.25); }
+.form-check-input:checked{ background-color:#0d6efd; border-color:#0d6efd; }
+.form-check-input:focus{ box-shadow:0 0 0 .25rem rgba(13,110,253,.25); }
+.tipo-pill{ border-radius:.375rem; font-weight:400; padding:.375rem 1rem; border:1px solid #dee2e6; background:#fff; color:#212529; cursor:pointer; }
+.tipo-pill.activo{ background:#212529 !important; color:#fff !important; border-color:#212529 !important; }
+.prod-grupo{ border:1px solid #dee2e6; border-radius:0; background:#fff; }
+.prod-item{ border-bottom:1px solid #dee2e6; }
+.prod-item:last-child{ border-bottom:none; }
+</style>
+</head>
+<body>
+
+<!-- Header mockup -->
+<div class="mockup-nav text-center py-3">
+  <div class="container">
+    <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP — ABM Admin Promociones</span></span>
+    <div class="small text-muted">Lista con filtros + formulario con <strong>tipo</strong>, <strong>valor</strong>, <strong>vigencia</strong> y <strong>selector multi-producto</strong> — estilos 100% Comi-Rapi</div>
+    <div class="mt-2 small">
+      <a href="./admin-personalizacion.html" class="text-decoration-none" style="color:var(--naranja-osc)"><i class="fa-solid fa-arrow-left"></i> Personalización</a>
+      <span class="mx-2 text-muted">·</span>
+      <span class="badge bg-dark">Admin</span>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4" style="max-width:1120px;">
+
+  <div class="alert py-2 small d-flex gap-2 align-items-start" style="background:var(--crema); border-color:var(--crema-borde); color:var(--naranja-osc);">
+    <i class="fa-solid fa-circle-info mt-1"></i>
+    <div>
+      <strong>Mockup interactivo — sin backend.</strong> Probá los filtros de la lista, <em>Agregar</em>, cambiar el <em>tipo</em> en el formulario (el campo valor se adapta) y el buscador de productos.
+      <br><span style="font-size:.78rem;">Rutas reales: <code>/admin/promociones</code> · <code>/admin/promocion/nuevo</code> · <code>/admin/promocion/editar/:id</code></span>
+    </div>
+  </div>
+
+  <!-- ===== VISTA LISTA ===== -->
+  <div id="vista-lista" class="vista activa">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h4 class="fw-bold mb-0"><i class="fa-solid fa-tags me-2" style="color:var(--naranja)"></i> Gestión de Promociones</h4>
+      <button class="btn btn-primary btn-sm px-3" onclick="irNuevo()"><i class="fa-solid fa-plus"></i> Agregar nueva promoción</button>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-md-3">
+        <select class="form-select form-select-sm" id="f-estado" onchange="renderTabla()">
+          <option value="todas">Estado: Todas</option>
+          <option value="activas">Estado: Activas</option>
+          <option value="inactivas">Estado: Inactivas</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <select class="form-select form-select-sm" id="f-tipo" onchange="renderTabla()">
+          <option value="todos">Tipo: Todos</option>
+          <option value="DESCUENTO_PORCENTUAL">Tipo: Porcentual</option>
+          <option value="DOS_POR_UNO">Tipo: 2x1</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card-comi">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0 align-middle">
+          <thead class="table-dark">
+            <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Valor</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="tbody-promos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VISTA FORM ===== -->
+  <div id="vista-form" class="vista">
+    <a href="#" class="text-danger text-decoration-none mb-3 d-inline-block" onclick="irLista(); return false;">← Volver a promociones</a>
+    <h4 class="fw-bold mb-3"><i class="fa-solid fa-pen-to-square me-2" style="color:var(--naranja)"></i> <span id="form-titulo">Nueva promoción</span></h4>
+
+    <div class="card-comi p-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Nombre *</label>
+          <input id="in-nombre" class="form-control" placeholder="Ej: 10% Hamburguesas" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Descripción</label>
+          <input id="in-desc" class="form-control" placeholder="Ej: 10% en hamburguesas seleccionadas" />
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-bold small d-block">Tipo *</label>
+          <button class="tipo-pill activo me-2" id="pill-porc" onclick="setTipo('DESCUENTO_PORCENTUAL')"><i class="fa-solid fa-percent"></i> Porcentual</button>
+          <button class="tipo-pill" id="pill-2x1" onclick="setTipo('DOS_POR_UNO')"><i class="fa-solid fa-2"></i> 2x1</button>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold small">Valor *</label>
+          <input id="in-valor" type="number" min="0" max="100" class="form-control" value="10" />
+          <div class="form-text" id="valor-ayuda">Porcentaje de descuento (0–100).</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold small">Vigente desde</label>
+          <input type="date" class="form-control" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold small">Vigente hasta</label>
+          <input type="date" class="form-control" />
+        </div>
+        <div class="col-12">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="in-activa" checked />
+            <label class="form-check-label fw-bold small" for="in-activa">Promoción activa</label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-burger me-1" style="color:var(--naranja)"></i> Productos alcanzados <span class="badge badge-comi" id="prod-count">2 seleccionados</span></h6>
+        <input id="prod-buscar" class="form-control form-control-sm" style="max-width:260px;" placeholder="Buscar producto..." oninput="renderProductos()" />
+      </div>
+      <div id="prod-grupos"></div>
+
+      <div class="mt-4">
+        <button class="btn btn-primary w-100" onclick="guardar()"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast-ok" class="toast align-items-center border-0" style="background:var(--verde); color:#fff;" role="alert">
+      <div class="d-flex"><div class="toast-body fw-bold"><i class="fa-solid fa-check me-2"></i> Promoción guardada (demo).</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const PROMOS = [
+  { id: 1, nombre: '10% Hamburguesas', desc: '2 productos — 10% en hamburguesas seleccionadas.', tipo: 'DESCUENTO_PORCENTUAL', valor: '10%', vigencia: '28/09 - 28/10', activa: true },
+  { id: 2, nombre: '2x1 Papas', desc: '2 productos — Llevás 2 y pagás 1.', tipo: 'DOS_POR_UNO', valor: '2x1', vigencia: '28/09 - 28/10', activa: true },
+  { id: 3, nombre: 'Promo vieja', desc: '0 productos.', tipo: 'DESCUENTO_PORCENTUAL', valor: '20%', vigencia: 'vencida', activa: false },
+];
+const PRODUCTOS = {
+  'Hamburguesas': ['Hamburguesa Clásica', 'Hamburguesa Doble'],
+  'Papas': ['Papas Fritas Grandes', 'Papas Cheddar'],
+  'Bebidas': ['Coca-Cola 500ml', 'Limonada Natural'],
+};
+let TIPO = 'DESCUENTO_PORCENTUAL';
+const SEL = new Set(['Hamburguesa Clásica', 'Hamburguesa Doble']);
+
+function badgeTipo(t){ return t === 'DOS_POR_UNO' ? '<span class="badge text-bg-info">2x1</span>' : '<span class="badge text-bg-warning">Porcentual</span>'; }
+function badgeEstado(a){ return a ? '<span class="badge text-bg-success">Activa</span>' : '<span class="badge text-bg-secondary">Inactiva</span>'; }
+
+function renderTabla(){
+  const fe = document.getElementById('f-estado').value;
+  const ft = document.getElementById('f-tipo').value;
+  const tb = document.getElementById('tbody-promos');
+  tb.innerHTML = '';
+  PROMOS.filter(p =>
+    (fe === 'todas' || (fe === 'activas') === p.activa) &&
+    (ft === 'todos' || p.tipo === ft)
+  ).forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.id}</td>
+      <td><strong>${p.nombre}</strong><div class="small text-muted">${p.desc}</div></td>
+      <td>${badgeTipo(p.tipo)}</td><td class="fw-bold">${p.valor}</td>
+      <td>${p.vigencia === 'vencida' ? '<span class="text-danger small">vencida</span>' : p.vigencia}</td>
+      <td>${badgeEstado(p.activa)}</td>
+      <td><div class="d-flex gap-1 flex-wrap">
+        <button class="btn btn-sm btn-secondary me-2" onclick="irEditar(${p.id})"><i class="fa-solid fa-pen me-1"></i> Editar</button>
+        ${p.activa
+          ? '<button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i> Eliminar</button>'
+          : '<button class="btn btn-sm btn-warning me-2"><i class="fa-solid fa-rotate-left me-1"></i> Reactivar</button>'}
+      </div></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function setTipo(t){
+  TIPO = t;
+  document.getElementById('pill-porc').classList.toggle('activo', t === 'DESCUENTO_PORCENTUAL');
+  document.getElementById('pill-2x1').classList.toggle('activo', t === 'DOS_POR_UNO');
+  const vin = document.getElementById('in-valor');
+  const ayuda = document.getElementById('valor-ayuda');
+  if (t === 'DOS_POR_UNO') { vin.value = 50; vin.disabled = true; ayuda.textContent = '2x1 literal: llevás 2 y pagás 1. El valor se guarda 50 por convención y se ignora en el cálculo.'; }
+  else { vin.disabled = false; if (vin.value == 50) vin.value = 10; ayuda.textContent = 'Porcentaje de descuento (0–100).'; }
+}
+
+function renderProductos(){
+  const q = (document.getElementById('prod-buscar').value || '').toLowerCase();
+  const box = document.getElementById('prod-grupos');
+  box.innerHTML = '';
+  Object.entries(PRODUCTOS).forEach(([cat, items]) => {
+    const filtrados = items.filter(n => n.toLowerCase().includes(q));
+    if (!filtrados.length) return;
+    const div = document.createElement('div');
+    div.className = 'prod-grupo p-3 mb-2';
+    div.innerHTML = `<div class="fw-bold small mb-2" style="color:var(--naranja-osc)">${cat}</div>` + filtrados.map(n =>
+      `<label class="prod-item d-flex align-items-center gap-2 py-2">
+        <input type="checkbox" class="form-check-input" ${SEL.has(n) ? 'checked' : ''} onchange="toggleProd('${n}')" />
+        <span>${n}</span>
+      </label>`).join('');
+    box.appendChild(div);
+  });
+  document.getElementById('prod-count').textContent = SEL.size + (SEL.size === 1 ? ' seleccionado' : ' seleccionados');
+}
+function toggleProd(n){ SEL.has(n) ? SEL.delete(n) : SEL.add(n); renderProductos(); }
+
+function irLista(){ document.getElementById('vista-form').classList.remove('activa'); document.getElementById('vista-lista').classList.add('activa'); window.scrollTo(0,0); }
+function irNuevo(){ document.getElementById('form-titulo').textContent = 'Nueva promoción'; document.getElementById('vista-lista').classList.remove('activa'); document.getElementById('vista-form').classList.add('activa'); window.scrollTo(0,0); }
+function irEditar(id){ document.getElementById('form-titulo').textContent = 'Editar promoción #' + id; document.getElementById('in-nombre').value = PROMOS.find(p => p.id === id).nombre; document.getElementById('vista-lista').classList.remove('activa'); document.getElementById('vista-form').classList.add('activa'); window.scrollTo(0,0); }
+function guardar(){ bootstrap.Toast.getOrCreateInstance(document.getElementById('toast-ok')).show(); setTimeout(irLista, 900); }
+
+renderTabla();
+renderProductos();
+</script>
+</body>
+</html>

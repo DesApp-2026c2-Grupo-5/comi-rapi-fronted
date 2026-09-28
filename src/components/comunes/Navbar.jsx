@@ -21,6 +21,7 @@ import {
   FaStore,
   FaSlidersH,
   FaTags,
+  FaPercent,
   FaUserCircle,
   FaSignOutAlt,
 } from 'react-icons/fa';
@@ -47,6 +48,7 @@ const enlacesAdmin = [
   { to: '/admin/pedidos', etiqueta: 'Pedidos', icono: FaReceipt },
   { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore },
   { to: '/admin/personalizacion', etiqueta: 'Personalización', icono: FaSlidersH },
+  { to: '/admin/promociones', etiqueta: 'Promociones', icono: FaPercent },
 ];
 
 const Navbar = () => {
