@@ -34,6 +34,7 @@ import Carrito from '../pages/cliente/Carrito';
 import Pago from '../pages/cliente/Pago';
 import ConfirmacionPedido from '../pages/cliente/ConfirmacionPedido';
 import MisPedidos from '../pages/cliente/MisPedidos';
+import HistorialPedidos from '../pages/cliente/HistorialPedidos';
 import DetallePedido from '../pages/cliente/DetallePedido';
 import MisDirecciones from '../pages/cliente/MisDirecciones';
 
@@ -48,6 +49,8 @@ import GestionSucursales from '../pages/admin/GestionSucursales';
 import EditarSucursal from '../pages/admin/EditarSucursal';
 import GestionPersonalizacion from '../pages/admin/GestionPersonalizacion';
 import EditarPersonalizacion from '../pages/admin/EditarPersonalizacion';
+import GestionPromociones from '../pages/admin/GestionPromociones';
+import EditarPromocion from '../pages/admin/EditarPromocion';
 
 /**
  * Definición de rutas de la aplicación.
@@ -77,6 +80,7 @@ const AppRoutes = () => {
         <Route path="/cliente/pago" element={<Pago />} />
         <Route path="/cliente/confirmacion" element={<ConfirmacionPedido />} />
         <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />
+        <Route path="/cliente/historial" element={<HistorialPedidos />} />
         <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
         <Route path="/cliente/mis-direcciones" element={<MisDirecciones />} />
       </Route>
@@ -97,6 +101,9 @@ const AppRoutes = () => {
         <Route path="/admin/personalizacion" element={<GestionPersonalizacion />} />
         <Route path="/admin/personalizacion/nuevo" element={<EditarPersonalizacion />} />
         <Route path="/admin/personalizacion/editar/:id" element={<EditarPersonalizacion />} />
+        <Route path="/admin/promociones" element={<GestionPromociones />} />
+        <Route path="/admin/promocion/nuevo" element={<EditarPromocion />} />
+        <Route path="/admin/promocion/editar/:id" element={<EditarPromocion />} />
       </Route>
 
       {/* Ruta 404 - redirige según estado de sesión */}

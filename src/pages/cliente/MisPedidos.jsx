@@ -1,30 +1,37 @@
 /**
- * Propósito: Página de historial de pedidos del cliente con estado destacado y stepper
- *            de estados (mismo visual que el admin: iconos que se encienden/apagan).
- * Contenido: Componente MisPedidos con cards de pedidos (número, fecha, total, sucursal,
- *            stepper de progreso y estado), con el detalle en otra página.
- * Dependencias: react-bootstrap (Container, Card, Badge, Button), react-router-dom,
- *               hooks/usePedidos, utils/constants.js, utils/formatters.js,
- *               services/envio.js, componentes/comunes (IconoEstado, HistorialStepper).
+ * Propósito: Pedidos activos del cliente (pendiente, confirmado, en preparación,
+ *            listo para entregar, en camino) con filtros y acceso al Historial.
+ * Contenido: Componente MisPedidos que reusa FiltrosPedidos + ListaPedidos.
  * Uso: Ruta "/cliente/mis-pedidos" → <MisPedidos />
  *
  * NOTA: Los pedidos provienen de la API real; el backend ya devuelve solo los
  * pedidos del cliente autenticado (scope por usuarioId).
  */
 
-import React, { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Container, Card, Badge, Button } from 'react-bootstrap';
-import { FaUtensils, FaEye, FaTimesCircle } from 'react-icons/fa';
+import { Container, Card, Button } from 'react-bootstrap';
+import { FaUtensils, FaHistory } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
+import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useAuth } from '../../hooks/useAuth';
-import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
-import { formatPrice, formatDate } from '../../utils/formatters';
-import { calcularCostoEnvio } from '../../services/envio';
-import IconoEstado from '../../components/comunes/IconoEstado';
-import HistorialStepper from '../../components/comunes/HistorialStepper';
+import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
+import { formatPrice } from '../../utils/formatters';
+import { obtenerSucursales } from '../../api/sucursales';
+import { filtrarPedidos, FILTRO_INICIAL } from '../../utils/filtrosPedidos';
+import FiltrosPedidos from '../../components/cliente/FiltrosPedidos';
+import ListaPedidos from '../../components/cliente/ListaPedidos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
+
+const ESTADOS_ACTIVOS = [
+  ESTADOS_PEDIDO.PENDIENTE,
+  ESTADOS_PEDIDO.CONFIRMADO,
+  ESTADOS_PEDIDO.EN_PREPARACION,
+  ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
+  ESTADOS_PEDIDO.EN_CAMINO,
+];
 
 const MisPedidos = () => {
   const { pedidos, cambiarEstado } = usePedidos();
@@ -36,9 +43,42 @@ const MisPedidos = () => {
   const [pedidoACancelar, setPedidoACancelar] = useState(null);
   // Pedido que no puede cancelarse (se muestra el aviso "ya comenzó a prepararse")
   const [pedidoNoCancelable, setPedidoNoCancelable] = useState(null);
+  const [filtros, setFiltros] = useState(FILTRO_INICIAL);
+  const [sucursales, setSucursales] = useState([]);
+  const {
+    repitiendoId,
+    pedidoARepetir,
+    vistaPrevia,
+    noRepetible,
+    pedirRepeticion,
+    cancelarRepeticion,
+    cerrarAviso,
+    confirmarRepeticion,
+  } = useRepetirPedido();
 
-  // El backend devuelve solo los pedidos del cliente autenticado
-  const misPedidos = pedidos;
+  useEffect(() => {
+    let vivo = true;
+    obtenerSucursales().then((res) => {
+      if (vivo && res.success) setSucursales(res.data);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  const activos = useMemo(
+    () => pedidos.filter((p) => ESTADOS_ACTIVOS.includes(p.estado)),
+    [pedidos]
+  );
+  const visibles = useMemo(() => filtrarPedidos(activos, filtros), [activos, filtros]);
+  const estadosFiltro = useMemo(
+    () =>
+      ESTADOS_ACTIVOS.map((valor) => ({
+        valor,
+        etiqueta: ETIQUETAS_ESTADO_PEDIDO[valor] || valor,
+      })),
+    []
+  );
 
   // Solo puede cancelarse antes de iniciar la preparación (pendiente/confirmado)
   const esCancelable = (pedido) =>
@@ -73,134 +113,51 @@ const MisPedidos = () => {
 
   return (
     <Container className="py-4">
-      <h1 className="mb-4">Mis Pedidos</h1>
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h1 className="mb-0">Mis Pedidos</h1>
+        <Link to="/cliente/historial">
+          <Button variant="outline-secondary" size="sm">
+            <FaHistory aria-hidden="true" />
+            {' '}Ver historial
+          </Button>
+        </Link>
+      </div>
 
-      {misPedidos.length === 0 ? (
+      <FiltrosPedidos
+        filtros={filtros}
+        onChange={setFiltros}
+        estados={estadosFiltro}
+        sucursales={sucursales}
+      />
+
+      {activos.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
-          <h4 className="fw-bold mb-2">Todavía no tenés pedidos</h4>
+          <h4 className="fw-bold mb-2">No tenés pedidos en curso</h4>
           <p className="text-muted mb-4">¡Hacé tu primer pedido y seguí su estado acá!</p>
           <div>
             <Link to="/cliente/catalogo">
               <Button variant="primary" className="rounded-pill px-4">
-                  <FaUtensils aria-hidden="true" />
-                  Ir al catálogo
-                </Button>
+                <FaUtensils aria-hidden="true" />
+                Ir al catálogo
+              </Button>
             </Link>
           </div>
         </Card>
+      ) : visibles.length === 0 ? (
+        <Card className="shadow-sm text-center p-5">
+          <h4 className="fw-bold mb-2">Sin resultados para los filtros</h4>
+          <p className="text-muted mb-0">Probá ampliando fecha, estado o sucursal.</p>
+        </Card>
       ) : (
-        misPedidos.map((pedido) => {
-          const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
-          // El total del backend ya incluye el envío (los seed más viejos lo calculan).
-          const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
-          const subtotal = pedido.total - costoEnvio;
-          const esFinal = pedido.estado === ESTADOS_PEDIDO.ENTREGADO || pedido.estado === ESTADOS_PEDIDO.CANCELADO;
-          const esCancelado = pedido.estado === ESTADOS_PEDIDO.CANCELADO;
-          // Quién canceló: si el usuarioId del registro coincide con el cliente
-          // autenticado, la cancelación la hizo el propio cliente; si no, el admin.
-          const registroCancelacion = (pedido.historialEstados || []).find(
-            (h) => h.estado === ESTADOS_PEDIDO.CANCELADO
-          );
-          const esCancelacionPropia =
-            Boolean(registroCancelacion?.usuarioId) &&
-            registroCancelacion.usuarioId === user?.id;
-          const fechaCancelacion = registroCancelacion
-            ? formatDate(registroCancelacion.fecha)
-            : null;
-          return (
-            <Card key={pedido.id} className="mb-3 shadow-sm">
-              <Card.Header className="d-flex justify-content-between align-items-center">
-                <strong>Pedido #{pedido.id}</strong>
-                <Badge
-                  bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
-                  className="d-inline-flex align-items-center gap-1"
-                >
-                  <IconoEstado estado={pedido.estado} size={15} />
-                  {estadoLabel}
-                </Badge>
-              </Card.Header>
-              <Card.Body>
-                <p className="mb-1"><strong>Fecha:</strong> {formatDate(pedido.fecha)}</p>
-                <div className="mb-1">
-                  <strong>Productos:</strong>
-                  {pedido.productos.map((p, i) => (
-                    <div key={i} className="ms-2 small">
-                      <span>{p.nombre} x{p.cantidad}</span>
-                      {p.extras?.length > 0 && <span className="text-muted"> — {p.extras.map((e) => `${e.nombre} (+${formatPrice(e.precio)})`).join(', ')}</span>}
-                      {p.sin?.length > 0 && <span className="text-muted"> — Sin {p.sin.join(', ')}</span>}
-                      {p.acompanamientos?.length > 0 && <span className="text-muted"> — {p.acompanamientos.map((a) => a.nombre).join(', ')}</span>}
-                      {p.condimentos?.length > 0 && <span className="text-muted"> — {p.condimentos.map((c) => c.nombre).join(', ')}</span>}
-                    </div>
-                  ))}
-                </div>
-                <p className="mb-1"><strong>Subtotal:</strong> {formatPrice(subtotal)}</p>
-                <p className="mb-1">
-                  <strong>Envío:</strong>{' '}
-                  {costoEnvio === 0 ? (
-                    <span className="text-success">Gratis</span>
-                  ) : (
-                    formatPrice(costoEnvio)
-                  )}
-                </p>
-                <p className="mb-2"><strong>Total:</strong> {formatPrice(pedido.total)}</p>
-                <p className="mb-2">
-                  <strong>Sucursal:</strong>{' '}
-                  {pedido.sucursal?.nombre || pedido.sucursal || '-'}
-                </p>
-
-                <div className="historial-box">
-                  <span className="historial-titulo">Progreso del pedido</span>
-                  <HistorialStepper pedido={pedido} sinNodoCancelado />
-                  {esCancelado && (
-                    <div
-                      className="d-flex align-items-start gap-2 mt-3"
-                      style={{
-                        backgroundColor: '#fff4e2',
-                        border: '1px solid #f1c27d',
-                        borderRadius: '12px',
-                        padding: '10px 14px',
-                      }}
-                    >
-                      <FaTimesCircle className="text-danger flex-shrink-0 mt-1" aria-hidden="true" />
-                      <span>
-                        <strong className="text-danger">
-                          {esCancelacionPropia
-                            ? 'Cancelaste este pedido.'
-                            : 'Tu pedido ha sido cancelado.'}
-                        </strong>
-                        {fechaCancelacion && (
-                          <span className="small text-muted d-block">
-                            Cancelado el {fechaCancelacion}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="d-flex gap-2 mt-2 flex-wrap">
-                  <Link to={`/cliente/pedido/${pedido.id}`}>
-                    <Button variant="outline-secondary" size="sm">
-                      <FaEye aria-hidden="true" />
-                      Ver detalle
-                    </Button>
-                  </Link>
-                  {!esFinal && (
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => pedirCancelacion(pedido)}
-                      disabled={cancelandoId === pedido.id}
-                    >
-                      <FaTimesCircle aria-hidden="true" />
-                      {cancelandoId === pedido.id ? 'Cancelando...' : 'Cancelar'}
-                    </Button>
-                  )}
-                </div>
-              </Card.Body>
-            </Card>
-          );
-        })
+        <ListaPedidos
+          pedidos={visibles}
+          user={user}
+          cancelandoId={cancelandoId}
+          repitiendoId={repitiendoId}
+          pedirCancelacion={pedirCancelacion}
+          pedirRepeticion={pedirRepeticion}
+          mostrarCancelar
+        />
       )}
 
       <ConfirmarModal
@@ -225,6 +182,24 @@ const MisPedidos = () => {
             : ''
         }
         onCancelar={() => setPedidoNoCancelable(null)}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(pedidoARepetir)}
+        titulo="Repetir pedido"
+        mensaje={mensajeConfirmarRepetir(pedidoARepetir, vistaPrevia, formatPrice)}
+        textoConfirmar="Sí, repetir pedido"
+        cargando={Boolean(repitiendoId) || Boolean(vistaPrevia?.cargando)}
+        onConfirmar={confirmarRepeticion}
+        onCancelar={cancelarRepeticion}
+      />
+
+      <ConfirmarModal
+        aviso
+        mostrar={Boolean(noRepetible)}
+        titulo="No se puede repetir"
+        mensaje={mensajeNoRepetible(noRepetible)}
+        onCancelar={cerrarAviso}
       />
     </Container>
   );

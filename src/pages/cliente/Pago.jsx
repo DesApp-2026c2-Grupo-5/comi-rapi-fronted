@@ -19,6 +19,7 @@ import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { simuladorPago } from '../../services/simuladorPago';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatDate, formatPrice } from '../../utils/formatters';
+import { formatearDireccion } from '../../utils/direccion';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
@@ -181,7 +182,7 @@ const Pago = () => {
                 Tu pedido será preparado en
               </span>
               <strong className="d-block fs-5">{sucursal.nombre}</strong>
-              <span className="text-muted">{sucursal.direccion}</span>
+              <span className="text-muted">{formatearDireccion(sucursal.direccion)}</span>
             </div>
           )}
 

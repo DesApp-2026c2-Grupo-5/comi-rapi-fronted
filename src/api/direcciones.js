@@ -6,7 +6,9 @@
  * Uso: import { obtenerDirecciones, crearDireccion } from '../api/direcciones';
  *
  * El backend scopea por sesión: cada cliente solo ve/gestiona sus propias
- * direcciones (Der: Usuario 1:N Direccion). latitud/longitud son opcionales.
+ * direcciones (Der: Usuario 1:N Direccion). Son obligatorios: calle, altura,
+  * provincia, localidad y codigoPostal. latitud/longitud no se ingresan
+ * manualmente: las calcula el backend (tarea futura).
  */
 
 import { apiGet, apiPost, apiPut, apiDelete } from './client';
@@ -38,7 +40,7 @@ export const obtenerDireccionPorId = async (id) => {
 
 /**
  * Crea una nueva dirección para el cliente autenticado.
- * @param {object} datos - { calle, altura?, ciudad?, codigoPostal?, referencia?, alias?, latitud?, longitud? }.
+ * @param {object} datos - { calle, altura, provincia, localidad, codigoPostal, referencia?, alias? }.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const crearDireccion = async (datos) => {

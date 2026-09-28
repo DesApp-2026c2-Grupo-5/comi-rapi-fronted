@@ -21,8 +21,11 @@ import { pedidosPendientesMock } from '../services/seedData';
 // Se crea el contexto
 export const SucursalContext = createContext(null);
 
-// Las sucursales conservan 'direccion' (texto), 'latitud' y 'longitud'. La dirección se
-// muestra en pedidos/confirmación y las coordenadas se mantienen para la asignación.
+// Las sucursales ya no conservan 'direccion' como texto ni 'latitud'/'longitud' propias:
+// cada sucursal tiene un registro 1:1 en Direccion (Sucursal 1:1 Direccion). El backend
+// expone la dirección como objeto anidado 'direccion' (con calle, altura, provincia,
+// localidad, codigoPostal, referencia, latitud, longitud) y también latitud/longitud planas
+// para compatibilidad. Obligatorios: calle, altura, provincia, localidad, codigoPostal.
 // El estado proviene del backend como booleano 'activa'.
 
 /**

@@ -25,6 +25,7 @@ import { FaCheckCircle } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
+import { formatearDireccion } from '../../utils/direccion';
 import DetalleItemsPedido from '../comunes/DetalleItemsPedido';
 import './ResumenPedido.css';
 
@@ -96,7 +97,7 @@ const ResumenPedido = ({
               Sucursal asignada
             </span>
             <strong className="d-block">{sucursal.nombre}</strong>
-            <span className="text-muted">{sucursal.direccion}</span>
+            <span className="text-muted">{formatearDireccion(sucursal.direccion)}</span>
           </div>
         )}
       </Card.Body>

@@ -100,14 +100,16 @@ function payloadBackend(datosPedido, sucursal) {
           }
         : undefined),
   }));
-  // direccionEntrega snapshot: el frontend usa {direccion, ciudad, codigoPostal, referencia}
+  // direccionEntrega snapshot: el frontend usa {direccion, localidad/ciudad, codigoPostal, referencia}.
+  // El snapshot de Pedidos conserva la columna 'ciudad'; se mapea 'localidad' a ella
+  // para que la localidad de la dirección siga quedando en el pedido.
   const dir = datosPedido.direccion || datosPedido.direccionEntrega || {};
   const direccionEntrega =
     dir.direccion || dir.calle
       ? {
           calle: dir.calle || dir.direccion,
           altura: dir.altura || null,
-          ciudad: dir.ciudad || null,
+          ciudad: dir.ciudad || dir.localidad || null,
           codigoPostal: dir.codigoPostal || null,
           referencia: dir.referencia || null,
         }
@@ -145,11 +147,20 @@ export const crearPedido = async (datosPedido, sucursal) => {
 /**
  * Obtiene todos los pedidos del usuario autenticado (el backend scopea CLIENTE
  * por usuarioId; ADMIN ve todos).
+ * Acepta filtros opcionales que el backend aplica sobre el scope:
+ * { estado, sucursalId, desde (YYYY-MM-DD), hasta (YYYY-MM-DD) }.
+ * @param {object} [filtros]
  * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
-export const obtenerPedidos = async () => {
+export const obtenerPedidos = async (filtros = {}) => {
   try {
-    const data = await requestJson('/pedidos');
+    const params = new URLSearchParams();
+    if (filtros.estado) params.set('estado', filtros.estado);
+    if (filtros.sucursalId) params.set('sucursalId', String(filtros.sucursalId));
+    if (filtros.desde) params.set('desde', filtros.desde);
+    if (filtros.hasta) params.set('hasta', filtros.hasta);
+    const qs = params.toString();
+    const data = await requestJson(`/pedidos${qs ? `?${qs}` : ''}`);
     const lista = (Array.isArray(data) ? data : []).map(mapearPedido);
     return { success: true, data: lista };
   } catch (error) {
