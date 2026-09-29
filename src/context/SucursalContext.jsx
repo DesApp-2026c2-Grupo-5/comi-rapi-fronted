@@ -101,22 +101,22 @@ export const SucursalProvider = ({ children }) => {
   /**
    * Agrega una nueva sucursal al estado local (la persiste en el backend).
    * @param {object} sucursal - Datos de la nueva sucursal.
-   * @returns {Promise<object|null>} Sucursal creada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string}>} Sucursal creada o el motivo del rechazo.
    */
   const agregarSucursal = useCallback(async (sucursal) => {
     const result = await crearSucursal(sucursal);
     if (result.success) {
       setSucursales((prev) => [...prev, result.data]);
-      return result.data;
+      return { ok: true, data: result.data };
     }
-    return null;
+    return { ok: false, error: result.error };
   }, []);
 
   /**
    * Actualiza una sucursal existente en el estado local.
    * @param {number} id - ID de la sucursal a actualizar.
    * @param {object} datos - Nuevos datos de la sucursal.
-   * @returns {Promise<object|null>} Sucursal actualizada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string}>} Sucursal actualizada o el motivo del rechazo.
    */
   const actualizarSucursalFn = useCallback(async (id, datos) => {
     const result = await actualizarSucursal(id, datos);
@@ -124,9 +124,9 @@ export const SucursalProvider = ({ children }) => {
       setSucursales((prev) =>
         prev.map((s) => (s.id === Number(id) ? result.data : s))
       );
-      return result.data;
+      return { ok: true, data: result.data };
     }
-    return null;
+    return { ok: false, error: result.error };
   }, []);
 
   /**

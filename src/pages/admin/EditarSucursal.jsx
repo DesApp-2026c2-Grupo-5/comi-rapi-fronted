@@ -36,22 +36,32 @@ const EditarSucursal = () => {
     }
   }, [id, sucursales]);
 
-  // Guarda creando o actualizando la sucursal según corresponda
+  // Guarda creando o actualizando la sucursal según corresponda. Muestra el
+  // motivo real del rechazo (geolocalización de la dirección) si el backend lo
+  // devuelve.
   const handleGuardar = async (datosSucursal) => {
     if (id) {
-      const actualizada = await actualizarSucursal(id, datosSucursal);
-      if (actualizada) {
-        notificar(`Sucursal "${actualizada.nombre}" actualizada correctamente.`, 'success');
+      const resultado = await actualizarSucursal(id, datosSucursal);
+      if (resultado.ok) {
+        notificar(
+          `Sucursal "${resultado.data.nombre}" actualizada correctamente.`,
+          'success'
+        );
       } else {
-        setError('No se pudo actualizar la sucursal.');
+        setError(
+          resultado.error || 'No se pudo actualizar la sucursal.'
+        );
         return;
       }
     } else {
-      const creada = await agregarSucursal(datosSucursal);
-      if (creada) {
-        notificar(`Sucursal "${creada.nombre}" creada correctamente.`, 'success');
+      const resultado = await agregarSucursal(datosSucursal);
+      if (resultado.ok) {
+        notificar(
+          `Sucursal "${resultado.data.nombre}" creada correctamente.`,
+          'success'
+        );
       } else {
-        setError('No se pudo crear la sucursal.');
+        setError(resultado.error || 'No se pudo crear la sucursal.');
         return;
       }
     }

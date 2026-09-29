@@ -53,24 +53,24 @@ export const DireccionProvider = ({ children }) => {
   /**
    * Agrega una nueva dirección y la persiste en el backend.
    * @param {object} datosDireccion - { calle, altura, provincia, localidad, codigoPostal, referencia?, alias? }.
-   * @returns {Promise<object|null>} Dirección creada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string}>} Dirección creada o el motivo del rechazo.
    */
   const agregarDireccion = useCallback(async (datosDireccion) => {
     const result = await crearDireccion(datosDireccion);
     if (result.success) {
       setDirecciones((prev) => [...prev, result.data]);
       setError(null);
-      return result.data;
+      return { ok: true, data: result.data };
     }
     setError(result.error);
-    return null;
+    return { ok: false, error: result.error };
   }, []);
 
   /**
    * Edita una dirección existente en el backend.
    * @param {number} id - ID de la dirección.
    * @param {object} datos - Campos a actualizar.
-   * @returns {Promise<object|null>} Dirección actualizada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string}>} Dirección actualizada o el motivo del rechazo.
    */
   const editarDireccion = useCallback(async (id, datos) => {
     const result = await actualizarDireccion(id, datos);
@@ -79,10 +79,10 @@ export const DireccionProvider = ({ children }) => {
         prev.map((d) => (d.id === result.data.id ? result.data : d))
       );
       setError(null);
-      return result.data;
+      return { ok: true, data: result.data };
     }
     setError(result.error);
-    return null;
+    return { ok: false, error: result.error };
   }, []);
 
   /**

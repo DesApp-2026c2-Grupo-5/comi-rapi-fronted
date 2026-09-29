@@ -44,15 +44,19 @@ const MisDirecciones = () => {
 
   const handleCancelar = () => setEnEdicion(null);
 
-  // Guarda según modo (crear o editar) y vuelve a la lista
+  // Guarda según modo (crear o editar) y vuelve a la lista. Muestra el motivo
+  // real del rechazo (geolocalización/cobertura) si el backend lo devuelve.
   const handleGuardar = async (datos) => {
-    const guardada =
+    const resultado =
       enEdicion === 'nueva'
         ? await agregarDireccion(datos)
         : await editarDireccion(enEdicion.id, datos);
 
-    if (!guardada) {
-      notificar('No se pudo guardar la dirección.', 'danger');
+    if (!resultado.ok) {
+      notificar(
+        resultado.error || 'No se pudo guardar la dirección.',
+        'danger'
+      );
       return;
     }
     setEnEdicion(null);
