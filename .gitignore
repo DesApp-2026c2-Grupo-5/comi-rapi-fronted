@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sesiones en cache de la verificación end-to-end del canal de tiempo real
+scripts/.sesiones-tiempo-real.json
