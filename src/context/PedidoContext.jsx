@@ -17,6 +17,12 @@ import { ESTADOS_PEDIDO } from '../utils/constants';
 import { useAuth } from '../hooks/useAuth';
 import { useNotificaciones } from '../hooks/useNotificaciones';
 import * as pedidosApi from '../api/pedidos';
+import {
+  conectarSocket,
+  desconectarSocket,
+  EVENTOS_SOCKET,
+  suscribirPedido,
+} from '../services/socket';
 
 // Se crea el contexto
 export const PedidoContext = createContext(null);
@@ -74,17 +80,10 @@ export const PedidoProvider = ({ children }) => {
     };
   }, [hydrated, emailSesion, filtrarPorRol]);
 
-  // Refresco silencioso periódico (~casi tiempo real): permite que el admin
-  // (y el cliente) vean al instante en el Navbar/lista los pedidos que cambian
-  // desde otra sesión: cancelaciones, cambios de estado y pedidos recién creados.
-  // También avisa con un banner global cuando cambia algo relevante:
-  //   - cliente: su pedido pasa a "en camino", o el admin canceló su pedido;
-  //   - admin: un cliente canceló un pedido (esté donde esté en la app).
-  const REFRESCO_PEDIDOS_MS = 3000;
-  // Último estado conocido por pedido (para detectar transiciones en el polling)
+  // Último estado conocido por pedido (para detectar transiciones)
   const estadosPreviosRef = useRef({});
 
-  const detectarCambiosPolling = useCallback(
+  const detectarCambios = useCallback(
     (lista) => {
       const previos = estadosPreviosRef.current;
       const snapshot = {};
@@ -154,22 +153,76 @@ export const PedidoProvider = ({ children }) => {
     [notificar, user, isAdmin, navigate]
   );
 
+  // Las rooms viven en el servidor, así que hay que volver a suscribirse
+  // cuando cambia el conjunto de pedidos (p. ej. al crear uno nuevo). Se usa un
+  // string de ids como dependencia para no re-suscribir en cada cambio de estado.
+  const idsPedidos = useMemo(
+    () => pedidos.map((p) => p.id).sort((a, b) => a - b).join(','),
+    [pedidos]
+  );
+
+  /**
+   * Vuelve a leer la lista de pedidos por REST y la deja en el estado.
+   *
+   * El socket no trae datos: solo avisa. Por eso, ante cualquier evento, la
+   * fuente de verdad sigue siendo `GET /api/pedidos`.
+   * @returns {Promise<void>}
+   */
+  const refrescarPedidos = useCallback(async () => {
+    try {
+      const res = await pedidosApi.obtenerPedidos();
+      if (!res.success || !Array.isArray(res.data)) return;
+      const lista = filtrarPorRol(res.data);
+      detectarCambios(lista);
+      setPedidos(lista);
+      // La página de confirmación vive en pedidoActual, que solo existe en
+      // memoria: si no se actualiza, queda mostrando el estado viejo.
+      setPedidoActual((current) => {
+        if (!current) return current;
+        return lista.find((p) => p.id === current.id) || current;
+      });
+    } catch {
+      // refresco silencioso: no se molesta al usuario con banners de error
+    }
+  }, [filtrarPorRol, detectarCambios]);
+
+  // Avisos en tiempo real: reemplaza al refresco periódico de 3 s.
+  //   - admin:   recibe pedido_actualizado de cualquier pedido, sin suscribirse.
+  //   - cliente: recibe pedido_actualizado de los pedidos a los que se suscribió.
+  // No hay aviso al crear un pedido: el admin solo lo necesita cuando se
+  // confirma, y el cliente ya tiene la respuesta de su propio POST.
+  // El evento solo trae el pedidoId: los datos se releen por REST.
   useEffect(() => {
     if (!hydrated || !emailSesion) return undefined;
-    const intervalo = setInterval(async () => {
-      try {
-        const res = await pedidosApi.obtenerPedidos();
-        if (res.success && Array.isArray(res.data)) {
-          const lista = filtrarPorRol(res.data);
-          detectarCambiosPolling(lista);
-          setPedidos(lista);
-        }
-      } catch {
-        // refresco silencioso: no se molesta al usuario con banners de error
-      }
-    }, REFRESCO_PEDIDOS_MS);
-    return () => clearInterval(intervalo);
-  }, [hydrated, emailSesion, detectarCambiosPolling, filtrarPorRol]);
+    const ids = idsPedidos ? idsPedidos.split(',').map(Number) : [];
+    const instancia = conectarSocket();
+
+    // Las rooms pertenecen al socket: al reconectar hay un socket.id nuevo y
+    // la suscripción se perdió. Por eso se re-suscribe en cada 'connect'.
+    // El admin no necesita rooms individuales: ya está en la room 'admins'.
+    const alConectar = () => {
+      if (!isAdmin) ids.forEach((id) => { suscribirPedido(id); });
+      // Si se perdió un cambio mientras no había conexión, el aviso no llegó.
+      // Como el socket es solo un aviso, se resincroniza por REST.
+      refrescarPedidos();
+    };
+    const alCambiarPedido = () => { refrescarPedidos(); };
+
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alCambiarPedido);
+    alConectar(); // por si la conexión ya venía abierta de una instancia previa
+
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alCambiarPedido);
+    };
+  }, [hydrated, emailSesion, idsPedidos, isAdmin, refrescarPedidos]);
+
+  // Al cerrar sesión se cierra el canal: con otra cookie, el backend rechazaría
+  // el handshake de todas formas, y dejarlo abierto sería una conexión muerta.
+  useEffect(() => {
+    if (hydrated && !emailSesion) desconectarSocket();
+  }, [hydrated, emailSesion]);
 
   // Inserta un pedido al inicio (recientes primero), sin duplicar por id
   const insertarPrimero = (lista, pedido) => [
