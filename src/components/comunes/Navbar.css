@@ -162,6 +162,54 @@
 }
 
 /* ============ Zona del usuario ============ */
+.navbar-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Acceso al perfil: avatar + nombre del cliente, junto a cerrar sesión */
+.navbar-perfil {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+  border-radius: 50px;
+  border: 1px solid transparent;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.navbar-perfil:hover,
+.navbar-perfil:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.navbar-perfil:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+/* Página activa: fondo blanco con el naranja oscuro de la marca */
+.navbar-perfil-activo {
+  background: #fff;
+  border-color: #fff;
+  color: #b55d00;
+}
+.navbar-perfil-activo .navbar-perfil-nombre {
+  color: #b55d00;
+}
+.navbar-perfil-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
 .navbar-user-nombre {
   display: inline-flex;
   align-items: center;
@@ -190,4 +238,26 @@
   border-color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* ============ Responsive de la zona del usuario ============ */
+/* En pantallas medianas el nombre no entra: queda el avatar, que ya identifica. */
+@media (max-width: 991.98px) {
+  .navbar-acciones {
+    justify-content: space-between;
+  }
+  .navbar-perfil {
+    padding: 0.25rem;
+  }
+  .navbar-perfil-nombre {
+    display: none;
+  }
+}
+
+/* En celular el botón de cerrar sesión queda solo con el ícono (el aria-label
+   mantiene el nombre accesible del botón). */
+@media (max-width: 575.98px) {
+  .btn-logout-texto {
+    display: none;
+  }
 }

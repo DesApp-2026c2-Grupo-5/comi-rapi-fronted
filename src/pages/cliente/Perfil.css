@@ -1,0 +1,271 @@
+/**
+ * Propósito: CSS de la página de perfil del cliente (portada con avatar, ficha
+ *            de datos en modo lectura/edición y tarjetas de foto y seguridad).
+ * Contenido: Estilos de .perfil-portada, .perfil-datos, .perfil-tarjeta y sus
+ *            ajustes responsive.
+ * Dependencias: Perfil.jsx (se importa al final del mismo) y Avatar.css.
+ * Uso: Importado desde src/pages/cliente/Perfil.jsx.
+ *
+ * Los colores y radios siguen el tema global (src/styles/comirapi.css): naranja
+ * #ff9f1c, crema #fff4e2, borde #f1c27d, tipografía #2b2b2b.
+ */
+
+/* ============ Portada (avatar + identidad) ============ */
+.perfil-portada {
+  background: #fff;
+  border: 1px solid #f1c27d;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+}
+
+.perfil-portada-banda {
+  height: 108px;
+  background: linear-gradient(120deg, #f07f10, #ff9f1c 45%, #ffb347);
+}
+
+.perfil-portada-cuerpo {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0 1.5rem 1.25rem;
+  margin-top: -58px;
+}
+
+/* Aro blanco alrededor del avatar, como el de una foto de perfil encuadrada */
+.perfil-portada-avatar {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #f1c27d;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+.perfil-portada-datos {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding-bottom: 0.25rem;
+}
+
+.perfil-portada-acciones {
+  margin-left: auto;
+  padding-bottom: 0.25rem;
+}
+
+.perfil-nombre {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #2b2b2b;
+  margin: 0.35rem 0 0.1rem;
+  overflow-wrap: anywhere;
+}
+
+.perfil-correo {
+  color: #8a5a2b;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ============ Tarjetas ============ */
+.perfil-tarjeta {
+  border: 1px solid #f1c27d;
+  border-radius: 16px;
+}
+
+.perfil-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #2b2b2b;
+  margin: 0 0 0.25rem;
+}
+
+.perfil-bajada {
+  color: #8a5a2b;
+  font-size: 0.88rem;
+  margin: 0 0 1rem;
+}
+
+.perfil-nota {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #8a5a2b;
+  font-size: 0.82rem;
+  margin: 0 0 1rem;
+}
+
+/* Botones de acción alineados y con salto de línea en pantallas angostas */
+.perfil-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ============ Ficha en modo lectura ============ */
+.perfil-datos {
+  margin: 0 0 1.25rem;
+}
+
+/* Cuando no hay botones debajo de la ficha (el de editar está arriba) */
+.perfil-datos-sin-acciones {
+  margin-bottom: 0;
+}
+
+.perfil-dato {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px dashed #ffe6c2;
+}
+
+.perfil-dato:last-child {
+  border-bottom: none;
+}
+
+.perfil-dato dt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: #8a5a2b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.perfil-dato dd {
+  margin: 0;
+  color: #2b2b2b;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.perfil-valor-vacio {
+  color: #b9a88f;
+  font-weight: 600;
+}
+
+.perfil-edad {
+  display: block;
+  color: #8a5a2b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ============ Foto de perfil ============ */
+.perfil-foto-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Bloque interno de la tarjeta de datos (la contraseña al editar): se ancla al
+   fondo para aprovechar el espacio que sobra contra la tarjeta de la foto. */
+.perfil-bloque-interno {
+  border-top: 1px solid #f1e4d4;
+  margin-top: auto;
+  padding-top: 1.25rem;
+}
+
+/* ============ Direcciones ============ */
+.perfil-direcciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.perfil-direccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid #f1e4d4;
+}
+
+.perfil-direccion:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.perfil-direccion-alias {
+  color: #2b2b2b;
+  font-weight: 700;
+}
+
+.perfil-direccion-detalle {
+  color: #6f6f6f;
+  font-size: 0.88rem;
+}
+
+.perfil-direccion-referencia {
+  color: #8a5a2b;
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.perfil-direccion-vacia {
+  background: #fffaf1;
+  border: 1px dashed #f1c27d;
+  border-radius: 12px;
+  color: #8a5a2b;
+  font-size: 0.88rem;
+  margin: 0;
+  padding: 0.75rem;
+}
+
+/* ============ Responsive ============ */
+/* En celular la portada se apila: avatar arriba, botón a lo ancho y las filas
+   de la ficha alineadas a la izquierda, para que la etiqueta y el valor no
+   compitan por el ancho. */
+@media (max-width: 767.98px) {
+  .perfil-portada-banda {
+    height: 84px;
+  }
+
+  .perfil-portada-cuerpo {
+    margin-top: -42px;
+    padding: 0 1rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .perfil-portada-datos {
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .perfil-portada-acciones {
+    order: 3;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .perfil-portada-acciones .btn {
+    width: 100%;
+  }
+
+  .perfil-nombre {
+    font-size: 1.25rem;
+  }
+
+  .perfil-dato {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+
+  .perfil-dato dd {
+    text-align: left;
+  }
+
+  .perfil-acciones .btn {
+    flex: 1 1 100%;
+  }
+}

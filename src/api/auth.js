@@ -89,3 +89,46 @@ export const logout = async () => {
   const result = await apiPost('/auth/logout', {});
   return { success: result.success };
 };
+
+/**
+ * Solicita un enlace de recuperación de contraseña (POST /api/auth/forgot-password).
+ *
+ * El backend responde SIEMPRE con el mismo mensaje, exista o no la cuenta, para
+ * no permitir enumerar emails. Por eso esta función devuelve `success: true`
+ * tanto si el email existe como si no: la UI no debe insinuar la diferencia.
+ *
+ * @param {string} email
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+export const solicitarRecuperacion = async (email) => {
+  const result = await apiPost('/auth/forgot-password', { email });
+  if (result.success) {
+    return { success: true, message: result.data.message };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Establece una contraseña nueva con el token del enlace
+ * (POST /api/auth/reset-password).
+ *
+ * El backend responde con un único mensaje para token inexistente, expirado,
+ * usado o invalidado. Por eso la UI no puede (ni debe) distinguir esos casos:
+ * `error` siempre significa "el enlace no sirve".
+ *
+ * @param {string} token - Token en texto plano tomado de la query string.
+ * @param {string} password
+ * @param {string} confirmPassword
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+export const restablecerPassword = async (token, password, confirmPassword) => {
+  const result = await apiPost('/auth/reset-password', {
+    token,
+    password,
+    confirmPassword,
+  });
+  if (result.success) {
+    return { success: true, message: result.data.message };
+  }
+  return { success: false, error: result.error };
+};
