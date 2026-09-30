@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup Carrito con Promociones</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+  --gris-pill:#f1f1f5; --gris-text:#6c757d;
+}
+body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#2b2b2b; }
+.btn{ border-radius:999px; font-weight:600; gap:.5rem; display:inline-flex; align-items:center; justify-content:center; transition:transform .2s, box-shadow .25s; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-bg:var(--naranja); --bs-btn-border-color:var(--naranja); --bs-btn-hover-bg:var(--naranja-hover); --bs-btn-hover-border-color:var(--naranja-hover); box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.btn-success{ --bs-btn-bg:var(--verde); --bs-btn-border-color:var(--verde); --bs-btn-hover-bg:var(--verde-hover); --bs-btn-hover-border-color:var(--verde-hover); box-shadow:0 4px 12px rgba(34,197,94,.25); }
+.btn-outline-danger{ --bs-btn-color:var(--rojo); --bs-btn-border-color:var(--rojo); }
+.card-comi{ border:2px solid var(--borde-card); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.08); overflow:hidden; }
+.precio-destacado{ color:var(--rojo); font-weight:800; font-size:1.15rem; }
+.badge-comi{ background:var(--crema); color:var(--naranja-osc); border:1px solid var(--crema-borde); font-weight:700; }
+.pill-control{ background:var(--gris-pill); border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
+.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
+.pill-control button:hover{ background:var(--naranja); color:#fff; }
+.pill-control span{ min-width:18px; text-align:center; font-weight:700; }
+.desglose{ font-size:.82rem; color:var(--gris-text); line-height:1.6; }
+.carrito-titulo{ font-weight:900; letter-spacing:3px; color:#2b2b2b; }
+.resumen-card{ border:2px solid var(--borde-card); border-radius:18px; overflow:hidden; }
+.resumen-titulo{ background:#fff; font-weight:800; border-bottom:2px solid var(--borde-card); }
+.resumen-total{ color:var(--rojo); font-weight:900; font-size:1.25rem; }
+.resumen-divisor{ border-color:var(--borde-card); opacity:1; }
+.resumen-boton{ background:var(--verde); border:none; border-radius:999px; font-weight:700; }
+.promo-banner{ background:#e8f9ef; border:2px solid #9be3b4; border-radius:14px; }
+.promo-nombre{ font-weight:800; color:#15803d; }
+.promo-detalle{ font-size:.82rem; color:#3f6212; }
+.descuento-linea{ color:var(--verde-hover); font-weight:800; }
+.mockup-nav{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(255,250,240,.92); border-bottom:2px solid var(--borde-card); }
+.vista{ display:none; }
+.vista.activa{ display:block; animation:fade .2s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<div class="mockup-nav text-center py-3">
+  <div class="container">
+    <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP — Carrito con Promociones</span></span>
+    <div class="small text-muted">Banner de promo aplicable + línea <strong>Descuento</strong> en el resumen — el backend recalcula al confirmar</div>
+    <div class="mt-2 small">
+      <a href="./carrito-personalizado.html" class="text-decoration-none" style="color:var(--naranja-osc)"><i class="fa-solid fa-arrow-left"></i> Carrito base</a>
+      <span class="mx-2 text-muted">·</span>
+      <button class="btn btn-sm btn-outline-secondary" onclick="cambiarEscenario()">Cambiar escenario: <span id="esc-nombre">2x1 activo</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4" style="max-width:1120px;">
+  <div class="alert py-2 small d-flex gap-2 align-items-start" style="background:var(--crema); border-color:var(--crema-borde); color:var(--naranja-osc);">
+    <i class="fa-solid fa-circle-info mt-1"></i>
+    <div><strong>Mockup interactivo — sin backend.</strong> Cambiá cantidades con +/− y mirá cómo el banner y el descuento se activan solo cuando la promo aplica (2x1 necesita par). El botón <em>Cambiar escenario</em> alterna entre 2x1, 10% y sin promo.</div>
+  </div>
+
+  <h1 class="carrito-titulo mb-3" style="font-size:1.7rem;">Tu Carrito</h1>
+
+  <!-- Banner promo aplicable -->
+  <div id="promo-banner" class="promo-banner p-3 mb-3 d-flex gap-2 align-items-start">
+    <i class="fa-solid fa-tags mt-1" style="color:var(--verde-hover)"></i>
+    <div>
+      <span class="promo-nombre" id="promo-titulo">¡Tenés 2x1 en Papas Fritas Grandes!</span>
+      <div class="promo-detalle" id="promo-detalle">Llevás 2 y pagás 1. Se aplica al confirmar; el backend valida stock y vigencia.</div>
+    </div>
+  </div>
+  <div id="promo-nada" class="alert alert-light border small text-muted" style="display:none;">
+    Sin promociones aplicables a tu carrito actual. Agregá más productos para activar el 2x1.
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card-comi p-3 mb-3">
+        <div class="d-flex gap-3 align-items-center">
+          <div style="width:64px;height:64px;border-radius:14px;background:var(--crema);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">🍟</div>
+          <div class="flex-grow-1">
+            <strong>Papas Fritas Grandes</strong>
+            <span class="badge badge-comi ms-1" id="badge-2x1">2x1 aplicado</span>
+            <div class="desglose">$900 c/u</div>
+          </div>
+          <div class="pill-control"><button onclick="cambiarCant(-1)">−</button><span id="cant">2</span><button onclick="cambiarCant(1)">+</button></div>
+          <strong id="sub-item">$1.800</strong>
+        </div>
+      </div>
+      <div class="card-comi p-3">
+        <div class="d-flex gap-3 align-items-center">
+          <div style="width:64px;height:64px;border-radius:14px;background:var(--crema);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">🥤</div>
+          <div class="flex-grow-1">
+            <strong>Coca-Cola 500ml</strong>
+            <div class="desglose">$800 c/u · sin promo</div>
+          </div>
+          <div class="pill-control"><button>-</button><span>1</span><button>+</button></div>
+          <strong>$800</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card resumen-card">
+        <div class="card-header resumen-titulo">Resumen del Pedido</div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Subtotal</span><strong id="r-sub">$2.600</strong></div>
+          <div class="d-flex justify-content-between mb-2" id="r-desc-row"><span class="text-muted">Descuento <span class="badge badge-comi" id="r-desc-nombre">2x1 Papas</span></span><strong class="descuento-linea" id="r-desc">−$900</strong></div>
+          <div class="d-flex justify-content-between mb-3"><span class="text-muted">Envío</span><strong class="text-success">Gratis</strong></div>
+          <hr class="resumen-divisor" />
+          <div class="d-flex justify-content-between align-items-center"><strong>Total</strong><strong class="resumen-total" id="r-total">$1.700</strong></div>
+        </div>
+        <div class="card-body pt-0">
+          <button class="btn btn-success w-100 btn-lg" style="background:var(--verde);border:none;"><i class="fa-solid fa-check"></i> Confirmar Pedido</button>
+          <div class="form-text text-center mt-2">El total final lo confirma el backend al crear el pedido.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRECIO_PAPAS = 900, PRECIO_COCA = 800;
+let cant = 2, escenario = 0; // 0: 2x1, 1: 10%, 2: sin promo
+const ESC = ['2x1 activo', '10% activo', 'sin promo'];
+
+function fmt(n){ return '$' + n.toLocaleString('es-AR'); }
+
+function render(){
+  document.getElementById('esc-nombre').textContent = ESC[escenario];
+  document.getElementById('cant').textContent = cant;
+  const subPapas = PRECIO_PAPAS * cant;
+  document.getElementById('sub-item').textContent = fmt(subPapas);
+  const subtotal = subPapas + PRECIO_COCA;
+
+  let desc = 0, nombre = '', titulo = '', detalle = '', banner = true;
+  if (escenario === 0) {
+    desc = Math.floor(cant / 2) * PRECIO_PAPAS;
+    nombre = '2x1 Papas';
+    titulo = desc > 0 ? '¡Tenés 2x1 en Papas Fritas Grandes!' : 'Sumá 1 papa más y activás el 2x1';
+    detalle = 'Llevás 2 y pagás 1. Se aplica al confirmar; el backend valida stock y vigencia.';
+    banner = true;
+  } else if (escenario === 1) {
+    desc = Math.round(subPapas * 0.10);
+    nombre = '10% Papas';
+    titulo = '¡Tenés 10% en Papas Fritas Grandes!';
+    detalle = 'Descuento estimado; el backend lo recalcula con precios vigentes.';
+    banner = true;
+  } else { banner = false; }
+
+  document.getElementById('promo-banner').style.display = banner ? 'flex' : 'none';
+  document.getElementById('promo-nada').style.display = banner ? 'none' : 'block';
+  if (banner) {
+    document.getElementById('promo-titulo').textContent = titulo;
+    document.getElementById('promo-detalle').textContent = detalle;
+  }
+  document.getElementById('badge-2x1').style.display = (escenario === 0 && desc > 0) ? '' : 'none';
+  document.getElementById('r-sub').textContent = fmt(subtotal);
+  document.getElementById('r-desc-row').style.display = desc > 0 ? 'flex' : 'none';
+  document.getElementById('r-desc-nombre').textContent = nombre;
+  document.getElementById('r-desc').textContent = '−' + fmt(desc);
+  document.getElementById('r-total').textContent = fmt(subtotal - desc);
+}
+function cambiarCant(d){ cant = Math.max(1, Math.min(9, cant + d)); render(); }
+function cambiarEscenario(){ escenario = (escenario + 1) % 3; render(); }
+render();
+</script>
+</body>
+</html>
