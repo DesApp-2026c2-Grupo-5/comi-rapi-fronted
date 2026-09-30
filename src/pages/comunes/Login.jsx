@@ -81,6 +81,11 @@ const Login = () => {
           </Form>
 
           <div className="text-center">
+            <p className="mb-1">
+              <Link to="/forgot-password" className="auth-enlace">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </p>
             <p className="mb-1">¿No tienes cuenta? <Link to="/registro" className="auth-enlace">Regístrate aquí</Link></p>
             <p><Link to="/admin-login" className="auth-enlace">Login de administrador</Link></p>
           </div>

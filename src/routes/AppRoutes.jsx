@@ -24,6 +24,8 @@ const RootRedirect = () => {
 // Páginas públicas
 import Login from '../pages/comunes/Login';
 import Registro from '../pages/comunes/Registro';
+import RecuperarPassword from '../pages/comunes/RecuperarPassword';
+import NuevaPassword from '../pages/comunes/NuevaPassword';
 import AdminLogin from '../pages/admin/AdminLogin';
 import AdminRegister from '../pages/admin/AdminRegister';
 
@@ -70,6 +72,10 @@ const AppRoutes = () => {
         <Route path="/registro" element={<Registro />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-registro" element={<AdminRegister />} />
+        {/* Recuperación de contraseña. /reset-password debe coincidir con el
+            enlace que arma email_service.js en el backend. */}
+        <Route path="/forgot-password" element={<RecuperarPassword />} />
+        <Route path="/reset-password" element={<NuevaPassword />} />
       </Route>
 
       {/* Rutas protegidas de cliente */}
