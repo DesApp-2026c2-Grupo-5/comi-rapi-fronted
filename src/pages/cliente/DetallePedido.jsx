@@ -160,6 +160,19 @@ const DetallePedido = () => {
             <span>Total</span>
             <span className="text-danger">{formatPrice(pedido.total)}</span>
           </div>
+          {(pedido.promociones || []).length > 0 && (
+            <div className="detalle-subtotal-envio mb-4">
+              <span>
+                Descuento{' '}
+                <span className="text-muted small">
+                  ({(pedido.promociones || []).map((promo) => promo.nombre || `#${promo.promocionId}`).join(' · ')})
+                </span>
+              </span>
+              <span className="text-success">
+                −{formatPrice((pedido.promociones || []).reduce((acc, promo) => acc + Number(promo.descuentoAplicado ?? 0), 0))}
+              </span>
+            </div>
+          )}
 
           {/* Stepper de estados (mismo visual que el admin) */}
           <div className="historial-box">

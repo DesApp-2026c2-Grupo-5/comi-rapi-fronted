@@ -191,6 +191,7 @@ const Pago = () => {
             total={pedidoActual.total}
             costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
+            promociones={pedidoActual.promociones}
           />
 
           <div className="text-center mt-4 d-flex justify-content-center gap-2 flex-wrap">

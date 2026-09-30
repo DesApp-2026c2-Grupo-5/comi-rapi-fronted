@@ -35,12 +35,19 @@ const ResumenPedido = ({
   costoEnvio: costoEnvioProp,
   sucursal,
   botonTexto = 'Confirmar Pedido',
+  descuento = 0,
+  detalleDescuento = '',
+  promociones: promocionesProp,
 }) => {
   const { items, total } = useCarrito();
 
   // Prioriza los datos recibidos por props (modo confirmación/lectura) sobre los del carrito.
   const productos = itemsProp || items;
   const montoTotal = totalProp ?? total;
+
+  // En modo lectura el total del backend ya incluye el descuento aplicado:
+  // se muestra informativo sin restar de nuevo.
+  const promosAplicadas = Array.isArray(promocionesProp) ? promocionesProp : [];
 
   if (productos.length === 0) return null;
 
@@ -52,7 +59,10 @@ const ResumenPedido = ({
     ? costoEnvioProp ?? 0
     : calcularCostoEnvio(montoTotal);
   const subtotal = enModoLectura ? montoTotal - costoEnvio : montoTotal;
-  const totalFinal = enModoLectura ? montoTotal : montoTotal + costoEnvio;
+  // En modo carrito el descuento es estimado (el backend lo confirma al crear).
+  // En modo lectura el total del backend ya lo incluye: no se resta de nuevo.
+  const descuentoVista = !enModoLectura && Number(descuento) > 0 ? Number(descuento) : 0;
+  const totalFinal = enModoLectura ? montoTotal : montoTotal + costoEnvio - descuentoVista;
 
   return (
     <Card className="resumen-card">
@@ -80,6 +90,32 @@ const ResumenPedido = ({
             <strong>{formatPrice(costoEnvio)}</strong>
           )}
         </div>
+
+        {/* Descuento estimado por promociones (solo modo carrito) */}
+        {descuentoVista > 0 && (
+          <div className="d-flex justify-content-between mb-3">
+            <span className="text-muted">
+              Descuento{detalleDescuento ? ` (${detalleDescuento})` : ''}
+            </span>
+            <strong className="text-success">−{formatPrice(descuentoVista)}</strong>
+          </div>
+        )}
+
+        {/* Promociones aplicadas (solo modo lectura, ya incluidas en el total) */}
+        {enModoLectura &&
+          promosAplicadas.map((promo) => (
+            <div
+              key={promo.promocionId}
+              className="d-flex justify-content-between mb-2 small"
+            >
+              <span className="text-muted">
+                Promo: {promo.nombre || `#${promo.promocionId}`}
+              </span>
+              <strong className="text-success">
+                −{formatPrice(promo.descuentoAplicado)}
+              </strong>
+            </div>
+          ))}
 
         <hr className="resumen-divisor" />
 
