@@ -22,6 +22,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Button, Card, Alert, Form } from 'react-bootstrap';
 import { FaUtensils, FaTrashAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
+import { usePromocionesCarrito } from '../../hooks/usePromocionesCarrito';
 import { useSucursal } from '../../hooks/useSucursal';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useDirecciones } from '../../hooks/useDirecciones';
@@ -35,8 +36,12 @@ import './Carrito.css';
 
 const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
+  const { descuentoTotal, promocionIds, promosAplicadas } =
+    usePromocionesCarrito(items);
+  const [actualizando, setActualizando] = useState(false);
   const { sucursales } = useSucursal();
-  const { crearPedido, obtenerPedidosPendientes, pedidoActual } = usePedidos();
+  const { crearPedido, obtenerPedidosPendientes, pedidoActual, cambiarEstado } =
+    usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
@@ -57,6 +62,42 @@ const Carrito = () => {
     () => direcciones.find((d) => d.id === direccionId) || direcciones[0] || null,
     [direcciones, direccionId]
   );
+
+  // El pendiente queda obsoleto si cambiaron promos o importes desde que se creó:
+  // en ese caso hay que recrearlo para que el Pago coincida con el carrito.
+  const costoEnvioActual = calcularCostoEnvio(total);
+  const totalEstimado = total + costoEnvioActual - descuentoTotal;
+  const idsPrevistos = useMemo(
+    () => [...promocionIds].map(String).sort(),
+    [promocionIds]
+  );
+  const idsPersistidos = useMemo(
+    () =>
+      ((pedidoActual?.promociones || []).map((promo) => String(promo.promocionId))).sort(),
+    [pedidoActual]
+  );
+  const pendienteObsoleto =
+    tienePagoPendiente &&
+    (JSON.stringify(idsPrevistos) !== JSON.stringify(idsPersistidos) ||
+      Math.abs(Number(pedidoActual.total) - totalEstimado) > 0.01);
+
+  const construirDatosPedido = (direccion, sucursalAsignada) => ({
+    productos: items.map((item) => ({
+      productoId: item.producto.id,
+      nombre: item.producto.nombre,
+      cantidad: item.cantidad,
+      precio: item.precioUnitarioPersonalizado ?? item.producto.precio,
+      precioBase: item.producto.precio,
+      extras: item.personalizacion?.extras || [],
+      sin: item.personalizacion?.sin || [],
+      acompanamientos: item.personalizacion?.acompanamientos || [],
+      condimentos: item.personalizacion?.condimentos || [],
+    })),
+    total,
+    costoEnvio: costoEnvioActual,
+    direccion,
+    ...(promocionIds.length > 0 ? { promocionIds } : {}),
+  });
 
   const handleConfirmarPedido = async () => {
     // Sin dirección: el cliente no puede confirmar
@@ -84,22 +125,7 @@ const Carrito = () => {
     //    el backend; acá se envía como referencia. Sin fallback: si la API
     //    falla, el contexto muestra el error y no se navega a la pantalla de pago.
     const pedidoCreado = await crearPedido(
-      {
-        productos: items.map((item) => ({
-          productoId: item.producto.id,
-          nombre: item.producto.nombre,
-          cantidad: item.cantidad,
-          precio: item.precioUnitarioPersonalizado ?? item.producto.precio,
-          precioBase: item.producto.precio,
-          extras: item.personalizacion?.extras || [],
-          sin: item.personalizacion?.sin || [],
-          acompanamientos: item.personalizacion?.acompanamientos || [],
-          condimentos: item.personalizacion?.condimentos || [],
-        })),
-        total,
-        costoEnvio: calcularCostoEnvio(total),
-        direccion,
-      },
+      construirDatosPedido(direccion, sucursalAsignada),
       sucursalAsignada
     );
     if (!pedidoCreado) return;
@@ -108,9 +134,45 @@ const Carrito = () => {
     navigate('/cliente/pago');
   };
 
-  // Ya hay un pedido PENDIENTE sin pagar: se retoma el pago directamente
-  const handleIrAPagar = () => {
-    navigate('/cliente/pago');
+  // Ya hay un pedido PENDIENTE sin pagar: se retoma el pago directamente,
+  // salvo que haya quedado obsoleto (promos o importes distintos al carrito),
+  // en cuyo caso se cancela y se crea uno nuevo con los datos actuales.
+  const handleIrAPagar = async () => {
+    if (!pendienteObsoleto) {
+      navigate('/cliente/pago');
+      return;
+    }
+    if (actualizando) return;
+    const direccion = direccionSeleccionada;
+    if (!direccion) {
+      notificar('Agregá una dirección antes de confirmar.', 'warning');
+      return;
+    }
+    setActualizando(true);
+    try {
+      const cancelado = await cambiarEstado(
+        pedidoActual.id,
+        ESTADOS_PEDIDO.CANCELADO
+      );
+      if (!cancelado) return;
+      const sucursalesActivas = sucursales.filter((s) => s.activa !== false);
+      const sucursalAsignada = asignarSucursalOptima(
+        sucursalesActivas,
+        obtenerPedidosPendientes()
+      );
+      if (!sucursalAsignada) {
+        notificar('No hay sucursales disponibles en este momento.', 'warning');
+        return;
+      }
+      const pedidoCreado = await crearPedido(
+        construirDatosPedido(direccion, sucursalAsignada),
+        sucursalAsignada
+      );
+      if (!pedidoCreado) return;
+      navigate('/cliente/pago');
+    } finally {
+      setActualizando(false);
+    }
   };
 
   const irAlCatalogo = () => {
@@ -142,7 +204,7 @@ const Carrito = () => {
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0">
                 No tenés direcciones guardadas.{' '}
-                <Link to="/cliente/mis-direcciones" className="alert-link">
+                <Link to="/cliente/perfil?direcciones=1" className="alert-link">
                   Agregá una dirección
                 </Link>{' '}
                 antes de confirmar tu pedido.
@@ -152,6 +214,13 @@ const Carrito = () => {
 
           {/* Lista de productos */}
           <Col lg={8} className="mb-4 mb-lg-0">
+            {descuentoTotal > 0 && (
+              <Alert variant="success" className="mb-3">
+                <strong>¡Tenés promociones aplicadas!</strong>{' '}
+                {promosAplicadas.map((promo) => promo.nombre).join(' · ')}. Se
+                confirman al crear el pedido (el backend valida vigencia y stock).
+              </Alert>
+            )}
             <div className="d-flex flex-column gap-3">
               {items.map((item) => (
                 <ItemCarrito key={item.idLinea || item.producto.id} item={item} />
@@ -188,7 +257,7 @@ const Carrito = () => {
                   </Form.Group>
                   <Button
                     as={Link}
-                    to="/cliente/mis-direcciones"
+                    to="/cliente/perfil?direcciones=1"
                     variant="outline-primary"
                     size="sm"
                     className="carrito-boton-direcciones w-100 rounded-pill mt-3"
@@ -201,7 +270,17 @@ const Carrito = () => {
             )}
             <ResumenPedido
               onConfirmar={tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido}
-              botonTexto={tienePagoPendiente ? 'Ir a Pagar' : 'Confirmar Pedido'}
+              botonTexto={
+                tienePagoPendiente
+                  ? pendienteObsoleto
+                    ? actualizando
+                      ? 'Actualizando...'
+                      : 'Actualizar y pagar'
+                    : 'Ir a Pagar'
+                  : 'Confirmar Pedido'
+              }
+              descuento={descuentoTotal}
+              detalleDescuento={promosAplicadas.map((promo) => promo.nombre).join(' · ')}
             />
           </Col>
         </Row>

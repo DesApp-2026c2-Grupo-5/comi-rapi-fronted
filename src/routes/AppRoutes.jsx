@@ -24,6 +24,8 @@ const RootRedirect = () => {
 // Páginas públicas
 import Login from '../pages/comunes/Login';
 import Registro from '../pages/comunes/Registro';
+import RecuperarPassword from '../pages/comunes/RecuperarPassword';
+import NuevaPassword from '../pages/comunes/NuevaPassword';
 import AdminLogin from '../pages/admin/AdminLogin';
 import AdminRegister from '../pages/admin/AdminRegister';
 
@@ -36,7 +38,7 @@ import ConfirmacionPedido from '../pages/cliente/ConfirmacionPedido';
 import MisPedidos from '../pages/cliente/MisPedidos';
 import HistorialPedidos from '../pages/cliente/HistorialPedidos';
 import DetallePedido from '../pages/cliente/DetallePedido';
-import MisDirecciones from '../pages/cliente/MisDirecciones';
+import Perfil from '../pages/cliente/Perfil';
 
 // Páginas admin
 import Dashboard from '../pages/admin/Dashboard';
@@ -70,6 +72,10 @@ const AppRoutes = () => {
         <Route path="/registro" element={<Registro />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-registro" element={<AdminRegister />} />
+        {/* Recuperación de contraseña. /reset-password debe coincidir con el
+            enlace que arma email_service.js en el backend. */}
+        <Route path="/forgot-password" element={<RecuperarPassword />} />
+        <Route path="/reset-password" element={<NuevaPassword />} />
       </Route>
 
       {/* Rutas protegidas de cliente */}
@@ -82,7 +88,7 @@ const AppRoutes = () => {
         <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />
         <Route path="/cliente/historial" element={<HistorialPedidos />} />
         <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
-        <Route path="/cliente/mis-direcciones" element={<MisDirecciones />} />
+        <Route path="/cliente/perfil" element={<Perfil />} />
       </Route>
 
       {/* Rutas protegidas de administrador */}

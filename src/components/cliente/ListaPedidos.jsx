@@ -77,6 +77,17 @@ const ListaPedidos = ({
               )}
             </p>
             <p className="mb-2"><strong>Total:</strong> {formatPrice(pedido.total)}</p>
+            {(pedido.promociones || []).length > 0 && (
+              <p className="mb-2 small">
+                <strong>Descuento:</strong>{' '}
+                <span className="text-success">
+                  −{formatPrice((pedido.promociones || []).reduce((acc, promo) => acc + Number(promo.descuentoAplicado ?? 0), 0))}
+                </span>{' '}
+                <span className="text-muted">
+                  ({(pedido.promociones || []).map((promo) => promo.nombre || `#${promo.promocionId}`).join(' · ')})
+                </span>
+              </p>
+            )}
             <p className="mb-2">
               <strong>Sucursal:</strong>{' '}
               {pedido.sucursal?.nombre || pedido.sucursal || '-'}
