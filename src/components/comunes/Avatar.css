@@ -1,0 +1,30 @@
+/**
+ * Propósito: CSS del avatar circular reutilizable (navbar y página de perfil).
+ * Contenido: .avatar-comirapi y su variante con iniciales.
+ * Dependencias: Avatar.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/comunes/Avatar.jsx.
+ */
+
+.avatar-comirapi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff4e2;
+  border: 2px solid #ff9f1c;
+  color: #b55d00;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+/* Sin foto: iniciales sobre degradado naranja de marca */
+.avatar-comirapi-inicial {
+  background: linear-gradient(135deg, #f07f10, #ffb347);
+  border-color: #fff;
+  color: #fff;
+}

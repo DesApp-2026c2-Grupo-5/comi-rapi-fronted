@@ -2,12 +2,14 @@
  * Propósito: Componente de barra de navegación que cambia según el rol del usuario.
  * Contenido: Navbar naranja con marca Comi-Rapi y enlaces con íconos (react-icons),
  *            resaltado de la página activa y animación al hover.
+ *            El acceso al perfil del cliente es el avatar con su nombre, junto al
+ *            botón de cerrar sesión.
  * Dependencias: react-bootstrap (Navbar, Nav, Container, Button), react-router-dom (NavLink,
- *               useNavigate), react-icons/fa, useAuth hook, Navbar.css.
+ *               useNavigate), react-icons/fa, useAuth hook, Avatar, Navbar.css.
  * Uso: <Navbar /> - Se renderiza en todas las páginas autenticadas.
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Navbar as BSNavbar, Nav, Container, Button } from 'react-bootstrap';
 import {
@@ -16,7 +18,6 @@ import {
   FaUtensils,
   FaShoppingCart,
   FaReceipt,
-  FaMapMarkerAlt,
   FaTachometerAlt,
   FaStore,
   FaSlidersH,
@@ -29,15 +30,18 @@ import { useAuth } from '../../hooks/useAuth';
 import { useCarrito } from '../../hooks/useCarrito';
 import { usePedidos } from '../../hooks/usePedidos';
 import { ROLES, ESTADOS_PEDIDO } from '../../utils/constants';
+import { nombreCompleto } from '../../utils/formatters';
+import Avatar from './Avatar';
 import './Navbar.css';
 
-// Menú del cliente (cada enlace lleva su ícono)
+// Menú del cliente (cada enlace lleva su ícono). El perfil NO va acá: se entra
+// desde el avatar de la derecha, junto al botón de cerrar sesión. Las
+// direcciones tampoco: se gestionan desde el perfil.
 const enlacesCliente = [
   { to: '/cliente/inicio', etiqueta: 'Inicio', icono: FaHome },
   { to: '/cliente/catalogo', etiqueta: 'Catálogo', icono: FaUtensils },
   { to: '/cliente/carrito', etiqueta: 'Carrito', icono: FaShoppingCart },
   { to: '/cliente/mis-pedidos', etiqueta: 'Mis Pedidos', icono: FaReceipt },
-  { to: '/cliente/mis-direcciones', etiqueta: 'Mis direcciones', icono: FaMapMarkerAlt },
 ];
 
 // Menú del administrador
@@ -104,6 +108,7 @@ const Navbar = () => {
   const isAdmin = user?.rol === ROLES.ADMIN;
   const destinoInicio = isCliente ? '/cliente/inicio' : '/admin/dashboard';
   const enlaces = isCliente ? enlacesCliente : isAdmin ? enlacesAdmin : [];
+  const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
 
   return (
     <BSNavbar
@@ -165,14 +170,41 @@ const Navbar = () => {
               </Nav.Item>
             ))}
           </Nav>
-          <Nav className="d-flex align-items-center gap-2 mt-2 mt-lg-0">
-            <span className="navbar-user-nombre">
-              <FaUserCircle className="navbar-user-ico" aria-hidden="true" />
-              {user?.nombre}
-            </span>
-            <Button variant="outline-dark" size="sm" className="btn-logout-comirapi" onClick={handleLogout}>
-              <FaSignOutAlt className="me-1" aria-hidden="true" />
-              Cerrar sesión
+          <Nav className="navbar-acciones">
+            {isCliente ? (
+              // Acceso al perfil: avatar con la foto (o las iniciales) + nombre.
+              <NavLink
+                to="/cliente/perfil"
+                aria-label="Mi perfil"
+                className={({ isActive }) =>
+                  `navbar-perfil${isActive ? ' navbar-perfil-activo' : ''}`
+                }
+                onClick={() => setExpanded(false)}
+              >
+                <Avatar
+                  src={user?.fotoPerfilUrl}
+                  nombre={user?.nombre}
+                  apellido={user?.apellido}
+                  size={38}
+                />
+                <span className="navbar-perfil-nombre">{nombreUsuario}</span>
+              </NavLink>
+            ) : (
+              <span className="navbar-user-nombre">
+                <FaUserCircle className="navbar-user-ico" aria-hidden="true" />
+                {user?.nombre}
+              </span>
+            )}
+            <Button
+              variant="outline-dark"
+              size="sm"
+              className="btn-logout-comirapi"
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              onClick={handleLogout}
+            >
+              <FaSignOutAlt aria-hidden="true" />
+              <span className="btn-logout-texto">Cerrar sesión</span>
             </Button>
           </Nav>
         </BSNavbar.Collapse>

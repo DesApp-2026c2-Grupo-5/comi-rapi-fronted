@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { FaHamburger, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import CampoPassword from '../../components/comunes/CampoPassword';
 import './Login.css';
 
 const Login = () => {
@@ -63,16 +64,17 @@ const Login = () => {
                 placeholder="cliente@test.com"
               />
             </Form.Group>
-            <Form.Group className="mb-3 auth-input-group">
-              <Form.Label>Contraseña</Form.Label>
-              <FaLock className="auth-input-ico" aria-hidden="true" />
-              <Form.Control
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="123456"
-              />
-            </Form.Group>
+            <CampoPassword
+              id="password"
+              etiqueta="Contraseña"
+              requerido={false}
+              className="mb-3 auth-input-group"
+              icono={<FaLock aria-hidden="true" />}
+              claseIcono="auth-input-ico"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="123456"
+            />
             <Button type="submit" className="btn-submit-comirapi w-100 mb-3" disabled={loading}>
               {loading ? 'Ingresando...' : <>
                 Iniciar Sesión <FaSignInAlt aria-hidden="true" />

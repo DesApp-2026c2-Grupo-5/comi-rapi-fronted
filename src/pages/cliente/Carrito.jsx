@@ -142,7 +142,7 @@ const Carrito = () => {
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0">
                 No tenés direcciones guardadas.{' '}
-                <Link to="/cliente/mis-direcciones" className="alert-link">
+                <Link to="/cliente/perfil?direcciones=1" className="alert-link">
                   Agregá una dirección
                 </Link>{' '}
                 antes de confirmar tu pedido.
@@ -188,7 +188,7 @@ const Carrito = () => {
                   </Form.Group>
                   <Button
                     as={Link}
-                    to="/cliente/mis-direcciones"
+                    to="/cliente/perfil?direcciones=1"
                     variant="outline-primary"
                     size="sm"
                     className="carrito-boton-direcciones w-100 rounded-pill mt-3"

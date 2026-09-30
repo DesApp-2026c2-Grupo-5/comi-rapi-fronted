@@ -14,6 +14,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { FaHamburger, FaLock, FaCheckCircle } from 'react-icons/fa';
 import { restablecerPassword } from '../../api/auth';
+import CampoPassword from '../../components/comunes/CampoPassword';
 import './Login.css';
 
 const MINIMO = 6;
@@ -105,29 +106,31 @@ const NuevaPassword = () => {
               {error && <Alert variant="warning">{error}</Alert>}
 
               <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3 auth-input-group">
-                  <Form.Label>Contraseña nueva</Form.Label>
-                  <FaLock className="auth-input-ico" aria-hidden="true" />
-                  <Form.Control
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={`Mínimo ${MINIMO} caracteres`}
-                    autoComplete="new-password"
-                  />
-                </Form.Group>
+                <CampoPassword
+                  id="passwordNueva"
+                  etiqueta="Contraseña nueva"
+                  requerido={false}
+                  className="mb-3 auth-input-group"
+                  icono={<FaLock aria-hidden="true" />}
+                  claseIcono="auth-input-ico"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={`Mínimo ${MINIMO} caracteres`}
+                  autoComplete="new-password"
+                />
 
-                <Form.Group className="mb-3 auth-input-group">
-                  <Form.Label>Repetir contraseña</Form.Label>
-                  <FaLock className="auth-input-ico" aria-hidden="true" />
-                  <Form.Control
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repetí la contraseña"
-                    autoComplete="new-password"
-                  />
-                </Form.Group>
+                <CampoPassword
+                  id="passwordRepetida"
+                  etiqueta="Repetir contraseña"
+                  requerido={false}
+                  className="mb-3 auth-input-group"
+                  icono={<FaLock aria-hidden="true" />}
+                  claseIcono="auth-input-ico"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repetí la contraseña"
+                  autoComplete="new-password"
+                />
 
                 <Button
                   type="submit"

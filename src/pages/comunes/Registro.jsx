@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 import { FaUserPlus } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import CampoPassword from '../../components/comunes/CampoPassword';
 
 const Registro = () => {
   const [nombre, setNombre] = useState('');
@@ -69,15 +70,14 @@ const Registro = () => {
                 placeholder="tu@email.com"
               />
             </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Contraseña</Form.Label>
-              <Form.Control
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-              />
-            </Form.Group>
+            <CampoPassword
+              id="password"
+              etiqueta="Contraseña"
+              className="mb-3"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+            />
             <Button variant="primary" type="submit" className="w-100 mb-3" disabled={loading}>
               <FaUserPlus className="me-1" aria-hidden="true" />
               {loading ? 'Creando cuenta...' : 'Registrarse'}
