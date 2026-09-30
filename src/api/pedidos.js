@@ -39,6 +39,7 @@ export const mapearPedido = (p) => {
   // Si ya viene en formato frontend, devolver tal cual
   if (Array.isArray(p.productos) && p.historialEstados) return p;
   const estado = p.estado || p.estadoActual?.nombre || p.estadoId;
+  const promociones = Array.isArray(p.promociones) ? p.promociones : [];
   return {
     id: p.id,
     cliente: p.cliente?.email || p.cliente || p.usuarioId,
@@ -69,6 +70,16 @@ export const mapearPedido = (p) => {
       fecha: h.fechaHora || h.fecha,
       usuarioId: h.usuarioId,
     })),
+    promociones: promociones.map((promo) => ({
+      promocionId: promo.promocionId,
+      nombre: promo.nombre,
+      tipo: promo.tipo,
+      descuentoAplicado: Number(promo.descuentoAplicado ?? 0),
+    })),
+    descuentoTotal: promociones.reduce(
+      (acc, promo) => acc + Number(promo.descuentoAplicado ?? 0),
+      0
+    ),
     _raw: p,
   };
 };
@@ -121,6 +132,10 @@ function payloadBackend(datosPedido, sucursal) {
     costoEnvio: datosPedido.costoEnvio || 0,
     medioPago: datosPedido.medioPago,
     observacion: datosPedido.observacion,
+    ...(Array.isArray(datosPedido.promocionIds) &&
+    datosPedido.promocionIds.length > 0
+      ? { promocionIds: datosPedido.promocionIds }
+      : {}),
   };
 }
 

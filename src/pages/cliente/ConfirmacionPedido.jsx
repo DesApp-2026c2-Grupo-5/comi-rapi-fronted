@@ -150,6 +150,7 @@ const ConfirmacionPedido = () => {
             total={pedidoActual.total}
             costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
+            promociones={pedidoActual.promociones}
           />
         </Col>
       </Row>
