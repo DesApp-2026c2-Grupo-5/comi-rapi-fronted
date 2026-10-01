@@ -25,10 +25,12 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
   const [localidad, setLocalidad] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
   const [referencia, setReferencia] = useState('');
-  const [error, setError] = useState('');
+  // Lista de errores de validación local: se acumulan todos (no solo el primero)
+  const [errores, setErrores] = useState([]);
 
   // Precargan los datos al entrar en modo edición
   useEffect(() => {
+    setErrores([]);
     if (direccion) {
       setAlias(direccion.alias || '');
       setCalle(direccion.calle || '');
@@ -42,30 +44,33 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
+    const nuevos = [];
 
+    // Validaciones básicas: se acumulan todas en lugar de cortar en la primera
     if (!calle.trim()) {
-      setError('La calle es obligatoria.');
-      return;
+      nuevos.push('La calle es obligatoria.');
     }
-
-    if (altura === '' || !Number.isInteger(Number(altura)) || Number(altura) < 0) {
-      setError('La altura es obligatoria y debe ser un número entero mayor o igual a 0.');
-      return;
+    if (
+      altura === '' ||
+      !Number.isInteger(Number(altura)) ||
+      Number(altura) < 0
+    ) {
+      nuevos.push(
+        'La altura es obligatoria y debe ser un número entero mayor o igual a 0.'
+      );
     }
-
     if (!provincia.trim()) {
-      setError('La provincia es obligatoria.');
-      return;
+      nuevos.push('La provincia es obligatoria.');
     }
-
     if (!localidad.trim()) {
-      setError('La localidad es obligatoria.');
-      return;
+      nuevos.push('La localidad es obligatoria.');
+    }
+    if (!codigoPostal.trim()) {
+      nuevos.push('El código postal es obligatorio.');
     }
 
-    if (!codigoPostal.trim()) {
-      setError('El código postal es obligatorio.');
+    setErrores(nuevos);
+    if (nuevos.length > 0) {
       return;
     }
 
@@ -92,7 +97,15 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
           {direccion ? 'Editar dirección' : 'Nueva dirección'}
         </h5>
         <Form onSubmit={handleSubmit}>
-          {error && <div className="text-danger mb-3">{error}</div>}
+          {errores.length > 0 && (
+            <div className="text-danger mb-3">
+              <ul className="mb-0 ps-3">
+                {errores.map((error, i) => (
+                  <li key={i}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <Form.Group className="mb-3">
             <Form.Label>Alias</Form.Label>
             <Form.Control

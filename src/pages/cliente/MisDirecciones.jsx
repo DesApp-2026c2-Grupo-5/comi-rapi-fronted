@@ -65,16 +65,17 @@ const MisDirecciones = () => {
   // Abre el modal de confirmación para eliminar (baja lógica: el backend marca activa = false)
   const handleEliminar = (direccion) => setDireccionAEliminar(direccion);
 
+  // Elimina y muestra el motivo real del rechazo si el backend lo devuelve
   const confirmarEliminar = async () => {
     if (!direccionAEliminar) return;
     setConfirmando(true);
     const etiqueta = direccionAEliminar.alias || direccionAEliminar.calle;
-    const ok = await eliminarDireccion(direccionAEliminar.id);
+    const resultado = await eliminarDireccion(direccionAEliminar.id);
     notificar(
-      ok
+      resultado.ok
         ? `Dirección "${etiqueta}" eliminada correctamente.`
-        : 'No se pudo eliminar la dirección.',
-      ok ? 'success' : 'danger'
+        : resultado.error || 'No se pudo eliminar la dirección.',
+      resultado.ok ? 'success' : 'danger'
     );
     setDireccionAEliminar(null);
     setConfirmando(false);

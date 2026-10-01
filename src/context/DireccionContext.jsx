@@ -88,17 +88,17 @@ export const DireccionProvider = ({ children }) => {
   /**
    * Elimina una dirección (baja lógica: el backend marca activa = false).
    * @param {number} id - ID de la dirección a eliminar.
-   * @returns {Promise<boolean>} true si se eliminó correctamente.
+   * @returns {Promise<{ok: boolean, error?: string}>} Resultado o el motivo del rechazo.
    */
   const eliminarDireccion = useCallback(async (id) => {
     const result = await eliminarDireccionApi(id);
     if (result.success) {
       setDirecciones((prev) => prev.filter((d) => d.id !== Number(id)));
       setError(null);
-      return true;
+      return { ok: true };
     }
     setError(result.error);
-    return false;
+    return { ok: false, error: result.error };
   }, []);
 
   // Valor del contexto
