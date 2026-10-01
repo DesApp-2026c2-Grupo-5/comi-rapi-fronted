@@ -98,6 +98,10 @@ async function ejecutar(method, path, datos) {
       success: false,
       status: res.status,
       error: (body && body.error) || `Error ${res.status}`,
+      // Iteración 1-geo: el backend responde 409 con `opciones` cuando una
+      // dirección coincide con varias ubicaciones (identidades territoriales
+      // de Georef); el formulario las muestra para que el usuario elija.
+      opciones: (body && body.opciones) || null,
     };
   }
   return { success: true, status: res.status, data: body ? body.data : null };

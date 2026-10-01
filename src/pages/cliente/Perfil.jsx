@@ -293,17 +293,19 @@ const Perfil = () => {
     setDireccionEnEdicion(null);
   };
 
+  // Iteración 1-geo: se devuelve el resultado al formulario para que pueda
+  // manejar el 409 (opciones territoriales) y los errores reales del backend.
   const handleGuardarDireccion = async (datos) => {
     const guardada =
       direccionEnEdicion === 'nueva'
         ? await agregarDireccion(datos)
         : await editarDireccion(direccionEnEdicion.id, datos);
 
-    if (!guardada) {
-      notificar('No se pudo guardar la dirección.', 'danger');
-      return;
+    if (!guardada || !guardada.ok) {
+      return guardada || { ok: false, error: 'No se pudo guardar la dirección.' };
     }
     setDireccionEnEdicion(null);
+    return guardada;
   };
 
   const confirmarEliminarDireccion = async () => {
@@ -342,10 +344,18 @@ const Perfil = () => {
     .map((cambio) => `${cambio.campo}: ${cambio.valor || 'sin valor'}`)
     .join(' · ');
 
-  // Una dirección en una línea: calle, localidad, provincia y código postal.
+  // Una dirección en una línea: calle, partido/comuna + localidad y provincia.
+  // Iteración 1-geo: se muestra el partido/comuna (`departamento`) y el
+  // código postal quedó opcional (el resto lo normaliza el backend).
   const lineasDireccion = (direccion) => [
     [direccion.calle, direccion.altura].filter(Boolean).join(' '),
-    [direccion.localidad || direccion.ciudad, direccion.provincia].filter(Boolean).join(', '),
+    [
+      direccion.departamento,
+      direccion.localidad || direccion.ciudad,
+      direccion.provincia,
+    ]
+      .filter(Boolean)
+      .join(', '),
     direccion.codigoPostal ? `CP ${direccion.codigoPostal}` : '',
   ]
     .filter(Boolean)

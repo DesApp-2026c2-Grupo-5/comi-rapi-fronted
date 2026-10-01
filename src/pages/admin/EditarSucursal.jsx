@@ -39,33 +39,39 @@ const EditarSucursal = () => {
   // Guarda creando o actualizando la sucursal según corresponda. Muestra el
   // motivo real del rechazo (geolocalización de la dirección) si el backend lo
   // devuelve.
+  // Iteración 1-geo: se devuelve el resultado al formulario para que pueda
+  // manejar el 409 (opciones territoriales) y los errores reales del backend.
   const handleGuardar = async (datosSucursal) => {
     if (id) {
       const resultado = await actualizarSucursal(id, datosSucursal);
-      if (resultado.ok) {
-        notificar(
-          `Sucursal "${resultado.data.nombre}" actualizada correctamente.`,
-          'success'
-        );
-      } else {
-        setError(
-          resultado.error || 'No se pudo actualizar la sucursal.'
-        );
-        return;
+      if (!resultado.ok) {
+        // El 409 con opciones lo maneja el formulario (desambiguación).
+        if (!resultado.opciones) {
+          setError(
+            resultado.error || 'No se pudo actualizar la sucursal.'
+          );
+        }
+        return resultado;
       }
+      notificar(
+        `Sucursal "${resultado.data.nombre}" actualizada correctamente.`,
+        'success'
+      );
     } else {
       const resultado = await agregarSucursal(datosSucursal);
-      if (resultado.ok) {
-        notificar(
-          `Sucursal "${resultado.data.nombre}" creada correctamente.`,
-          'success'
-        );
-      } else {
-        setError(resultado.error || 'No se pudo crear la sucursal.');
-        return;
+      if (!resultado.ok) {
+        if (!resultado.opciones) {
+          setError(resultado.error || 'No se pudo crear la sucursal.');
+        }
+        return resultado;
       }
+      notificar(
+        `Sucursal "${resultado.data.nombre}" creada correctamente.`,
+        'success'
+      );
     }
     navigate('/admin/sucursales');
+    return { ok: true };
   };
 
   if (cargando || loading) {

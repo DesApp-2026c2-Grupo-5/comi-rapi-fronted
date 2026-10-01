@@ -52,8 +52,10 @@ export const DireccionProvider = ({ children }) => {
 
   /**
    * Agrega una nueva dirección y la persiste en el backend.
-   * @param {object} datosDireccion - { calle, altura, provincia, localidad, codigoPostal, referencia?, alias? }.
-   * @returns {Promise<{ok: boolean, data?: object, error?: string}>} Dirección creada o el motivo del rechazo.
+   * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
+   * de Georef) para que el formulario las muestre y el usuario elija.
+   * @param {object} datosDireccion - { calle, altura, provincia, departamento?, localidad?, codigoPostal?, referencia?, alias? }.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string, opciones?: Array}>} Dirección creada o el motivo del rechazo.
    */
   const agregarDireccion = useCallback(async (datosDireccion) => {
     const result = await crearDireccion(datosDireccion);
@@ -63,14 +65,16 @@ export const DireccionProvider = ({ children }) => {
       return { ok: true, data: result.data };
     }
     setError(result.error);
-    return { ok: false, error: result.error };
+    return { ok: false, error: result.error, opciones: result.opciones };
   }, []);
 
   /**
    * Edita una dirección existente en el backend.
+   * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
+   * de Georef) para que el formulario las muestre y el usuario elija.
    * @param {number} id - ID de la dirección.
    * @param {object} datos - Campos a actualizar.
-   * @returns {Promise<{ok: boolean, data?: object, error?: string}>} Dirección actualizada o el motivo del rechazo.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string, opciones?: Array}>} Dirección actualizada o el motivo del rechazo.
    */
   const editarDireccion = useCallback(async (id, datos) => {
     const result = await actualizarDireccion(id, datos);
@@ -82,7 +86,7 @@ export const DireccionProvider = ({ children }) => {
       return { ok: true, data: result.data };
     }
     setError(result.error);
-    return { ok: false, error: result.error };
+    return { ok: false, error: result.error, opciones: result.opciones };
   }, []);
 
   /**

@@ -1,23 +1,35 @@
 /**
  * Propósito: Formulario para crear o editar una sucursal usando Form de Bootstrap.
- * Contenido: Componente FormularioSucursal con campos controlados y validaciones básicas.
- * Dependencias: react-bootstrap (Form, Button, Card), react-router-dom (useNavigate).
+ * Contenido: Componente FormularioSucursal con campos controlados, validaciones
+ *            acumuladas y desambiguación de direcciones (409).
+ * Dependencias: react-bootstrap (Form, Button, Card), react-router-dom (useNavigate),
+ *            utils/territorio (listas estáticas de provincias y partidos de PBA).
  * Uso: <FormularioSucursal sucursal={sucursal} onGuardar={handler} />
  *      - Si 'sucursal' es null/undefined, se comporta en modo creación.
  *      - Si 'sucursal' trae datos, precarga el formulario para edición.
+ *      - onGuardar DEBE devolver el resultado del backend:
+ *        { ok: true, data } | { ok: false, error, opciones? }.
  *
  * Contrato (DER): la dirección se envía como objeto anidado
- * `direccion: { calle, altura, provincia, localidad, codigoPostal, referencia? }`
+ * `direccion: { calle, altura, provincia, departamento?, localidad?, referencia? }`
  * (Sucursal 1:1 Direccion — la dirección y las coordenadas se centralizan en Direccion).
- * Son obligatorios: calle, altura, provincia, localidad y codigoPostal.
- * latitud/longitud NO se ingresan manualmente (ni por admin ni por nadie):
- * las calcula el backend (servicio de geolocalización, tarea futura).
+ *
+ * Iteración 1-geo (modelo territorial, alineado con Georef):
+ *   - Provincia: select; partido: select solo para Buenos Aires (obligatorio).
+ *   - Localidad opcional (la determina el backend con Georef).
+ *   - Código postal: se quitó del formulario (Georef no lo provee).
+ *   - Desambiguación: 409 con `opciones` → el usuario elige y se reintenta
+ *     con el `departamento` de la opción elegida.
+ *   - latitud/longitud NO se ingresan manualmente: las calcula el backend.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { PROVINCIAS, PARTIDOS_BUENOS_AIRES } from '../../utils/territorio';
+
+const PROVINCIA_PARTIDO_OBLIGATORIO = 'Buenos Aires';
 
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
@@ -26,26 +38,33 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const [calle, setCalle] = useState('');
   const [altura, setAltura] = useState('');
   const [provincia, setProvincia] = useState('');
+  const [departamento, setDepartamento] = useState('');
   const [localidad, setLocalidad] = useState('');
-  const [codigoPostal, setCodigoPostal] = useState('');
   const [referencia, setReferencia] = useState('');
   const [horarios, setHorarios] = useState('');
   const [telefono, setTelefono] = useState('');
   const [activa, setActiva] = useState(true);
+  // Iteración 1-geo: opciones del 409 (dirección ambigua) y opción elegida.
+  const [opciones, setOpciones] = useState([]);
+  const [opcionElegida, setOpcionElegida] = useState('');
   // Lista de errores de validación local: se acumulan todos (no solo el primero)
   const [errores, setErrores] = useState([]);
+
+  const requierePartido = provincia.trim() === PROVINCIA_PARTIDO_OBLIGATORIO;
 
   // Precargan los datos al entrar en modo edición
   useEffect(() => {
     setErrores([]);
+    setOpciones([]);
+    setOpcionElegida('');
     if (sucursal) {
       const dir = sucursal.direccion || {};
       setNombre(sucursal.nombre || '');
       setCalle(dir.calle || '');
       setAltura(dir.altura ?? '');
       setProvincia(dir.provincia || '');
+      setDepartamento(dir.departamento || '');
       setLocalidad(dir.localidad || dir.ciudad || '');
-      setCodigoPostal(dir.codigoPostal || '');
       setReferencia(dir.referencia || '');
       setHorarios(sucursal.horarios || '');
       setTelefono(sucursal.telefono || '');
@@ -53,11 +72,9 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
     }
   }, [sucursal]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const validar = () => {
     const nuevos = [];
 
-    // Validaciones básicas: se acumulan todas en lugar de cortar en la primera
     if (!nombre.trim()) {
       nuevos.push('El nombre es obligatorio.');
     }
@@ -76,35 +93,85 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
     if (!provincia.trim()) {
       nuevos.push('La provincia es obligatoria.');
     }
-    if (!localidad.trim()) {
-      nuevos.push('La localidad es obligatoria.');
+    // Iteración 1-geo: partido obligatorio solo en Buenos Aires.
+    if (requierePartido && !departamento.trim()) {
+      nuevos.push(
+        'El partido es obligatorio para direcciones de la provincia de Buenos Aires.'
+      );
     }
-    if (!codigoPostal.trim()) {
-      nuevos.push('El código postal es obligatorio.');
+
+    return nuevos;
+  };
+
+  const construirDatos = () => ({
+    nombre: nombre.trim(),
+    direccion: {
+      calle: calle.trim(),
+      altura: Number(altura),
+      provincia: provincia.trim(),
+      departamento: departamento.trim() || null,
+      localidad: localidad.trim() || null,
+      referencia: referencia.trim() || null,
+    },
+    horarios: horarios.trim() || null,
+    telefono: telefono.trim() || null,
+    activa,
+  });
+
+  // Iteración 1-geo: elección de una opción del 409; el `departamento` de la
+  // opción acota la query a Georef y se reintenta el mismo guardado.
+  const elegirOpcion = (nomenclatura) => {
+    const opcion = opciones.find((o) => o.nomenclatura === nomenclatura);
+    if (!opcion) return;
+    if (opcion.departamento) {
+      setDepartamento(opcion.departamento);
     }
+    if (opcion.localidad) {
+      setLocalidad(opcion.localidad);
+    }
+    setOpcionElegida(nomenclatura);
+    setErrores([]);
+  };
+
+  const reintentarConOpcion = async () => {
+    if (!opcionElegida) {
+      setErrores(['Seleccioná una de las opciones para continuar.']);
+      return;
+    }
+    setErrores([]);
+    setOpciones([]);
+    const resultado = await onGuardar(construirDatos());
+    procesarResultado(resultado);
+  };
+
+  const procesarResultado = (resultado) => {
+    if (resultado && resultado.ok) {
+      setOpciones([]);
+      return;
+    }
+    if (resultado && Array.isArray(resultado.opciones) && resultado.opciones.length) {
+      setOpciones(resultado.opciones);
+      setOpcionElegida('');
+      return;
+    }
+    setOpciones([]);
+    setErrores([
+      (resultado && resultado.error) || 'No se pudo guardar la sucursal.',
+    ]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const nuevos = validar();
 
     setErrores(nuevos);
     if (nuevos.length > 0) {
       return;
     }
 
-    const datosSucursal = {
-      nombre: nombre.trim(),
-      direccion: {
-        calle: calle.trim(),
-        altura: Number(altura),
-        provincia: provincia.trim(),
-        localidad: localidad.trim(),
-        codigoPostal: codigoPostal.trim(),
-        referencia: referencia.trim() || null,
-      },
-      horarios: horarios.trim() || null,
-      telefono: telefono.trim() || null,
-      activa,
-    };
-
     if (onGuardar) {
-      onGuardar(datosSucursal);
+      const resultado = await onGuardar(construirDatos());
+      procesarResultado(resultado);
     }
   };
 
@@ -155,29 +222,48 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Provincia *</Form.Label>
-            <Form.Control
-              type="text"
+            <Form.Select
               value={provincia}
-              onChange={(e) => setProvincia(e.target.value)}
-              placeholder="Ej: Buenos Aires"
-            />
+              onChange={(e) => {
+                setProvincia(e.target.value);
+                if (e.target.value !== PROVINCIA_PARTIDO_OBLIGATORIO) {
+                  setDepartamento('');
+                }
+              }}
+            >
+              <option value="">Seleccioná una provincia…</option>
+              {PROVINCIAS.map((nombreProvincia) => (
+                <option key={nombreProvincia} value={nombreProvincia}>
+                  {nombreProvincia}
+                </option>
+              ))}
+            </Form.Select>
           </Form.Group>
+          {requierePartido && (
+            <Form.Group className="mb-3">
+              <Form.Label>Partido *</Form.Label>
+              <Form.Select
+                value={departamento}
+                onChange={(e) => setDepartamento(e.target.value)}
+              >
+                <option value="">Seleccioná un partido…</option>
+                {PARTIDOS_BUENOS_AIRES.map((nombrePartido) => (
+                  <option key={nombrePartido} value={nombrePartido}>
+                    {nombrePartido}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          )}
           <Form.Group className="mb-3">
-            <Form.Label>Localidad *</Form.Label>
+            <Form.Label>
+              Localidad <span className="text-muted">(opcional)</span>
+            </Form.Label>
             <Form.Control
               type="text"
               value={localidad}
               onChange={(e) => setLocalidad(e.target.value)}
-              placeholder="Ej: CABA"
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Código postal *</Form.Label>
-            <Form.Control
-              type="text"
-              value={codigoPostal}
-              onChange={(e) => setCodigoPostal(e.target.value)}
-              placeholder="Ej: 1406"
+              placeholder="Ej: Morón (si no la completás, la determina el sistema)"
             />
           </Form.Group>
           <Form.Group className="mb-3">
@@ -217,6 +303,35 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
               <option value="inactiva">Inactivo</option>
             </Form.Select>
           </Form.Group>
+          {opciones.length > 0 && (
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-semibold">
+                La dirección coincide con varias ubicaciones. ¿Cuál es la correcta?
+              </Form.Label>
+              {opciones.map((opcion) => (
+                <Form.Check
+                  key={opcion.nomenclatura}
+                  type="radio"
+                  id={`opcion-${opcion.nomenclatura}`}
+                  name="opciones-direccion-sucursal"
+                  label={opcion.nomenclatura}
+                  checked={opcionElegida === opcion.nomenclatura}
+                  onChange={() => elegirOpcion(opcion.nomenclatura)}
+                  className="mb-1"
+                />
+              ))}
+              <div className="d-grid mt-2">
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={reintentarConOpcion}
+                >
+                  <FaSave className="me-1" aria-hidden="true" />
+                  Guardar con la opción seleccionada
+                </Button>
+              </div>
+            </Form.Group>
+          )}
           <div className="d-flex gap-2">
             <Button variant="primary" type="submit" className="flex-fill">
               <FaSave className="me-1" aria-hidden="true" />

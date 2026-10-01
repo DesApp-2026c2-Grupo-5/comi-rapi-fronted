@@ -18,7 +18,10 @@ export const formatearDireccion = (direccion) => {
   const domicilio = [direccion.calle, direccion.altura]
     .filter(Boolean)
     .join(' ');
+  // Iteración 1-geo: incluye el partido/comuna (`departamento`) cuando existe;
+  // localidad y código postal son opcionales (pueden ser null).
   const extras = [
+    direccion.departamento,
     direccion.localidad || direccion.ciudad,
     direccion.codigoPostal,
   ].filter(Boolean);
