@@ -20,6 +20,15 @@ import { formatDate, formatPrice } from '../../utils/formatters';
 import { formatearDireccion } from '../../utils/direccion';
 import './ConfirmacionPedido.css';
 
+/**
+ * El backend guarda la referencia de la dirección como texto y, cuando el
+ * cliente no completó ese campo, la cadena guardada es literalmente "null".
+ * Esa cadena es verdadera, así que sin este filtro la pantalla terminaba
+ * mostrando "Ref: null".
+ */
+const esTextoUtil = (valor) =>
+  typeof valor === 'string' && valor.trim() !== '' && valor.trim() !== 'null';
+
 const ConfirmacionPedido = () => {
   const { pedidoActual } = usePedidos();
 
@@ -111,7 +120,7 @@ const ConfirmacionPedido = () => {
                       {pedidoActual.direccion.codigoPostal ? ` - CP ${pedidoActual.direccion.codigoPostal}` : ''}
                     </span>
                   )}
-                  {pedidoActual.direccion.referencia && (
+                  {esTextoUtil(pedidoActual.direccion.referencia) && (
                     <span className="text-muted d-block">Ref: {pedidoActual.direccion.referencia}</span>
                   )}
                 </div>

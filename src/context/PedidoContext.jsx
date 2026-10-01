@@ -243,7 +243,10 @@ export const PedidoProvider = ({ children }) => {
         setPedidoActual(res.data);
         return res.data;
       }
-    notificar(`No se pudo guardar el pedido en la base de datos: ${res.error}`, 'danger');
+    // El backend ya devuelve un mensaje escrito para el cliente (por ejemplo,
+    // el de stock insuficiente), así que se muestra tal cual: prefixarlo con
+    // "No se pudo guardar el pedido en la base de datos" sólo le agregaba ruido.
+    notificar(res.error || 'No se pudo guardar el pedido.', 'danger');
     return null;
   }, [notificar]);
 
@@ -266,7 +269,9 @@ export const PedidoProvider = ({ children }) => {
       setSenalPedido((n) => n + 1);
       return res.data;
     }
-    notificar(`No se pudo confirmar el pedido #${pedidoId}: ${res.error}`, 'danger');
+    // Igual que en `crearPedido`: el backend ya devuelve un mensaje para el
+    // cliente y este wrapper sólo lo pisaría con el prefijo y el id del pedido.
+    notificar(res.error || 'No se pudo confirmar el pedido.', 'danger');
     return null;
   }, [notificar]);
 

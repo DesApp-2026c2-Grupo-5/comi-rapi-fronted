@@ -40,14 +40,26 @@ const Carrito = () => {
     usePromocionesCarrito(items);
   const [actualizando, setActualizando] = useState(false);
   const { sucursales } = useSucursal();
-  const { crearPedido, obtenerPedidosPendientes, pedidoActual, cambiarEstado } =
+  const { crearPedido, obtenerPedidosPendientes, pedidoActual, pedidos, cambiarEstado } =
     usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
 
+  // Pedido PENDIENTE sin pagar. Se busca en la lista de la API y no sólo en
+  // `pedidoActual` (que vive en memoria y se pierde al recargar) porque los
+  // pedidos sin pagar no aparecen en "Mis Pedidos": si sólo se mirara el estado
+  // en memoria, al recargar el carrito creería que no hay nada pendiente y
+  // dejaría crear un segundo pedido, con el stock del primero ya descontado.
+  const pedidoPendiente = useMemo(
+    () =>
+      (pedidos || []).find((p) => p.estado === ESTADOS_PEDIDO.PENDIENTE) ||
+      (pedidoActual?.estado === ESTADOS_PEDIDO.PENDIENTE ? pedidoActual : null),
+    [pedidos, pedidoActual]
+  );
+
   // Si hay un pedido PENDIENTE sin pagar, el carrito ofrece "Ir a Pagar"
-  const tienePagoPendiente = pedidoActual?.estado === ESTADOS_PEDIDO.PENDIENTE;
+  const tienePagoPendiente = Boolean(pedidoPendiente);
 
   // ID de la dirección elegida para este pedido
   const [direccionId, setDireccionId] = useState(null);
@@ -73,13 +85,13 @@ const Carrito = () => {
   );
   const idsPersistidos = useMemo(
     () =>
-      ((pedidoActual?.promociones || []).map((promo) => String(promo.promocionId))).sort(),
-    [pedidoActual]
+      ((pedidoPendiente?.promociones || []).map((promo) => String(promo.promocionId))).sort(),
+    [pedidoPendiente]
   );
   const pendienteObsoleto =
     tienePagoPendiente &&
     (JSON.stringify(idsPrevistos) !== JSON.stringify(idsPersistidos) ||
-      Math.abs(Number(pedidoActual.total) - totalEstimado) > 0.01);
+      Math.abs(Number(pedidoPendiente.total) - totalEstimado) > 0.01);
 
   const construirDatosPedido = (direccion, sucursalAsignada) => ({
     productos: items.map((item) => ({
@@ -151,7 +163,7 @@ const Carrito = () => {
     setActualizando(true);
     try {
       const cancelado = await cambiarEstado(
-        pedidoActual.id,
+        pedidoPendiente.id,
         ESTADOS_PEDIDO.CANCELADO
       );
       if (!cancelado) return;
@@ -217,8 +229,7 @@ const Carrito = () => {
             {descuentoTotal > 0 && (
               <Alert variant="success" className="mb-3">
                 <strong>¡Tenés promociones aplicadas!</strong>{' '}
-                {promosAplicadas.map((promo) => promo.nombre).join(' · ')}. Se
-                confirman al crear el pedido (el backend valida vigencia y stock).
+                {promosAplicadas.map((promo) => promo.nombre).join(' · ')}.
               </Alert>
             )}
             <div className="d-flex flex-column gap-3">

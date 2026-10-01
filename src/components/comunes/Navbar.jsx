@@ -19,6 +19,7 @@ import {
   FaShoppingCart,
   FaReceipt,
   FaTachometerAlt,
+  FaBoxes,
   FaStore,
   FaSlidersH,
   FaTags,
@@ -51,6 +52,7 @@ const enlacesAdmin = [
   { to: '/admin/categorias', etiqueta: 'Categorías', icono: FaTags },
   { to: '/admin/pedidos', etiqueta: 'Pedidos', icono: FaReceipt },
   { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore },
+  { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
   { to: '/admin/personalizacion', etiqueta: 'Personalización', icono: FaSlidersH },
   { to: '/admin/promociones', etiqueta: 'Promociones', icono: FaPercent },
 ];
@@ -66,8 +68,12 @@ const Navbar = () => {
   const [pulsoPedidoBadge, setPulsoPedidoBadge] = useState(false);
 
   // Pedidos del cliente que aún no fueron entregados ni cancelados.
+  // El PENDIENTE se excluye a propósito: todavía no se pagó, así que no cuenta
+  // como pedido activo (mismo criterio que "Mis Pedidos"). Si se contara, el
+  // badge marcaría un pedido apenas se confirma el carrito, antes de pagarlo.
   const pedidosActivos = pedidos.filter(
     (p) =>
+      p.estado !== ESTADOS_PEDIDO.PENDIENTE &&
       p.estado !== ESTADOS_PEDIDO.ENTREGADO &&
       p.estado !== ESTADOS_PEDIDO.CANCELADO
   ).length;

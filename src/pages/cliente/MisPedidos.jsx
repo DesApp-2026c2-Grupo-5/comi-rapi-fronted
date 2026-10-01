@@ -1,11 +1,17 @@
 /**
- * Propósito: Pedidos activos del cliente (pendiente, confirmado, en preparación,
+ * Propósito: Pedidos activos del cliente (confirmado, en preparación,
  *            listo para entregar, en camino) con filtros y acceso al Historial.
  * Contenido: Componente MisPedidos que reusa FiltrosPedidos + ListaPedidos.
  * Uso: Ruta "/cliente/mis-pedidos" → <MisPedidos />
  *
  * NOTA: Los pedidos provienen de la API real; el backend ya devuelve solo los
  * pedidos del cliente autenticado (scope por usuarioId).
+ *
+ * Un pedido en PENDIENTE (creado pero todavía sin pagar) NO aparece acá: recién
+ * entra a la lista cuando el pago lo pasa a CONFIRMADO. Mientras tanto el único
+ * lugar donde se lo ve es la pantalla de pago, a la que se llega en el momento
+ * de crearlo (ver `pages/cliente/Pago.jsx`, que lo recupera de la API si la
+ * página se recarga).
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,7 +22,7 @@ import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useAuth } from '../../hooks/useAuth';
-import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
+import { ESTADOS_PEDIDO, ESTADOS_ACTIVOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import { obtenerSucursales } from '../../api/sucursales';
 import { filtrarPedidos, FILTRO_INICIAL } from '../../utils/filtrosPedidos';
@@ -25,13 +31,9 @@ import ListaPedidos from '../../components/cliente/ListaPedidos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
 
-const ESTADOS_ACTIVOS = [
-  ESTADOS_PEDIDO.PENDIENTE,
-  ESTADOS_PEDIDO.CONFIRMADO,
-  ESTADOS_PEDIDO.EN_PREPARACION,
-  ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
-  ESTADOS_PEDIDO.EN_CAMINO,
-];
+// Sin PENDIENTE: el pedido todavía no se pagó, así que no cuenta como pedido
+// activo del cliente. Mismo criterio que la pantalla "Pedidos" del admin.
+const ESTADOS_ACTIVOS = ESTADOS_ACTIVOS_PEDIDO;
 
 const MisPedidos = () => {
   const { pedidos, cambiarEstado } = usePedidos();
@@ -80,10 +82,9 @@ const MisPedidos = () => {
     []
   );
 
-  // Solo puede cancelarse antes de iniciar la preparación (pendiente/confirmado)
-  const esCancelable = (pedido) =>
-    pedido.estado === ESTADOS_PEDIDO.PENDIENTE ||
-    pedido.estado === ESTADOS_PEDIDO.CONFIRMADO;
+  // Sólo se cancela antes de iniciar la preparación. Como a esta pantalla los
+  // pedidos sin pagar ya no llegan, el único estado cancelable es CONFIRMADO.
+  const esCancelable = (pedido) => pedido.estado === ESTADOS_PEDIDO.CONFIRMADO;
 
   // Pide confirmación con el modal antes de cancelar y persiste en la API.
   const pedirCancelacion = (pedido) => {

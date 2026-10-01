@@ -33,7 +33,7 @@ const MAPA_MEDIO_PAGO = {
 };
 
 const Pago = () => {
-  const { pedidoActual, confirmarPedido, cambiarEstado } = usePedidos();
+  const { pedidoActual, pedidos, confirmarPedido, cambiarEstado } = usePedidos();
   const { vaciarCarrito } = useCarrito();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
@@ -41,8 +41,18 @@ const Pago = () => {
   const [metodoElegido, setMetodoElegido] = useState(null);
   const [mostrarConfirmarCancelar, setMostrarConfirmarCancelar] = useState(false);
 
+  // Pedido a pagar. Normalmente es el que acaba de crear el carrito, pero si el
+  // cliente recarga o navega y vuelve, `pedidoActual` (que vive sólo en
+  // memoria) se pierde: en ese caso se recupera el pendiente desde la API. Hace
+  // falta porque los pedidos sin pagar no aparecen en "Mis Pedidos".
+  const pedido =
+    pedidoActual?.estado === ESTADOS_PEDIDO.PENDIENTE
+      ? pedidoActual
+      : (pedidos || []).find((p) => p.estado === ESTADOS_PEDIDO.PENDIENTE) ||
+        null;
+
   // El pedido debe existir y seguir PENDIENTE para poder pagarlo
-  if (!pedidoActual || pedidoActual.estado !== ESTADOS_PEDIDO.PENDIENTE) {
+  if (!pedido || pedido.estado !== ESTADOS_PEDIDO.PENDIENTE) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
         <Card className="text-center shadow" style={{ width: '100%', maxWidth: '450px' }}>
@@ -63,10 +73,10 @@ const Pago = () => {
     );
   }
 
-  const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedidoActual.estado] || pedidoActual.estado;
-  const { sucursal } = pedidoActual;
+  const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
+  const { sucursal } = pedido;
   // El total del backend ya incluye el envío
-  const montoTotal = pedidoActual.total;
+  const montoTotal = pedido.total;
 
   // Aprueba el pago automáticamente y pasa el pedido de PENDIENTE a CONFIRMADO
   const handlePagar = async (metodo) => {
@@ -79,7 +89,7 @@ const Pago = () => {
     await simuladorPago({ total: montoTotal, metodo });
 
     const medioPago = MAPA_MEDIO_PAGO[metodo];
-    const confirmado = await confirmarPedido(pedidoActual.id, medioPago);
+    const confirmado = await confirmarPedido(pedido.id, medioPago);
     if (!confirmado) {
       // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE
       setPaginando(false);
@@ -96,15 +106,19 @@ const Pago = () => {
     if (paginando) return;
     setPaginando(true);
     try {
-      const cancelado = await cambiarEstado(pedidoActual.id, ESTADOS_PEDIDO.CANCELADO);
+      const cancelado = await cambiarEstado(pedido.id, ESTADOS_PEDIDO.CANCELADO);
       if (!cancelado) {
         // El contexto ya muestra el error del backend
         setPaginando(false);
         return;
       }
       setMostrarConfirmarCancelar(false);
-      notificar(`Pedido #${pedidoActual.id} cancelado`, 'success');
-      navigate('/cliente/mis-pedidos');
+      notificar(`Pedido #${pedido.id} cancelado`, 'success');
+      // Se vuelve al carrito y no a "Mis Pedidos": el pedido cancelado era un
+      // PENDIENTE sin pagar, y esos no se listan en "Mis Pedidos", así que esa
+      // pantalla quedaría vacía. El carrito es adonde realmente puede rehacer
+      // el pedido. El stock ya fue repuesto por el backend al cancelar.
+      navigate('/cliente/carrito');
     } catch {
       setPaginando(false);
     }
@@ -135,14 +149,14 @@ const Pago = () => {
           <Card className="text-center shadow mb-4">
             <Card.Body className="p-5">
               <div className="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4 pago-icono-estado">
-                <IconoEstado estado={pedidoActual.estado} size={30} />
+                <IconoEstado estado={pedido.estado} size={30} />
               </div>
               <h1 className="h3 mb-2">Confirmá tu pago</h1>
               <p className="text-muted mb-0">
-                <strong>Número de pedido:</strong> #{pedidoActual.id}
+                <strong>Número de pedido:</strong> #{pedido.id}
               </p>
               <p className="text-muted mb-0">
-                <strong>Fecha:</strong> {formatDate(pedidoActual.fecha)}
+                <strong>Fecha:</strong> {formatDate(pedido.fecha)}
               </p>
               <div className="mb-0">
                 <strong>Estado:</strong>{' '}
@@ -188,11 +202,11 @@ const Pago = () => {
 
           {/* Resumen del pedido */}
           <ResumenPedido
-            items={pedidoActual.productos}
-            total={pedidoActual.total}
-            costoEnvio={pedidoActual.costoEnvio ?? 0}
+            items={pedido.productos}
+            total={pedido.total}
+            costoEnvio={pedido.costoEnvio ?? 0}
             sucursal={sucursal}
-            promociones={pedidoActual.promociones}
+            promociones={pedido.promociones}
           />
 
           <div className="text-center mt-4 d-flex justify-content-center gap-2 flex-wrap">

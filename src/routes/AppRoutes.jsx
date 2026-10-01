@@ -48,6 +48,7 @@ import GestionCategorias from '../pages/admin/GestionCategorias';
 import EditarCategoria from '../pages/admin/EditarCategoria';
 import GestionPedidos from '../pages/admin/GestionPedidos';
 import GestionSucursales from '../pages/admin/GestionSucursales';
+import GestionStock from '../pages/admin/GestionStock';
 import EditarSucursal from '../pages/admin/EditarSucursal';
 import GestionPersonalizacion from '../pages/admin/GestionPersonalizacion';
 import EditarPersonalizacion from '../pages/admin/EditarPersonalizacion';
@@ -97,11 +98,13 @@ const AppRoutes = () => {
         <Route path="/admin/productos" element={<GestionProductos />} />
         <Route path="/admin/producto/editar/:id" element={<EditarProducto />} />
         <Route path="/admin/producto/nuevo" element={<EditarProducto />} />
+      <Route path="/admin/producto/nuevo-combo" element={<EditarProducto />} />
         <Route path="/admin/categorias" element={<GestionCategorias />} />
         <Route path="/admin/categoria/nuevo" element={<EditarCategoria />} />
         <Route path="/admin/categoria/editar/:id" element={<EditarCategoria />} />
         <Route path="/admin/pedidos" element={<GestionPedidos />} />
         <Route path="/admin/sucursales" element={<GestionSucursales />} />
+      <Route path="/admin/stock" element={<GestionStock />} />
         <Route path="/admin/sucursal/nuevo" element={<EditarSucursal />} />
         <Route path="/admin/sucursal/editar/:id" element={<EditarSucursal />} />
         <Route path="/admin/personalizacion" element={<GestionPersonalizacion />} />

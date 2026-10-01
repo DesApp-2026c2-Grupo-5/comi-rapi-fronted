@@ -15,38 +15,51 @@ import { useNavigate } from 'react-router-dom';
 import { usePedidos } from '../../hooks/usePedidos';
 import {
   ESTADOS_PEDIDO,
+  ESTADOS_ACTIVOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
 } from '../../utils/constants';
 
-// Estados que gestiona el admin (PENDIENTE queda fuera por decisión de producto)
+// Tarjetas por estado, en el mismo orden que los filtros de "Pedidos".
 const ESTADOS_ADMIN = [
-  ESTADOS_PEDIDO.CONFIRMADO,
-  ESTADOS_PEDIDO.EN_PREPARACION,
-  ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
-  ESTADOS_PEDIDO.EN_CAMINO,
+  ...ESTADOS_ACTIVOS_PEDIDO,
   ESTADOS_PEDIDO.ENTREGADO,
   ESTADOS_PEDIDO.CANCELADO,
 ];
-
-const ESTADOS_FINALES = [ESTADOS_PEDIDO.ENTREGADO, ESTADOS_PEDIDO.CANCELADO];
 
 const PanelAdmin = () => {
   const { pedidos } = usePedidos();
   const navigate = useNavigate();
 
   const contar = (estado) => pedidos.filter((p) => p.estado === estado).length;
-  const enCurso = ESTADOS_ADMIN.filter((e) => !ESTADOS_FINALES.includes(e)).reduce(
+  const enCurso = ESTADOS_ACTIVOS_PEDIDO.reduce(
     (total, estado) => total + contar(estado),
     0
   );
   const entregados = contar(ESTADOS_PEDIDO.ENTREGADO);
   const cancelados = contar(ESTADOS_PEDIDO.CANCELADO);
 
+  // Cada resumen lleva a "Pedidos" con su filtro ya aplicado: en curso abre la
+  // vista de Activos (sin ?estado), los otros dos filtran por su estado.
   const resumen = [
-    { titulo: 'Pedidos en curso', valor: enCurso, variante: 'warning' },
-    { titulo: 'Pedidos entregados', valor: entregados, variante: 'success' },
-    { titulo: 'Pedidos cancelados', valor: cancelados, variante: 'danger' },
+    {
+      titulo: 'Pedidos en curso',
+      valor: enCurso,
+      variante: 'warning',
+      destino: '/admin/pedidos',
+    },
+    {
+      titulo: 'Pedidos entregados',
+      valor: entregados,
+      variante: 'success',
+      destino: `/admin/pedidos?estado=${ESTADOS_PEDIDO.ENTREGADO}`,
+    },
+    {
+      titulo: 'Pedidos cancelados',
+      valor: cancelados,
+      variante: 'danger',
+      destino: `/admin/pedidos?estado=${ESTADOS_PEDIDO.CANCELADO}`,
+    },
   ];
 
   return (
@@ -54,9 +67,20 @@ const PanelAdmin = () => {
       <h2 className="mb-4">Panel de Administración</h2>
 
       <Row>
-        {resumen.map((tarjeta, idx) => (
-          <Col md={4} key={idx} className="mb-3">
-            <Card className="text-center shadow-sm h-100">
+        {resumen.map((tarjeta) => (
+          <Col md={4} key={tarjeta.titulo} className="mb-3">
+            <Card
+              className="text-center shadow-sm h-100 panel-admin-estado"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(tarjeta.destino)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(tarjeta.destino);
+                }
+              }}
+            >
               <Card.Body>
                 <Card.Title className="text-muted">{tarjeta.titulo}</Card.Title>
                 <Card.Text className={`display-6 fw-bold text-${tarjeta.variante}`}>
