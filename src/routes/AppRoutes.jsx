@@ -24,6 +24,8 @@ const RootRedirect = () => {
 // Páginas públicas
 import Login from '../pages/comunes/Login';
 import Registro from '../pages/comunes/Registro';
+import RecuperarPassword from '../pages/comunes/RecuperarPassword';
+import NuevaPassword from '../pages/comunes/NuevaPassword';
 import AdminLogin from '../pages/admin/AdminLogin';
 import AdminRegister from '../pages/admin/AdminRegister';
 
@@ -36,7 +38,7 @@ import ConfirmacionPedido from '../pages/cliente/ConfirmacionPedido';
 import MisPedidos from '../pages/cliente/MisPedidos';
 import HistorialPedidos from '../pages/cliente/HistorialPedidos';
 import DetallePedido from '../pages/cliente/DetallePedido';
-import MisDirecciones from '../pages/cliente/MisDirecciones';
+import Perfil from '../pages/cliente/Perfil';
 
 // Páginas admin
 import Dashboard from '../pages/admin/Dashboard';
@@ -46,6 +48,7 @@ import GestionCategorias from '../pages/admin/GestionCategorias';
 import EditarCategoria from '../pages/admin/EditarCategoria';
 import GestionPedidos from '../pages/admin/GestionPedidos';
 import GestionSucursales from '../pages/admin/GestionSucursales';
+import GestionStock from '../pages/admin/GestionStock';
 import EditarSucursal from '../pages/admin/EditarSucursal';
 import GestionPersonalizacion from '../pages/admin/GestionPersonalizacion';
 import EditarPersonalizacion from '../pages/admin/EditarPersonalizacion';
@@ -70,6 +73,10 @@ const AppRoutes = () => {
         <Route path="/registro" element={<Registro />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-registro" element={<AdminRegister />} />
+        {/* Recuperación de contraseña. /reset-password debe coincidir con el
+            enlace que arma email_service.js en el backend. */}
+        <Route path="/forgot-password" element={<RecuperarPassword />} />
+        <Route path="/reset-password" element={<NuevaPassword />} />
       </Route>
 
       {/* Rutas protegidas de cliente */}
@@ -82,7 +89,7 @@ const AppRoutes = () => {
         <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />
         <Route path="/cliente/historial" element={<HistorialPedidos />} />
         <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
-        <Route path="/cliente/mis-direcciones" element={<MisDirecciones />} />
+        <Route path="/cliente/perfil" element={<Perfil />} />
       </Route>
 
       {/* Rutas protegidas de administrador */}
@@ -91,11 +98,13 @@ const AppRoutes = () => {
         <Route path="/admin/productos" element={<GestionProductos />} />
         <Route path="/admin/producto/editar/:id" element={<EditarProducto />} />
         <Route path="/admin/producto/nuevo" element={<EditarProducto />} />
+      <Route path="/admin/producto/nuevo-combo" element={<EditarProducto />} />
         <Route path="/admin/categorias" element={<GestionCategorias />} />
         <Route path="/admin/categoria/nuevo" element={<EditarCategoria />} />
         <Route path="/admin/categoria/editar/:id" element={<EditarCategoria />} />
         <Route path="/admin/pedidos" element={<GestionPedidos />} />
         <Route path="/admin/sucursales" element={<GestionSucursales />} />
+      <Route path="/admin/stock" element={<GestionStock />} />
         <Route path="/admin/sucursal/nuevo" element={<EditarSucursal />} />
         <Route path="/admin/sucursal/editar/:id" element={<EditarSucursal />} />
         <Route path="/admin/personalizacion" element={<GestionPersonalizacion />} />

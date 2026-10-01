@@ -25,3 +25,8 @@ dist-ssr
 
 # Sesiones en cache de la verificación end-to-end del canal de tiempo real
 scripts/.sesiones-tiempo-real.json
+
+# Fotos de perfil subidas por los usuarios (el backend crea la carpeta al subir).
+# A diferencia de productos/categorías (que son del seed y se versionan), estas
+# son datos de usuarios y no se commitean.
+public/imagenes/perfiles/

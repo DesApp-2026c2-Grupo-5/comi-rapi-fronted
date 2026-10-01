@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Spinner, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
@@ -15,10 +15,15 @@ import { obtenerProductoPorId, crearProducto, editarProducto } from '../../api/p
 
 const EditarProducto = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [producto, setProducto] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+
+  // Un combo se crea en su propia pantalla, así el formulario no le muestra al
+  // admin el campo "tipo" para elegir entre producto y combo.
+  const forzarTipo = location.pathname.includes('nuevo-combo') ? 'COMBO' : null;
 
   useEffect(() => {
     const cargar = async () => {
@@ -75,9 +80,15 @@ const EditarProducto = () => {
       <Link to="/admin/productos" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a productos
       </Link>
-      <h2 className="mb-4">{id ? `Editar Producto #${id}` : 'Nuevo Producto'}</h2>
+      <h2 className="mb-4">
+        {id ? `Editar Producto #${id}` : forzarTipo ? 'Nuevo Combo' : 'Nuevo Producto'}
+      </h2>
       {error && <Alert variant="danger">{error}</Alert>}
-      <FormularioProducto producto={producto} onGuardar={handleGuardar} />
+      <FormularioProducto
+        producto={producto}
+        onGuardar={handleGuardar}
+        forzarTipo={forzarTipo}
+      />
     </Container>
   );
 };

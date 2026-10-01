@@ -34,6 +34,18 @@ export const ESTADOS_VISIBLES_CLIENTE = [
   ESTADOS_PEDIDO.CANCELADO,
 ];
 
+// Estados activos del pedido: los que se siguen gestionando, o sea los que
+// todavía no llegaron a un estado final. Es la lista que usan "Mis Pedidos" del
+// cliente, "Pedidos" del admin y los pills de filtro.
+// Quedan fuera PENDIENTE (aún sin pagar, no se lista) y ENTREGADO/CANCELADO
+// (estados finales: quedan en el historial, no en las pantallas de trabajo).
+export const ESTADOS_ACTIVOS_PEDIDO = [
+  ESTADOS_PEDIDO.CONFIRMADO,
+  ESTADOS_PEDIDO.EN_PREPARACION,
+  ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
+  ESTADOS_PEDIDO.EN_CAMINO,
+];
+
 // Etiquetas legibles para cada estado (uso en UI).
 export const ETIQUETAS_ESTADO_PEDIDO = {
   [ESTADOS_PEDIDO.PENDIENTE]: 'Pendiente',

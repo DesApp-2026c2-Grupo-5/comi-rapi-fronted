@@ -5,7 +5,7 @@
  * Uso: Se renderiza en main.jsx como componente raíz.
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { NotificacionProvider } from './context/NotificacionContext';
 import { AuthProvider } from './context/AuthContext';
@@ -18,15 +18,8 @@ import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/comunes/Navbar';
 import Footer from './components/comunes/Footer';
 import BannersNotificaciones from './components/comunes/BannersNotificaciones';
-import { obtenerEstadoApi } from './api/health';
 
 function App() {
-  const [apiConectada, setApiConectada] = useState(null);
-
-  useEffect(() => {
-    obtenerEstadoApi().then((resultado) => setApiConectada(resultado.success));
-  }, []);
-
   return (
     <BrowserRouter>
       <NotificacionProvider>
@@ -43,16 +36,6 @@ function App() {
                       <AppRoutes />
                     </main>
                     <Footer />
-                    {apiConectada !== null && (
-                      <div
-                        className={`position-fixed bottom-0 end-0 m-3 badge ${apiConectada ? 'bg-success' : 'bg-danger'}`}
-                        title={
-                          apiConectada ? 'Backend disponible' : 'Backend sin conexión'
-                        }
-                      >
-                        {apiConectada ? 'API conectada' : 'API sin conexión'}
-                      </div>
-                    )}
                   </div>
                 </PersonalizacionProvider>
               </DireccionProvider>

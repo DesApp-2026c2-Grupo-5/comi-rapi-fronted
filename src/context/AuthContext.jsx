@@ -86,6 +86,16 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Vuelve a leer el usuario de la sesión (p. ej. tras editar el perfil, para
+  // que el nombre del navbar quede actualizado).
+  const refrescarUsuario = useCallback(async () => {
+    const result = await obtenerUsuarioActual();
+    if (result.success) {
+      setUser(result.user);
+    }
+    return result;
+  }, []);
+
   // Restaurar la sesión desde el backend al cargar la app.
   React.useEffect(() => {
     (async () => {
@@ -114,8 +124,9 @@ export const AuthProvider = ({ children }) => {
       register,
       registerAdmin,
       logout,
+      refrescarUsuario,
     }),
-    [user, loading, hydrated, isAuthenticated, isAdmin, isCliente, login, loginAdministrador, register, registerAdmin, logout]
+    [user, loading, hydrated, isAuthenticated, isAdmin, isCliente, login, loginAdministrador, register, registerAdmin, logout, refrescarUsuario]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

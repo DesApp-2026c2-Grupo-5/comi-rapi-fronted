@@ -211,6 +211,21 @@
 /* En desktop se ven como tabla normal; en pantallas chicas cada fila pasa a ser una
    tarjeta con los datos apilados y la etiqueta de cada columna (data-label) a la izquierda. */
 
+/* Anchos base de la pantalla de stock. Van antes del media query de abajo para
+   que la versión móvil los pise. */
+.filtro-stock {
+  min-width: 260px;
+}
+
+/* La columna de cantidad mide 130px sólo en escritorio. Si esta regla no fuera
+   sólo de escritorio le ganaría al `width: 100%` del modo tarjeta (más
+   específico) y el input quedaría angosto, cortando "20" como "2". */
+@media (min-width: 768px) {
+  .tabla-admin td.stock-cantidad {
+    width: 130px;
+  }
+}
+
 @media (max-width: 767.98px) {
   .tabla-admin thead {
     display: none;
@@ -268,7 +283,76 @@
     content: none;
   }
 
-  .tabla-admin td.columna-acciones .btn {
+.tabla-admin td.columna-acciones .btn {
     margin: 0.15rem 0;
   }
+
+  /* ============ Pantalla de stock en móvil ============ */
+  /* Los filtros y el botón "Agregar" ocupan todo el ancho para no quedar un
+     desplegable angosto al lado de otro control. */
+
+  .filtro-stock {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .boton-agregar-stock {
+    flex: 1 1 100%;
+  }
+
+  /* La fila de detalle del combo (qué componente lo frena) es una continuación
+     de la tarjeta de arriba, no una tarjeta propia: se le saca el borde superior
+     y se compensa el `gap` del contenedor flex para que quede pegada. */
+
+  .tabla-admin tbody tr.detalle-combo {
+    margin-top: -0.75rem;
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    box-shadow: none;
+  }
+
+  .tabla-admin tbody tr.detalle-combo td {
+    display: block;
+    text-align: left;
+    border-bottom: none;
+    border-top: 1px dashed #ffe6c2;
+  }
+
+  .tabla-admin tbody tr.detalle-combo td::before {
+    content: none;
+  }
+
+  /* El input de cantidad se estira hasta el borde de la tarjeta. Si se le deja
+     un ancho máximo pequeño, las cantidades de dos o tres cifras se cortan. */
+
+  .tabla-admin tbody td.stock-cantidad {
+    width: 100%;
+  }
+
+  .tabla-admin tbody td.stock-cantidad .form-control {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Estado vacío: es un mensaje, no acciones. */
+
+  .tabla-admin tbody td.stock-vacio {
+    display: block;
+    text-align: center;
+    color: #6c757d;
+    border-bottom: none;
+  }
+
+  .tabla-admin tbody td.stock-vacio::before {
+    content: none;
+  }
+
+  /* Los botones de acciones reparten el ancho de la fila. */
+
+  .tabla-admin td.columna-acciones .btn {
+    flex: 1 1 auto;
+  }
 }
+

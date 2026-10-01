@@ -12,7 +12,7 @@
  * NOTA: El cambio de estado se persiste en la API real (PATCH /pedidos/:id/estado).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Card, Badge, Button, Container } from 'react-bootstrap';
 import { FaTimesCircle, FaArrowRight, FaTimes } from 'react-icons/fa';
@@ -24,6 +24,7 @@ import {
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
   ESTADOS_VISIBLES_CLIENTE,
+  ESTADOS_ACTIVOS_PEDIDO,
 } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import HistorialStepper from '../comunes/HistorialStepper';
@@ -34,12 +35,11 @@ const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDID
 // El admin solo maneja pedidos CONFIRMADO y posteriores: PENDIENTE queda filtrado
 // en el contexto y no se muestra ni en la lista ni en el stepper.
 
-// Estados que puede filtrar el admin (el orden define el orden de los pills)
+// La vista por defecto ("Activos") es la cola de trabajo: sólo los pedidos que no
+// están entregados ni cancelados. Los estados finales (entregado/cancelado) se
+// pueden filtrar explícitamente para consultarlos.
 const ESTADOS_FILTRO = [
-  ESTADOS_PEDIDO.CONFIRMADO,
-  ESTADOS_PEDIDO.EN_PREPARACION,
-  ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
-  ESTADOS_PEDIDO.EN_CAMINO,
+  ...ESTADOS_ACTIVOS_PEDIDO,
   ESTADOS_PEDIDO.ENTREGADO,
   ESTADOS_PEDIDO.CANCELADO,
 ];
@@ -63,9 +63,23 @@ const PedidosPendientes = () => {
   // Evita doble clic mientras un cambio de estado está en curso
   const [cambiando, setCambiando] = useState(false);
 
-  const pedidosFiltrados = estadoFiltro
-    ? pedidos.filter((p) => p.estado === estadoFiltro)
-    : pedidos;
+  // Cola de trabajo: se descartan los estados finales (entregado/cancelado).
+  // El contexto ya filtró los PENDIENTE por no estar pagados.
+  const pedidosActivos = useMemo(
+    () => pedidos.filter((p) => ESTADOS_ACTIVOS_PEDIDO.includes(p.estado)),
+    [pedidos]
+  );
+
+  // Si la URL pide un estado que no existe (enlace viejo o mal escrito), se ignora
+  // el filtro en lugar de dejar la pantalla vacía sin explicación.
+  const filtroValido =
+    estadoFiltro && ESTADOS_FILTRO.includes(estadoFiltro) ? estadoFiltro : null;
+
+  // Sin filtro se ve la cola de trabajo; con filtro, ese estado puntual
+  // (incluidos entregado y cancelado, que no están en la cola).
+  const pedidosFiltrados = filtroValido
+    ? pedidos.filter((p) => p.estado === filtroValido)
+    : pedidosActivos;
 
   const contar = (estado) => pedidos.filter((p) => p.estado === estado).length;
 
@@ -120,23 +134,23 @@ const PedidosPendientes = () => {
       <div className="filtro-estado-bar d-flex flex-wrap gap-2 mb-4">
         <Button
           variant="outline-secondary"
-          className={`filtro-estado-pill${!estadoFiltro ? ' filtro-estado-activo' : ''}`}
+          className={`filtro-estado-pill${!filtroValido ? ' filtro-estado-activo' : ''}`}
           onClick={() => aplicarFiltro(null)}
         >
-          Todos
-          <Badge bg="secondary" text="light" className="ms-2">{pedidos.length}</Badge>
+          Activos
+          <Badge bg="secondary" text="light" className="ms-2">{pedidosActivos.length}</Badge>
         </Button>
         {ESTADOS_FILTRO.map((estado) => (
           <Button
             key={estado}
             variant="outline-secondary"
-            className={`filtro-estado-pill${estadoFiltro === estado ? ' filtro-estado-activo' : ''}`}
+            className={`filtro-estado-pill${filtroValido === estado ? ' filtro-estado-activo' : ''}`}
             onClick={() => aplicarFiltro(estado)}
           >
             {ETIQUETAS_ESTADO_PEDIDO[estado] || estado}
             <Badge
               bg={VARIANTE_ESTADO_PEDIDO[estado] || 'secondary'}
-              text={estadoFiltro === estado ? 'dark' : undefined}
+              text={filtroValido === estado ? 'dark' : undefined}
               className="ms-2"
             >
               {contar(estado)}
@@ -145,18 +159,20 @@ const PedidosPendientes = () => {
         ))}
       </div>
 
-      {pedidos.length === 0 ? (
-        <p className="text-muted text-center py-4">No hay pedidos todavía.</p>
-      ) : pedidosFiltrados.length === 0 ? (
-        <div className="text-center py-4">
-          <p className="text-muted">
-            No hay pedidos en el estado "{ETIQUETAS_ESTADO_PEDIDO[estadoFiltro] || estadoFiltro}".
-          </p>
-          <Button variant="outline-secondary" size="sm" onClick={() => aplicarFiltro(null)}>
-            <FaTimes className="me-1" aria-hidden="true" />
-            Quitar filtro
-          </Button>
-        </div>
+      {pedidosFiltrados.length === 0 ? (
+        filtroValido ? (
+          <div className="text-center py-4">
+            <p className="text-muted">
+              No hay pedidos en el estado &quot;{ETIQUETAS_ESTADO_PEDIDO[filtroValido]}&quot;.
+            </p>
+            <Button variant="outline-secondary" size="sm" onClick={() => aplicarFiltro(null)}>
+              <FaTimes className="me-1" aria-hidden="true" />
+              Quitar filtro
+            </Button>
+          </div>
+        ) : (
+          <p className="text-muted text-center py-4">No hay pedidos activos.</p>
+        )
       ) : (
         pedidosFiltrados.map((pedido) => {
         const estadosSiguientes = obtenerEstadosSiguientes(pedido.estado);
