@@ -30,6 +30,7 @@ import {
   ESTADOS_VISIBLES_CLIENTE,
   ETIQUETAS_ESTADO_PEDIDO,
 } from '../../utils/constants';
+import { formatDateTime } from '../../utils/formatters';
 import './HistorialStepper.css';
 
 // Icono grande por estado (react-icons)
@@ -45,17 +46,6 @@ const ICONO_ESTADO = {
 
 // Orden visual del flujo principal (sin cancelado, que es un nodo especial)
 const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDIDO.CANCELADO);
-
-// Formatea fecha y hora (dd/mm/aaaa hh:mm)
-const formatFechaHora = (fecha) => {
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(fecha));
-};
 
 const HistorialStepper = ({
   pedido,
@@ -87,7 +77,7 @@ const HistorialStepper = ({
 
   const fechaDe = (estado) => {
     const registro = (pedido.historialEstados || []).find((h) => h.estado === estado);
-    return registro ? formatFechaHora(registro.fecha) : null;
+    return registro ? formatDateTime(registro.fecha) : null;
   };
 
   // Clase según la posición en el flujo
@@ -98,51 +88,78 @@ const HistorialStepper = ({
     return 'estado-step futuro';
   };
 
+  // Descripción accesible de un nodo. La fecha va en el texto, no en `title`:
+  // un tooltip no lo anuncia un lector de pantalla ni se alcanza con el teclado.
+  const descripcionDe = (estado, { accion } = {}) => {
+    const etiqueta = ETIQUETAS_ESTADO_PEDIDO[estado] || estado;
+    const fecha = fechaDe(estado);
+    const partes = [etiqueta];
+    if (fecha) partes.push(fecha);
+    if (accion) partes.push(accion);
+    return partes.join(', ');
+  };
+
   const renderNodo = (estado, idx) => {
     const Icono = ICONO_ESTADO[estado];
     const clase = claseDe(idx);
     const clickeable = Boolean(onCambiar) && !esCancelado && principal === estado;
-    const titulo = `${ETIQUETAS_ESTADO_PEDIDO[estado] || estado}${
-      fechaDe(estado) ? ` - ${fechaDe(estado)}` : ''
-    }`;
+    // `aria-current="step"` marca dónde está el pedido hoy dentro del flujo.
+    const esActual = !esCancelado && idx === alcanzado;
+    const titulo = descripcionDe(estado);
 
     const contenido = (
       <>
         <Icono className="estado-step-icono" aria-hidden="true" />
         <span className="estado-step-etiqueta">{ETIQUETAS_ESTADO_PEDIDO[estado] || estado}</span>
+        {fechaDe(estado) && (
+          <span className="visually-hidden">{`, ${fechaDe(estado)}`}</span>
+        )}
       </>
     );
 
     if (clickeable && onCambiar) {
       return (
-        <button
-          key={estado}
-          type="button"
-          className={`${clase} clickeable`}
-          title={`${titulo} - clic para avanzar`}
-          onClick={() => onCambiar(estado)}
-        >
-          {contenido}
-        </button>
+        <li key={estado} className="historial-step-item">
+          <button
+            type="button"
+            className={`${clase} clickeable`}
+            aria-label={descripcionDe(estado, { accion: 'clic para avanzar' })}
+            aria-current={esActual ? 'step' : undefined}
+            title={`${titulo} - clic para avanzar`}
+            onClick={() => onCambiar(estado)}
+          >
+            {contenido}
+          </button>
+        </li>
       );
     }
     return (
-      <div key={estado} className={clase} title={titulo}>
-        {contenido}
-      </div>
+      <li key={estado} className="historial-step-item">
+        <div
+          className={clase}
+          aria-current={esActual ? 'step' : undefined}
+          title={titulo}
+        >
+          {contenido}
+        </div>
+      </li>
     );
   };
 
   return (
-    <div className="historial-stepper">
+    // <ol> porque es una secuencia ordenada de estados: el lector de pantalla
+    // anuncia "elemento 3 de 7" y el orden tiene significado.
+    <ol className="historial-stepper">
       {flujoEstados.map((estado, idx) => (
         <Fragment key={estado}>
           {renderNodo(estado, idx)}
           {idx < flujoEstados.length - 1 && (
-            <span
-              className={`historial-conector ${idx < alcanzado ? 'activo' : ''}`}
-              aria-hidden="true"
-            />
+            <li className="historial-conector-item" aria-hidden="true">
+              <span
+                className={`historial-conector ${idx < alcanzado ? 'activo' : ''}`}
+                aria-hidden="true"
+              />
+            </li>
           )}
         </Fragment>
       ))}
@@ -150,36 +167,44 @@ const HistorialStepper = ({
       {/* Nodo especial de cancelado (al final del flujo) */}
       {!sinNodoCancelado && mostrarCancelado && (
         <Fragment key="cancelado-node">
-          <span
-            className={`historial-conector ${esCancelado ? 'riesgo' : ''}`}
-            aria-hidden="true"
-          />
+          <li className="historial-conector-item" aria-hidden="true">
+            <span
+              className={`historial-conector ${esCancelado ? 'riesgo' : ''}`}
+              aria-hidden="true"
+            />
+          </li>
           {esCancelado || !puedeCancelar || !onCambiar ? (
-            <div
-              className="estado-step cancelado"
-              title={`Cancelado${
-                fechaDe(ESTADOS_PEDIDO.CANCELADO)
-                  ? ` - ${fechaDe(ESTADOS_PEDIDO.CANCELADO)}`
-                  : ''
-              }`}
-            >
-              <FaTimesCircle className="estado-step-icono" aria-hidden="true" />
-              <span className="estado-step-etiqueta">Cancelado</span>
-            </div>
+            <li className="historial-step-item">
+              <div
+                className="estado-step cancelado"
+                title={descripcionDe(ESTADOS_PEDIDO.CANCELADO)}
+              >
+                <FaTimesCircle className="estado-step-icono" aria-hidden="true" />
+                <span className="estado-step-etiqueta">Cancelado</span>
+                {fechaDe(ESTADOS_PEDIDO.CANCELADO) && (
+                  <span className="visually-hidden">
+                    {`, ${fechaDe(ESTADOS_PEDIDO.CANCELADO)}`}
+                  </span>
+                )}
+              </div>
+            </li>
           ) : (
-            <button
-              type="button"
-              className="estado-step cancelado clickeable"
-              title="Cancelar pedido - clic para cancelar"
-              onClick={() => onCambiar && onCambiar(ESTADOS_PEDIDO.CANCELADO)}
-            >
-              <FaTimesCircle className="estado-step-icono" aria-hidden="true" />
-              <span className="estado-step-etiqueta">Cancelar</span>
-            </button>
+            <li className="historial-step-item">
+              <button
+                type="button"
+                className="estado-step cancelado clickeable"
+                aria-label="Cancelar pedido"
+                title="Cancelar pedido - clic para cancelar"
+                onClick={() => onCambiar && onCambiar(ESTADOS_PEDIDO.CANCELADO)}
+              >
+                <FaTimesCircle className="estado-step-icono" aria-hidden="true" />
+                <span className="estado-step-etiqueta">Cancelar</span>
+              </button>
+            </li>
           )}
         </Fragment>
       )}
-    </div>
+    </ol>
   );
 };
 

@@ -123,14 +123,12 @@ const Navbar = () => {
   } = useIndicadoresNav();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [expanded, setExpanded] = useState(false);
   // Estado del desplegable de "Catálogo". Se maneja acá en vez de dejarlo interno
   // para poder cerrarlo también al navegar: si no, el menú queda colgando
   // abierto sobre la página nueva.
   const [grupoAbierto, setGrupoAbierto] = useState(false);
 
   const handleLogout = () => {
-    setExpanded(false);
     logout();
     navigate('/login');
   };
@@ -144,7 +142,6 @@ const Navbar = () => {
   const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
 
   const cerrarNavegacion = () => {
-    setExpanded(false);
     setGrupoAbierto(false);
   };
 
@@ -194,8 +191,6 @@ const Navbar = () => {
       expand="lg"
       sticky="top"
       className="navbar-comirapi"
-      expanded={expanded}
-      onToggle={(nuevoEstado) => setExpanded(nuevoEstado)}
       /* Con la barra inferior hay dos regiones <nav> en la misma pantalla. Sin
          nombre cada una se anuncia sólo como "navegación" y no se sabe cuál es
          cuál al tabular. */
@@ -206,15 +201,14 @@ const Navbar = () => {
           as={NavLink}
           to={destinoInicio}
           className="navbar-brand-comirapi"
-          onClick={() => setExpanded(false)}
         >
           <FaHamburger className="brand-ico" aria-hidden="true" />
           <span translate="no">Comi-Rapi</span>
         </BSNavbar.Brand>
         {/* Avatar del cliente en la fila superior, fuera del colapsable: en móvil
-            el perfil quedaba escondido detrás del menú hamburguesa y había que
-            abrirlo para llegar. Sólo se ve bajo `lg`, donde el colapsable no
-            está desplegado. */}
+            el perfil quedaba escondido dentro del colapsable y había que abrir
+            la barra para llegar. Sólo se ve bajo `lg`, donde el colapsable está
+            plegado. */}
         {isCliente && (
           <NavLink
             to="/cliente/perfil"
@@ -224,7 +218,6 @@ const Navbar = () => {
                 isActive ? ' navbar-perfil-activo' : ''
               }`
             }
-            onClick={() => setExpanded(false)}
           >
             <Avatar
               src={user?.fotoPerfilUrl}
@@ -244,7 +237,6 @@ const Navbar = () => {
         >
           <FaSignOutAlt aria-hidden="true" />
         </Button>
-        <BSNavbar.Toggle aria-controls="main-navbar" className="d-none d-lg-block" />
         <BSNavbar.Collapse id="main-navbar" className="d-none d-lg-flex">
           <Nav className="me-auto align-items-center gap-lg-1">
             {menu.map((item) => {
@@ -339,7 +331,6 @@ const Navbar = () => {
                     isActive ? ' navbar-perfil-activo' : ''
                   }`
                 }
-                onClick={() => setExpanded(false)}
               >
                 <Avatar
                   src={user?.fotoPerfilUrl}

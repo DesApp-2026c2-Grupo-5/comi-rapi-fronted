@@ -16,6 +16,7 @@ import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import SubirImagen from './SubirImagen';
 import EditarComponentes, { MIN_COMPONENTES } from './EditarComponentes';
+import './FormularioAdmin.css';
 
 // La categoría "Combos" es la de los combos y no se le ofrece al admin: se
 // deduce del tipo. En un producto normal ni siquiera aparece en el desplegable,
@@ -165,36 +166,41 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
 
   return (
     <>
-      {/* Más ancho para combo: las filas de la receta llevan selector + cantidad + */}
+{/* Más ancho para combo: las filas de la receta llevan selector + cantidad + */}
       {/* botón de quitar, y a 500px quedan apretadas. */}
-      <Card className="shadow-sm" style={{ maxWidth: esCombo ? '760px' : '500px' }}>
+      <Card className={`shadow-sm formulario-admin-card ${esCombo ? 'formulario-admin-card-ancho' : ''}`}>
         <Card.Body>
-          <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
+          <Form onSubmit={handleSubmit} noValidate>
+          <Form.Group className="mb-3" controlId="producto-nombre">
             <Form.Label>Nombre *</Form.Label>
             <Form.Control
               type="text"
+              name="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre del producto"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="producto-precio">
             <Form.Label>Precio *</Form.Label>
             <Form.Control
               type="number"
+              name="precio"
               value={precio}
               onChange={(e) => setPrecio(e.target.value)}
               placeholder="0"
               min="0"
               step="0.01"
+              inputMode="decimal"
+              required
             />
           </Form.Group>
 {/* Un combo se categoriza solo como "Combos", así que no se le
               pregunta la categoría al admin. */}
-          {!esCombo && (            <Form.Group className="mb-3">
+          {!esCombo && (            <Form.Group className="mb-3" controlId="producto-categoria">
               <Form.Label>Categoría *</Form.Label>
-              <Form.Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+              <Form.Select name="categoriaId" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
                 <option value="">Seleccionar categoría</option>
                 {categoriasVisibles.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.nombre}</option>
@@ -216,20 +222,22 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
             </div>
           )}
 
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="producto-descripcion">
             <Form.Label>Descripción</Form.Label>
             <Form.Control
               as="textarea"
+              name="descripcion"
               rows={2}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Descripción del producto"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="producto-imagen">
             <Form.Label>Imagen</Form.Label>
             <Form.Control
               type="text"
+              name="imagen"
               value={imagen}
               onChange={(e) => setImagen(e.target.value)}
               placeholder="/imagenes/productos/tu-imagen.jpg"

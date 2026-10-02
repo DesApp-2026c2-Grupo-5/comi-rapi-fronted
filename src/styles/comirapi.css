@@ -22,6 +22,10 @@
   border-radius: 999px;
   font-weight: 600;
   letter-spacing: 0.3px;
+  /* `touch-action: manipulation` evita el retardo de doble toque al zoomear en
+     móvil sin desactivar el zoom real del usuario. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 159, 28, 0.2);
   transition: transform 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease,
     color 0.2s ease, border-color 0.2s ease;
 }
@@ -192,19 +196,52 @@
 }
 
 /* ============ Dashboard: tarjetas de pedidos por estado ============ */
+/* La tarjeta ES el enlace (`<Card as={Link}>` renderiza un <a>), así que el
+   foco visible va sobre `.panel-admin-estado` mismo y no sobre un envoltorio. */
 .panel-admin-estado {
-  cursor: pointer;
   border-radius: 16px;
   border: 2px solid #f1c27d;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  outline: none;
+  /* El reboot de Bootstrap subraya todo `a`, y como la tarjeta ES el enlace ese
+     subrayado caía también sobre los rótulos y sobre los números: las cifras se
+     leían como texto y no como cantidad. Con esto en el propio <a> alcanza, porque
+     `text-decoration` se hereda y ninguno de los hijos (h2, div, span del badge)
+     define el suyo. */
+  text-decoration: none;
+  /* Solo `transform` se anima: animar color de borde o sombra obliga al
+     navegador a repintar en cada frame y no aporta nada al usuario. */
+  transition: transform 0.2s ease;
+  touch-action: manipulation;
 }
 
-.panel-admin-estado:hover,
-.panel-admin-estado:focus-visible {
+.panel-admin-estado:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
   border-color: #ff9f1c;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* Bootstrap pone `outline: 0` en los enlaces de tarjeta, así que el anillo
+   hay que devolverlo a mano o el enlace se vuelve invisible al tabular. */
+.panel-admin-estado:focus-visible {
+  outline: 3px solid #ff9f1c;
+  outline-offset: 4px;
+}
+
+/* Cantidades y montos en columna: cifras de ancho fijo para que no bailen. */
+.tabla-admin td.stock-cantidad,
+.tabla-admin td.cantidad,
+.detalle-tabla tbody td,
+.detalle-total,
+.detalle-subtotal-envio,
+.resumen-total,
+.resumen-item-subtotal,
+.resumen-costo,
+.item-carrito-subtotal,
+.producto-precio,
+.panel-admin-cuenta,
+.carrito-badge,
+.perfil-edad,
+.detalle-tabla-titulo {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============ Tablas de gestión responsive (productos, categorías, sucursales) ============ */
@@ -352,7 +389,93 @@
   /* Los botones de acciones reparten el ancho de la fila. */
 
   .tabla-admin td.columna-acciones .btn {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
+  }
+}
+
+/* ============ Base global: skip link, scroll, safe areas, movimiento ============ */
+
+/* Enlace de salto: sólo visible cuando recibe foco por teclado. Va fuera del flujo
+   así que no empuja la página. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0.5rem;
+  z-index: 2000;
+  transform: translateY(-120%);
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 10px 10px;
+  background: #b55d00;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+/* La navbar es sticky: sin este padding, al saltar a un ancla o al mover el foco
+   con el teclado el elemento enfocado queda debajo de la barra. */
+html {
+  scroll-padding-top: 5rem;
+}
+/* El skip link salta a #main, que no debe quedar tapado por la navbar.
+   El `outline: none` es deliberado: `main` no es un control, es la región que
+   recibe el foco sólo por el/programáticamente (tabIndex={-1}), y un anillo
+   alrededor de toda la página no informa nada útil. El enlace salta sí se
+   mantiene visible con su propio `:focus-visible` de 3px, y el desplazamiento
+   al destino avisa del cambio de contexto. */
+#main:focus {
+  outline: none;
+}
+
+/* En pantallas con muesca (iPhone en horizontal) el contenido a sangre no debe
+   quedar debajo del sensor ni de los indicadores del sistema. */
+.app-shell {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Títulos: `balance` reparte las líneas para que no quede una huérfana sola. */
+h1,
+h2,
+h3,
+.inicio-hero-titulo,
+.seccion-titulo,
+.resumen-titulo,
+.confirmacion-titulo,
+.detalle-card-header h2,
+.detalle-tabla-titulo,
+.perfil-nombre,
+.perfil-titulo {
+  text-wrap: balance;
+}
+/* Párrafos largos: `pretty` evita la última línea huérfana sin forzar el reparto. */
+p {
+  text-wrap: pretty;
+}
+
+/* Los modales son su propio contenedor de scroll: sin esto, llegar al fondo
+   sigue desplazando la página de atrás. Aplica a todos los `Modal.Body`. */
+.modal-body {
+  overscroll-behavior: contain;
+}
+
+/* ============ Movimiento reducido ============ */
+/* `prefers-reduced-motion` desactiva transiciones y animaciones en TODO el
+   proyecto sin repetir el media query en cada hoja: las duraciones quedan en 0
+   y las animaciones en `none`, conservando el estado final. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

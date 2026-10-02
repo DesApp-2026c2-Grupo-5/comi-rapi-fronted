@@ -16,17 +16,6 @@
   padding-bottom: 0.55rem;
 }
 
-/* Toggler (menú móvil) en blanco para contrastar con el naranja */
-.navbar-comirapi .navbar-toggler {
-  border-color: rgba(255, 255, 255, 0.55);
-}
-.navbar-comirapi .navbar-toggler:focus {
-  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.35);
-}
-.navbar-comirapi .navbar-toggler-icon {
-  filter: invert(1);
-}
-
 /* ============ Marca / logo ============ */
 .navbar-brand-comirapi {
   display: inline-flex;
@@ -189,40 +178,6 @@
   outline-offset: -2px;
 }
 
-/* En móvil el colapsable de Bootstrap pone el desplegable en `position: static`,
-   o sea que se despliega dentro del menú. Ahí se lee como una sublista del menú
-   hamburguesa y conviene sin tarjeta: una caja blanca flotando sobre el naranja
-   se ve como un elemento pegado. */
-@media (max-width: 991.98px) {
-  .navbar-comirapi .nav-submenu {
-    margin-top: 0.2rem;
-    padding: 0 0 0 1rem;
-    border: 0;
-    border-left: 2px solid rgba(255, 255, 255, 0.45);
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-  }
-
-  .navbar-comirapi .nav-submenu-enlace,
-  .navbar-comirapi .nav-submenu-enlace:hover {
-    color: #fff;
-  }
-
-  .navbar-comirapi .nav-submenu-enlace:hover {
-    background-color: rgba(255, 255, 255, 0.16);
-  }
-
-  /* Sobre el fondo del desplegable ya no hace falta la pastilla blanca: el
-     borde izquierdo y el texto en blanco marcan la sección. */
-  .navbar-comirapi .nav-submenu-enlace.activo,
-  .navbar-comirapi .nav-submenu-enlace.activo:hover {
-    background-color: transparent;
-    color: #fff;
-    font-weight: 800;
-  }
-}
-
 /* ============ Contador del carrito ============ */
 .nav-enlace-ico-wrap {
   position: relative;
@@ -367,9 +322,9 @@
 }
 
 /* ============ Responsive de la zona del usuario ============ */
-/* Avatar del cliente en la fila superior: da acceso al perfil sin abrir el menú
-   hamburguesa. Es el mismo elemento que la versión con nombre, pero se muestra
-   fuera del colapsable. Sólo tiene sentido cuando el colapsable está plegado. */
+/* Avatar del cliente en la fila superior: da acceso al perfil sin abrir nada.
+    Es el mismo elemento que la versión con nombre, pero se muestra fuera del
+    colapsable. Sólo tiene sentido cuando el colapsable está plegado. */
 .navbar-perfil-movil {
   display: none;
 }
@@ -389,9 +344,9 @@
   /* El avatar de la fila superior pasa a ser el acceso al perfil.
       `margin-left: auto` es lo que lo pega a la derecha: el container de la
       navbar usa `justify-content: space-between`, así que sin el margen automático
-      el avatar quedaría en el medio, entre la marca y el toggler, en vez de junto
-      al toggler. No lleva `order`: el orden del DOM ya es marca → avatar → toggler
-      y es el que se quiere. */
+      el avatar quedaría en el medio, entre la marca y el resto de la fila, en vez
+      de junto al botón de cerrar sesión. No lleva `order`: el orden del DOM ya es
+      marca → avatar → cerrar sesión y es el que se quiere. */
   .navbar-perfil-movil {
     display: inline-flex;
     margin-left: auto;
@@ -401,10 +356,6 @@
   /* Y la copia de escritorio se oculta para no mostrar dos veces lo mismo. */
   .navbar-perfil-desplegado {
     display: none;
-  }
-
-  .navbar-toggler {
-    display: none !important;
   }
 
   .navbar-collapse {

@@ -38,17 +38,33 @@
 .batch-notificacion-mensaje {
   flex: 1;
   min-width: 0;
+  /* Los mensajes pueden traer emails, URLs o códigos de tracking: sin esto
+     una cadena larga sin espacios empuja un scrollbar horizontal. */
+  overflow-wrap: anywhere;
 }
 
-.batch-notificacion.banner-clickeable {
+/* El mensaje accionable es un <button> que ocupa el espacio disponible. */
+.batch-notificacion-accion {
+  display: block;
+  text-align: left;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 159, 28, 0.2);
+  transition: color 0.2s ease;
 }
-
-.batch-notificacion.banner-clickeable:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
-  border-color: #ff9f1c;
+.batch-notificacion-accion:hover {
+  color: #b55d00;
+  text-decoration: underline;
+}
+.batch-notificacion-accion:focus-visible {
+  outline: 2px solid #ff9f1c;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .batch-notificacion-cerrar {
@@ -56,19 +72,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   border: none;
   border-radius: 50%;
   background: transparent;
   color: #8a5a2b;
   font-size: 0.9rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 159, 28, 0.2);
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .batch-notificacion-cerrar:hover {
   background: #ffe6c2;
   color: #b55d00;
+}
+
+.batch-notificacion-cerrar:focus-visible {
+  outline: 2px solid #ff9f1c;
+  outline-offset: 1px;
 }
 
 @keyframes batch-notificacion-entrada {

@@ -60,7 +60,7 @@ const SucursalesCercanas = () => {
 
   return (
     <Container className="py-4">
-      <h2 className="mb-1">Sucursales disponibles</h2>
+      <h1 className="h2 mb-1">Sucursales disponibles</h1>
       <p className="text-muted mb-4">
         {/* MOCK - la ubicación proviene de datos simulados */}
         Tu ubicación: {UBICACION_MOCK}
@@ -88,7 +88,7 @@ const SucursalesCercanas = () => {
                       <strong>Dirección:</strong> {formatearDireccion(sucursal.direccion)}
                     </Card.Text>
                     <Card.Text className="text-muted mb-1">
-                      <strong>Distancia estimada:</strong> {distancias[sucursal.id] || 'Calculando...'}
+                      <strong>Distancia estimada:</strong> {distancias[sucursal.id] || 'Calculando…'}
                     </Card.Text>
                     <Card.Text className="text-muted mb-1">
                       <strong>Teléfono:</strong> {sucursal.telefono || '-'}

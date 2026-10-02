@@ -9,6 +9,7 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
+import Loader from './Loader';
 
 /**
  * Devuelve el destino de inicio según el rol del usuario autenticado.
@@ -27,9 +28,10 @@ const destinoPorRol = (user) => (user?.rol === ROLES.ADMIN ? '/admin/dashboard' 
 const ProtectedRoute = ({ requiredRole, children }) => {
   const { isAuthenticated, user, hydrated } = useAuth();
 
-  // Esperar a que se verifique localStorage antes de decidir
+  // Esperar a que se verifique localStorage antes de decidir. Devolver `null`
+  // dejaba la pantalla en blanco; el Loader comunica que está arrancando.
   if (!hydrated) {
-    return null;
+    return <Loader texto="Verificando sesión…" />;
   }
 
   // Si no está autenticado, redirigir a login
@@ -56,7 +58,7 @@ const PublicOnlyRoute = ({ children }) => {
 
   // Esperar a que se verifique localStorage antes de decidir
   if (!hydrated) {
-    return null;
+    return <Loader texto="Verificando sesión…" />;
   }
 
   // Ya hay una sesión activa: no mostrar el login/registro

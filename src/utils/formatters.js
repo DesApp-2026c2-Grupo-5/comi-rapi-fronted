@@ -1,10 +1,35 @@
 /**
  * Propósito: Funciones de formateo de precios, fechas y otros datos para presentación.
- * Contenido: formatPrice, formatDate, formatDateOnly, calcularEdad, obtenerIniciales,
- *            nombreCompleto.
+ * Contenido: formatPrice, formatDate, formatDateTime, formatDateOnly, calcularEdad,
+ *            obtenerIniciales, nombreCompleto.
  * Dependencias: Ninguna.
  * Uso: import { formatPrice, formatDate } from '../utils/formatters';
  */
+
+/* Los formateadores de Intl son caros de construir (compilan patrones y leen la
+   configuración regional en cada llamada). Se crean una vez y se reutilizan, que
+   además es lo que garantiza que toda la app formatee con el mismo locale. */
+const LOCALE = 'es-AR';
+
+const MONEDA_AR = new Intl.NumberFormat(LOCALE, {
+  style: 'currency',
+  currency: 'ARS',
+});
+
+const FECHA_LARGA = new Intl.DateTimeFormat(LOCALE, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const FECHA_HORA = new Intl.DateTimeFormat(LOCALE, {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 /**
  * Formatea un precio numérico a formato de moneda argentina.
@@ -12,10 +37,7 @@
  * @returns {string} Precio formateado (ej: "$1.500,00").
  */
 export const formatPrice = (precio) => {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  }).format(precio);
+  return MONEDA_AR.format(precio);
 };
 
 /**
@@ -24,11 +46,20 @@ export const formatPrice = (precio) => {
  * @returns {string} Fecha formateada (ej: "25 de agosto de 2026").
  */
 export const formatDate = (fecha) => {
-  return new Intl.DateTimeFormat('es-AR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(fecha));
+  return FECHA_LARGA.format(new Date(fecha));
+};
+
+/**
+ * Formatea fecha y hora en 24hs (ej: "25/08/2026, 14:30").
+ *
+ * Vive acá y no duplicado en cada componente: los formateadores de `Intl` son
+ * caros de construir y una instancia por llamada se nota en listas largas.
+ *
+ * @param {string|Date} fecha - Fecha a formatear.
+ * @returns {string} Fecha y hora formateadas.
+ */
+export const formatDateTime = (fecha) => {
+  return FECHA_HORA.format(new Date(fecha));
 };
 
 /**
@@ -45,11 +76,7 @@ export const formatDateOnly = (fecha) => {
   if (!fecha) return '';
   const [anio, mes, dia] = String(fecha).slice(0, 10).split('-').map(Number);
   if (!anio || !mes || !dia) return '';
-  return new Intl.DateTimeFormat('es-AR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(anio, mes - 1, dia));
+  return FECHA_LARGA.format(new Date(anio, mes - 1, dia));
 };
 
 /**

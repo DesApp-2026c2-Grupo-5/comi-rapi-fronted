@@ -25,16 +25,22 @@
 .resumen-item-nombre {
   font-weight: 700;
   font-size: 0.9rem;
+  /* `min-width: 0` + `overflow-wrap` para que un nombre de producto largo
+     envuelva la línea en vez de pisar el subtotal, que es `nowrap`. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .resumen-item-subtotal {
   font-weight: 700;
   font-size: 0.9rem;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .resumen-item-precio {
   font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .resumen-desglose {
@@ -42,6 +48,8 @@
   color: #6c757d;
   line-height: 1.6;
   margin-top: 0.25rem;
+  /* Nombres de toppings y extras vienen del catálogo: pueden ser largos. */
+  overflow-wrap: anywhere;
 }
 
 .resumen-desglose strong {

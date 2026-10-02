@@ -26,11 +26,21 @@
 }
 
 /* ============ Stepper ============ */
+/* Es una <ol>: se le sacan los marcadores y el padding por defecto de lista,
+   pero se conserva la semántica de secuencia ordenada. */
 .historial-stepper {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.3rem 0.15rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.historial-step-item,
+.historial-conector-item {
+  display: contents;
 }
 
 .historial-conector {
@@ -95,8 +105,7 @@
   transform: scale(1.3);
   filter: drop-shadow(0 0 7px rgba(255, 159, 28, 0.55));
   animation: estado-latido 2s ease-in-out infinite;
-}
-.estado-step.actual .estado-step-etiqueta {
+}.estado-step.actual .estado-step-etiqueta {
   color: #c07000;
   font-weight: 900;
 }
@@ -112,6 +121,8 @@
 /* Nodos clicables (solo admin: los estados siguientes permitidos) */
 .estado-step.clickeable {
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 159, 28, 0.2);
 }
 .estado-step.clickeable:hover {
   background-color: rgba(25, 135, 84, 0.08);

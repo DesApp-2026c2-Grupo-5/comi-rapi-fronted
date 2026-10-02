@@ -61,12 +61,10 @@ const Pago = () => {
             <p className="text-muted mb-4">
               Confirmá primero los productos de tu carrito para generar tu pedido.
             </p>
-            <Link to="/cliente/carrito">
-              <Button variant="primary" className="rounded-pill px-4">
+            <Button as={Link} to="/cliente/carrito" variant="primary" className="rounded-pill px-4">
                 <FaArrowLeft aria-hidden="true" />
                 Ir al carrito
               </Button>
-            </Link>
           </Card.Body>
         </Card>
       </Container>
@@ -210,12 +208,10 @@ const Pago = () => {
           />
 
           <div className="text-center mt-4 d-flex justify-content-center gap-2 flex-wrap">
-            <Link to="/cliente/carrito">
-              <Button variant="outline-secondary" className="rounded-pill px-4">
-                <FaArrowLeft aria-hidden="true" />
-                Volver al carrito
-              </Button>
-            </Link>
+            <Button as={Link} to="/cliente/carrito" variant="outline-secondary" className="rounded-pill px-4">
+              <FaArrowLeft aria-hidden="true" />
+              Volver al carrito
+            </Button>
             <Button
               variant="outline-danger"
               className="rounded-pill px-4"
@@ -242,12 +238,13 @@ const Pago = () => {
   );
 };
 
-// Aviso mientras se procesa el pago
+// Aviso mientras se procesa el pago. `role="status"` + `aria-live` para que el
+// cambio de estado del pago se anuncie sin tener que vigilar la pantalla.
 const AlertPaginando = ({ metodo, monto }) => (
-  <Card className="text-center shadow-sm mb-4 pago-procesando">
+  <Card className="text-center shadow-sm mb-4 pago-procesando" role="status" aria-live="polite">
     <Card.Body className="p-4">
       <FaCheckCircle size={36} className="text-success mb-2" aria-hidden="true" />
-      <h3 className="h5 mb-1">Procesando pago...</h3>
+      <h3 className="h5 mb-1">Procesando pago…</h3>
       <p className="text-muted mb-0">
         {metodo ? `${metodo} · ` : ''}
         {formatPrice(monto)}

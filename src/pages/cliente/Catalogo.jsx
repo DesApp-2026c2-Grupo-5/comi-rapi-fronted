@@ -155,10 +155,17 @@ const Catalogo = () => {
         <p className="text-muted mb-0">Elegí tu favorito y añadilo al carrito.</p>
       </div>
 
-      {/* Filtros / categorías en forma de pills */}
-      <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
+      {/* Filtros / categorías en forma de pills.
+          Van en un `role="group"` con etiqueta, y cada pill lleva `aria-pressed`
+          para que se anuncie cuál está activa en vez de deducirlo por el color. */}
+      <div
+        className="d-flex flex-wrap justify-content-center gap-2 mb-4"
+        role="group"
+        aria-label="Filtrar por categoría"
+      >
         <Button
           className={categoriaSeleccionada === 'Todos' ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
+          aria-pressed={categoriaSeleccionada === 'Todos'}
           onClick={() => seleccionarCategoria(null)}
         >
           Todos
@@ -169,6 +176,7 @@ const Catalogo = () => {
             <Button
               key={cat.id}
               className={activo ? 'filtro-pill filtro-activo' : 'filtro-pill filtro-inactivo'}
+              aria-pressed={activo}
               onClick={() => seleccionarCategoria(cat.id)}
             >
               {cat.nombre}
@@ -177,20 +185,32 @@ const Catalogo = () => {
         })}
       </div>
 
-      {/* Buscador por nombre y filtro por rango de precio */}
+      {/* Buscador por nombre y filtro por rango de precio.
+          `type="search"` ya expone un botón de limpiar en varios navegadores;
+          los inputs de precio van con label propio porque el placeholder no
+          sobrevive a que el usuario escriba. */}
       <div className="catalogo-busqueda mb-4">
-        <Form.Control
-          type="search"
-          placeholder="Buscar producto por nombre..."
-          value={busqueda}
-          onChange={(e) => setParam('busqueda', e.target.value)}
-          className="mb-2"
-        />
+        <Form.Group controlId="catalogo-busqueda" className="mb-2">
+          <Form.Label className="visually-hidden">Buscar producto por nombre</Form.Label>
+          <Form.Control
+            type="search"
+            name="busqueda"
+            placeholder="Buscar producto por nombre…"
+            value={busqueda}
+            onChange={(e) => setParam('busqueda', e.target.value)}
+          />
+        </Form.Group>
         <div className="d-flex gap-2 precio-filtros">
           <div className="precio-grupo">
+            <Form.Label htmlFor="precio-min" className="visually-hidden">
+              Precio mínimo
+            </Form.Label>
             <Form.Control
+              id="precio-min"
               type="number"
+              name="precioMin"
               min="0"
+              inputMode="numeric"
               placeholder="Precio mínimo"
               value={borrador.precioMin ?? precioMin}
               isInvalid={campoInvalido === 'precioMin'}
@@ -211,9 +231,15 @@ const Catalogo = () => {
             </Form.Control.Feedback>
           </div>
           <div className="precio-grupo">
+            <Form.Label htmlFor="precio-max" className="visually-hidden">
+              Precio máximo
+            </Form.Label>
             <Form.Control
+              id="precio-max"
               type="number"
+              name="precioMax"
               min="0"
+              inputMode="numeric"
               placeholder="Precio máximo"
               value={borrador.precioMax ?? precioMax}
               isInvalid={campoInvalido === 'precioMax'}
@@ -239,16 +265,30 @@ const Catalogo = () => {
       {/* Grid de productos */}
       {cargando ? (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+          <Spinner animation="border" variant="danger" aria-hidden="true" />
+          <p className="visually-hidden" role="status">
+            Cargando el catálogo…
+          </p>
         </div>
       ) : error ? (
         <div className="text-center">
-          <Alert variant="danger" className="cat-aviso d-inline-block">
+          <Alert variant="danger" role="alert" className="cat-aviso d-inline-block">
             {error}
           </Alert>
         </div>
       ) : (
         <>
+          {/* El conteo se anuncia al cambiar los filtros: sin esto, quien usa
+              lector de pantalla no tiene forma de saber que la lista se
+              actualizó ni cuántos productos quedan. */}
+          <p className="visually-hidden" role="status">
+            {productosFiltrados.length === 1
+              ? '1 producto encontrado.'
+              : `${productosFiltrados.length} productos encontrados.`}
+          </p>
+          {/* Heading propio de la grilla: los títulos de producto son <h3>, así que la
+              lista necesita su <h2> para no saltear un nivel. */}
+          <h2 className="visually-hidden">Productos del catálogo</h2>
           <Row className="justify-content-center">
             {productosFiltrados.map((producto) => (
               <Col key={producto.id} md={4} lg={3} className="mb-4">

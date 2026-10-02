@@ -1,0 +1,16 @@
+/**
+ * Propósito: Estilos de la vista previa del componente SubirImagen.
+ * Contenido: Tamaño y recorte de la miniatura.
+ * Dependencias: SubirImagen.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/admin/SubirImagen.jsx.
+ *
+ * Las medidas salen del JSX: el `style={{...}}` en línea de la miniatura era
+ * layout disfrazado de contenido y no se podía ajustar por breakpoint.
+ */
+
+.subir-imagen-preview {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border: 1px solid #dee2e6;
+}

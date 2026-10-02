@@ -16,6 +16,7 @@ import { Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
 import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import './FormularioAdmin.css';
 
 const TIPOS = [
   { valor: 'DESCUENTO_PORCENTUAL', etiqueta: 'Porcentual (%)' },
@@ -137,31 +138,34 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
   );
 
   return (
-    <Card className="shadow-sm" style={{ maxWidth: '700px' }}>
+    <Card className="shadow-sm formulario-admin-card formulario-admin-card-ancho">
       <Card.Body>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
+        <Form onSubmit={handleSubmit} noValidate>
+          <Form.Group className="mb-3" controlId="promocion-nombre">
             <Form.Label>Nombre *</Form.Label>
             <Form.Control
               type="text"
+              name="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre de la promoción"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-descripcion">
             <Form.Label>Descripción</Form.Label>
             <Form.Control
               as="textarea"
+              name="descripcion"
               rows={2}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Descripción de la promoción"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-tipo">
             <Form.Label>Tipo *</Form.Label>
-            <Form.Select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+            <Form.Select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
               {TIPOS.map((t) => (
                 <option key={t.valor} value={t.valor}>
                   {t.etiqueta}
@@ -169,15 +173,18 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
               ))}
             </Form.Select>
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-valor">
             <Form.Label>Valor *</Form.Label>
             <Form.Control
               type="number"
+              name="valor"
               min="0"
               max={esDosPorUno ? undefined : 100}
               value={esDosPorUno ? 50 : valor}
               disabled={esDosPorUno}
               onChange={(e) => setValor(e.target.value)}
+              inputMode="numeric"
+              required
             />
             <Form.Text className="text-muted">
               {esDosPorUno
@@ -185,40 +192,44 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
                 : 'Porcentaje de descuento (0–100).'}
             </Form.Text>
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-fecha-inicio">
             <Form.Label>Vigente desde</Form.Label>
             <Form.Control
               type="date"
+              name="fechaInicio"
               value={fechaInicio}
               onChange={(e) => setFechaInicio(e.target.value)}
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-fecha-fin">
             <Form.Label>Vigente hasta</Form.Label>
             <Form.Control
               type="date"
+              name="fechaFin"
               value={fechaFin}
               min={fechaInicio || undefined}
               onChange={(e) => setFechaFin(e.target.value)}
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-activa">
             <Form.Check
               type="switch"
               id="promocion-activa"
+              name="activa"
               label="Promoción activa"
               checked={activa}
               onChange={(e) => setActiva(e.target.checked)}
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="promocion-busqueda-producto">
             <Form.Label>
               Productos alcanzados ({seleccionados.length} seleccionados)
             </Form.Label>
             <Form.Control
               type="search"
+              name="busquedaProducto"
               className="mb-2"
-              placeholder="Buscar producto..."
+              placeholder="Buscar producto…"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
@@ -227,19 +238,23 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
                 <Spinner animation="border" size="sm" variant="danger" />
               </div>
             ) : errorProductos ? (
-              <Alert variant="danger" className="py-2">
+              <Alert variant="danger" role="alert" className="py-2">
                 {errorProductos}
               </Alert>
             ) : (
-              <div
-                className="border rounded p-2"
-                style={{ maxHeight: '220px', overflowY: 'auto' }}
-              >
+              /* fieldset/legend: la lista de checkboxes comparte un mismo rótulo
+                 ("Productos alcanzados"), no son campos independientes sueltos. */
+              <fieldset className="promocion-lista-productos">
+                <legend className="visually-hidden">
+                  Productos alcanzados por la promoción
+                </legend>
                 {productosFiltrados.map((producto) => (
                   <Form.Check
                     key={producto.id}
                     type="checkbox"
                     id={`promo-prod-${producto.id}`}
+                    name="productosAlcanzados"
+                    value={producto.id}
                     label={`${producto.nombre} — $${producto.precio}`}
                     checked={seleccionados.includes(String(producto.id))}
                     onChange={() => toggleProducto(producto.id)}
@@ -250,7 +265,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
                     No hay productos que coincidan.
                   </span>
                 )}
-              </div>
+              </fieldset>
             )}
           </Form.Group>
           <Button variant="primary" type="submit" className="w-100">

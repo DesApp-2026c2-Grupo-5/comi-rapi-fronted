@@ -18,7 +18,10 @@ import {
   subirImagenProducto,
 } from '../../api/imagenes';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import './SubirImagen.css';
 
+/* El proyecto no usa PropTypes en ningún componente. */
+/* eslint-disable react/prop-types */
 const SubirImagen = ({ tipo = 'producto', imagen, onImagenSubida }) => {
   const { notificar } = useNotificaciones();
   const inputRef = useRef(null);
@@ -46,8 +49,13 @@ const SubirImagen = ({ tipo = 'producto', imagen, onImagenSubida }) => {
     }
   };
 
+  const esCategoria = tipo === 'categoria';
+  const nombreSujeto = esCategoria ? 'la categoría' : 'el producto';
+
   return (
     <div className="d-flex align-items-center gap-2 flex-wrap">
+      {/* El input real está oculto y este botón lo dispara. Un `<label>` no
+          alcanzaba porque el input es de tipo file con `display: none`. */}
       <Button
         type="button"
         variant="outline-primary"
@@ -55,34 +63,40 @@ const SubirImagen = ({ tipo = 'producto', imagen, onImagenSubida }) => {
         disabled={subiendo}
       >
         {subiendo ? (
-          <Spinner animation="border" size="sm" className="me-1" />
+          <Spinner animation="border" size="sm" className="me-1" aria-hidden="true" />
         ) : (
           <FaCloudUploadAlt className="me-1" aria-hidden="true" />
         )}
-        {subiendo ? 'Subiendo...' : 'Subir imagen'}
+        {subiendo ? 'Subiendo…' : 'Subir imagen'}
       </Button>
       <input
         ref={inputRef}
         type="file"
+        name="imagen"
         accept="image/*"
         onChange={handleSeleccion}
         className="d-none"
+        tabIndex={-1}
+        aria-hidden="true"
       />
+      {/* `aria-live` para que al terminar la subida se anuncie sin tener que
+          buscar el cambio en pantalla. */}
+      <span className="visually-hidden" role="status" aria-live="polite">
+        {subiendo ? 'Subiendo la imagen…' : ''}
+      </span>
       {imagen ? (
         <img
           src={imagen}
-          alt="Vista previa del producto"
-          className="rounded"
-          style={{
-            width: '80px',
-            height: '60px',
-            objectFit: 'cover',
-            border: '1px solid #dee2e6',
-          }}
+          alt={`Vista previa de la imagen actual de ${nombreSujeto}`}
+          className="subir-imagen-preview rounded"
+          width={80}
+          height={60}
+          decoding="async"
         />
       ) : null}
     </div>
   );
 };
+/* eslint-enable react/prop-types */
 
 export default SubirImagen;

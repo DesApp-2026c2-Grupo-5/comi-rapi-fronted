@@ -88,7 +88,7 @@ const GestionPersonalizacion = () => {
   return (
     <Container fluid className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 className="mb-0">Gestión de Personalización</h2>
+        <h1 className="h2 mb-0">Gestión de Personalización</h1>
         <Button variant="primary" onClick={handleNuevo} disabled={!productoSeleccionado}>
           <FaPlus className="me-1" aria-hidden="true" /> Agregar elemento
         </Button>

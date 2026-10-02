@@ -61,11 +61,11 @@ const EditarCategoria = () => {
   if (id && !categoria) {
     return (
       <Container className="py-5 text-center">
-        <h2>{error || 'Categoría no encontrada'}</h2>
-        <Link to="/admin/categorias"><Button variant="secondary" className="mt-3">
+        <h1 className="h2">{error || 'Categoría no encontrada'}</h1>
+        <Button as={Link} to="/admin/categorias" variant="secondary" className="mt-3">
           <FaArrowLeft className="me-1" aria-hidden="true" />
           Volver a categorías
-        </Button></Link>
+        </Button>
       </Container>
     );
   }
@@ -75,8 +75,9 @@ const EditarCategoria = () => {
       <Link to="/admin/categorias" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a categorías
       </Link>
-      <h2 className="mb-4">{id ? `Editar Categoría #${id}` : 'Nueva Categoría'}</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
+      <h1 className="h2 mb-4">{id ? `Editar Categoría #${id}` : 'Nueva Categoría'}</h1>
+      {/* role="alert": si el guardado falla, hay que anunciarlo. */}
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <FormularioCategoria categoria={categoria} onGuardar={handleGuardar} />
     </Container>
   );

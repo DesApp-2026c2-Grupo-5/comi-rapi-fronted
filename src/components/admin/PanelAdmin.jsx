@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { Container, Row, Col, Card, Badge, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { usePedidos } from '../../hooks/usePedidos';
 import {
   ESTADOS_PEDIDO,
@@ -29,7 +29,6 @@ const ESTADOS_ADMIN = [
 
 const PanelAdmin = () => {
   const { pedidos } = usePedidos();
-  const navigate = useNavigate();
 
   const contar = (estado) => pedidos.filter((p) => p.estado === estado).length;
   const enCurso = ESTADOS_ACTIVOS_PEDIDO.reduce(
@@ -64,25 +63,23 @@ const PanelAdmin = () => {
 
   return (
     <Container>
-      <h2 className="mb-4">Panel de Administración</h2>
+      {/* h1 y no h2: el Dashboard no aporta ningún encabezado propio, así que
+          esta es la etiqueta principal de la página. */}
+      <h1 className="mb-4">Panel de Administración</h1>
 
       <Row>
         {resumen.map((tarjeta) => (
           <Col md={4} key={tarjeta.titulo} className="mb-3">
-            <Card
-              className="text-center shadow-sm h-100 panel-admin-estado"
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate(tarjeta.destino)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  navigate(tarjeta.destino);
-                }
-              }}
-            >
+            {/* Las tarjetas navegaban con `role="button"` + onClick + onKeyDown
+                sobre un <div>:Eso obliga a reimplementar a mano lo que un <a>
+                ya hace (Enter, Espacio, foco, menú contextual, abrir en pestaña
+                nueva) y deja el destino invisible para el lector de pantalla.
+                Ahora son enlaces reales con la apariencia de tarjeta. */}
+            <Card as={Link} to={tarjeta.destino} className="text-center shadow-sm h-100 panel-admin-estado">
               <Card.Body>
-                <Card.Title className="text-muted">{tarjeta.titulo}</Card.Title>
+                <Card.Title as="h2" className="h6 text-muted">
+                  {tarjeta.titulo}
+                </Card.Title>
                 <Card.Text className={`display-6 fw-bold text-${tarjeta.variante}`}>
                   {tarjeta.valor}
                 </Card.Text>
@@ -93,17 +90,12 @@ const PanelAdmin = () => {
       </Row>
 
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 my-4">
-        <h3 className="mb-0">Pedidos por estado</h3>
-        <a
-          href="#"
-          className="small text-decoration-none fw-semibold"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('/admin/pedidos');
-          }}
-        >
+        <h2 className="h4 mb-0">Pedidos por estado</h2>
+        {/* Antes era <a href="#" onClick={preventDefault}>: un enlace que no
+            lleva a ningún lado y que al abrirlo en otra pestaña no hacía nada. */}
+        <Link to="/admin/pedidos" className="small text-decoration-none fw-semibold">
           Ver todos
-        </a>
+        </Link>
       </div>
 
       {pedidos.length === 0 ? (
@@ -115,16 +107,9 @@ const PanelAdmin = () => {
             return (
               <Col xs={6} md={4} lg={2} key={estado} className="mb-3">
                 <Card
+                  as={Link}
+                  to={`/admin/pedidos?estado=${estado}`}
                   className="panel-admin-estado shadow-sm h-100"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate(`/admin/pedidos?estado=${estado}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate(`/admin/pedidos?estado=${estado}`);
-                    }
-                  }}
                 >
                   <Card.Body className="text-center d-flex flex-column align-items-center justify-content-center">
                     <span className="display-6 fw-bold">{cantidad}</span>

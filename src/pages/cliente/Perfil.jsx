@@ -72,10 +72,20 @@ const PASSWORD_VACIA = {
 // Textos de las filas de la ficha cuando el cliente todavía no lo cargó.
 const Vacio = () => <span className="perfil-valor-vacio">Sin cargar</span>;
 
+// Límite superior del campo de fecha de nacimiento: hoy, en formato ISO
+// (`yyyy-mm-dd`) que es el que espera <input type="date">. Evita que se pueda
+// elegir un fecha futura.
+const hoyIso = () => {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${ahora.getFullYear()}-${mes}-${dia}`;
+};
+
 const Perfil = () => {
   const { refrescarUsuario } = useAuth();
   const { notificar } = useNotificaciones();
-  // El carrito y otros accesosvernight abren el gestor con ?direcciones=1
+  // El carrito y otros accesos de la app abren el gestor con ?direcciones=1
   const [searchParams] = useSearchParams();
   const {
     direcciones,
@@ -363,7 +373,9 @@ const Perfil = () => {
         <p className="perfil-bajada">Las que usás para recibir tus pedidos.</p>
 
         {cargandoDirecciones ? (
-          <p className="text-muted mb-0">Cargando direcciones...</p>
+          <p className="text-muted mb-0" role="status" aria-live="polite">
+            Cargando direcciones…
+          </p>
         ) : direcciones.length === 0 ? (
           <p className="perfil-direccion-vacia">
             Todavía no cargaste ninguna dirección. Podés agregarla cuando quieras.
@@ -397,9 +409,9 @@ const Perfil = () => {
   return (
     <Container className="perfil-pagina py-4">
       {cargando ? (
-        <p className="text-muted d-flex align-items-center gap-2">
-          <Spinner animation="border" size="sm" role="status" />
-          Cargando perfil...
+        <p className="text-muted d-flex align-items-center gap-2" role="status" aria-live="polite">
+          <Spinner animation="border" size="sm" aria-hidden="true" />
+          Cargando perfil…
         </p>
       ) : (
         <>
@@ -447,7 +459,11 @@ const Perfil = () => {
                       : 'Estos son los datos asociados a tu cuenta.'}
                   </p>
 
-                  {errorForm && <div className="alert alert-danger">{errorForm}</div>}
+                  {errorForm && (
+                    <div className="alert alert-danger" role="alert">
+                      {errorForm}
+                    </div>
+                  )}
 
                   {editando ? (
                     <Form
@@ -458,22 +474,25 @@ const Perfil = () => {
                       {/* Tres campos en columnas iguales: la fila queda cuadrada. */}
                       <Row>
                         <Col md={4}>
-                          <Form.Group className="mb-3">
+                          <Form.Group className="mb-3" controlId="perfil-email">
                             <Form.Label>Email *</Form.Label>
                             <Form.Control
                               type="email"
+                              name="email"
                               value={form.email}
                               onChange={cambiarCampo('email')}
                               placeholder="ejemplo@correo.com"
                               autoComplete="email"
+                              required
                             />
                           </Form.Group>
                         </Col>
                         <Col md={4}>
-                          <Form.Group className="mb-3">
+                          <Form.Group className="mb-3" controlId="perfil-telefono">
                             <Form.Label>Teléfono</Form.Label>
                             <Form.Control
                               type="tel"
+                              name="telefono"
                               value={form.telefono}
                               onChange={cambiarCampo('telefono')}
                               placeholder="Ej: 1155555555"
@@ -482,12 +501,14 @@ const Perfil = () => {
                           </Form.Group>
                         </Col>
                         <Col md={4}>
-                          <Form.Group className="mb-3">
+                          <Form.Group className="mb-3" controlId="perfil-fecha-nacimiento">
                             <Form.Label>Fecha de nacimiento</Form.Label>
                             <Form.Control
                               type="date"
+                              name="fechaNacimiento"
                               value={form.fechaNacimiento}
                               onChange={cambiarCampo('fechaNacimiento')}
+                              max={hoyIso()}
                             />
                           </Form.Group>
                         </Col>
@@ -501,7 +522,7 @@ const Perfil = () => {
                         {cambiosPendientes.length > 0 && (
                           <Button type="submit" variant="primary" disabled={guardando}>
                             <FaSave aria-hidden="true" />
-                            {guardando ? 'Guardando...' : 'Guardar cambios'}
+                            {guardando ? 'Guardando…' : 'Guardar cambios'}
                           </Button>
                         )}
                         <Button
@@ -574,7 +595,11 @@ const Perfil = () => {
                         Contraseña
                       </h2>
 
-                      {errorPassword && <div className="alert alert-danger">{errorPassword}</div>}
+                      {errorPassword && (
+                            <div className="alert alert-danger" role="alert">
+                              {errorPassword}
+                            </div>
+                          )}
 
                       {passwordActualizada && (
                         <div className="alert alert-success d-flex align-items-center gap-2">
@@ -637,7 +662,7 @@ const Perfil = () => {
                             <div className="perfil-acciones">
                               <Button type="submit" variant="primary" disabled={cambiandoPassword}>
                                 <FaKey aria-hidden="true" />
-                                {cambiandoPassword ? 'Cambiando...' : 'Confirmar'}
+                                {cambiandoPassword ? 'Cambiando…' : 'Confirmar'}
                               </Button>
                               <Button
                                 type="button"
@@ -714,8 +739,8 @@ const Perfil = () => {
                       >
                         {subiendoFoto ? (
                           <>
-                            <Spinner animation="border" size="sm" role="status" />
-                            Subiendo...
+                            <Spinner animation="border" size="sm" aria-hidden="true" />
+                            Subiendo…
                           </>
                         ) : (
                           <>

@@ -6,6 +6,7 @@ import { TIPO_PERSONALIZACION } from '../../utils/constants';
 import { validatePersonalizacionElemento } from '../../utils/validators';
 import { productosMock } from '../../services/seedData';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import './FormularioAdmin.css';
 
 const FormularioPersonalizacion = ({ elemento, productos = productosMock, productoPreseleccionado, onGuardar }) => {
   const navigate = useNavigate();
@@ -103,12 +104,12 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
   const esPersonalizarOCondimento = tipo === TIPO_PERSONALIZACION.PERSONALIZAR || tipo === TIPO_PERSONALIZACION.CONDIMENTO;
 
   return (
-    <Card className="shadow-sm" style={{ maxWidth: '560px' }}>
+    <Card className="shadow-sm formulario-admin-card formulario-admin-card-personalizacion">
       <Card.Body>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
+        <Form onSubmit={handleSubmit} noValidate>
+          <Form.Group className="mb-3" controlId="personalizacion-producto">
             <Form.Label>Producto *</Form.Label>
-            <Form.Select value={productoId} onChange={(e) => setProductoId(e.target.value)} disabled={!!elemento}>
+            <Form.Select name="productoId" value={productoId} onChange={(e) => setProductoId(e.target.value)} disabled={!!elemento}>
               <option value="">— Elegí producto —</option>
               {productos.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -119,9 +120,9 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
             {elemento && <Form.Text className="text-muted">No se cambia de producto al editar.</Form.Text>}
           </Form.Group>
 
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="personalizacion-tipo">
             <Form.Label>Categoría / Tipo *</Form.Label>
-            <Form.Select value={tipo} onChange={handleTipoChange}>
+            <Form.Select name="tipo" value={tipo} onChange={handleTipoChange}>
               <option value="">— Elegí categoría —</option>
               <option value={TIPO_PERSONALIZACION.EXTRA}>Extra — Agregar ingrediente (cobra)</option>
               <option value={TIPO_PERSONALIZACION.PERSONALIZAR}>Personalizar — Quitar ingrediente (no cobra)</option>
@@ -131,22 +132,30 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
           </Form.Group>
 
           {!esAcompanar && (
-            <Form.Group className="mb-3">
+            <Form.Group className="mb-3" controlId="personalizacion-nombre">
               <Form.Label>Nombre *</Form.Label>
               <Form.Control
                 type="text"
+                name="nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 placeholder={tipo === 'personalizar' ? 'Ej: Queso Cheddar en fetas' : tipo === 'condimento' ? 'Ej: Sobre de Ketchup' : 'Ej: Bacon'}
+                required
               />
               {tipo === 'personalizar' && <Form.Text className="text-muted">Se mostrará como &quot;Sin {nombre || 'X'}&quot;</Form.Text>}
             </Form.Group>
           )}
 
           {esAcompanar && (
-            <Form.Group className="mb-3">
+            <Form.Group className="mb-3" controlId="personalizacion-producto-referencia">
               <Form.Label>Producto a ofrecer *</Form.Label>
-              <Form.Select value={productoReferenciaId} onChange={handleReferenciaChange} disabled={!productoId}>
+              <Form.Select
+                name="productoReferenciaId"
+                value={productoReferenciaId}
+                onChange={handleReferenciaChange}
+                disabled={!productoId}
+                aria-describedby={!productoId ? 'personalizacion-referencia-ayuda' : 'personalizacion-referencia-nota'}
+              >
                 <option value="">— Elegí producto para ofrecer —</option>
                 {productosDisponiblesParaReferencia.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -154,34 +163,47 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
                   </option>
                 ))}
               </Form.Select>
-              {!productoId && <Form.Text className="text-danger">Elegí primero el producto.</Form.Text>}
-              {productoId && <Form.Text className="text-muted">Se excluye el producto que estás personalizando. Precio precargado editable.</Form.Text>}
+              {!productoId && (
+                /* role="alert": es un error de validación, no una nota informativa. */
+                <Form.Text id="personalizacion-referencia-ayuda" role="alert" className="text-danger">
+                  Elegí primero el producto.
+                </Form.Text>
+              )}
+              {productoId && (
+                <Form.Text id="personalizacion-referencia-nota" className="text-muted">
+                  Se excluye el producto que estás personalizando. Precio precargado editable.
+                </Form.Text>
+              )}
             </Form.Group>
           )}
 
           {!esPersonalizarOCondimento && (
-            <Form.Group className="mb-3">
+            <Form.Group className="mb-3" controlId="personalizacion-precio">
               <Form.Label>Precio $ *</Form.Label>
               <InputGroup>
-                <InputGroup.Text style={{ border: '2px solid #f1c27d', borderRight: 'none', borderRadius: '12px 0 0 12px', background: '#fff4e2' }}>$</InputGroup.Text>
+                <InputGroup.Text className="precio-adorno">$</InputGroup.Text>
                 <Form.Control
                   type="number"
+                  name="precio"
+                  className="precio-input"
                   value={precio}
                   onChange={(e) => setPrecio(e.target.value)}
                   placeholder="2700"
                   min="0"
                   step="100"
-                  style={{ borderLeft: 'none', borderRadius: '0 12px 12px 0' }}
+                  inputMode="numeric"
+                  required
+                  aria-describedby="personalizacion-precio-ayuda"
                 />
               </InputGroup>
-              <Form.Text className="text-muted">
+              <Form.Text id="personalizacion-precio-ayuda" className="text-muted">
                 {esAcompanar ? 'Editable — default del producto elegido. Podés poner promo.' : 'Requerido para Extra — suma al total.'}
               </Form.Text>
             </Form.Group>
           )}
 
           <Form.Group className="mb-4">
-            <Form.Check type="switch" id="activo-switch" label="Activo" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
+            <Form.Check type="switch" id="activo-switch" name="activo" label="Activo" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
           </Form.Group>
 
           <div className="d-flex gap-2">

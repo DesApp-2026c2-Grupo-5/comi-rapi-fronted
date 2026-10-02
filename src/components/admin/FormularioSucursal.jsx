@@ -15,9 +15,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Card } from 'react-bootstrap';
+import { Form, Alert, Button, Card } from 'react-bootstrap';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import './FormularioAdmin.css';
 
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
@@ -111,95 +112,124 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   };
 
   return (
-    <Card className="shadow-sm" style={{ maxWidth: '500px' }}>
+    <Card className="shadow-sm formulario-admin-card">
       <Card.Body>
-        <Form onSubmit={handleSubmit}>
-          {error && <div className="text-danger mb-3">{error}</div>}
-          <Form.Group className="mb-3">
+        <Form onSubmit={handleSubmit} noValidate>
+          {/* El error se anuncia: sin `role="alert"` quien navega con lector de
+              pantalla no se entera de que el guardado falló. */}
+          {error && (
+            <Alert variant="danger" role="alert" className="mb-3">
+              {error}
+            </Alert>
+          )}
+          <Form.Group className="mb-3" controlId="sucursal-nombre">
             <Form.Label>Nombre *</Form.Label>
             <Form.Control
               type="text"
+              name="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej: Sucursal Centro"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-calle">
             <Form.Label>Calle *</Form.Label>
             <Form.Control
               type="text"
+              name="calle"
               value={calle}
               onChange={(e) => setCalle(e.target.value)}
               placeholder="Ej: Av. Principal"
+              autoComplete="address-line1"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-altura">
             <Form.Label>Altura *</Form.Label>
             <Form.Control
               type="number"
+              name="altura"
               min="0"
+              inputMode="numeric"
               value={altura}
               onChange={(e) => setAltura(e.target.value)}
               placeholder="Ej: 123"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-provincia">
             <Form.Label>Provincia *</Form.Label>
             <Form.Control
               type="text"
+              name="provincia"
               value={provincia}
               onChange={(e) => setProvincia(e.target.value)}
               placeholder="Ej: Buenos Aires"
+              autoComplete="address-level1"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-localidad">
             <Form.Label>Localidad *</Form.Label>
             <Form.Control
               type="text"
+              name="localidad"
               value={localidad}
               onChange={(e) => setLocalidad(e.target.value)}
               placeholder="Ej: CABA"
+              autoComplete="address-level2"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-codigo-postal">
             <Form.Label>Código postal *</Form.Label>
             <Form.Control
               type="text"
+              name="codigoPostal"
               value={codigoPostal}
               onChange={(e) => setCodigoPostal(e.target.value)}
               placeholder="Ej: 1406"
+              autoComplete="postal-code"
+              inputMode="numeric"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-referencia">
             <Form.Label>Referencia</Form.Label>
             <Form.Control
               type="text"
+              name="referencia"
               value={referencia}
               onChange={(e) => setReferencia(e.target.value)}
               placeholder="Ej: Frente a la plaza"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-horarios">
             <Form.Label>Horario de atención</Form.Label>
             <Form.Control
               type="text"
+              name="horarios"
               value={horarios}
               onChange={(e) => setHorarios(e.target.value)}
               placeholder="Ej: Lun-Dom 10:00-23:00"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="sucursal-telefono">
             <Form.Label>Teléfono</Form.Label>
             <Form.Control
-              type="text"
+              type="tel"
+              name="telefono"
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
               placeholder="Ej: 011-1234-5678"
+              autoComplete="tel"
             />
           </Form.Group>
-          <Form.Group className="mb-4">
+          <Form.Group className="mb-4" controlId="sucursal-estado">
             <Form.Label>Estado</Form.Label>
             <Form.Select
+              name="activa"
               value={activa ? 'activa' : 'inactiva'}
               onChange={(e) => setActiva(e.target.value === 'activa')}
             >

@@ -46,26 +46,37 @@ const Login = () => {
           <div className="auth-brand-ico">
             <FaHamburger aria-hidden="true" />
           </div>
-          <h2>Iniciar Sesión</h2>
+          <h1 className="h2">Iniciar Sesión</h1>
           <p>Accede a tu cuenta de cliente</p>
         </div>
 
         <div className="auth-card-body">
-          {error && <Alert variant="warning">{error}</Alert>}
+          {/* `aria-live` para que el error se anuncie al aparecer: sin esto, quien
+              navega con lector de pantalla no se entera del fallo. */}
+          {error && (
+            <Alert variant="warning" role="alert" aria-live="polite">
+              {error}
+            </Alert>
+          )}
 
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3 auth-input-group">
+          <Form onSubmit={handleSubmit} noValidate>
+            <Form.Group className="mb-3 auth-input-group" controlId="login-email">
               <Form.Label>Email</Form.Label>
               <FaEnvelope className="auth-input-ico" aria-hidden="true" />
               <Form.Control
                 type="email"
+                name="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="cliente@test.com"
+                placeholder="nombre@ejemplo.com…"
+                autoComplete="email"
+                spellCheck={false}
+                required
               />
             </Form.Group>
             <CampoPassword
               id="password"
+              name="password"
               etiqueta="Contraseña"
               requerido={false}
               className="mb-3 auth-input-group"
@@ -73,12 +84,13 @@ const Login = () => {
               claseIcono="auth-input-ico"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="123456"
             />
             <Button type="submit" className="btn-submit-comirapi w-100 mb-3" disabled={loading}>
-              {loading ? 'Ingresando...' : <>
-                Iniciar Sesión <FaSignInAlt aria-hidden="true" />
-              </>}
+              {loading ? 'Ingresando…' : (
+                <>
+                  Iniciar Sesión <FaSignInAlt aria-hidden="true" />
+                </>
+              )}
             </Button>
           </Form>
 
@@ -88,13 +100,25 @@ const Login = () => {
                 ¿Olvidaste tu contraseña?
               </Link>
             </p>
-            <p className="mb-1">¿No tienes cuenta? <Link to="/registro" className="auth-enlace">Regístrate aquí</Link></p>
-            <p><Link to="/admin-login" className="auth-enlace">Login de administrador</Link></p>
+            <p className="mb-1">
+              ¿No tienes cuenta?{' '}
+              <Link to="/registro" className="auth-enlace">
+                Regístrate aquí
+              </Link>
+            </p>
+            <p className="mb-0">
+              <Link to="/admin-login" className="auth-enlace">
+                Login de administrador
+              </Link>
+            </p>
           </div>
 
-          <div className="auth-demo">
-            <strong>Demo:</strong> cliente@test.com / 123456
-          </div>
+          {/* Credenciales de prueba. `aria-label` las anuncia como ejemplo y no
+              como un dato real de la cuenta del usuario. */}
+          <p className="auth-demo mb-0">
+            <strong>Demo:</strong> <span translate="no">cliente@test.com</span> /{' '}
+            <span translate="no">123456</span>
+          </p>
         </div>
       </div>
     </div>

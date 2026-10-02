@@ -1,5 +1,8 @@
 import { formatPrice } from '../../utils/formatters';
+import Contador from './Contador';
 
+/* El proyecto no usa PropTypes en ningún componente. */
+/* eslint-disable react/prop-types */
 const GrupoOpciones = ({ opciones, valores, onCambiar, conPrecio, limite }) => {
   return (
     <div className="grupo-opciones">
@@ -16,15 +19,13 @@ const GrupoOpciones = ({ opciones, valores, onCambiar, conPrecio, limite }) => {
                 {nombre}
                 {conPrecio && precio ? ` (+ ${formatPrice(precio)})` : ''}
               </span>
-              <span className="pill-control">
-                <button type="button" aria-label={`Quitar ${nombre}`} onClick={() => onCambiar(key, -1)}>
-                  −
-                </button>
-                <span>{cantidad}</span>
-                <button type="button" aria-label={`Agregar ${nombre}`} onClick={() => onCambiar(key, 1)}>
-                  +
-                </button>
-              </span>
+              <Contador
+                etiqueta={nombre}
+                valor={cantidad}
+                min={0}
+                max={limite}
+                onCambiar={(d) => onCambiar(key, d)}
+              />
             </div>
           );
         })}
@@ -32,5 +33,6 @@ const GrupoOpciones = ({ opciones, valores, onCambiar, conPrecio, limite }) => {
     </div>
   );
 };
+/* eslint-enable react/prop-types */
 
 export default GrupoOpciones;

@@ -80,20 +80,16 @@ const HistorialPedidos = () => {
 
       {terminados.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
-          <h4 className="fw-bold mb-2">Todavía no tenés historial</h4>
+          <h2 className="h4 fw-bold mb-2">Todavía no tenés historial</h2>
           <p className="text-muted mb-4">Cuando se entreguen o cancelen tus pedidos van a aparecer acá.</p>
-          <div>
-            <Link to="/cliente/catalogo">
-              <Button variant="primary" className="rounded-pill px-4">
-                <FaUtensils aria-hidden="true" />
-                Ir al catálogo
-              </Button>
-            </Link>
-          </div>
+          <Button as={Link} to="/cliente/catalogo" variant="primary" className="rounded-pill px-4">
+            <FaUtensils aria-hidden="true" />
+            Ir al catálogo
+          </Button>
         </Card>
       ) : visibles.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
-          <h4 className="fw-bold mb-2">Sin resultados para los filtros</h4>
+          <h2 className="h4 fw-bold mb-2">Sin resultados para los filtros</h2>
           <p className="text-muted mb-0">Probá ampliando fecha, estado o sucursal.</p>
         </Card>
       ) : (

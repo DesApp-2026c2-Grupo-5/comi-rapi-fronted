@@ -16,9 +16,23 @@ const ProductoCard = ({ producto }) => {
   return (
     <>
       <Card className="producto-card h-100">
-        <Card.Img variant="top" src={producto.imagen} alt={producto.nombre} className="producto-card-imagen" />
+        {/* `alt=""` a propósito: el nombre del producto ya está en el título de
+            la tarjeta, y repetirlo hace que el lector de pantalla lo lea dos
+            veces. La foto es decorativa dentro de este contexto. */}
+        <Card.Img
+          variant="top"
+          src={producto.imagen}
+          alt=""
+          width={400}
+          height={280}
+          loading="lazy"
+          decoding="async"
+          className="producto-card-imagen"
+        />
         <Card.Body className="d-flex flex-column p-3">
-          <Card.Title className="producto-nombre">
+          {/* Card.Title por defecto renderiza un <div>; se fuerza heading para
+              que el nombre del producto entre en la navegación por encabezados. */}
+          <Card.Title as="h3" className="producto-nombre">
             {producto.nombre}
             {componentes.length > 0 && (
               <Badge bg="info" className="ms-2">Combo</Badge>

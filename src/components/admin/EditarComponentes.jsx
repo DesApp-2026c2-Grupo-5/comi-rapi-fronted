@@ -18,6 +18,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Form, Button, Card, Alert, Spinner, Badge } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt } from 'react-icons/fa';
 import { obtenerMaximosDeCombos } from '../../api/stock';
+import './FormularioAdmin.css';
 
 export const MIN_COMPONENTES = 2;
 
@@ -116,69 +117,87 @@ const EditarComponentes = ({ productos = [], componentes = [], onChange }) => {
           </Alert>
         )}
 
-        {componentes.map((componente, indice) => (
-          <div
-            key={indice}
-            className="d-flex gap-2 align-items-end mb-2 flex-wrap"
-          >
-            <Form.Group className="flex-grow-1" style={{ minWidth: '220px' }}>
-              <Form.Label className="small mb-1">
-                Producto {indice + 1}
-              </Form.Label>
-              <Form.Select
-                value={componente.productoId ?? ''}
-                onChange={(e) => cambiar(indice, 'productoId', e.target.value)}
-              >
-                <option value="">Seleccionar producto</option>
-                {productosElegibles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group style={{ width: '110px' }}>
-              <Form.Label className="small mb-1">Cantidad</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                step="1"
-                value={componente.cantidad ?? 1}
-                onChange={(e) => cambiar(indice, 'cantidad', e.target.value)}
-              />
-            </Form.Group>
-            <Button
-              variant="outline-danger"
-              onClick={() => quitar(indice)}
-              aria-label={`Quitar componente ${indice + 1}`}
+        {/* fieldset/legend: cada fila repite producto + cantidad, así que hace
+            falta un rótulo que agrupe toda la receta en lugar de dejarla
+            colgando de la última fila. */}
+        <fieldset className="componentes-recipe">
+          <legend className="visually-hidden">Componentes del combo</legend>
+          {componentes.map((componente, indice) => (
+            <div
+              key={indice}
+              className="d-flex gap-2 align-items-end mb-2 flex-wrap"
             >
-              <FaTrashAlt aria-hidden="true" />
-            </Button>
-          </div>
-        ))}
+              <Form.Group className="flex-grow-1 componente-grupo-producto" controlId={`componente-producto-${indice}`}>
+                <Form.Label className="small mb-1">
+                  Producto {indice + 1}
+                </Form.Label>
+                <Form.Select
+                  name={`componentes[${indice}].productoId`}
+                  value={componente.productoId ?? ''}
+                  onChange={(e) => cambiar(indice, 'productoId', e.target.value)}
+                >
+                  <option value="">Seleccionar producto</option>
+                  {productosElegibles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+              <Form.Group className="componente-grupo-cantidad" controlId={`componente-cantidad-${indice}`}>
+                <Form.Label className="small mb-1">Cantidad</Form.Label>
+                <Form.Control
+                  type="number"
+                  name={`componentes[${indice}].cantidad`}
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  value={componente.cantidad ?? 1}
+                  onChange={(e) => cambiar(indice, 'cantidad', e.target.value)}
+                />
+              </Form.Group>
+              {/* type="button": sin esto el botón envía el formulario de producto
+                  que lo contiene, porque está dentro de su <Form>. */}
+              <Button
+                type="button"
+                variant="outline-danger"
+                onClick={() => quitar(indice)}
+                aria-label={`Quitar componente ${indice + 1}`}
+              >
+                <FaTrashAlt aria-hidden="true" />
+              </Button>
+            </div>
+          ))}
+        </fieldset>
 
         <div className="d-flex gap-2 flex-wrap">
-          <Button variant="outline-primary" size="sm" onClick={agregar}>
+          <Button type="button" variant="outline-primary" size="sm" onClick={agregar}>
             <FaPlus className="me-1" aria-hidden="true" />
             Agregar componente
           </Button>
         </div>
 
         {!sinRepetidos && (
-          <Alert variant="warning" className="py-2 mt-3 mb-0">
+          <Alert variant="warning" role="alert" className="py-2 mt-3 mb-0">
             No podés repetir el mismo producto en la receta.
           </Alert>
         )}
         {errorMaximos && (
-          <Alert variant="danger" className="py-2 mt-3 mb-0">
+          <Alert variant="danger" role="alert" className="py-2 mt-3 mb-0">
             {errorMaximos}
           </Alert>
         )}
 
+        {/* aria-live: el cálculo tarda ~600 ms y su resultado aparece solo;
+            sin announcing el cambio, el admin no sabe que terminó. */}
         {calculando && (
-          <div className="d-flex align-items-center gap-2 text-muted small mt-3">
-            <Spinner animation="border" size="sm" />
-            Calculando el máximo por sucursal...
+          <div
+            className="d-flex align-items-center gap-2 text-muted small mt-3"
+            role="status"
+            aria-live="polite"
+          >
+            <Spinner animation="border" size="sm" aria-hidden="true" />
+            Calculando el máximo por sucursal…
           </div>
         )}
 
