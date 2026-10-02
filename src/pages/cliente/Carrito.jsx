@@ -283,6 +283,9 @@ construirDatosPedido(direccion),
             )}
             <ResumenPedido
               onConfirmar={tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido}
+              /* Sólo acá la card va fija: está en la columna lateral y acompaña el
+                 scroll de la lista de ítems. En /cliente/pago taparía los botones. */
+              fija
               botonTexto={
                 tienePagoPendiente
                   ? pendienteObsoleto

@@ -53,13 +53,14 @@
   padding-bottom: 0.5rem;
 }
 
-/* El resumen queda fijo al scrollear solo en desktop. Se limita su altura
-   para que nunca invada el pie de la página: top 90px despeja la navbar (~70px)
-   y el colchón inferior deja el footer (~56px) y el badge fijo de estado de la
-   API (position-fixed bottom-0 end-0, App.jsx) siempre por fuera de la card,
-   incluso con muchos ítems (scroll interno). */
+/* El resumen queda fijo al scrollear sólo en desktop, y sólo si se lo pide quien
+   lo usa: pegarlo tiene sentido en la columna lateral del carrito, donde la lista
+   de ítems es larga y la card acompaña el scroll. En columnas únicas (pago,
+   confirmación) la card va arriba del todo y, al ser `sticky`, se superpone sobre
+   el contenido que la sigue —justo los botones de "Volver al carrito" y "Cancelar
+   pedido"— y termina escondiéndolos. */
 @media (min-width: 992px) {
-  .resumen-card {
+  .resumen-card-fija {
     position: sticky;
     top: 90px;
     max-height: calc(100vh - 170px);
