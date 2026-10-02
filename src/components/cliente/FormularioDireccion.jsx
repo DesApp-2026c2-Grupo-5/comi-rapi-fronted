@@ -1,29 +1,34 @@
 /**
  * Propósito: Formulario para crear o editar una dirección de cliente.
- * Contenido: Componente FormularioDireccion con la cascada territorial
- *            (provincia → partido/comuna → localidad), autocompletado de
- *            calles, aviso de cobertura por provincia y flujo de preview
- *            (selección de coincidencias ANTES de guardar).
- * Dependencias: react-bootstrap, hooks/useDireccionTerritorial (lógica
- *            compartida con FormularioSucursal), utils/territorio (provincias).
+ * Contenido: Componente FormularioDireccion ordenado de general a específico
+ *            (iteración 4): Ubicación (provincia → partido/comuna →
+ *            localidad) → Dirección (calle con autocompletado → altura) →
+ *            Datos complementarios (alias, referencia).
+ * Dependencias: hooks/useDireccionTerritorial (lógica única),
+ *            Autocomplete / OpcionesDireccionAmbigua / ConfirmacionDireccion
+ *            (presentacionales compartidos), utils/territorio (provincias).
  * Uso: <FormularioDireccion direccion={direccion} onGuardar={handler} onCancelar={handler} />
  *      - Si 'direccion' es null/undefined, se comporta en modo creación.
- *      - Si 'direccion' trae datos, precarga el formulario para edición.
  *      - onGuardar DEBE devolver el resultado del backend:
  *        { ok: true, data } | { ok: false, error, opciones? }.
  *
  * Iteración 3: el "Guardar" primero VERIFICA la dirección (preview del
- * backend: sin persistir ni validar cobertura). Solo tras confirmar la
- * resolución se guarda, y recién entonces el backend aplica la cobertura
- * definitiva (nunca enmascarada por la ambigüedad).
+ * backend: sin persistir ni validar cobertura); tras confirmar la resolución
+ * se guarda y recién entonces el backend aplica la cobertura definitiva.
+ * Iteración 4: campo calle al final de la ubicación (el gate "esperá a la
+ * provincia" fluye con el orden visual) y avisos informativos de zona por
+ * provincia y por partido (informativos; el backend decide al guardar).
  */
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Alert, ListGroup, Spinner } from 'react-bootstrap';
-import { FaMapMarkedAlt, FaSave, FaTimes, FaCheck, FaEdit } from 'react-icons/fa';
+import { FaMapMarkedAlt, FaSave, FaTimes } from 'react-icons/fa';
 import { PROVINCIAS } from '../../utils/territorio';
 import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
 import Autocomplete from '../comunes/Autocomplete';
+import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
+import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
+import '../comunes/DireccionFormulario.css';
 // Convención de dev (rediseño UI): el ancho de la tarjeta vive en CSS.
 import './FormularioDireccion.css';
 
@@ -82,7 +87,7 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
         </h3>
         <Form onSubmit={handleSubmit} noValidate>
           {direccionApi.errores.length > 0 && (
-            <div className="text-danger mb-3" role="alert">
+            <div className="text-danger mb-3 dir-form-errores" role="alert">
               <ul className="mb-0 ps-3">
                 {direccionApi.errores.map((error, i) => (
                   <li key={i}>{error}</li>
@@ -91,26 +96,67 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             </div>
           )}
 
-          {/* Iteración 3: aviso de cobertura al seleccionar la provincia. */}
-          {direccionApi.avisoFueraZona && (
-            <Alert variant="warning" role="alert" className="mb-3">
+          {/* Avisos informativos de zona (provincia y, en la iteración 4,
+              también partido). El backend sigue decidiendo al guardar. */}
+          {(direccionApi.avisoFueraZona || direccionApi.avisoPartidoFueraZona) && (
+            <Alert
+              variant="warning"
+              role="alert"
+              className="mb-3 dir-form-aviso"
+            >
               {direccionApi.MENSAJE_FUERA_DE_ZONA}
             </Alert>
           )}
 
-          <Form.Group className="mb-3">
-            <Form.Label>Alias</Form.Label>
-            <Form.Control
-              type="text"
-              value={alias}
-              onChange={(e) => setAlias(e.target.value)}
-              placeholder="Ej: Casa, Trabajo"
-            />
-          </Form.Group>
+          {/* ===== Ubicación: de lo más general a lo más específico ===== */}
+          <div className="dir-form-seccion">Ubicación</div>
 
-          {/* Calle con autocompletado (nombres oficiales del proxy con cache).
-              Fix bug 1: hasta elegir provincia no se puede buscar (la query
-              la exige); antes estaba habilitada y fallía en silencio. */}
+          <Autocomplete
+            etiqueta="Provincia *"
+            value={direccionApi.provincia}
+            opciones={PROVINCIAS}
+            onChange={direccionApi.actualizarProvincia}
+            placeholder="Escribí para buscar tu provincia…"
+          />
+
+          {direccionApi.provincia && (
+            <Autocomplete
+              etiqueta={
+                direccionApi.requierePartido ? (
+                  'Partido *'
+                ) : (
+                  <>
+                    Partido / Comuna{' '}
+                    <span className="text-muted">(opcional)</span>
+                  </>
+                )
+              }
+              value={direccionApi.departamento}
+              opciones={direccionApi.departamentosOpts}
+              onChange={direccionApi.actualizarDepartamento}
+              placeholder="Escribí para buscar el partido/comuna…"
+              ayudaOpcional="Si no lo sabés, la determina el sistema."
+            />
+          )}
+
+          {direccionApi.provincia && (
+            <Autocomplete
+              etiqueta={
+                <>
+                  Localidad <span className="text-muted">(opcional)</span>
+                </>
+              }
+              value={direccionApi.localidad}
+              opciones={direccionApi.localidadesOpts}
+              onChange={direccionApi.actualizarLocalidad}
+              placeholder="Escribí para buscar la localidad (ej: Liniers)…"
+              ayudaOpcional="Si no la sabés, la determina el sistema."
+            />
+          )}
+
+          {/* ===== Dirección: calle y altura ===== */}
+          <div className="dir-form-seccion">Dirección</div>
+
           <Form.Group className="mb-3">
             <Form.Label>Calle *</Form.Label>
             <Form.Control
@@ -132,10 +178,7 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
               </Form.Text>
             )}
             {direccionApi.sugerencias.length > 0 && (
-              <ListGroup
-                className="mt-1"
-                style={{ maxHeight: 180, overflowY: 'auto' }}
-              >
+              <ListGroup className="mt-1 dir-form-sugerencias">
                 {direccionApi.sugerencias.map((sugerencia) => (
                   <ListGroup.Item
                     key={sugerencia.id}
@@ -145,12 +188,13 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
                       direccionApi.seleccionarSugerencia(sugerencia.nombre)
                     }
                   >
-                    {/* Fix bug 3: la nomenclatura distingue calles repetidas
-                        entre comunas/partidos ("AV JUAN B JUSTO, Comuna 9,
-                        CABA"); se setea solo el nombre oficial. */}
-                    <div className="fw-semibold">{sugerencia.nombre}</div>
+                    {/* La nomenclatura distingue calles repetidas entre
+                        comunas/partidos (fix bug 3). */}
+                    <div className="dir-form-sugerencia-nombre">
+                      {sugerencia.nombre}
+                    </div>
                     {sugerencia.nomenclatura && (
-                      <div className="text-muted small">
+                      <div className="dir-form-sugerencia-detalle">
                         {sugerencia.nomenclatura}
                       </div>
                     )}
@@ -172,56 +216,18 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             />
           </Form.Group>
 
-          {/* Fix bug 2: los campos territoriales admiten texto para BUSCAR y
-              exigen selección explícita de la lista (Autocomplete), en lugar
-              del select nativo que saltaba con la primera letra tipeada. */}
-          <Autocomplete
-            etiqueta="Provincia *"
-            value={direccionApi.provincia}
-            opciones={PROVINCIAS}
-            onChange={direccionApi.actualizarProvincia}
-            placeholder="Escribí para buscar tu provincia…"
-          />
+          {/* ===== Datos complementarios ===== */}
+          <div className="dir-form-seccion">Datos complementarios</div>
 
-          {/* Partido (Buenos Aires) / comuna (CABA): siempre visible para no
-              dejar estado territorial oculto (fix bug B). En PBA es
-              obligatorio; en el resto, opcional. */}
-          {direccionApi.provincia && (
-            <Autocomplete
-              etiqueta={
-                direccionApi.requierePartido ? (
-                  'Partido *'
-                ) : (
-                  <>
-                    Partido / Comuna{' '}
-                    <span className="text-muted">(opcional)</span>
-                  </>
-                )
-              }
-              value={direccionApi.departamento}
-              opciones={direccionApi.departamentosOpts}
-              onChange={direccionApi.actualizarDepartamento}
-              placeholder="Escribí para buscar el partido/comuna…"
-              ayudaOpcional="Si no lo sabés, la determina el sistema."
+          <Form.Group className="mb-3">
+            <Form.Label>Alias</Form.Label>
+            <Form.Control
+              type="text"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
+              placeholder="Ej: Casa, Trabajo"
             />
-          )}
-
-          {/* Localidad (BAHRA; en CABA son los barrios): opcional, ayuda a
-              desambiguar. */}
-          {direccionApi.provincia && (
-            <Autocomplete
-              etiqueta={
-                <>
-                  Localidad <span className="text-muted">(opcional)</span>
-                </>
-              }
-              value={direccionApi.localidad}
-              opciones={direccionApi.localidadesOpts}
-              onChange={direccionApi.actualizarLocalidad}
-              placeholder="Escribí para buscar la localidad (ej: Liniers)…"
-              ayudaOpcional="Si no la sabés, la determina el sistema."
-            />
-          )}
+          </Form.Group>
 
           <Form.Group className="mb-4">
             <Form.Label>Referencia</Form.Label>
@@ -234,69 +240,26 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             />
           </Form.Group>
 
-          {/* Paso de selección: varias identidades territoriales (fix de los
-              bugs A y B). Elegir una opción aplica el partido/comuna y la
-              calle OFICIAL; se re-verifica con el preview antes de guardar. */}
+          {/* Paso de selección de coincidencias (componente compartido). */}
           {direccionApi.preview?.estado === 'ambigua' && (
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-semibold">
-                La dirección coincide con varias ubicaciones. ¿Cuál es la correcta?
-              </Form.Label>
-              {direccionApi.preview.opciones.map((opcion) => (
-                <Form.Check
-                  key={opcion.nomenclatura}
-                  type="radio"
-                  id={`opcion-${opcion.nomenclatura}`}
-                  name="opciones-direccion"
-                  label={opcion.nomenclatura}
-                  checked={direccionApi.opcionElegida === opcion.nomenclatura}
-                  onChange={() => direccionApi.elegirOpcion(opcion.nomenclatura)}
-                  className="mb-1"
-                />
-              ))}
-              <div className="d-grid mt-2">
-                <Button
-                  variant="primary"
-                  type="button"
-                  disabled={!direccionApi.opcionElegida}
-                  onClick={direccionApi.previsualizar}
-                >
-                  <FaCheck className="me-1" aria-hidden="true" />
-                  Verificar con la opción seleccionada
-                </Button>
-              </div>
-            </Form.Group>
+            <OpcionesDireccionAmbigua
+              opciones={direccionApi.preview.opciones}
+              opcionElegida={direccionApi.opcionElegida}
+              onElegir={direccionApi.elegirOpcion}
+              onConfirmar={direccionApi.previsualizar}
+            />
           )}
 
-          {/* Confirmación de la resolución: datos que obtuvo Georef. */}
+          {/* Confirmación de la resolución (componente compartido). */}
           {direccionApi.preview?.estado === 'unica' && (
-            <Alert variant="success" className="mb-4">
-              <div className="fw-semibold mb-1">Confirmá tu dirección</div>
-              <div>{direccionApi.preview.resultado.nomenclatura}</div>
-              <div className="text-muted small mt-1">
-                Coordenadas: {direccionApi.preview.resultado.latitud.toFixed(5)}
-                {' / '}
-                {direccionApi.preview.resultado.longitud.toFixed(5)}
-              </div>
-              <div className="d-flex gap-2 mt-3">
-                <Button
-                  variant="primary"
-                  className="rounded-pill px-4"
-                  onClick={direccionApi.confirmar}
-                >
-                  <FaSave className="me-1" aria-hidden="true" />
-                  Guardar dirección
-                </Button>
-                <Button
-                  variant="outline-secondary"
-                  className="rounded-pill px-4"
-                  onClick={direccionApi.editarDatos}
-                >
-                  <FaEdit className="me-1" aria-hidden="true" />
-                  Editar datos
-                </Button>
-              </div>
-            </Alert>
+            <div className="dir-form-confirmacion">
+              <ConfirmacionDireccion
+                resultado={direccionApi.preview.resultado}
+                textoConfirmar="Guardar dirección"
+                onConfirmar={direccionApi.confirmar}
+                onEditar={direccionApi.editarDatos}
+              />
+            </div>
           )}
 
           <div className="d-flex gap-2">

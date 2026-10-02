@@ -146,6 +146,32 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
     setAvisoFueraZona(!habilitada);
   }, [provincia, zonas]);
 
+  // ---- Iteración 4: aviso informativo a nivel PARTIDO -----------------------
+  // Si la zona que habilita la provincia filtra por partidos (AMBA) y el
+  // partido elegido no integra la lista, se avisa de inmediato. Informativo:
+  // el backend sigue validando la zona al guardar. Mismos datos que expone
+  // /api/geo/zonas (misma fuente que la validación real).
+  const [avisoPartidoFueraZona, setAvisoPartidoFueraZona] = useState(false);
+  useEffect(() => {
+    if (zonas.length === 0 || !provincia || !departamento) {
+      setAvisoPartidoFueraZona(false);
+      return;
+    }
+    const normalizada = normalizarTextoZona(provincia);
+    const zona = zonas.find((z) =>
+      (z.provincias || []).some((p) => normalizarTextoZona(p) === normalizada)
+    );
+    if (!zona) {
+      setAvisoPartidoFueraZona(false);
+      return;
+    }
+    const habilitados = (zona.departamentos || []).map(normalizarTextoZona);
+    // Lista vacía = la zona no filtra por partido (toda la provincia, ej. CABA).
+    setAvisoPartidoFueraZona(
+      habilitados.length > 0 && !habilitados.includes(normalizarTextoZona(departamento))
+    );
+  }, [zonas, provincia, departamento]);
+
   // ---- Cascada: departamentos de la provincia -------------------------------
   useEffect(() => {
     if (!provincia) {
@@ -451,6 +477,7 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
     errorSugerencias,
     // aviso de cobertura
     avisoFueraZona,
+    avisoPartidoFueraZona,
     MENSAJE_FUERA_DE_ZONA,
     // resolución
     preview,

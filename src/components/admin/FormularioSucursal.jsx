@@ -1,11 +1,13 @@
 /**
  * Propósito: Formulario para crear o editar una sucursal usando Form de Bootstrap.
- * Contenido: Componente FormularioSucursal con datos propios de la sucursal y
- *            la cascada territorial compartida (provincia → partido/comuna →
- *            localidad), autocompletado de calles, aviso de cobertura por
- *            provincia y flujo de preview (iteración 3).
- * Dependencias: react-bootstrap, react-router-dom (useNavigate),
- *            hooks/useDireccionTerritorial, utils/territorio (provincias).
+ * Contenido: Componente FormularioSucursal. Iteración 4: el nombre primero y
+ *            la dirección ordenada de general a específico (Ubicación →
+ *            Dirección → datos propios de la sucursal), con la cascada
+ *            territorial, autocompletado de calles, avisos de zona y el flujo
+ *            de preview (verificar → confirmar → guardar).
+ * Dependencias: hooks/useDireccionTerritorial (lógica única),
+ *            Autocomplete / OpcionesDireccionAmbigua / ConfirmacionDireccion,
+ *            utils/territorio, FormularioAdmin.css (convención de dev).
  * Uso: <FormularioSucursal sucursal={sucursal} onGuardar={handler} />
  *      - onGuardar DEBE devolver el resultado del backend:
  *        { ok: true, data } | { ok: false, error, opciones? }.
@@ -19,11 +21,14 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Alert, ListGroup, Spinner } from 'react-bootstrap';
-import { FaSave, FaTimes, FaCheck, FaEdit, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaSave, FaTimes, FaMapMarkedAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { PROVINCIAS } from '../../utils/territorio';
 import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
 import Autocomplete from '../comunes/Autocomplete';
+import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
+import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
+import '../comunes/DireccionFormulario.css';
 // Convención de dev (rediseño UI): estilos compartidos de formularios admin.
 import './FormularioAdmin.css';
 
@@ -92,12 +97,12 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   return (
     <Card className="shadow-sm formulario-admin-card">
       <Card.Body>
-        {/* Convención de dev: h3 con clase h5 (el <h1>/h2 de la página es el
+        {/* Convención de dev: h3 con clase h5 (el <h1> de la página es el
             nivel superior). */}
         <h3 className="h5 mb-4">Datos de la sucursal</h3>
         <Form onSubmit={handleSubmit} noValidate>
           {direccionApi.errores.length > 0 && (
-            <div className="text-danger mb-3" role="alert">
+            <div className="text-danger mb-3 dir-form-errores" role="alert">
               <ul className="mb-0 ps-3">
                 {direccionApi.errores.map((error, i) => (
                   <li key={i}>{error}</li>
@@ -106,8 +111,8 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             </div>
           )}
 
-          {direccionApi.avisoFueraZona && (
-            <Alert variant="warning" role="alert" className="mb-3">
+          {(direccionApi.avisoFueraZona || direccionApi.avisoPartidoFueraZona) && (
+            <Alert variant="warning" role="alert" className="mb-3 dir-form-aviso">
               {direccionApi.MENSAJE_FUERA_DE_ZONA}
             </Alert>
           )}
@@ -122,67 +127,9 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             />
           </Form.Group>
 
-          {/* Fix bug 1: la calle espera a la provincia (la query la exige). */}
-          <Form.Group className="mb-3">
-            <Form.Label>Calle *</Form.Label>
-            <Form.Control
-              type="text"
-              value={direccionApi.calle}
-              onChange={(e) => direccionApi.actualizarCalle(e.target.value)}
-              placeholder="Ej: Av. Principal"
-              autoComplete="off"
-              disabled={!direccionApi.provincia}
-            />
-            {!direccionApi.provincia && (
-              <Form.Text className="text-muted">
-                Seleccioná primero la provincia para buscar la calle.
-              </Form.Text>
-            )}
-            {direccionApi.errorSugerencias && (
-              <Form.Text className="text-danger d-block">
-                {direccionApi.errorSugerencias}
-              </Form.Text>
-            )}
-            {direccionApi.sugerencias.length > 0 && (
-              <ListGroup
-                className="mt-1"
-                style={{ maxHeight: 180, overflowY: 'auto' }}
-              >
-                {direccionApi.sugerencias.map((sugerencia) => (
-                  <ListGroup.Item
-                    key={sugerencia.id}
-                    action
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() =>
-                      direccionApi.seleccionarSugerencia(sugerencia.nombre)
-                    }
-                  >
-                    {/* Fix bug 3: la nomenclatura distingue calles repetidas
-                        entre comunas/partidos. */}
-                    <div className="fw-semibold">{sugerencia.nombre}</div>
-                    {sugerencia.nomenclatura && (
-                      <div className="text-muted small">
-                        {sugerencia.nomenclatura}
-                      </div>
-                    )}
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
-            )}
-          </Form.Group>
+          {/* ===== Ubicación: de lo más general a lo más específico ===== */}
+          <div className="dir-form-seccion">Ubicación</div>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Altura *</Form.Label>
-            <Form.Control
-              type="number"
-              min="0"
-              value={direccionApi.altura}
-              onChange={(e) => direccionApi.actualizarAltura(e.target.value)}
-              placeholder="Ej: 123"
-            />
-          </Form.Group>
-
-          {/* Fix bug 2: combobox con búsqueda por texto y selección explícita. */}
           <Autocomplete
             etiqueta="Provincia *"
             value={direccionApi.provincia}
@@ -226,8 +173,70 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             />
           )}
 
+          {/* ===== Dirección: calle y altura ===== */}
+          <div className="dir-form-seccion">Dirección</div>
+
           <Form.Group className="mb-3">
-            <Form.Label>Referencia</Form.Label>
+            <Form.Label>Calle *</Form.Label>
+            <Form.Control
+              type="text"
+              value={direccionApi.calle}
+              onChange={(e) => direccionApi.actualizarCalle(e.target.value)}
+              placeholder="Ej: Av. Principal"
+              autoComplete="off"
+              disabled={!direccionApi.provincia}
+            />
+            {!direccionApi.provincia && (
+              <Form.Text className="text-muted">
+                Seleccioná primero la provincia para buscar la calle.
+              </Form.Text>
+            )}
+            {direccionApi.errorSugerencias && (
+              <Form.Text className="text-danger d-block">
+                {direccionApi.errorSugerencias}
+              </Form.Text>
+            )}
+            {direccionApi.sugerencias.length > 0 && (
+              <ListGroup className="mt-1 dir-form-sugerencias">
+                {direccionApi.sugerencias.map((sugerencia) => (
+                  <ListGroup.Item
+                    key={sugerencia.id}
+                    action
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() =>
+                      direccionApi.seleccionarSugerencia(sugerencia.nombre)
+                    }
+                  >
+                    <div className="dir-form-sugerencia-nombre">
+                      {sugerencia.nombre}
+                    </div>
+                    {sugerencia.nomenclatura && (
+                      <div className="dir-form-sugerencia-detalle">
+                        {sugerencia.nomenclatura}
+                      </div>
+                    )}
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Altura *</Form.Label>
+            <Form.Control
+              type="number"
+              min="0"
+              value={direccionApi.altura}
+              onChange={(e) => direccionApi.actualizarAltura(e.target.value)}
+              placeholder="Ej: 123"
+            />
+          </Form.Group>
+
+          {/* ===== Datos propios de la sucursal ===== */}
+          <div className="dir-form-seccion">Operación</div>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Referencia de la dirección</Form.Label>
             <Form.Control
               type="text"
               value={referencia}
@@ -267,68 +276,27 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             </Form.Select>
           </Form.Group>
 
+          {/* Paso de selección de coincidencias (componente compartido). */}
           {direccionApi.preview?.estado === 'ambigua' && (
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-semibold">
-                La dirección coincide con varias ubicaciones. ¿Cuál es la correcta?
-              </Form.Label>
-              {direccionApi.preview.opciones.map((opcion) => (
-                <Form.Check
-                  key={opcion.nomenclatura}
-                  type="radio"
-                  id={`opcion-${opcion.nomenclatura}`}
-                  name="opciones-direccion-sucursal"
-                  label={opcion.nomenclatura}
-                  checked={direccionApi.opcionElegida === opcion.nomenclatura}
-                  onChange={() => direccionApi.elegirOpcion(opcion.nomenclatura)}
-                  className="mb-1"
-                />
-              ))}
-              <div className="d-grid mt-2">
-                <Button
-                  variant="primary"
-                  type="button"
-                  disabled={!direccionApi.opcionElegida}
-                  onClick={direccionApi.previsualizar}
-                >
-                  <FaCheck className="me-1" aria-hidden="true" />
-                  Verificar con la opción seleccionada
-                </Button>
-              </div>
-            </Form.Group>
+            <OpcionesDireccionAmbigua
+              opciones={direccionApi.preview.opciones}
+              opcionElegida={direccionApi.opcionElegida}
+              onElegir={direccionApi.elegirOpcion}
+              onConfirmar={direccionApi.previsualizar}
+              name="opciones-direccion-sucursal"
+            />
           )}
 
+          {/* Confirmación de la resolución (componente compartido). */}
           {direccionApi.preview?.estado === 'unica' && (
-            <Alert variant="success" className="mb-4">
-              <div className="fw-semibold mb-1">
-                Confirmá la dirección de la sucursal
-              </div>
-              <div>{direccionApi.preview.resultado.nomenclatura}</div>
-              <div className="text-muted small mt-1">
-                Coordenadas:{' '}
-                {direccionApi.preview.resultado.latitud.toFixed(5)}
-                {' / '}
-                {direccionApi.preview.resultado.longitud.toFixed(5)}
-              </div>
-              <div className="d-flex gap-2 mt-3">
-                <Button
-                  variant="primary"
-                  className="rounded-pill px-4"
-                  onClick={direccionApi.confirmar}
-                >
-                  <FaSave className="me-1" aria-hidden="true" />
-                  Guardar sucursal
-                </Button>
-                <Button
-                  variant="outline-secondary"
-                  className="rounded-pill px-4"
-                  onClick={direccionApi.editarDatos}
-                >
-                  <FaEdit className="me-1" aria-hidden="true" />
-                  Editar datos
-                </Button>
-              </div>
-            </Alert>
+            <div className="dir-form-confirmacion">
+              <ConfirmacionDireccion
+                resultado={direccionApi.preview.resultado}
+                textoConfirmar="Guardar sucursal"
+                onConfirmar={direccionApi.confirmar}
+                onEditar={direccionApi.editarDatos}
+              />
+            </div>
           )}
 
           <div className="d-flex gap-2">
