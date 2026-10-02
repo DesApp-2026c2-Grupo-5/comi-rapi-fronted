@@ -1,0 +1,311 @@
+/**
+ * Propósito: Estilos de la barra de navegación inferior fija (móvil).
+ * Contenido: Barra naranja oscura con cuatro destinos, ícono sobre etiqueta,
+ *            estado activo en blanco y badge de contador.
+ * Dependencias: NavInferior.jsx (se importa desde el mismo componente).
+ *                Reusa .carrito-badge, .nav-enlace-ico-pulso y sus animaciones,
+ *                que están en Navbar.css (siempre montado junto a esta barra).
+ * Uso: Importado desde src/components/comunes/NavInferior.jsx.
+ *
+ * Sobre el color: la barra superior usa el degradado claro (#f07f10 → #ffb347),
+ * pero ahí el texto blanco va sobre links cortos y espaciados. Acá el blanco es
+ * el contenido principal y ocupa todo el ancho, y contra el extremo claro del
+ * degradado da menos de 2:1. Por eso se usa el naranja oscuro de la marca
+ * (#b55d00, el mismo que ya se usa para el texto del ítem activo): 4,6:1 contra
+ * blanco, que es el mínimo AA para texto normal. Es el mismo color de la app,
+ * sólo que en el tramo que se puede leer.
+ */
+
+/* ============ Barra ============ */
+.nav-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 1020 es la capa del `sticky-top` de Bootstrap: la barra queda por encima del
+     contenido, pero los modales (1040–1055) la tapan cuando se abren, que es lo
+     correcto. */
+  z-index: 1020;
+  background: linear-gradient(180deg, #b55d00, #a04e00);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.22);
+  /* El padding inferior absorbe el gesto de inicio del iPhone: sin esto los
+     íconos quedan debajo de la barrita y el toque va al sistema, no al enlace. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* La lista es la que reparte el ancho en cuatro columnas iguales. */
+.nav-inferior-lista {
+  display: flex;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-inferior-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ============ Enlace ============ */
+.nav-inferior-enlace {
+  /* Ancla del pseudoelemento de la píldora del ítem activo. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  /* Alto total ~60px: deja el área táctil holgadamente por encima de los 44px
+      que pide la pauta, que es lo que hace falta con el dedo al borde. */
+  min-height: 60px;
+  padding: 0.4rem 0.4rem;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  /* Sin transición de fondo aquí: el fondo del ítem activo vive en el
+      pseudoelemento de más abajo, que tiene la suya. */
+}
+
+.nav-inferior-ico-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.nav-inferior-ico {
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.nav-inferior-texto {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  /* "Mis Pedidos" entra como "Pedidos" justamente para no hacer ancho de más. */
+  white-space: nowrap;
+}
+
+/* El botón del admin abre la hoja en lugar de navegar: tiene que verse igual que
+   un enlace, así que se le quitan el borde y el fondo gris por defecto del
+   navegador y se le da la misma tipografía que al resto de la barra. */
+.nav-inferior .nav-inferior-boton,
+.nav-inferior .nav-inferior-boton:hover {
+  border: 0;
+  background-color: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+/* Con cinco columnas (admin) el ancho por ítem es la quinta parte, y a 320px eso
+   son 64px. "Sucursales" no entra con el tamaño de letra del cliente, así que en
+   pantallas muy angostas se achica un poco antes que dejar que se corte. */
+@media (max-width: 359px) {
+  .nav-inferior-texto {
+    font-size: 0.62rem;
+  }
+
+  .nav-inferior-enlace {
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+  }
+
+  .nav-inferior-enlace::before {
+    left: 0.25rem;
+    right: 0.25rem;
+  }
+}
+
+.nav-inferior-enlace:hover .nav-inferior-ico {
+  transform: translateY(-2px);
+}
+
+/* Ítem activo: píldora blanca con el naranja oscuro de la marca, igual que el
+   enlace activo de la barra superior (`.nav-enlace.activo`). La píldora, y no
+   sólo un cambio de color de texto, es lo que hace evidente la ubicación de un
+   vistazo. */
+.nav-inferior-enlace.activo {
+  color: #b55d00;
+}
+
+.nav-inferior-enlace.activo .nav-inferior-texto {
+  font-weight: 800;
+}
+
+/* El fondo va en un pseudoelemento para no comer el padding del enlace: el área
+   táctil sigue siendo completa y el texto queda centrado sobre la píldora. */
+.nav-inferior-enlace::before {
+  content: '';
+  position: absolute;
+  top: 0.35rem;
+  left: 0.4rem;
+  right: 0.4rem;
+  height: calc(100% - 0.7rem);
+  border-radius: 12px;
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.nav-inferior-enlace.activo::before {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* El ícono y el texto van por encima de la píldora. */
+.nav-inferior-ico-wrap,
+.nav-inferior-texto {
+  position: relative;
+  z-index: 1;
+}
+
+/* Bootstrap pone `outline: 0` en los enlaces de navegación al tabular, así que
+   sin esta regla el foco por teclado es invisible en el móvil con teclado. */
+.nav-inferior-enlace:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+
+/* ============ Badge de contador ============ */
+/* Selector de dos clases a propósito: gana contra `.carrito-badge` de Navbar.css
+   sin importar en qué orden se empaqueten las hojas. */
+.carrito-badge.nav-inferior-badge {
+  top: -6px;
+  right: -12px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  font-size: 0.65rem;
+  line-height: 17px;
+}
+
+/* El ícono saltaría con `.nav-enlace-ico`, que esta barra no usa: se declara
+   el pulso para `.nav-inferior-ico` reutilizando la animación `pedido-salto`. */
+.nav-enlace-ico-pulso .nav-inferior-ico {
+  transform-origin: center;
+  animation: pedido-salto 0.8s ease-out;
+}
+
+/* ============ Hoja inferior del catálogo (admin) ============ */
+/* Selectores compuestos porque el CSS de Bootstrap se empaqueta después de esta
+   hoja y, a igual especificidad, ganaría él. */
+.nav-hoja.offcanvas {
+  /* Bootstrap deja `--bs-offcanvas-height: 30vh` en `:root`, y para la
+     colocación `bottom` eso es una ALTURA FIJA: la hoja medía 30% de la pantalla
+     y de las cuatro secciones del catálogo sólo entraban un par, con el resto
+     escondido detrás de un scroll. Las otras colocaciones de offcanvas usan
+     `auto`, así que el valor por defecto no sirve acá.
+     Se declara con dos clases a propósito (`.nav-hoja.offcanvas`): gana contra
+     el `:root` de Bootstrap, que tiene la misma especificidad pero va después en
+     el bundle.
+     `min-height` en vez de una altura fija para que la hoja se agrande si algún
+     día se le agregan secciones, en lugar de volver a recortarlas. */
+  --bs-offcanvas-height: auto;
+  /* 58% y no más: en el teléfono más chico que todavía se usa (667px de alto) el
+     alto disponible son 387px, y los cuatro ítmes con su cabecera y el safe area
+     necesitan unos 341. Con 52% quedaban 347 y el último entraba justo y había
+     que scrollear. `min-height` y no altura fija para que la hoja crezca sola si
+     algún día se le agregan secciones. */
+  min-height: 58vh;
+  /* Esquinas sólo arriba: la hoja pega al borde de abajo de la pantalla. */
+  border-top-left-radius: 1.1rem;
+  border-top-right-radius: 1.1rem;
+  border: 0;
+}
+
+.nav-hoja .offcanvas-header {
+  border-bottom: 2px solid #f1c27d;
+  padding: 1.1rem 1.25rem;
+}
+
+.nav-hoja .offcanvas-title {
+  color: #b55d00;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+/* El cuerpo crece para repartirse el min-height de la hoja; `overflow-y: auto`
+   lo deja Bootstrap y sólo entra en juego en pantallas muy bajas o con el texto
+   ampliado. */
+.nav-hoja .offcanvas-body {
+  flex: 1 1 auto;
+  padding: 0.9rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.nav-hoja-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  height: 100%;
+}
+
+.nav-hoja-enlace {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  /* 60px, por encima del mínimo táctil de 44: con la hoja abierta hay lugar de
+     sobra y el ítem grande es más fácil de acertar con el dedo. */
+  min-height: 60px;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  color: #5c4300;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-hoja-enlace:hover {
+  background-color: #fff4e2;
+  color: #b55d00;
+}
+
+.nav-hoja-enlace.activo {
+  background-color: #b55d00;
+  color: #fff;
+}
+
+/* Bootstrap pone `outline: 0` en los enlaces al tabular. */
+.nav-hoja-enlace:focus-visible {
+  outline: 2px solid #ff9f1c;
+  outline-offset: -2px;
+}
+
+.nav-hoja-ico {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+/* ============ Corte de pantalla ============ */
+/* Desde `lg` la barra superior ya muestra todos los enlaces desplegados, así que
+   la inferior sobra y estorba. `lg` es el mismo punto en que Bootstrap pliega el
+   colapsable de Navbar.jsx. */
+@media (min-width: 992px) {
+  .nav-inferior {
+    display: none;
+  }
+
+  /* Y el shell recupera el padding: sin esta regla seguiría reserving el hueco
+     de una barra que no está. */
+  .app-shell-con-nav-inferior {
+    padding-bottom: 0;
+  }
+}
+
+/* ============ Hueco para el contenido ============ */
+/* La clase la pone App.jsx sólo cuando el usuario tiene barra inferior (es decir,
+   cliente con sesión), para que las pantallas de admin no reserven un hueco vacío
+   abajo. El padding va en el shell y no en <main> porque la barra también tapa el
+   pie de página.
+
+   La cantidad es la altura de la barra (60px) + la safe area del dispositivo +
+   un margen, para que el último elemento quede con aire y no pegado al borde. */
+@media (max-width: 991.98px) {
+  .app-shell-con-nav-inferior {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 0.5rem);
+  }
+}

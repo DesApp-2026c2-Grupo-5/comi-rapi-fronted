@@ -88,6 +88,12 @@
 .nav-enlace:hover .nav-enlace-ico {
   transform: rotate(10deg) scale(1.15);
 }
+/* Bootstrap 5 pone `outline: 0` en `.nav-link:focus-visible`, así que sin esta
+   regla el foco por teclado en el menú es invisible. */
+.nav-enlace:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -2px;
+}
 .nav-enlace.activo {
   background-color: #fff;
   color: #b55d00 !important;
@@ -95,6 +101,126 @@
 }
 .nav-enlace.activo::after {
   display: none;
+}
+
+/* ============ Desplegable de "Catálogo" (admin) ============
+   Selectores compuestos a propósito (.navbar-comirapi .x): en el bundle el CSS de
+   Bootstrap queda DESPUÉS de esta hoja, porque App.jsx —y con él este import— se
+   evalúa antes que bootstrap.min.css en main.jsx. Con la misma especificidad
+   ganaría Bootstrap, así que hay que subir un nivel.
+   ───────────────────────────────────────────────────────────────────────────── */
+.navbar-comirapi .nav-enlace-toggle,
+.navbar-comirapi .nav-enlace-toggle:hover {
+  /* El toggle es un <button>: sin esto el navegador le pone el borde y el fondo
+     gris por defecto y aparece un recuadro alrededor de la pastilla. */
+  border: 0;
+  background-color: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.navbar-comirapi .nav-enlace-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+/* El caret propio gira al abrir; el ::after de Bootstrap se oculta porque es un
+   SVG oscuro embebido que sobre el naranja se ve sucio. */
+.navbar-comirapi .nav-enlace-toggle.dropdown-toggle::after {
+  display: none;
+}
+
+.nav-toggle-caret {
+  font-size: 0.65rem;
+  transition: transform 0.25s ease;
+}
+
+.nav-enlace-toggle.show .nav-toggle-caret {
+  transform: rotate(180deg);
+}
+
+/* Menú desplegado: sobre la barra naranja, una tarjeta blanca. El texto va en
+   marrón oscuro y no blanco, para no repetir el error de contraste que ya se
+   corrigió en la barra inferior. */
+.navbar-comirapi .nav-submenu {
+  margin-top: 0.3rem;
+  border: 2px solid #f1c27d;
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  padding: 0.35rem;
+}
+
+.navbar-comirapi .nav-submenu-enlace,
+.navbar-comirapi .nav-submenu-enlace:hover,
+.navbar-comirapi .nav-submenu-enlace:focus {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  /* 40px: dentro de un desplegable el alvo táctil puede ser algo menor que en
+     la barra, pero 44px los deja igual de cómodos con el dedo. */
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  color: #5c4300;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.navbar-comirapi .nav-submenu-enlace:hover {
+  background-color: #fff4e2;
+  color: #b55d00;
+}
+
+/* Sección en la que estás: mismo tratamiento que el ítem activo de la barra. */
+.navbar-comirapi .nav-submenu-enlace.activo,
+.navbar-comirapi .nav-submenu-enlace.activo:hover {
+  background-color: #b55d00;
+  color: #fff;
+}
+
+.nav-submenu-ico {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+/* Bootstrap pone `outline: 0` en los ítems del desplegable al tabular. */
+.navbar-comirapi .nav-submenu-enlace:focus-visible {
+  outline: 2px solid #ff9f1c;
+  outline-offset: -2px;
+}
+
+/* En móvil el colapsable de Bootstrap pone el desplegable en `position: static`,
+   o sea que se despliega dentro del menú. Ahí se lee como una sublista del menú
+   hamburguesa y conviene sin tarjeta: una caja blanca flotando sobre el naranja
+   se ve como un elemento pegado. */
+@media (max-width: 991.98px) {
+  .navbar-comirapi .nav-submenu {
+    margin-top: 0.2rem;
+    padding: 0 0 0 1rem;
+    border: 0;
+    border-left: 2px solid rgba(255, 255, 255, 0.45);
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .navbar-comirapi .nav-submenu-enlace,
+  .navbar-comirapi .nav-submenu-enlace:hover {
+    color: #fff;
+  }
+
+  .navbar-comirapi .nav-submenu-enlace:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+  }
+
+  /* Sobre el fondo del desplegable ya no hace falta la pastilla blanca: el
+     borde izquierdo y el texto en blanco marcan la sección. */
+  .navbar-comirapi .nav-submenu-enlace.activo,
+  .navbar-comirapi .nav-submenu-enlace.activo:hover {
+    background-color: transparent;
+    color: #fff;
+    font-weight: 800;
+  }
 }
 
 /* ============ Contador del carrito ============ */
@@ -241,6 +367,13 @@
 }
 
 /* ============ Responsive de la zona del usuario ============ */
+/* Avatar del cliente en la fila superior: da acceso al perfil sin abrir el menú
+   hamburguesa. Es el mismo elemento que la versión con nombre, pero se muestra
+   fuera del colapsable. Sólo tiene sentido cuando el colapsable está plegado. */
+.navbar-perfil-movil {
+  display: none;
+}
+
 /* En pantallas medianas el nombre no entra: queda el avatar, que ya identifica. */
 @media (max-width: 991.98px) {
   .navbar-acciones {
@@ -251,6 +384,41 @@
   }
   .navbar-perfil-nombre {
     display: none;
+  }
+
+  /* El avatar de la fila superior pasa a ser el acceso al perfil.
+      `margin-left: auto` es lo que lo pega a la derecha: el container de la
+      navbar usa `justify-content: space-between`, así que sin el margen automático
+      el avatar quedaría en el medio, entre la marca y el toggler, en vez de junto
+      al toggler. No lleva `order`: el orden del DOM ya es marca → avatar → toggler
+      y es el que se quiere. */
+  .navbar-perfil-movil {
+    display: inline-flex;
+    margin-left: auto;
+    margin-right: 0.25rem;
+  }
+
+  /* Y la copia de escritorio se oculta para no mostrar dos veces lo mismo. */
+  .navbar-perfil-desplegado {
+    display: none;
+  }
+
+  .navbar-toggler {
+    display: none !important;
+  }
+
+  .navbar-collapse {
+    display: none !important;
+  }
+
+  .btn-logout-movil {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 992px) {
+  .btn-logout-movil {
+    display: none !important;
   }
 }
 
