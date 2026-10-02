@@ -2,14 +2,14 @@
  * Propósito: Página para crear o editar una sucursal usando FormularioSucursal.
  * Contenido: Componente EditarSucursal que obtiene el ID de la URL (useParams),
  *            precarga los datos de la sucursal a editar y delega en el contexto.
- * Dependencias: react-bootstrap (Container, Spinner, Button, Alert), react-router-dom
+ * Dependencias: react-bootstrap (Container, Spinner, Button), react-router-dom
  *               (useParams, Link, useNavigate), FormularioSucursal, context/SucursalContext (useSucursal).
  * Uso: Ruta "/admin/sucursal/nuevo" o "/admin/sucursal/editar/:id" → <EditarSucursal />
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Spinner, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioSucursal from '../../components/admin/FormularioSucursal';
 import { useSucursal } from '../../hooks/useSucursal';
@@ -22,7 +22,6 @@ const EditarSucursal = () => {
   const { notificar } = useNotificaciones();
   const [sucursal, setSucursal] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -37,20 +36,13 @@ const EditarSucursal = () => {
   }, [id, sucursales]);
 
   // Guarda creando o actualizando la sucursal según corresponda. Muestra el
-  // motivo real del rechazo (geolocalización de la dirección) si el backend lo
-  // devuelve.
-  // Iteración 1-geo: se devuelve el resultado al formulario para que pueda
-  // manejar el 409 (opciones territoriales) y los errores reales del backend.
+  // Iteración 1-geo / Iteración 3: se devuelve el resultado al formulario
+  // para que muestre los errores (cobertura, geolocalización) y las opciones
+  // del 409 (desambiguación). El formulario ya no usa banners de página.
   const handleGuardar = async (datosSucursal) => {
     if (id) {
       const resultado = await actualizarSucursal(id, datosSucursal);
       if (!resultado.ok) {
-        // El 409 con opciones lo maneja el formulario (desambiguación).
-        if (!resultado.opciones) {
-          setError(
-            resultado.error || 'No se pudo actualizar la sucursal.'
-          );
-        }
         return resultado;
       }
       notificar(
@@ -60,9 +52,6 @@ const EditarSucursal = () => {
     } else {
       const resultado = await agregarSucursal(datosSucursal);
       if (!resultado.ok) {
-        if (!resultado.opciones) {
-          setError(resultado.error || 'No se pudo crear la sucursal.');
-        }
         return resultado;
       }
       notificar(
@@ -102,7 +91,6 @@ const EditarSucursal = () => {
         ← Volver a sucursales
       </Link>
       <h2 className="mb-4">{id ? `Editar Sucursal #${id}` : 'Nueva Sucursal'}</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
       <FormularioSucursal sucursal={sucursal} onGuardar={handleGuardar} />
     </Container>
   );

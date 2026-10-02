@@ -19,7 +19,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Container, Card, Form, Button, Row, Col, Spinner, Modal } from 'react-bootstrap';
+import { Container, Card, Form, Button, Row, Col, Spinner, Modal, Alert } from 'react-bootstrap';
 import {
   FaUserCircle,
   FaCamera,
@@ -308,17 +308,30 @@ const Perfil = () => {
     return guardada;
   };
 
+  // Fix bug C (iteración 3): try/finally para que un fallo de la API nunca
+  // deje el estado de "eliminando" trabado (congelaba la pantalla), y el
+  // resultado se evalúa por su campo ok (antes se evaluaba el objeto
+  // {ok: ...}, siempre truthy: avisaba éxito aunque hubiera fallado).
   const confirmarEliminarDireccion = async () => {
     if (!direccionAEliminar) return;
     setEliminandoDireccion(true);
     const etiqueta = direccionAEliminar.alias || direccionAEliminar.calle;
-    const ok = await eliminarDireccion(direccionAEliminar.id);
-    setEliminandoDireccion(false);
-    setDireccionAEliminar(null);
-    notificar(
-      ok ? `Dirección "${etiqueta}" eliminada correctamente.` : 'No se pudo eliminar la dirección.',
-      ok ? 'success' : 'danger'
-    );
+    try {
+      const resultado = await eliminarDireccion(direccionAEliminar.id);
+      if (resultado && resultado.ok) {
+        notificar(`Dirección "${etiqueta}" eliminada correctamente.`, 'success');
+        setDireccionAEliminar(null);
+      } else {
+        notificar(
+          (resultado && resultado.error) || 'No se pudo eliminar la dirección.',
+          'danger'
+        );
+      }
+    } catch (error) {
+      notificar('No se pudo eliminar la dirección.', 'danger');
+    } finally {
+      setEliminandoDireccion(false);
+    }
   };
 
   // ---- Datos derivados para mostrar ------------------------------------
@@ -800,24 +813,53 @@ const Perfil = () => {
                         {direccion.referencia}
                       </span>
                     )}
-                    <div className="perfil-acciones mt-2">
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={() => setDireccionEnEdicion(direccion)}
-                      >
-                        <FaEdit aria-hidden="true" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => setDireccionAEliminar(direccion)}
-                      >
-                        <FaTrashAlt aria-hidden="true" />
-                        Eliminar
-                      </Button>
-                    </div>
+                    {/* Fix bug C (iteración 3): confirmación INLINE en lugar
+                        de un modal apilado sobre este modal (el backdrop
+                        trabado dejaba la pantalla congelada). */}
+                    {direccionAEliminar && direccionAEliminar.id === direccion.id ? (
+                      <Alert variant="danger" className="mt-2 mb-0 py-2">
+                        <div className="mb-2 fw-semibold">
+                          ¿Seguro que querés eliminar esta dirección?
+                        </div>
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={confirmarEliminarDireccion}
+                            disabled={eliminandoDireccion}
+                          >
+                            {eliminandoDireccion ? 'Eliminando…' : 'Sí, eliminar'}
+                          </Button>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={() => setDireccionAEliminar(null)}
+                            disabled={eliminandoDireccion}
+                          >
+                            Volver
+                          </Button>
+                        </div>
+                      </Alert>
+                    ) : (
+                      <div className="perfil-acciones mt-2">
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={() => setDireccionEnEdicion(direccion)}
+                        >
+                          <FaEdit aria-hidden="true" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => setDireccionAEliminar(direccion)}
+                        >
+                          <FaTrashAlt aria-hidden="true" />
+                          Eliminar
+                        </Button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -845,19 +887,10 @@ const Perfil = () => {
         onCancelar={() => setConfirmandoGuardado(false)}
       />
 
-      <ConfirmarModal
-        mostrar={Boolean(direccionAEliminar)}
-        titulo="Eliminar dirección"
-        mensaje={
-          direccionAEliminar
-            ? `¿Seguro que querés eliminar la dirección "${direccionAEliminar.alias || direccionAEliminar.calle}"?`
-            : ''
-        }
-        textoConfirmar="Sí, eliminar"
-        cargando={eliminandoDireccion}
-        onConfirmar={confirmarEliminarDireccion}
-        onCancelar={() => setDireccionAEliminar(null)}
-      />
+      {/* La eliminación de direcciones se confirma INLINE dentro del modal de
+          direcciones (fix bug C, iteración 3): un ConfirmarModal apilado
+          sobre otro modal dejaba el backdrop trabado y la pantalla
+          congelada. */}
 
       <ConfirmarModal
         mostrar={confirmandoBajaFoto}
