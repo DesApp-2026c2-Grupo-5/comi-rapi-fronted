@@ -13,8 +13,11 @@
    *  - Modo lectura: el total recibido del backend ya incluye el envío → usa la prop costoEnvio
    *    y muestra Subtotal = total - costoEnvio. No recalcula el envío del servicio.
    *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
-  *  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
- *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
+*  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
+   *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
+   *  - 'fija' pega la card al scrollear en desktop. Sólo para la columna lateral del
+   *    carrito, donde acompaña el scroll de la lista; en columnas únicas taparía lo
+   *    que va debajo.
  *  - Detalle de ítems dentro de la card: nombre, cantidad, precio unitario, subtotal
  *    de línea y desglose de personalización (patrón .desglose del mockup), en ambos modos.
  *  - Envío simulado (MOCK): gratis a partir de $10.000, $350 en caso contrario.
@@ -39,6 +42,9 @@ const ResumenPedido = ({
   descuento = 0,
   detalleDescuento = '',
   promociones: promocionesProp,
+  // En desktop la card se pega al scrollear. Sólo conviene en la columna lateral
+  // del carrito: en columnas únicas tapa lo que va después (ver ResumenPedido.css).
+  fija = false,
 }) => {
   const { items, total } = useCarrito();
 
@@ -66,7 +72,7 @@ const ResumenPedido = ({
   const totalFinal = enModoLectura ? montoTotal : montoTotal + costoEnvio - descuentoVista;
 
   return (
-    <Card className="resumen-card">
+    <Card className={`resumen-card${fija ? ' resumen-card-fija' : ''}`}>
       <Card.Header as="h5" className="resumen-titulo">
         Resumen del Pedido
       </Card.Header>

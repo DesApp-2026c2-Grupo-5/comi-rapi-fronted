@@ -106,6 +106,14 @@
   color: #f07f10;
   font-size: 1rem;
   pointer-events: none;
+  /* Necesario para que el ícono se vea en el campo de contraseña: ahí el input
+     va dentro de `.campo-password`, que es `position: relative` y está después
+     del ícono en el DOM. Entre dos elementos posicionados con `z-index: auto`
+     gana el orden del DOM, así que el input de fondo opaco tapaba el candado.
+     En el campo de email no pasaba porque el input no está dentro de un
+     envoltorio posicionado. El ícono es decorativo y no captura clics, así que
+     subirlo no estorba al escribir ni al tocar el campo. */
+  z-index: 1;
 }
 
 /* ============ Botón submit pill naranja ============ */

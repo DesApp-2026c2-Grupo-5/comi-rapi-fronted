@@ -1,0 +1,12 @@
+/**
+ * Propósito: Estilos del formulario de alta/edición de una dirección de entrega.
+ * Contenido: Ancho máximo de la tarjeta.
+ * Dependencias: FormularioDireccion.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/cliente/FormularioDireccion.jsx.
+ */
+
+/* Reemplaza el `style={{ maxWidth: '500px' }}` que tenía la tarjeta. */
+.direccion-form-card {
+  width: 100%;
+  max-width: 32rem;
+}

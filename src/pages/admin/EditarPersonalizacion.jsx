@@ -61,12 +61,10 @@ const EditarPersonalizacion = () => {
   if (id && !elemento) {
     return (
       <Container className="py-5 text-center">
-        <h2>Elemento no encontrado</h2>
-        <Link to="/admin/personalizacion">
-          <Button variant="secondary" className="mt-3">
+        <h1 className="h2">Elemento no encontrado</h1>
+        <Button as={Link} to="/admin/personalizacion" variant="secondary" className="mt-3">
             <FaArrowLeft className="me-1" aria-hidden="true" /> Volver
           </Button>
-        </Link>
       </Container>
     );
   }
@@ -78,8 +76,8 @@ const EditarPersonalizacion = () => {
       <Link to={volverTo} className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a personalización
       </Link>
-      <h2 className="mb-4">{id ? `Editar elemento #${id}` : 'Nuevo elemento'}</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
+      <h1 className="h2 mb-4">{id ? `Editar elemento #${id}` : 'Nuevo elemento'}</h1>
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <FormularioPersonalizacion
         elemento={id ? elemento : tipoPreseleccionado ? { tipo: tipoPreseleccionado } : null}
         productos={productosMock}

@@ -42,14 +42,12 @@ const DetallePedido = () => {
   if (!pedido) {
     return (
       <Container className="py-5 text-center">
-        <h2 className="detalle-no-encontrado">Pedido no encontrado</h2>
+        <h1 className="h2 detalle-no-encontrado">Pedido no encontrado</h1>
         <p className="text-muted mb-4">No se encontró el pedido con ID #{id}</p>
-        <Link to="/cliente/mis-pedidos">
-          <Button className="boton-volver-btn">
+        <Button as={Link} to="/cliente/mis-pedidos" className="boton-volver-btn">
           <FaArrowLeft className="me-1" aria-hidden="true" />
           Volver a Mis Pedidos
         </Button>
-        </Link>
       </Container>
     );
   }
@@ -71,7 +69,7 @@ const DetallePedido = () => {
 
       <Card className="detalle-card">
         <Card.Header className="detalle-card-header d-flex justify-content-between align-items-center">
-          <h4 className="mb-0">Pedido #{pedido.id}</h4>
+          <h1 className="h4 mb-0">Pedido #{pedido.id}</h1>
           <Badge
             bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
             className="badge-estado fs-6 d-inline-flex align-items-center gap-1"
@@ -103,7 +101,7 @@ const DetallePedido = () => {
             </Col>
           </Row>
 
-          <h5 className="detalle-tabla-titulo mb-3">Productos</h5>
+          <h2 className="h5 detalle-tabla-titulo mb-3">Productos</h2>
 
           {/* Tabla de productos */}
           <Table hover responsive className="detalle-tabla">
@@ -191,7 +189,7 @@ const DetallePedido = () => {
                 disabled={repitiendoId === pedido.id}
               >
                 <FaRedo className="me-1" aria-hidden="true" />
-                {repitiendoId === pedido.id ? 'Agregando...' : 'Repetir pedido'}
+                {repitiendoId === pedido.id ? 'Agregando…' : 'Repetir pedido'}
               </Button>
             </div>
           )}

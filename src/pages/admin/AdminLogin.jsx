@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { FaUserShield, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import CampoPassword from '../../components/comunes/CampoPassword';
 import '../comunes/Login.css';
 
 const AdminLogin = () => {
@@ -45,49 +46,73 @@ const AdminLogin = () => {
           <div className="auth-brand-ico">
             <FaUserShield aria-hidden="true" />
           </div>
-          <h2>Login Administrador</h2>
+          <h1 className="h2">Login Administrador</h1>
           <p>Accede al panel de administración</p>
         </div>
 
         <div className="auth-card-body">
-          {error && <Alert variant="warning">{error}</Alert>}
+          {error && (
+            <Alert variant="warning" role="alert" aria-live="polite">
+              {error}
+            </Alert>
+          )}
 
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3 auth-input-group">
+          <Form onSubmit={handleSubmit} noValidate>
+            <Form.Group className="mb-3 auth-input-group" controlId="admin-login-email">
               <Form.Label>Email</Form.Label>
               <FaEnvelope className="auth-input-ico" aria-hidden="true" />
               <Form.Control
                 type="email"
+                name="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@test.com"
+                placeholder="nombre@ejemplo.com…"
+                autoComplete="email"
+                spellCheck={false}
+                required
               />
             </Form.Group>
-            <Form.Group className="mb-3 auth-input-group">
-              <Form.Label>Contraseña</Form.Label>
-              <FaLock className="auth-input-ico" aria-hidden="true" />
-              <Form.Control
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="123456"
-              />
-            </Form.Group>
+            {/* Se reutiliza CampoPassword en vez de un input suelto: así el ojo de
+                mostrar/ocultar y su etiqueta accesible son los mismos que en el
+                login de cliente. */}
+            <CampoPassword
+              id="admin-password"
+              name="password"
+              etiqueta="Contraseña"
+              requerido={false}
+              className="mb-3 auth-input-group"
+              icono={<FaLock aria-hidden="true" />}
+              claseIcono="auth-input-ico"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <Button type="submit" className="btn-submit-comirapi w-100 mb-3" disabled={loading}>
-              {loading ? 'Ingresando...' : <>
-                Iniciar Sesión <FaSignInAlt aria-hidden="true" />
-              </>}
+              {loading ? 'Ingresando…' : (
+                <>
+                  Iniciar Sesión <FaSignInAlt aria-hidden="true" />
+                </>
+              )}
             </Button>
           </Form>
 
           <div className="text-center">
-            <p className="mb-1">¿No tienes cuenta? <Link to="/admin-registro" className="auth-enlace">Regístrate aquí</Link></p>
-            <p><Link to="/login" className="auth-enlace">Login de cliente</Link></p>
+            <p className="mb-1">
+              ¿No tienes cuenta?{' '}
+              <Link to="/admin-registro" className="auth-enlace">
+                Regístrate aquí
+              </Link>
+            </p>
+            <p className="mb-0">
+              <Link to="/login" className="auth-enlace">
+                Login de cliente
+              </Link>
+            </p>
           </div>
 
-          <div className="auth-demo">
-            <strong>Demo:</strong> admin@test.com / 123456
-          </div>
+          <p className="auth-demo mb-0">
+            <strong>Demo:</strong> <span translate="no">admin@test.com</span> /{' '}
+            <span translate="no">123456</span>
+          </p>
         </div>
       </div>
     </div>

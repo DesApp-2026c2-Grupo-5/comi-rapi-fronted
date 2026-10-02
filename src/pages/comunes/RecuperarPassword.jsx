@@ -49,14 +49,17 @@ const RecuperarPassword = () => {
           <div className="auth-brand-ico">
             <FaHamburger aria-hidden="true" />
           </div>
-          <h2>Recuperar contraseña</h2>
+          <h1 className="h2">Recuperar contraseña</h1>
           <p>Ingresá tu email y te enviamos un enlace para restablecerla</p>
         </div>
 
         <div className="auth-card-body">
           {enviado ? (
             <>
-              <Alert variant="success">
+              {/* El mensaje es deliberadamente indistinto a propósito (el backend
+                  no revela si la cuenta existe), así que va como `status`: es una
+                  confirmación de envío, no un error. */}
+              <Alert variant="success" role="status" aria-live="polite">
                 Si existe una cuenta asociada al email, recibirás un enlace para
                 recuperar tu contraseña. Revisá tu bandeja de entrada.
               </Alert>
@@ -68,18 +71,25 @@ const RecuperarPassword = () => {
             </>
           ) : (
             <>
-              {error && <Alert variant="warning">{error}</Alert>}
+              {error && (
+                <Alert variant="warning" role="alert" aria-live="polite">
+                  {error}
+                </Alert>
+              )}
 
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3 auth-input-group">
+              <Form onSubmit={handleSubmit} noValidate>
+                <Form.Group className="mb-3 auth-input-group" controlId="recuperar-email">
                   <Form.Label>Email</Form.Label>
                   <FaEnvelope className="auth-input-ico" aria-hidden="true" />
                   <Form.Control
                     type="email"
+                    name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="cliente@test.com"
+                    placeholder="nombre@ejemplo.com…"
                     autoComplete="email"
+                    spellCheck={false}
+                    required
                   />
                 </Form.Group>
 
@@ -88,9 +98,7 @@ const RecuperarPassword = () => {
                   className="btn-submit-comirapi w-100 mb-3"
                   disabled={enviando}
                 >
-                  {enviando ? (
-                    'Enviando...'
-                  ) : (
+                  {enviando ? 'Enviando…' : (
                     <>
                       Enviar enlace <FaPaperPlane aria-hidden="true" />
                     </>

@@ -33,31 +33,60 @@ const ItemCarrito = ({ item }) => {
       <Card.Body className="p-3">
         <Row className="align-items-center g-3">
           <Col xs={12} sm={3}>
-            <img src={producto.imagen} alt={producto.nombre} className="item-carrito-imagen" />
+            {/* alt vacío: el nombre del producto está en la columna de al lado y
+                se lee igual, así que la foto no necesita duplicarlo. */}
+            <img
+              src={producto.imagen}
+              alt=""
+              width={90}
+              height={90}
+              loading="lazy"
+              decoding="async"
+              className="item-carrito-imagen"
+            />
           </Col>
           <Col xs={12} sm={4}>
-            <div className="fw-bold item-carrito-nombre">{producto.nombre}</div>
-            <div className="text-muted small">Precio: {formatPrice(precioUnitario)}{precioUnitario !== producto.precio ? ` (base ${formatPrice(producto.precio)})` : ''}</div>
+            <h3 className="fw-bold item-carrito-nombre">{producto.nombre}</h3>
+            <div className="text-muted small">
+              Precio: {formatPrice(precioUnitario)}
+              {precioUnitario !== producto.precio ? ` (base ${formatPrice(producto.precio)})` : ''}
+            </div>
             {tienePersonalizacion && (
-              <div className="item-carrito-desglose small mt-1">
+              <ul className="item-carrito-desglose small mt-1">
                 {personalizacion.extras?.map((ex) => (
-                  <div key={ex.id}>› Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</div>
+                  <li key={ex.id}>Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</li>
                 ))}
                 {personalizacion.acompanamientos?.map((ac) => (
-                  <div key={ac.id}>› Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</div>
+                  <li key={ac.id}>Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</li>
                 ))}
                 {personalizacion.sin?.map((s) => (
-                  <div key={s}>› <strong>Sin {s}</strong></div>
+                  <li key={s}><strong>Sin {s}</strong></li>
                 ))}
                 {personalizacion.condimentos?.map((c) => (
-                  <div key={c.nombre}>› {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span></div>
+                  <li key={c.nombre}>
+                    {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </Col>
           <Col xs={6} sm={2}>
-            <Form.Label className="text-muted small d-block mb-1">Cantidad</Form.Label>
-            <Form.Control type="number" min="1" max="20" value={cantidad} onChange={handleCambiarCantidad} className="cantidad-input" aria-label={`Cantidad de ${producto.nombre}`} />
+            {/* Label visible + associated: el `aria-label` que tenía antes pisaba
+                el texto del label y hacía que se anunciara dos veces. */}
+            <Form.Label htmlFor={`cantidad-${idLinea || producto.id}`} className="text-muted small d-block mb-1">
+              Cantidad
+            </Form.Label>
+            <Form.Control
+              id={`cantidad-${idLinea || producto.id}`}
+              type="number"
+              name={`cantidad-${idLinea || producto.id}`}
+              min="1"
+              max="20"
+              inputMode="numeric"
+              value={cantidad}
+              onChange={handleCambiarCantidad}
+              className="cantidad-input"
+            />
           </Col>
           <Col xs={6} sm={2} className="text-sm-end">
             <div className="text-muted small">Subtotal</div>

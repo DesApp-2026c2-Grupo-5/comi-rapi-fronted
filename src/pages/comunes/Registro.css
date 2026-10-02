@@ -1,0 +1,32 @@
+/**
+ * Propósito: Estilos de la pantalla de registro de clientes.
+ * Contenido: Centrado vertical de la tarjeta y ancho máximo legible.
+ * Dependencias: Registro.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/pages/comunes/Registro.jsx.
+ *
+ * Estas reglas reemplazan los `style={{...}}` en línea que tenía la página:
+ * el ancho máximo y el centrado son decisiones de layout, no de contenido.
+ */
+
+.registro-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* `dvh` acompaña a `vh` para que la barra de direcciones del móvil no corra el
+     layout al hacer scroll. */
+  min-height: 70vh;
+  min-height: 70dvh;
+  padding: 1.5rem 0;
+}
+
+.registro-card {
+  width: 100%;
+  /* 420px era el `maxWidth` en línea; se sube un poco porque los mensajes de
+     error del backend (p. ej. "ya existe una cuenta con ese email") son largos
+     y con 420px se partían de a tres palabras. */
+  max-width: 30rem;
+}
+
+.registro-card h1 {
+  text-wrap: balance;
+}

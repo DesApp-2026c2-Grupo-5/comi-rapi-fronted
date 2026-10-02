@@ -51,10 +51,15 @@
   justify-content: center;
 }
 
+/* El desglose pasó de <div> sueltos a <ul>/<li>: el lector de pantalla anuncia
+   "lista de 4 elementos" y la cantidad deulletros extras se escucha, en vez de
+   cuatro párrafos sueltos indistinguibles. */
 .item-carrito-desglose {
   font-size: 0.82rem;
   color: #6c757d;
   line-height: 1.5;
+  margin-bottom: 0;
+  padding-left: 1.1rem;
 }
 
 .item-carrito-desglose strong {

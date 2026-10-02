@@ -24,6 +24,8 @@ import { FaMapMarkedAlt, FaSave, FaTimes, FaCheck, FaEdit } from 'react-icons/fa
 import { PROVINCIAS } from '../../utils/territorio';
 import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
 import Autocomplete from '../comunes/Autocomplete';
+// Convención de dev (rediseño UI): el ancho de la tarjeta vive en CSS.
+import './FormularioDireccion.css';
 
 const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
   const [alias, setAlias] = useState('');
@@ -70,15 +72,17 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
   };
 
   return (
-    <Card className="shadow-sm" style={{ maxWidth: '500px' }}>
+    <Card className="shadow-sm direccion-form-card">
       <Card.Body>
-        <h5 className="mb-4 d-flex align-items-center gap-2">
-          <FaMapMarkedAlt className="text-danger" />
+        {/* Convención de dev: h3 con clase h5 (el <h2> de la página es el
+            nivel superior). */}
+        <h3 className="h5 mb-4 d-flex align-items-center gap-2">
+          <FaMapMarkedAlt className="text-danger" aria-hidden="true" />
           {direccion ? 'Editar dirección' : 'Nueva dirección'}
-        </h5>
-        <Form onSubmit={handleSubmit}>
+        </h3>
+        <Form onSubmit={handleSubmit} noValidate>
           {direccionApi.errores.length > 0 && (
-            <div className="text-danger mb-3">
+            <div className="text-danger mb-3" role="alert">
               <ul className="mb-0 ps-3">
                 {direccionApi.errores.map((error, i) => (
                   <li key={i}>{error}</li>
@@ -89,7 +93,7 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
 
           {/* Iteración 3: aviso de cobertura al seleccionar la provincia. */}
           {direccionApi.avisoFueraZona && (
-            <Alert variant="warning" className="mb-3">
+            <Alert variant="warning" role="alert" className="mb-3">
               {direccionApi.MENSAJE_FUERA_DE_ZONA}
             </Alert>
           )}

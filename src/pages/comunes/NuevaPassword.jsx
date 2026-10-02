@@ -67,7 +67,7 @@ const NuevaPassword = () => {
             <div className="auth-brand-ico">
               <FaHamburger aria-hidden="true" />
             </div>
-            <h2>Nueva contraseña</h2>
+            <h1 className="h2">Nueva contraseña</h1>
           </div>
           <div className="auth-card-body">
             <Alert variant="warning">
@@ -91,23 +91,30 @@ const NuevaPassword = () => {
           <div className="auth-brand-ico">
             <FaHamburger aria-hidden="true" />
           </div>
-          <h2>Nueva contraseña</h2>
+          <h1 className="h2">Nueva contraseña</h1>
           <p>Elegí la contraseña con la que vas a entrar</p>
         </div>
 
         <div className="auth-card-body">
+          {/* `role="status"` + `aria-live`: la redirección automática no se
+              anuncia sola, y sin esto quien no ve la pantalla pierde el cambio. */}
           {exito ? (
-            <Alert variant="success">
+            <Alert variant="success" role="status" aria-live="polite">
               <FaCheckCircle aria-hidden="true" /> Tu contraseña fue actualizada.
-              Redirigiendo al inicio de sesión...
+              Redirigiendo al inicio de sesión…
             </Alert>
           ) : (
             <>
-              {error && <Alert variant="warning">{error}</Alert>}
+              {error && (
+                <Alert variant="warning" role="alert" aria-live="polite">
+                  {error}
+                </Alert>
+              )}
 
-              <Form onSubmit={handleSubmit}>
+              <Form onSubmit={handleSubmit} noValidate>
                 <CampoPassword
                   id="passwordNueva"
+                  name="password"
                   etiqueta="Contraseña nueva"
                   requerido={false}
                   className="mb-3 auth-input-group"
@@ -115,12 +122,13 @@ const NuevaPassword = () => {
                   claseIcono="auth-input-ico"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={`Mínimo ${MINIMO} caracteres`}
+                  ayuda={`Mínimo ${MINIMO} caracteres.`}
                   autoComplete="new-password"
                 />
 
                 <CampoPassword
                   id="passwordRepetida"
+                  name="password-repetida"
                   etiqueta="Repetir contraseña"
                   requerido={false}
                   className="mb-3 auth-input-group"
@@ -128,7 +136,11 @@ const NuevaPassword = () => {
                   claseIcono="auth-input-ico"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repetí la contraseña"
+                  error={
+                    confirmPassword && password !== confirmPassword
+                      ? 'Las contraseñas no coinciden.'
+                      : null
+                  }
                   autoComplete="new-password"
                 />
 
@@ -137,7 +149,7 @@ const NuevaPassword = () => {
                   className="btn-submit-comirapi w-100 mb-3"
                   disabled={enviando}
                 >
-                  {enviando ? 'Guardando...' : 'Guardar contraseña'}
+                  {enviando ? 'Guardando…' : 'Guardar contraseña'}
                 </Button>
               </Form>
             </>

@@ -116,12 +116,12 @@ const MisPedidos = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h1 className="mb-0">Mis Pedidos</h1>
-        <Link to="/cliente/historial">
-          <Button variant="outline-secondary" size="sm">
-            <FaHistory aria-hidden="true" />
-            {' '}Ver historial
-          </Button>
-        </Link>
+        {/* `as={Link}` en vez de Link > Button: un botón anidado dentro de un
+            enlace duplica el nodo accesible y lo agrega dos veces al tabulador. */}
+        <Button as={Link} to="/cliente/historial" variant="outline-secondary" size="sm">
+          <FaHistory aria-hidden="true" />
+          {' '}Ver historial
+        </Button>
       </div>
 
       <FiltrosPedidos
@@ -133,20 +133,16 @@ const MisPedidos = () => {
 
       {activos.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
-          <h4 className="fw-bold mb-2">No tenés pedidos en curso</h4>
+          <h2 className="h4 fw-bold mb-2">No tenés pedidos en curso</h2>
           <p className="text-muted mb-4">¡Hacé tu primer pedido y seguí su estado acá!</p>
-          <div>
-            <Link to="/cliente/catalogo">
-              <Button variant="primary" className="rounded-pill px-4">
-                <FaUtensils aria-hidden="true" />
-                Ir al catálogo
-              </Button>
-            </Link>
-          </div>
+          <Button as={Link} to="/cliente/catalogo" variant="primary" className="rounded-pill px-4">
+            <FaUtensils aria-hidden="true" />
+            Ir al catálogo
+          </Button>
         </Card>
       ) : visibles.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
-          <h4 className="fw-bold mb-2">Sin resultados para los filtros</h4>
+          <h2 className="h4 fw-bold mb-2">Sin resultados para los filtros</h2>
           <p className="text-muted mb-0">Probá ampliando fecha, estado o sucursal.</p>
         </Card>
       ) : (

@@ -154,6 +154,8 @@
 }
 
 /* ============ Badge de Google Play ============ */
+/* Es un distintivo, no un enlace: no tiene destino todavía, así que no lleva
+   estado hover ni cursor de puntero que sugieran que se puede pulsar. */
 .badge-google-play {
   display: inline-flex;
   align-items: center;
@@ -163,13 +165,6 @@
   border-radius: 12px;
   padding: 8px 18px;
   text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.badge-google-play:hover {
-  color: #fff;
-  text-decoration: none;
-  opacity: 0.9;
 }
 
 .badge-google-play .gp-texto-pequeno {

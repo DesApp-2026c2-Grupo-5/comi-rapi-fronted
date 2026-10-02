@@ -5,6 +5,17 @@
 .btn-seleccionar{ background:#fff4e2; border:1px solid #f1c27d; color:#b55d00; border-radius:999px; font-weight:700; font-size:.8rem; padding:.3rem 1rem; }
 .btn-seleccionar:hover{ background:#ffe6c2; color:#b55d00; border-color:#ff9f1c; }
 .btn-volver{ width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:#2b2b2b; font-size:1.3rem; }
+/* Los dos botones circulares (cerrar y volver) suben a 44px: 36px queda corto
+   para el dedo en móvil. El foco visible va aparte del hover porque :hover en
+   escritorio no distingue mouse de teclado. */
+.btn-volver,
+.btn-cerrar{ width:44px; height:44px; touch-action:manipulation; display:inline-flex; align-items:center; justify-content:center; }
+.btn-volver:focus-visible,
+.btn-cerrar:focus-visible,
+.btn-seleccionar:focus-visible{ outline:2px solid #ff9f1c; outline-offset:2px; }
+
+/* Cumplimenta al botón "volver" para que el título quede centrado. */
+.espaciador-volver{ width:44px; flex:0 0 auto; }
 .fila-grupo{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0e0c0; }
 .fila-grupo:last-child{ border-bottom:none; }
 .badge-grupo{ font-size:.75rem; color:#6c757d; }
@@ -15,3 +26,72 @@
 .pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
 .pill-control button:hover{ background:#ff9f1c; color:#fff; }
 .pill-control span{ min-width:18px; text-align:center; font-weight:700; }
+
+/* ============ Contador (Contador.jsx) ============ */
+/* `.pill-control button` sizes original: 28px, por debajo del mínimo táctil de 44px.
+   El Contador sube los botones a 44px y agranda la cápsula para compensarlo. */
+.contador .pill-control{ padding:4px; gap:4px; }
+
+.contador .pill-control .contador-boton{
+  width:44px; height:44px;
+  border-radius:50%; border:none;
+  background:#fff; color:#2b2b2b;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);
+  font-weight:700; font-size:1.25rem; line-height:1;
+  touch-action:manipulation;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+
+/* El hover no se dispara en táctil y endesktop el :hoveralone no distingue
+   teclado de mouse, así que el foco visible va por aparte. */
+.contador .pill-control .contador-boton:hover:not(:disabled){
+  background:#ff9f1c; color:#fff;
+}
+
+.contador .pill-control .contador-boton:focus-visible{
+  outline:2px solid #ff9f1c; outline-offset:2px;
+}
+
+/* Botón deshabilitado: el límite se comunica con el estado, en vez de que el
+   clic se ignore en silencio y el usuario piense que la app se colgó. */
+.contador .pill-control .contador-boton:disabled{
+  background:#f1f1f5; color:#9a9aa2; box-shadow:none; cursor:not-allowed;
+}
+
+.contador .contador-valor{
+  min-width:2.25rem; text-align:center; font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Etiqueta que acompaña al contador dentro de una fila de opción. */
+.fila-opcion .contador-valor{ font-size:1rem; }
+
+/* ============ Reglas sacadas de los style={{...}} en línea ============ */
+/* Estas medidas eran decisiones de layout escritas en el JSX; en CSS se pueden
+   auditar, ajustar por breakpoint y no ensucian el marcado. */
+
+/* Diálogo simple (producto sin opciones de personalización) */
+.modal-producto-imagen{ object-fit:cover; }
+.modal-precio{ color:#e63946; }
+
+/* Vista principal del diálogo personalizable */
+.personalizar-descripcion{ max-width:320px; }
+.personalizar-total{ font-size:1.1rem; font-variant-numeric:tabular-nums; }
+.personalizar-total-unitario{ font-size:.7rem; }
+.personalizar-grupos,
+.personalizar-unidades{ border-radius:14px; }
+.personalizar-unidades .contador{ flex:0 0 auto; }
+
+/* Botón de agregar: la burbuja con la cantidad de unidades */
+.btn-agregar-cantidad{
+  color:#ff9f1c; border-radius:50%;
+  width:22px; height:22px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Estados de los resúmenes de cada grupo. Antes el color iba por style inline,
+   así que un estado "vacío" y uno "con selección" solo se distinguían por el
+   tono; ahora el color es una clase y se puede revisar el contraste. */
+.badge-grupo-activo{ color:#198754; }
+.badge-grupo-ambar{ color:#b55d00; }

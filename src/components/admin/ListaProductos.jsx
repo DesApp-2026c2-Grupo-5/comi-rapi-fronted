@@ -81,7 +81,7 @@ const ListaProductos = () => {
   return (
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 className="mb-0">Gestión de Productos</h2>
+        <h1 className="h2 mb-0">Gestión de Productos</h1>
         <div className="d-flex gap-2 flex-wrap">
           <Button variant="outline-info" onClick={handleNuevoCombo}>
             <FaPlus className="me-1" aria-hidden="true" />
@@ -121,7 +121,7 @@ const ListaProductos = () => {
         />
       </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       {cargando ? (
         <div className="text-center py-5">

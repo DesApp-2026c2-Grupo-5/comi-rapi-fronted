@@ -12,6 +12,7 @@ import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
 import SubirImagen from './SubirImagen';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import './FormularioAdmin.css';
 
 const FormularioCategoria = ({ categoria, onGuardar }) => {
   const { notificar } = useNotificaciones();
@@ -50,32 +51,37 @@ const FormularioCategoria = ({ categoria, onGuardar }) => {
   };
 
   return (
-    <Card className="shadow-sm" style={{ maxWidth: '500px' }}>
+    <Card className="shadow-sm formulario-admin-card">
       <Card.Body>
         <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="categoria-nombre">
             <Form.Label>Nombre *</Form.Label>
             <Form.Control
               type="text"
+              name="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre de la categoría"
+              autoComplete="off"
+              required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="categoria-descripcion">
             <Form.Label>Descripción</Form.Label>
             <Form.Control
               as="textarea"
+              name="descripcion"
               rows={2}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Descripción de la categoría"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="categoria-imagen">
             <Form.Label>Imagen</Form.Label>
             <Form.Control
               type="text"
+              name="imagen"
               value={imagen}
               onChange={(e) => setImagen(e.target.value)}
               placeholder="/imagenes/categorias/tu-imagen.jpg"
@@ -88,10 +94,11 @@ const FormularioCategoria = ({ categoria, onGuardar }) => {
               del proyecto y se muestra en la home.
             </Form.Text>
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="categoria-activa">
             <Form.Check
               type="switch"
               id="categoria-activa"
+              name="activa"
               label="Categoría activa"
               checked={activa}
               onChange={(e) => setActiva(e.target.checked)}

@@ -90,7 +90,7 @@ const EditarSucursal = () => {
       <Link to="/admin/sucursales" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a sucursales
       </Link>
-      <h2 className="mb-4">{id ? `Editar Sucursal #${id}` : 'Nueva Sucursal'}</h2>
+      <h1 className="h2 mb-4">{id ? `Editar Sucursal #${id}` : 'Nueva Sucursal'}</h1>
       <FormularioSucursal sucursal={sucursal} onGuardar={handleGuardar} />
     </Container>
   );

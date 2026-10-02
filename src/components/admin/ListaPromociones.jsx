@@ -120,14 +120,14 @@ const ListaPromociones = () => {
   return (
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 className="mb-0">Gestión de Promociones</h2>
+        <h1 className="h2 mb-0">Gestión de Promociones</h1>
         <Button variant="primary" onClick={handleNuevo}>
           <FaPlus className="me-1" aria-hidden="true" />
           Agregar nueva promoción
         </Button>
       </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       <Row className="g-2 mb-3">
         <Col xs={6} md={3}>

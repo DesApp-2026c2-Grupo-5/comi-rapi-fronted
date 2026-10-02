@@ -39,12 +39,10 @@ const ConfirmacionPedido = () => {
         <Card className="text-center shadow" style={{ width: '100%', maxWidth: '450px' }}>
           <Card.Body className="p-5">
             <h1 className="h4 mb-3">No hay un pedido reciente</h1>
-            <Link to="/cliente/catalogo">
-              <Button variant="primary" className="mt-3">
+            <Button as={Link} to="/cliente/catalogo" variant="primary" className="mt-3">
                   <FaUtensils aria-hidden="true" />
                   Ir al catálogo
                 </Button>
-            </Link>
           </Card.Body>
         </Card>
       </Container>
@@ -86,12 +84,10 @@ const ConfirmacionPedido = () => {
               </p>
 
               <div className="mt-4">
-                <Link to="/cliente/mis-pedidos">
-                  <Button variant="primary" size="lg" className="rounded-pill px-4">
-                    <FaReceipt aria-hidden="true" />
-                    Ver mis pedidos
-                  </Button>
-                </Link>
+                <Button as={Link} to="/cliente/mis-pedidos" variant="primary" size="lg" className="rounded-pill px-4">
+                  <FaReceipt aria-hidden="true" />
+                  Ver mis pedidos
+                </Button>
               </div>
 
               {/* Sucursal asignada automáticamente */}

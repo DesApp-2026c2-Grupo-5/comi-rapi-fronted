@@ -14,7 +14,6 @@ import './DetalleItemsPedido.css';
 
 const DetalleItemsPedido = ({ items, className = '' }) => {
   if (!items || items.length === 0) return null;
-
   return (
     <div className={`detalle-items ${className}`.trim()}>
       {items.map((item, idx) => {
@@ -49,38 +48,54 @@ const DetalleItemsPedido = ({ items, className = '' }) => {
           <div key={item.idLinea || idx} className="resumen-item">
             <div className="d-flex justify-content-between align-items-baseline gap-2">
               <span className="resumen-item-nombre">
-                {nombre} <span className="text-muted">x{cantidad}</span>
+                {nombre}{' '}
+                <span className="text-muted">
+                  {/* `&nbsp;` para que la cantidad no quede pegada al nombre ni
+                      caiga de línea sola. */}
+                  <span aria-hidden="true">&times;</span>
+                  <span className="visually-hidden">{`multiplicado por ${cantidad}`}</span>
+                  &nbsp;{cantidad}
+                </span>
               </span>
               <span className="resumen-item-subtotal">
                 {formatPrice(subtotalLinea)}
               </span>
             </div>
             <div className="resumen-item-precio text-muted">
-              {formatPrice(precioUnitario)} c/u
+              {formatPrice(precioUnitario)}&nbsp;c/u
             </div>
             {tieneDesglose && (
               <div className="resumen-desglose">
                 {personalizacion.extras?.map((ex) => (
                   <div key={ex.id}>
-                    › Extra: <strong>{ex.nombre}</strong> (+{formatPrice(ex.precio)}) x
-                    {ex.cantidad}
+                    &rsaquo; Extra: <strong>{ex.nombre}</strong> (+
+                    {formatPrice(ex.precio)})&nbsp;&times;&nbsp;{ex.cantidad}
                   </div>
                 ))}
                 {personalizacion.acompanamientos?.map((ac) => (
                   <div key={ac.id}>
-                    › Acompañamiento: <strong>{ac.nombre}</strong> (+
-                    {formatPrice(ac.precio)}) x{ac.cantidad}
+                    &rsaquo; Acompañamiento: <strong>{ac.nombre}</strong> (+
+                    {formatPrice(ac.precio)})&nbsp;&times;&nbsp;{ac.cantidad}
                   </div>
                 ))}
                 {personalizacion.sin?.map((s, i) => (
                   <div key={i}>
-                    › <strong>Sin {typeof s === 'string' ? s : s.nombre}</strong>
+                    &rsaquo; <strong>Sin {typeof s === 'string' ? s : s.nombre}</strong>
                   </div>
                 ))}
                 {personalizacion.condimentos?.map((c, i) => (
                   <div key={c.id || i}>
-                    › {typeof c === 'string' ? c : c.nombre}
-                    {c.cantidad ? ` x${c.cantidad}` : ''}{' '}
+                    &rsaquo; {typeof c === 'string' ? c : c.nombre}
+                    {c.cantidad ? (
+                      <>
+                        {' '}
+                        <span aria-hidden="true">&times;</span>
+                        <span className="visually-hidden">
+                          {`multiplicado por ${c.cantidad}`}
+                        </span>
+                        &nbsp;{c.cantidad}
+                      </>
+                    ) : null}{' '}
                     <span className="text-muted">(sin costo)</span>
                   </div>
                 ))}

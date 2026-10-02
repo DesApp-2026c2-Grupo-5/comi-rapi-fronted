@@ -10,12 +10,13 @@
  *        onConfirmar={fn} onCancelar={fn} />
  */
 
+import { useId } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { FaTimesCircle, FaBan } from 'react-icons/fa';
 
 const ConfirmarModal = ({
   mostrar,
-  titulo = '¿Estás seguro?',
+  titulo = '¿Confirmás la acción?',
   mensaje,
   textoConfirmar = 'Confirmar',
   textoCancelar = 'Volver',
@@ -23,53 +24,61 @@ const ConfirmarModal = ({
   aviso = false,
   onConfirmar,
   onCancelar,
-}) => (
-  <Modal show={mostrar} onHide={onCancelar} centered>
-    <Modal.Body className="text-center p-4">
-      <div
-        className={`${
-          aviso
-            ? 'bg-warning bg-opacity-25 text-dark'
-            : 'bg-danger bg-opacity-10 text-danger'
-        } rounded-circle d-inline-flex align-items-center justify-content-center mb-3`}
-        style={{ width: 64, height: 64 }}
-      >
-        {aviso ? (
-          <FaBan size={32} aria-hidden="true" />
-        ) : (
-          <FaTimesCircle size={32} aria-hidden="true" />
-        )}
-      </div>
-      <h4 className="fw-bold mb-2">{titulo}</h4>
-      {mensaje && <p className="text-muted mb-4">{mensaje}</p>}
-      <div className="d-flex justify-content-center gap-2 flex-wrap">
-        {aviso ? (
-          <Button variant="warning" className="rounded-pill px-4 text-white" onClick={onCancelar}>
-            Entendido
-          </Button>
-        ) : (
-          <>
-            <Button
-              variant="outline-secondary"
-              className="rounded-pill px-4"
-              onClick={onCancelar}
-              disabled={cargando}
-            >
-              {textoCancelar}
+}) => {
+  // El diálogo necesita un nombre accesible: sin este id ni aria-label, el lector
+  // de pantalla anuncia sólo "diálogo" y se pierde de qué se trata.
+  const tituloId = useId();
+
+  return (
+    <Modal show={mostrar} onHide={onCancelar} centered aria-labelledby={tituloId}>
+      <Modal.Body className="confirmar-modal-body text-center p-4">
+        <div
+          className={`${
+            aviso
+              ? 'bg-warning bg-opacity-25 text-dark'
+              : 'bg-danger bg-opacity-10 text-danger'
+          } rounded-circle d-inline-flex align-items-center justify-content-center mb-3`}
+          style={{ width: 64, height: 64 }}
+        >
+          {aviso ? (
+            <FaBan size={32} aria-hidden="true" />
+          ) : (
+            <FaTimesCircle size={32} aria-hidden="true" />
+          )}
+        </div>
+        <h2 className="h4 fw-bold mb-2" id={tituloId}>
+          {titulo}
+        </h2>
+        {mensaje && <p className="text-muted mb-4 break-words">{mensaje}</p>}
+        <div className="d-flex justify-content-center gap-2 flex-wrap">
+          {aviso ? (
+            <Button variant="warning" className="rounded-pill px-4 text-white" onClick={onCancelar}>
+              Entendido
             </Button>
-            <Button
-              variant="danger"
-              className="rounded-pill px-4"
-              onClick={onConfirmar}
-              disabled={cargando}
-            >
-              {cargando ? 'Procesando...' : textoConfirmar}
-            </Button>
-          </>
-        )}
-      </div>
-    </Modal.Body>
-  </Modal>
-);
+          ) : (
+            <>
+              <Button
+                variant="outline-secondary"
+                className="rounded-pill px-4"
+                onClick={onCancelar}
+                disabled={cargando}
+              >
+                {textoCancelar}
+              </Button>
+              <Button
+                variant="danger"
+                className="rounded-pill px-4"
+                onClick={onConfirmar}
+                disabled={cargando}
+              >
+                {cargando ? 'Procesando…' : textoConfirmar}
+              </Button>
+            </>
+          )}
+        </div>
+      </Modal.Body>
+    </Modal>
+  );
+};
 
 export default ConfirmarModal;

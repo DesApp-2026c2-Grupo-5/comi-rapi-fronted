@@ -93,7 +93,9 @@ const Carrito = () => {
     (JSON.stringify(idsPrevistos) !== JSON.stringify(idsPersistidos) ||
       Math.abs(Number(pedidoPendiente.total) - totalEstimado) > 0.01);
 
-  const construirDatosPedido = (direccion, sucursalAsignada) => ({
+  // La sucursal no va en el cuerpo: `crearPedido` la recibe aparte como segundo
+  // argumento, así que aquí el parámetro sobraba (y eslint lo marcaba).
+  const construirDatosPedido = (direccion) => ({
     productos: items.map((item) => ({
       productoId: item.producto.id,
       nombre: item.producto.nombre,
@@ -137,9 +139,9 @@ const Carrito = () => {
     //    el backend; acá se envía como referencia. Sin fallback: si la API
     //    falla, el contexto muestra el error y no se navega a la pantalla de pago.
     const pedidoCreado = await crearPedido(
-      construirDatosPedido(direccion, sucursalAsignada),
-      sucursalAsignada
-    );
+construirDatosPedido(direccion),
+        sucursalAsignada
+      );
     if (!pedidoCreado) return;
 
     // 5. Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
@@ -177,7 +179,7 @@ const Carrito = () => {
         return;
       }
       const pedidoCreado = await crearPedido(
-        construirDatosPedido(direccion, sucursalAsignada),
+        construirDatosPedido(direccion),
         sucursalAsignada
       );
       if (!pedidoCreado) return;
@@ -200,7 +202,7 @@ const Carrito = () => {
         <div className="d-flex justify-content-center">
           <Card className="carrito-vacio">
             <Card.Body className="text-center p-5">
-              <h4 className="fw-bold mb-2">Tu carrito está vacío</h4>
+              <h2 className="h4 fw-bold mb-2">Tu carrito está vacío</h2>
               <p className="text-muted mb-4">¡Añadí tus productos favoritos y hacé tu pedido!</p>
               <Button className="carrito-boton-vacio rounded-pill" onClick={irAlCatalogo}>
                 <FaUtensils aria-hidden="true" />
@@ -214,7 +216,7 @@ const Carrito = () => {
           {/* Aviso: sin dirección no se puede confirmar */}
           {items.length > 0 && direcciones.length === 0 && (
             <Col xs={12} className="mb-3">
-              <Alert variant="warning" className="mb-0">
+              <Alert variant="warning" className="mb-0" role="status">
                 No tenés direcciones guardadas.{' '}
                 <Link to="/cliente/perfil?direcciones=1" className="alert-link">
                   Agregá una dirección
@@ -281,11 +283,14 @@ const Carrito = () => {
             )}
             <ResumenPedido
               onConfirmar={tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido}
+              /* Sólo acá la card va fija: está en la columna lateral y acompaña el
+                 scroll de la lista de ítems. En /cliente/pago taparía los botones. */
+              fija
               botonTexto={
                 tienePagoPendiente
                   ? pendienteObsoleto
                     ? actualizando
-                      ? 'Actualizando...'
+                      ? 'Actualizando…'
                       : 'Actualizar y pagar'
                     : 'Ir a Pagar'
                   : 'Confirmar Pedido'

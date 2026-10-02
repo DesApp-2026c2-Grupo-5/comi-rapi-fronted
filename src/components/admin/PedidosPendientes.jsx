@@ -128,7 +128,7 @@ const PedidosPendientes = () => {
 
   return (
     <Container>
-      <h2 className="mb-4">Gestión de Pedidos</h2>
+      <h1 className="h2 mb-4">Gestión de Pedidos</h1>
 
       {/* Filtro rápido por estado */}
       <div className="filtro-estado-bar d-flex flex-wrap gap-2 mb-4">

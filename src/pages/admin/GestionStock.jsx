@@ -223,7 +223,7 @@ const GestionStock = () => {
   return (
     <Container fluid className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 className="mb-0">Stock por sucursal</h2>
+        <h1 className="h2 mb-0">Stock por sucursal</h1>
         <Button variant="outline-primary" onClick={cargar} disabled={cargando}>
           <FaBoxes className="me-1" aria-hidden="true" />
           Recargar
@@ -236,9 +236,10 @@ const GestionStock = () => {
       </p>
 
       <div className="d-flex gap-2 align-items-end flex-wrap mb-3">
-        <Form.Group className="filtro-stock">
+        <Form.Group className="filtro-stock" controlId="stock-filtro-sucursal">
           <Form.Label className="small mb-1">Sucursal</Form.Label>
           <Form.Select
+            name="sucursalId"
             value={sucursalId}
             onChange={(e) => setSucursalId(e.target.value)}
           >
@@ -251,9 +252,10 @@ const GestionStock = () => {
           </Form.Select>
         </Form.Group>
 
-        <Form.Group className="filtro-stock">
+        <Form.Group className="filtro-stock" controlId="stock-filtro-producto">
           <Form.Label className="small mb-1">Producto</Form.Label>
           <Form.Select
+            name="productoId"
             value={productoId}
             onChange={(e) => setProductoId(e.target.value)}
           >
@@ -269,11 +271,12 @@ const GestionStock = () => {
 
         {sucursalId && !hayFiltroDeProducto && (
           <>
-            <Form.Group className="filtro-stock">
+            <Form.Group className="filtro-stock" controlId="stock-agregar-producto">
               <Form.Label className="small mb-1">
                 Agregar producto a la sucursal
               </Form.Label>
               <Form.Select
+                name="productoNuevo"
                 value={productoNuevo}
                 onChange={(e) => setProductoNuevo(e.target.value)}
               >
@@ -299,7 +302,7 @@ const GestionStock = () => {
         )}
       </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       {/* Al filtrar por un combo se muestra su receta y, por sucursal, para
           cuántos combos da el stock. La tabla de abajo sigue mostrando la fila del
@@ -308,18 +311,24 @@ const GestionStock = () => {
         <Card className="mb-3 shadow-sm">
           <Card.Body>
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-              <Card.Title as="h6" className="mb-0">
+              {/* h6 sin h5 ni h4 arriba: el salto de nivel rompe la navegación
+                  por encabezados. Bajo el <h1> de la página va como <h2>. */}
+              <Card.Title as="h2" className="h6 mb-0">
                 {comboFiltrado.nombre}
               </Card.Title>
               {calculandoMaximos && (
-                <div className="d-flex align-items-center gap-2 text-muted small">
-                  <Spinner animation="border" size="sm" />
-                  Calculando...
+                <div
+                  className="d-flex align-items-center gap-2 text-muted small"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Spinner animation="border" size="sm" aria-hidden="true" />
+                  Calculando…
                 </div>
               )}
             </div>
 
-            {errorMaximos && <Alert variant="danger">{errorMaximos}</Alert>}
+            {errorMaximos && <Alert variant="danger" role="alert">{errorMaximos}</Alert>}
 
             {!recetaCombo.length && !calculandoMaximos && (
               <Alert variant="warning" className="mb-0">

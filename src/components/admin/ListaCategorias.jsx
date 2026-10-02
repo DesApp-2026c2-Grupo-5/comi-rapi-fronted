@@ -81,14 +81,14 @@ const ListaCategorias = () => {
   return (
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 className="mb-0">Gestión de Categorías</h2>
+        <h1 className="h2 mb-0">Gestión de Categorías</h1>
         <Button variant="primary" onClick={handleNuevo}>
           <FaPlus className="me-1" aria-hidden="true" />
           Agregar nueva categoría
         </Button>
       </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       {cargando ? (
         <div className="text-center py-5">

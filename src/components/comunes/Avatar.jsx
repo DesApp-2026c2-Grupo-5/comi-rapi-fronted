@@ -27,9 +27,10 @@ const Avatar = ({ src, nombre = '', apellido = '', size = 40, alt = '', classNam
     setImagenRota(false);
   }, [src]);
 
+  // El tamaño viene por prop, así que las dimensiones van como atributos `width`
+  // y `height` además del style: es lo que reserva el espacio en el layout y
+  // evita que la página salte cuando carga la foto.
   const estilo = {
-    width: `${size}px`,
-    height: `${size}px`,
     fontSize: `${Math.round(size * 0.36)}px`,
   };
   const clases = `avatar-comirapi ${className}`.trim();
@@ -41,6 +42,13 @@ const Avatar = ({ src, nombre = '', apellido = '', size = 40, alt = '', classNam
         alt={alt}
         className={clases}
         style={estilo}
+        width={size}
+        height={size}
+        // Es una foto de perfil: pesa poco y está arriba de todo, así que no
+        // conviene diferirla; `eager` + `fetchpriority="high"` la sube de prioridad.
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
         onError={() => setImagenRota(true)}
       />
     );
@@ -48,7 +56,11 @@ const Avatar = ({ src, nombre = '', apellido = '', size = 40, alt = '', classNam
 
   // Las iniciales son decorativas: el nombre siempre se muestra al lado.
   return (
-    <span className={`${clases} avatar-comirapi-inicial`} style={estilo} aria-hidden="true">
+    <span
+      className={`${clases} avatar-comirapi-inicial`}
+      style={{ ...estilo, width: `${size}px`, height: `${size}px` }}
+      aria-hidden="true"
+    >
       {obtenerIniciales(nombre, apellido) || <FaUserCircle />}
     </span>
   );

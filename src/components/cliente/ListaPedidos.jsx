@@ -124,12 +124,10 @@ const ListaPedidos = ({
             </div>
 
             <div className="d-flex gap-2 mt-2 flex-wrap">
-              <Link to={`/cliente/pedido/${pedido.id}`}>
-                <Button variant="outline-secondary" size="sm">
-                  <FaEye aria-hidden="true" />
-                  Ver detalle
-                </Button>
-              </Link>
+              <Button as={Link} to={`/cliente/pedido/${pedido.id}`} variant="outline-secondary" size="sm">
+                <FaEye aria-hidden="true" />
+                Ver detalle
+              </Button>
               {mostrarCancelar && !esFinal && pedirCancelacion && (
                 <Button
                   variant="outline-danger"
@@ -138,7 +136,7 @@ const ListaPedidos = ({
                   disabled={cancelandoId === pedido.id}
                 >
                   <FaTimesCircle aria-hidden="true" />
-                  {cancelandoId === pedido.id ? 'Cancelando...' : 'Cancelar'}
+                  {cancelandoId === pedido.id ? 'Cancelando…' : 'Cancelar'}
                 </Button>
               )}
               {esFinal && pedirRepeticion && (
@@ -149,7 +147,7 @@ const ListaPedidos = ({
                   disabled={repitiendoId === pedido.id}
                 >
                   <FaRedo aria-hidden="true" />
-                  {repitiendoId === pedido.id ? 'Agregando...' : 'Repetir'}
+                  {repitiendoId === pedido.id ? 'Agregando…' : 'Repetir'}
                 </Button>
               )}
             </div>

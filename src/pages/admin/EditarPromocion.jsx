@@ -105,8 +105,8 @@ const EditarPromocion = () => {
       <Link to="/admin/promociones" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a promociones
       </Link>
-      <h2 className="mb-4">{id ? `Editar Promoción #${id}` : 'Nueva Promoción'}</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
+      <h1 className="h2 mb-4">{id ? `Editar Promoción #${id}` : 'Nueva Promoción'}</h1>
+      {error && <Alert variant="danger" role="alert">{error}</Alert>}
       {(!id || promocion) && (
         <FormularioPromocion
           promocion={promocion}

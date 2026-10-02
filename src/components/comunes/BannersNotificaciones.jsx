@@ -32,51 +32,47 @@ const BannersNotificaciones = () => {
   if (banners.length === 0) return null;
 
   return (
-    <div className="banners-inline">
+    // `aria-live="polite"` en el contenedor: los avisos se anuncian cuando
+    // aparecen sin interrumpir lo que el usuario está leyendo. Es preferible a
+    // `role="alert"`, que interrumpe con cada mensaje.
+    <div className="banners-inline" role="status" aria-live="polite">
       {banners.map((banner) => {
         const config = CONFIG_TIPO[banner.tipo] || CONFIG_TIPO.info;
         const Icono = config.icono;
+        const cerrar = () => quitar(banner.id);
         return (
           <div
             key={banner.id}
-            className={`batch-notificacion${banner.enClick ? ' banner-clickeable' : ''}`}
+            className="batch-notificacion"
             style={{ borderLeftColor: config.color }}
-            role={banner.enClick ? 'button' : 'alert'}
-            tabIndex={banner.enClick ? 0 : undefined}
-            onClick={
-              banner.enClick
-                ? () => {
-                    banner.enClick();
-                    quitar(banner.id);
-                  }
-                : undefined
-            }
-            onKeyDown={
-              banner.enClick
-                ? (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      banner.enClick();
-                      quitar(banner.id);
-                    }
-                  }
-                : undefined
-            }
           >
             <Icono
               className="batch-notificacion-icono"
               style={{ color: config.color }}
               aria-hidden="true"
             />
-            <span className="batch-notificacion-mensaje">{banner.mensaje}</span>
+            {banner.enClick ? (
+              // El mensaje accionable es su propio <button>: así es un control
+              // nativo (teclado, foco y Enter/Espacio sin código a mano) y no un
+              // <div role="button"> que además contenía otro <button>.
+              <button
+                type="button"
+                className="batch-notificacion-mensaje batch-notificacion-accion"
+                onClick={() => {
+                  banner.enClick();
+                  cerrar();
+                }}
+              >
+                {banner.mensaje}
+              </button>
+            ) : (
+              <span className="batch-notificacion-mensaje">{banner.mensaje}</span>
+            )}
             <button
               type="button"
               className="batch-notificacion-cerrar"
               aria-label="Cerrar notificación"
-              onClick={(e) => {
-                e.stopPropagation();
-                quitar(banner.id);
-              }}
+              onClick={cerrar}
             >
               <FaTimes aria-hidden="true" />
             </button>
