@@ -42,6 +42,7 @@ export const mapearPedido = (p) => {
   const promociones = Array.isArray(p.promociones) ? p.promociones : [];
   return {
     id: p.id,
+    usuarioId: p.usuarioId,
     cliente: p.cliente?.email || p.cliente || p.usuarioId,
     productos: (p.items || []).map((item) => ({
       productoId: item.productoId,
