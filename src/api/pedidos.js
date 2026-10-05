@@ -111,9 +111,10 @@ function payloadBackend(datosPedido, sucursal) {
           }
         : undefined),
   }));
-  // direccionEntrega snapshot: el frontend usa {direccion, localidad/ciudad, codigoPostal, referencia}.
-  // El snapshot de Pedidos conserva la columna 'ciudad'; se mapea 'localidad' a ella
-  // para que la localidad de la dirección siga quedando en el pedido.
+  // T0 (plan maestro de pedidos): el frontend envía el `direccionId` de la
+  // Dirección persistida del usuario — el backend resuelve el snapshot con
+  // coordenadas desde esa entidad (que ya pasó el ABM con geocodificación
+  // obligatoria). El payload textual queda como retro-compatibilidad.
   const dir = datosPedido.direccion || datosPedido.direccionEntrega || {};
   const direccionEntrega =
     dir.direccion || dir.calle
@@ -128,6 +129,7 @@ function payloadBackend(datosPedido, sucursal) {
   return {
     sucursalId,
     productos,
+    ...(dir.id ? { direccionId: dir.id } : {}),
     direccionEntrega,
     costoEnvio: datosPedido.costoEnvio || 0,
     medioPago: datosPedido.medioPago,
