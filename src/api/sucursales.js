@@ -41,32 +41,36 @@ export const obtenerSucursalPorId = async (id) => {
 /**
  * Crea una nueva sucursal.
  * La dirección se envía como objeto anidado (Sucursal 1:1 Direccion):
- * { nombre, direccion: { calle, altura, provincia, localidad, codigoPostal, referencia? }, telefono?, horarios?, activa? }.
- * latitud/longitud no se ingresan manualmente: las calcula el backend (tarea futura).
+ * { nombre, direccion: { calle, altura, provincia, departamento?, localidad?, codigoPostal?, referencia? }, telefono?, horarios?, activa? }.
+ * Iteración 1-geo: el partido (`departamento`) es obligatorio cuando la
+ * provincia es Buenos Aires; localidad y CP opcionales (los normaliza el
+ * backend con Georef; latitud/longitud nunca se ingresan manualmente).
+ * Un 409 incluye `opciones` para desambiguar la dirección.
  * @param {object} datos - Datos de la sucursal.
- * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ * @returns {Promise<{success: boolean, data?: object, error?: string, opciones?: Array}>}
  */
 export const crearSucursal = async (datos) => {
   const result = await apiPost('/sucursales', datos);
   if (result.success) {
     return { success: true, data: result.data };
   }
-  return { success: false, error: result.error };
+  return { success: false, error: result.error, opciones: result.opciones };
 };
 
 /**
  * Actualiza una sucursal existente (campos parciales; activa=true para reactivar).
  * Si se actualiza la dirección, se envía como objeto anidado (Sucursal 1:1 Direccion).
+ * Iteración 1-geo: un 409 incluye `opciones` para desambiguar la dirección.
  * @param {number|string} id - ID de la sucursal.
  * @param {object} datos - Campos a actualizar.
- * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ * @returns {Promise<{success: boolean, data?: object, error?: string, opciones?: Array}>}
  */
 export const actualizarSucursal = async (id, datos) => {
   const result = await apiPut(`/sucursales/${id}`, datos);
   if (result.success) {
     return { success: true, data: result.data };
   }
-  return { success: false, error: result.error };
+  return { success: false, error: result.error, opciones: result.opciones };
 };
 
 /**

@@ -2,14 +2,14 @@
  * Propósito: Página para crear o editar una sucursal usando FormularioSucursal.
  * Contenido: Componente EditarSucursal que obtiene el ID de la URL (useParams),
  *            precarga los datos de la sucursal a editar y delega en el contexto.
- * Dependencias: react-bootstrap (Container, Spinner, Button, Alert), react-router-dom
+ * Dependencias: react-bootstrap (Container, Spinner, Button), react-router-dom
  *               (useParams, Link, useNavigate), FormularioSucursal, context/SucursalContext (useSucursal).
  * Uso: Ruta "/admin/sucursal/nuevo" o "/admin/sucursal/editar/:id" → <EditarSucursal />
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Spinner, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioSucursal from '../../components/admin/FormularioSucursal';
 import { useSucursal } from '../../hooks/useSucursal';
@@ -22,7 +22,6 @@ const EditarSucursal = () => {
   const { notificar } = useNotificaciones();
   const [sucursal, setSucursal] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -36,26 +35,32 @@ const EditarSucursal = () => {
     }
   }, [id, sucursales]);
 
-  // Guarda creando o actualizando la sucursal según corresponda
+  // Guarda creando o actualizando la sucursal según corresponda. Muestra el
+  // Iteración 1-geo / Iteración 3: se devuelve el resultado al formulario
+  // para que muestre los errores (cobertura, geolocalización) y las opciones
+  // del 409 (desambiguación). El formulario ya no usa banners de página.
   const handleGuardar = async (datosSucursal) => {
     if (id) {
-      const actualizada = await actualizarSucursal(id, datosSucursal);
-      if (actualizada) {
-        notificar(`Sucursal "${actualizada.nombre}" actualizada correctamente.`, 'success');
-      } else {
-        setError('No se pudo actualizar la sucursal.');
-        return;
+      const resultado = await actualizarSucursal(id, datosSucursal);
+      if (!resultado.ok) {
+        return resultado;
       }
+      notificar(
+        `Sucursal "${resultado.data.nombre}" actualizada correctamente.`,
+        'success'
+      );
     } else {
-      const creada = await agregarSucursal(datosSucursal);
-      if (creada) {
-        notificar(`Sucursal "${creada.nombre}" creada correctamente.`, 'success');
-      } else {
-        setError('No se pudo crear la sucursal.');
-        return;
+      const resultado = await agregarSucursal(datosSucursal);
+      if (!resultado.ok) {
+        return resultado;
       }
+      notificar(
+        `Sucursal "${resultado.data.nombre}" creada correctamente.`,
+        'success'
+      );
     }
     navigate('/admin/sucursales');
+    return { ok: true };
   };
 
   if (cargando || loading) {
@@ -69,11 +74,13 @@ const EditarSucursal = () => {
   if (id && !sucursal) {
     return (
       <Container className="py-5 text-center">
-        <h1 className="h2">Sucursal no encontrada</h1>
-        <Button as={Link} to="/admin/sucursales" variant="secondary" className="mt-3">
+        <h2>Sucursal no encontrada</h2>
+        <Link to="/admin/sucursales">
+          <Button variant="secondary" className="mt-3">
             <FaArrowLeft className="me-1" aria-hidden="true" />
             Volver a sucursales
           </Button>
+        </Link>
       </Container>
     );
   }
@@ -84,7 +91,6 @@ const EditarSucursal = () => {
         ← Volver a sucursales
       </Link>
       <h1 className="h2 mb-4">{id ? `Editar Sucursal #${id}` : 'Nueva Sucursal'}</h1>
-      {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <FormularioSucursal sucursal={sucursal} onGuardar={handleGuardar} />
     </Container>
   );

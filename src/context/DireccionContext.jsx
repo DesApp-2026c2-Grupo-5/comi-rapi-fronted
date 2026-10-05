@@ -52,25 +52,36 @@ export const DireccionProvider = ({ children }) => {
 
   /**
    * Agrega una nueva dirección y la persiste en el backend.
-   * @param {object} datosDireccion - { calle, altura, provincia, localidad, codigoPostal, referencia?, alias? }.
-   * @returns {Promise<object|null>} Dirección creada o null si falla.
+   * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
+   * de Georef) para que el formulario las muestre y el usuario elija.
+   * @param {object} datosDireccion - { calle, altura, provincia, departamento?, localidad?, codigoPostal?, referencia?, alias? }.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string, opciones?: Array}>} Dirección creada o el motivo del rechazo.
    */
   const agregarDireccion = useCallback(async (datosDireccion) => {
     const result = await crearDireccion(datosDireccion);
     if (result.success) {
       setDirecciones((prev) => [...prev, result.data]);
       setError(null);
-      return result.data;
+      return { ok: true, data: result.data };
     }
     setError(result.error);
-    return null;
+    // Iteración 5: status (funcional vs técnico) y detalle de cobertura.
+    return {
+      ok: false,
+      error: result.error,
+      status: result.status,
+      detalle: result.detalle,
+      opciones: result.opciones,
+    };
   }, []);
 
   /**
    * Edita una dirección existente en el backend.
+   * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
+   * de Georef) para que el formulario las muestre y el usuario elija.
    * @param {number} id - ID de la dirección.
    * @param {object} datos - Campos a actualizar.
-   * @returns {Promise<object|null>} Dirección actualizada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string, opciones?: Array}>} Dirección actualizada o el motivo del rechazo.
    */
   const editarDireccion = useCallback(async (id, datos) => {
     const result = await actualizarDireccion(id, datos);
@@ -79,26 +90,33 @@ export const DireccionProvider = ({ children }) => {
         prev.map((d) => (d.id === result.data.id ? result.data : d))
       );
       setError(null);
-      return result.data;
+      return { ok: true, data: result.data };
     }
     setError(result.error);
-    return null;
+    // Iteración 5: status (funcional vs técnico) y detalle de cobertura.
+    return {
+      ok: false,
+      error: result.error,
+      status: result.status,
+      detalle: result.detalle,
+      opciones: result.opciones,
+    };
   }, []);
 
   /**
    * Elimina una dirección (baja lógica: el backend marca activa = false).
    * @param {number} id - ID de la dirección a eliminar.
-   * @returns {Promise<boolean>} true si se eliminó correctamente.
+   * @returns {Promise<{ok: boolean, error?: string}>} Resultado o el motivo del rechazo.
    */
   const eliminarDireccion = useCallback(async (id) => {
     const result = await eliminarDireccionApi(id);
     if (result.success) {
       setDirecciones((prev) => prev.filter((d) => d.id !== Number(id)));
       setError(null);
-      return true;
+      return { ok: true };
     }
     setError(result.error);
-    return false;
+    return { ok: false, error: result.error };
   }, []);
 
   // Valor del contexto

@@ -1,0 +1,127 @@
+/**
+ * Propósito: Estilos compartidos de los formularios territoriales
+ *            (iteración 4): jerarquía de secciones, estados del flujo de
+ *            autocompletado/confirmación y espaciados, usando la identidad
+ *            visual existente de Comi-Rapi (naranja #ff9f1c, danger para
+ *            error, success para confirmación).
+ * Dependencias: se importa desde FormularioDireccion.jsx y
+ *               FormularioSucursal.jsx (importado después de bootstrap).
+ * Uso: clases con prefijo .dir-form-* (scoped al bloque del formulario).
+ */
+
+/* ============ Secciones: de general a específico ============ */
+.dir-form-seccion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.75rem 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6c757d; /* text-muted de bootstrap */
+}
+/* Línea divisoria que acompaña al título de la sección. */
+.dir-form-seccion::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #dee2e6;
+}
+.dir-form-seccion:first-of-type {
+  margin-top: 0.25rem;
+}
+
+/* ============ Sugerencias (calles y combobox) ============ */
+/* La lista de sugerencias de calle comparte el look del Autocomplete,
+   con sombra para flotar sobre el resto del formulario. */
+.dir-form-sugerencias {
+  max-height: 11rem;
+  overflow-y: auto;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 0.5rem;
+  border: 1px solid #dee2e6;
+  z-index: 10;
+}
+.dir-form-sugerencias .list-group-item {
+  border: none;
+  border-bottom: 1px solid #f1f3f5;
+  padding: 0.5rem 0.75rem;
+}
+.dir-form-sugerencias .list-group-item:last-child {
+  border-bottom: none;
+}
+/* Ítem distinguible (fix bug 3): nombre oficial + nomenclatura chica. */
+.dir-form-sugerencia-nombre {
+  font-weight: 600;
+  line-height: 1.2;
+}
+.dir-form-sugerencia-detalle {
+  color: #6c757d;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+/* ============ Estados del flujo verificar → confirmar ============ */
+/* Aviso informativo de zona (provincia/partido): llama la atención sin
+   bloquear la edición. */
+.dir-form-aviso {
+  margin-bottom: 0.9rem;
+}
+
+/* Errores acumulados: jerarquía clara, sin quitar foco de los inputs. */
+.dir-form-errores ul {
+  margin-bottom: 0;
+}
+
+/* Confirmación de la dirección resuelta: success con jerarquía. */
+.dir-form-confirmacion .alert {
+  border-radius: 0.75rem;
+}
+
+/* ============ Iteración 6: ficha de confirmación ============ */
+.dir-form-ficha {
+  background: rgba(25, 135, 84, 0.06); /* verde success muy tenue */
+  border: 1px solid rgba(25, 135, 84, 0.25);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+}
+.dir-form-ficha-fila {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  font-size: 0.92rem;
+}
+.dir-form-ficha-etiqueta {
+  min-width: 8.5rem;
+  color: #6c757d;
+  font-weight: 600;
+}
+.dir-form-ficha-valor {
+  font-weight: 500;
+}
+
+/* ============ Iteración 6: resultado unificado ============ */
+/* Título con ícono alineado y jerarquía clara por tipo. */
+.dir-form-resultado .d-flex {
+  font-size: 1rem;
+}
+.dir-form-resultado.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+.dir-form-resultado.alert-danger {
+  border-left: 4px solid #dc3545;
+}
+.dir-form-resultado.alert-secondary {
+  border-left: 4px solid #6c757d;
+}
+/* En pantallas angostas la ficha apila etiqueta y valor. */
+@media (max-width: 30rem) {
+  .dir-form-ficha-fila {
+    flex-direction: column;
+    gap: 0;
+    padding: 0.25rem 0;
+  }
+  .dir-form-ficha-etiqueta {
+    min-width: 0;
+  }
+}

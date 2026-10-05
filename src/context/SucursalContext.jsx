@@ -25,7 +25,8 @@ export const SucursalContext = createContext(null);
 // cada sucursal tiene un registro 1:1 en Direccion (Sucursal 1:1 Direccion). El backend
 // expone la dirección como objeto anidado 'direccion' (con calle, altura, provincia,
 // localidad, codigoPostal, referencia, latitud, longitud) y también latitud/longitud planas
-// para compatibilidad. Obligatorios: calle, altura, provincia, localidad, codigoPostal.
+// para compatibilidad. Iteración 1-geo: obligatorios calle, altura y provincia (partido
+// además en Buenos Aires); localidad/codigoPostal opcionales y normalizados por el backend.
 // El estado proviene del backend como booleano 'activa'.
 
 /**
@@ -100,23 +101,27 @@ export const SucursalProvider = ({ children }) => {
 
   /**
    * Agrega una nueva sucursal al estado local (la persiste en el backend).
+   * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
+   * de Georef) para que el formulario las muestre y el usuario elija.
    * @param {object} sucursal - Datos de la nueva sucursal.
-   * @returns {Promise<object|null>} Sucursal creada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string, opciones?: Array}>} Sucursal creada o el motivo del rechazo.
    */
   const agregarSucursal = useCallback(async (sucursal) => {
     const result = await crearSucursal(sucursal);
     if (result.success) {
       setSucursales((prev) => [...prev, result.data]);
-      return result.data;
+      return { ok: true, data: result.data };
     }
-    return null;
+    return { ok: false, error: result.error, opciones: result.opciones };
   }, []);
 
   /**
    * Actualiza una sucursal existente en el estado local.
+   * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
+   * de Georef) para que el formulario las muestre y el usuario elija.
    * @param {number} id - ID de la sucursal a actualizar.
    * @param {object} datos - Nuevos datos de la sucursal.
-   * @returns {Promise<object|null>} Sucursal actualizada o null si falla.
+   * @returns {Promise<{ok: boolean, data?: object, error?: string, opciones?: Array}>} Sucursal actualizada o el motivo del rechazo.
    */
   const actualizarSucursalFn = useCallback(async (id, datos) => {
     const result = await actualizarSucursal(id, datos);
@@ -124,9 +129,9 @@ export const SucursalProvider = ({ children }) => {
       setSucursales((prev) =>
         prev.map((s) => (s.id === Number(id) ? result.data : s))
       );
-      return result.data;
+      return { ok: true, data: result.data };
     }
-    return null;
+    return { ok: false, error: result.error, opciones: result.opciones };
   }, []);
 
   /**
