@@ -1,21 +1,35 @@
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Card, Button, Badge } from 'react-bootstrap';
-import { FaCartPlus } from 'react-icons/fa';
+import { FaCartPlus, FaTrophy, FaMedal, FaAward } from 'react-icons/fa';
 import { formatPrice } from '../../utils/formatters';
 import ProductoPersonalizarModal from './ProductoPersonalizarModal';
 import './ProductoCard.css';
 
-const ProductoCard = ({ producto }) => {
+const ProductoCard = ({ producto, rank }) => {
   const [showModal, setShowModal] = useState(false);
   // La receta del combo: [{ productoId, cantidad, nombre? }]. El backend la
   // devuelve en el índice y en el detalle del producto.
   const componentes = producto.tipo === 'COMBO' && Array.isArray(producto.componentes)
     ? producto.componentes
     : [];
+  // `rank` va de 1 a 3 para "Más vendidos hoy" (top Netflix).
+  const mostrarRank = typeof rank === 'number' && rank >= 1 && rank <= 3;
+  const getRankIcon = () => {
+    if (rank === 1) return <FaTrophy aria-label="#1" />;
+    if (rank === 2) return <FaMedal aria-label="#2" />;
+    if (rank === 3) return <FaAward aria-label="#3" />;
+    return null;
+  };
 
   return (
     <>
       <Card className="producto-card h-100">
+        {mostrarRank && (
+          <div className={`producto-rank producto-rank--${rank}`}>
+            {getRankIcon()}
+          </div>
+        )}
         {/* `alt=""` a propósito: el nombre del producto ya está en el título de
             la tarjeta, y repetirlo hace que el lector de pantalla lo lea dos
             veces. La foto es decorativa dentro de este contexto. */}
@@ -61,3 +75,26 @@ const ProductoCard = ({ producto }) => {
 };
 
 export default ProductoCard;
+
+ProductoCard.propTypes = {
+  producto: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    nombre: PropTypes.string,
+    imagen: PropTypes.string,
+    descripcion: PropTypes.string,
+    precio: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    tipo: PropTypes.string,
+    componentes: PropTypes.arrayOf(
+      PropTypes.shape({
+        productoId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        cantidad: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        nombre: PropTypes.string,
+      })
+    ),
+  }).isRequired,
+  rank: PropTypes.number,
+};
+
+ProductoCard.defaultProps = {
+  rank: undefined,
+};

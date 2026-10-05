@@ -38,8 +38,7 @@ const EditarComponentes = ({ productos = [], componentes = [], onChange }) => {
   const productosElegibles = productos.filter((p) => p.tipo !== 'COMBO');
 
   // El máximo de combos por sucursal se calcula solo, cada vez que cambia la
-  // receta: es el número que le dice al admin cuántos combos sale de cada local
-  // antes de ponerlos en venta, y pedirlo a mano era un paso que se olvidaba.
+  // receta: es el número de combos que sale de cada local con el stock actual.
   // Va con debounce porque cada línea se edita tecla por tecla y cada consulta
   // pega contra el backend.
   useEffect(() => {
@@ -205,8 +204,9 @@ const EditarComponentes = ({ productos = [], componentes = [], onChange }) => {
           <div className="mt-3">
             <h6 className="mb-2">Máximo de combos por sucursal</h6>
             <p className="text-muted small mb-2">
-              Con el stock actual de cada sucursal. En la pantalla de Stock vas a
-              poder poner en venta hasta este número de combos.
+              Con el stock actual de cada sucursal. Esta es la cantidad que se va
+              a ver en el combo: se calcula sola con la receta, no se carga a
+              mano.
             </p>
             {maximos.map((fila) => (
               <div

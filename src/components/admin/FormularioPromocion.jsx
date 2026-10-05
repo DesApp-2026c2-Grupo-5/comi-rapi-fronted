@@ -1,16 +1,23 @@
 /**
  * Propósito: Formulario para crear/editar promociones con selector
- *            multi-producto (solo productos activos).
+ *            multi-producto (solo productos activos, nunca combos: el combo ya
+ *            es la promoción).
  * Contenido: Componente FormularioPromocion con campos controlados (nombre,
  *            descripcion, tipo, valor, fechas, activa) y checkboxes de productos.
  *            Valida en espejo al backend (tipo, valor 0-100 en porcentual,
  *            fechaFin >= fechaInicio). Devuelve productoIds; la página debe
  *            sincronizar los vínculos (asignar/quitar).
  * Dependencias: react-bootstrap (Form, Button, Card, Spinner, Alert),
- *               react-icons (FaSave), api/productos.js, useNotificaciones.
+ *               react-icons (FaSave), prop-types, api/productos.js,
+ *               useNotificaciones.
  * Uso: <FormularioPromocion promocion={promo} productoIdsIniciales={[...]} onGuardar={handler} />
+ *
+ * Opcionales: promocion (null al crear una nueva), productoIdsIniciales y
+ * onGuardar (EditarPromocion lo pasa en undefined mientras guarda, para dejar
+ * el formulario sin acción).
  */
 
+import PropTypes from 'prop-types';
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
@@ -22,6 +29,25 @@ const TIPOS = [
   { valor: 'DESCUENTO_PORCENTUAL', etiqueta: 'Porcentual (%)' },
   { valor: 'DOS_POR_UNO', etiqueta: '2x1 (llevás 2, pagás 1)' },
 ];
+
+/**
+ * Nombre de la categoría de un producto, como texto.
+ *
+ * El backend devuelve `categoria` ya resuelta (string) en `GET /productos`, pero
+ * en otros puntos del dominio viene como objeto. Se contemplan las dos formas y
+ * se cae a 'Sin categoría': el `categoriaId` no sirve como etiqueta (es un
+ * número) y mezclar números con strings en el `sort` de la lista de categorías
+ * revienta con `localeCompare is not a function`.
+ *
+ * @param {object} producto - Producto con `categoria` y/o `categoriaId`.
+ * @returns {string} Nombre de la categoría.
+ */
+const nombreCategoria = (producto) => {
+  const cat = producto?.categoria;
+  if (typeof cat === 'string' && cat.trim()) return cat.trim();
+  if (cat && typeof cat === 'object' && cat.nombre) return cat.nombre;
+  return 'Sin categoría';
+};
 
 const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => {
   const { notificar } = useNotificaciones();
@@ -37,6 +63,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
   const [cargandoProductos, setCargandoProductos] = useState(true);
   const [errorProductos, setErrorProductos] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
 
   useEffect(() => {
     if (promocion) {
@@ -73,6 +100,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
       const result = await obtenerProductos();
       if (result.success) {
         setProductos(result.data);
+        quitarCombosSeleccionados(result.data);
       } else {
         setErrorProductos(result.error || 'No se pudieron cargar los productos.');
       }
@@ -81,11 +109,36 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
     cargar();
   }, []);
 
+  /**
+   * Un combo no puede ser alcanzado por una promoción (su precio ya es la
+   * promoción respecto de sus componentes), así que no se ofrece para marcar.
+   * Si la promoción guardada tenía un combo, se lo quita al guardar.
+   */
+  const quitarCombosSeleccionados = (lista) => {
+    const idsCombo = (lista || [])
+      .filter((p) => p.tipo === 'COMBO')
+      .map((p) => String(p.id));
+    if (idsCombo.length === 0) return;
+    setSeleccionados((prev) => prev.filter((id) => !idsCombo.includes(id)));
+  };
+
   const toggleProducto = (id) => {
     const clave = String(id);
     setSeleccionados((prev) =>
       prev.includes(clave) ? prev.filter((x) => x !== clave) : [...prev, clave]
     );
+  };
+
+  const seleccionarCategoria = () => {
+    if (!categoriaSeleccionada) return;
+    const ids = productosDeCategoria.map((p) => String(p.id));
+    setSeleccionados((prev) => Array.from(new Set([...prev, ...ids])));
+  };
+
+  const deseleccionarCategoria = () => {
+    if (!categoriaSeleccionada) return;
+    const ids = new Set(productosDeCategoria.map((p) => String(p.id)));
+    setSeleccionados((prev) => prev.filter((x) => !ids.has(x)));
   };
 
   const handleSubmit = (e) => {
@@ -125,17 +178,37 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
         fechaInicio: fechaInicio || null,
         fechaFin: fechaFin || null,
         activa,
-        productoIds: seleccionados.map((id) => Number(id)),
+        productoIds: seleccionados
+          .filter((id) => !idsCombo.has(id))
+          .map((id) => Number(id)),
       });
     }
   };
 
   const esDosPorUno = tipo === 'DOS_POR_UNO';
-  const productosFiltrados = productos.filter((producto) =>
+  const idsCombo = new Set(
+    productos.filter((p) => p.tipo === 'COMBO').map((p) => String(p.id))
+  );
+  const productosAlcanzables = productos.filter((p) => p.tipo !== 'COMBO');
+  const productosFiltrados = productosAlcanzables.filter((producto) =>
     busqueda
       ? producto.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())
       : true
   );
+  const categorias = React.useMemo(() => {
+    const map = new Map();
+    for (const p of productosAlcanzables) {
+      const cat = nombreCategoria(p);
+      map.set(cat, (map.get(cat) || 0) + 1);
+    }
+    return Array.from(map.keys()).sort((a, b) => a.localeCompare(b));
+  }, [productosAlcanzables]);
+  const productosDeCategoria = React.useMemo(() => {
+    if (!categoriaSeleccionada) return [];
+    return productosAlcanzables.filter(
+      (p) => nombreCategoria(p) === categoriaSeleccionada
+    );
+  }, [productosAlcanzables, categoriaSeleccionada]);
 
   return (
     <Card className="shadow-sm formulario-admin-card formulario-admin-card-ancho">
@@ -221,7 +294,44 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
               onChange={(e) => setActiva(e.target.checked)}
             />
           </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-busqueda-producto">
+          <Form.Group className="mb-3" controlId="promocion-categoria">
+            <Form.Label>Seleccionar por categoría</Form.Label>
+            <div className="d-flex flex-wrap gap-2">
+              <Form.Select
+                className="flex-grow-1"
+                style={{ maxWidth: '320px' }}
+                value={categoriaSeleccionada}
+                onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+              >
+                <option value="">Elegir categoría</option>
+                {categorias.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Form.Select>
+              <Button
+                variant="outline-primary"
+                type="button"
+                onClick={seleccionarCategoria}
+                disabled={!categoriaSeleccionada}
+              >
+                Marcar todos de esta categoría
+              </Button>
+              <Button
+                variant="outline-secondary"
+                type="button"
+                onClick={deseleccionarCategoria}
+                disabled={!categoriaSeleccionada}
+              >
+                Desmarcar todos de esta categoría
+              </Button>
+            </div>
+            <Form.Text className="text-muted">
+              Esto marca/desmarca todos los productos de esa categoría.
+            </Form.Text>
+          </Form.Group>
+          <Form.Group className="mb-3">
             <Form.Label>
               Productos alcanzados ({seleccionados.length} seleccionados)
             </Form.Label>
@@ -279,3 +389,28 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
 };
 
 export default FormularioPromocion;
+
+FormularioPromocion.propTypes = {
+  // `null` al crear una promoción nueva: el componente arranca con los valores
+  // por defecto y solo precarga cuando viene una existente.
+  promocion: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    nombre: PropTypes.string,
+    descripcion: PropTypes.string,
+    tipo: PropTypes.oneOf(['DESCUENTO_PORCENTUAL', 'DOS_POR_UNO']),
+    // La columna es DECIMAL(10,2) y Postgres la devuelve como string, no como
+    // número: por eso el form la normaliza con String()/Number().
+    valor: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    // DATE: el backend las serializa a ISO (yyyy-mm-ddTHH:mm:ss.sssZ) y el
+    // form las recorta a yyyy-mm-dd para el input[type=date].
+    fechaInicio: PropTypes.string,
+    fechaFin: PropTypes.string,
+    activa: PropTypes.bool,
+  }),
+  // IDs de los productos ya vinculados; el form los pasa a string para poder
+  // compararlos con los que devuelve GET /productos.
+  productoIdsIniciales: PropTypes.arrayOf(
+    PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  ),
+  onGuardar: PropTypes.func,
+};

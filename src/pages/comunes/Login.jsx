@@ -7,11 +7,12 @@
  * Uso: Ruta "/login" → <Login />
  */
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { FaHamburger, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { esDestinoSeguro } from '../../utils/rutas';
 import CampoPassword from '../../components/comunes/CampoPassword';
 import './Login.css';
 
@@ -21,6 +22,13 @@ const Login = () => {
   const [error, setError] = useState('');
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /* Desde dónde se viene. El carrito y el catálogo son públicos, así que se
+     llega acá al confirmar el pedido con `state.from` puesto; si el visitante
+     abre /login a mano no hay origen y se entra al inicio. El destino se valida
+     porque viene de la URL y se usa tal cual en navigate(). */
+  const origen = esDestinoSeguro(location.state?.from) ? location.state.from : '/cliente/inicio';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +41,7 @@ const Login = () => {
 
     const result = await login(email, password);
     if (result.success) {
-      navigate('/cliente/inicio');
+      navigate(origen);
     } else {
       setError(result.error || 'Error al iniciar sesión');
     }
@@ -102,7 +110,9 @@ const Login = () => {
             </p>
             <p className="mb-1">
               ¿No tienes cuenta?{' '}
-              <Link to="/registro" className="auth-enlace">
+              {/* El estado viaja al registro para que, al crearse la cuenta, el
+                  usuario vuelva también a la pantalla que lo trajo acá. */}
+              <Link to="/registro" state={location.state} className="auth-enlace">
                 Regístrate aquí
               </Link>
             </p>

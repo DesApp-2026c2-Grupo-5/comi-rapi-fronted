@@ -67,6 +67,10 @@ const enlacesCliente = [
   },
 ];
 
+/* El invitado ve el mismo camino de compra, sin "Pedidos": ese destino lleva a
+   los pedidos del usuario y no hay ninguno sin sesión. */
+const enlacesInvitado = enlacesCliente.filter((enlace) => enlace.to !== '/cliente/mis-pedidos');
+
 const enlacesAdmin = [
   { to: '/admin/dashboard', etiqueta: 'Inicio', icono: FaTachometerAlt },
   {
@@ -134,7 +138,8 @@ const NavInferior = () => {
   if (!visible) return null;
 
   const esAdmin = user?.rol === ROLES.ADMIN;
-  const enlaces = esAdmin ? enlacesAdmin : enlacesCliente;
+  const esCliente = user?.rol === ROLES.CLIENTE;
+  const enlaces = esAdmin ? enlacesAdmin : esCliente ? enlacesCliente : enlacesInvitado;
   const hoja = enlaces.find((enlace) => enlace.tipo === 'hoja');
   const hojaActiva = hoja ? esRutaDeAlguna(hoja.hijos, pathname) : false;
 

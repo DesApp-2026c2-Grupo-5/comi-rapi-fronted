@@ -1,11 +1,20 @@
 /**
  * Propósito: Página del carrito de compras con lista de ítems y resumen del pedido.
+ *            Accesible sin sesión: se puede armar el carrito como invitado y la
+ *            cuenta se pide recién al confirmar el pedido.
  * Contenido: Componente Carrito con ItemCarrito, ResumenPedido, estado vacío y flujo de
  *            confirmación que asigna la sucursal óptima automáticamente.
- * Dependencias: react-bootstrap (Container, Row, Col, Button, Card), react-router-dom,
- *               useCarrito hook, useSucursal hook, usePedidos hook, useDirecciones hook,
+ * Dependencias: react-bootstrap (Container, Row, Col, Button, Card, Alert, Form), react-router-dom,
+ *               useAuth/useCarrito hook, useSucursal hook, usePedidos hook, useDirecciones hook,
  *               services/asignacionSucursal.js, ItemCarrito, ResumenPedido, Carrito.css.
  * Uso: Ruta "/cliente/carrito" → <Carrito />
+ *
+ * SIN SESIÓN:
+ *   El carrito vive en localStorage bajo la clave "invitado" y se migra a la del
+ *   usuario al entrar (ver utils/carritoStorage.js), así que nada se pierde al
+ *   pedir la cuenta. Lo único que no hay es dirección de entrega: por eso el
+ *   aviso pide registrarse y el botón de confirmar abre el login en vez de
+ *   fallar más adelante.
  *
  * FLUJO DE CONFIRMACIÓN (transparente para el cliente, como en PedidosYa):
  *   1. Se obtienen las sucursales activas (SucursalContext).
@@ -18,9 +27,10 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Container, Row, Col, Button, Card, Alert, Form } from 'react-bootstrap';
 import { FaUtensils, FaTrashAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { useAuth } from '../../hooks/useAuth';
 import { useCarrito } from '../../hooks/useCarrito';
 import { usePromocionesCarrito } from '../../hooks/usePromocionesCarrito';
 import { useSucursal } from '../../hooks/useSucursal';
@@ -30,6 +40,7 @@ import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { asignarSucursalOptima } from '../../services/asignacionSucursal';
 import { calcularCostoEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO } from '../../utils/constants';
+import { rutaActual } from '../../utils/rutas';
 import ItemCarrito from '../../components/cliente/ItemCarrito';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import './Carrito.css';
@@ -44,7 +55,20 @@ const Carrito = () => {
     usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Pantalla de origen para el login: se vuelve al carrito con lo elegido.
+  const origen = rutaActual(location);
+
+  /* El carrito se arma sin sesión, pero la dirección de entrega es del usuario y
+     el endpoint la exige. Pedirla sin sesión sólo produce un 401: se omite y la
+     pantalla muestra el aviso de registrarse. */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    cargarDirecciones();
+  }, [cargarDirecciones, isAuthenticated]);
 
   // Pedido PENDIENTE sin pagar. Se busca en la lista de la API y no sólo en
   // `pedidoActual` (que vive en memoria y se pierde al recargar) porque los
@@ -63,11 +87,6 @@ const Carrito = () => {
 
   // ID de la dirección elegida para este pedido
   const [direccionId, setDireccionId] = useState(null);
-
-  // Carga las direcciones del cliente al entrar al carrito
-  useEffect(() => {
-    cargarDirecciones();
-  }, [cargarDirecciones]);
 
   // Dirección elegida (por defecto, la primera activa)
   const direccionSeleccionada = useMemo(
@@ -114,6 +133,15 @@ const Carrito = () => {
   });
 
   const handleConfirmarPedido = async () => {
+    /* Armar el carrito no pide cuenta, confirmarlo sí: hace falta una dirección
+       de entrega, que es del usuario. El login se pide acá, y no en el carrito,
+       para que el visitante recorra el catálogo sin interrupciones. Se manda la
+       pantalla de origen para que al entrar vuelva con lo que ya eligió. */
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: origen } });
+      return;
+    }
+
     // Sin dirección: el cliente no puede confirmar
     const direccion = direccionSeleccionada;
     if (!direccion) {
@@ -152,6 +180,13 @@ construirDatosPedido(direccion),
   // salvo que haya quedado obsoleto (promos o importes distintos al carrito),
   // en cuyo caso se cancela y se crea uno nuevo con los datos actuales.
   const handleIrAPagar = async () => {
+    // Un invitado no tiene pedidos: si quedó alguno en memoria de una sesión
+    // anterior, se lo lleva al login en vez de mandarlo a una pantalla de pago
+    // que lo va a expulsar igual.
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: origen } });
+      return;
+    }
     if (!pendienteObsoleto) {
       navigate('/cliente/pago');
       return;
@@ -213,8 +248,27 @@ construirDatosPedido(direccion),
         </div>
       ) : (
         <Row>
+          {/* Aviso para el invitado: se puede carritoear sin cuenta, pero el
+              pedido necesita una. Se lo dice antes de que llegue al botón, con
+              los dos enlaces al login y al registro, y no con un error. */}
+          {!isAuthenticated && (
+            <Col xs={12} className="mb-3">
+              <Alert variant="warning" className="mb-0" role="status">
+                Podés armar tu pedido sin cuenta.{' '}
+                <Link to="/login" state={{ from: origen }} className="alert-link">
+                  Iniciá sesión
+                </Link>{' '}
+                o{' '}
+                <Link to="/registro" state={{ from: origen }} className="alert-link">
+                  registrate
+                </Link>{' '}
+                para confirmar la compra y elegir la dirección de entrega.
+              </Alert>
+            </Col>
+          )}
+
           {/* Aviso: sin dirección no se puede confirmar */}
-          {items.length > 0 && direcciones.length === 0 && (
+          {isAuthenticated && items.length > 0 && direcciones.length === 0 && (
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0" role="status">
                 No tenés direcciones guardadas.{' '}
@@ -287,13 +341,15 @@ construirDatosPedido(direccion),
                  scroll de la lista de ítems. En /cliente/pago taparía los botones. */
               fija
               botonTexto={
-                tienePagoPendiente
-                  ? pendienteObsoleto
-                    ? actualizando
-                      ? 'Actualizando…'
-                      : 'Actualizar y pagar'
-                    : 'Ir a Pagar'
-                  : 'Confirmar Pedido'
+                !isAuthenticated
+                  ? 'Iniciá sesión para confirmar'
+                  : tienePagoPendiente
+                    ? pendienteObsoleto
+                      ? actualizando
+                        ? 'Actualizando…'
+                        : 'Actualizar y pagar'
+                      : 'Ir a Pagar'
+                    : 'Confirmar Pedido'
               }
               descuento={descuentoTotal}
               detalleDescuento={promosAplicadas.map((promo) => promo.nombre).join(' · ')}

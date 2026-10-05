@@ -5,11 +5,12 @@
  * Uso: Ruta "/registro" → <Registro />
  */
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 import { FaUserPlus } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { esDestinoSeguro } from '../../utils/rutas';
 import CampoPassword from '../../components/comunes/CampoPassword';
 import './Registro.css';
 
@@ -20,6 +21,11 @@ const Registro = () => {
   const [error, setError] = useState('');
   const { register, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /* Si se llegó desde el carrito al confirmar el pedido, la cuenta nueva
+     devuelve al usuario ahí con el carrito intacto (ver esDestinoSeguro). */
+  const origen = esDestinoSeguro(location.state?.from) ? location.state.from : '/cliente/inicio';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,7 +43,7 @@ const Registro = () => {
 
     const result = await register({ nombre, email, password });
     if (result.success) {
-      navigate('/cliente/inicio');
+      navigate(origen);
     } else {
       setError(result.error || 'Error al registrar');
     }

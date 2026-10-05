@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { NotificacionProvider } from './context/NotificacionContext';
 import { AuthProvider } from './context/AuthContext';
 import { CarritoProvider } from './context/CarritoContext';
@@ -20,6 +20,7 @@ import NavInferior from './components/comunes/NavInferior';
 import Footer from './components/comunes/Footer';
 import BannersNotificaciones from './components/comunes/BannersNotificaciones';
 import useMuestraNavInferior from './hooks/useMuestraNavInferior';
+import { esRutaDeAdmin } from './utils/rutas';
 
 /**
  * Shell de la aplicación (navbar, contenido, pie y barra inferior).
@@ -38,6 +39,11 @@ function AppLayout() {
   // página quedan debajo. Va en el shell y no en <main> a propósito, porque el
   // <main> no es el único elemento que la barra tapa.
   const conNavInferior = useMuestraNavInferior();
+  const { pathname } = useLocation();
+  // El pie es de la tienda (horarios, contacto, redes). En el panel de
+  // administración queda abajo de tablas largas sin aportar nada, así que no se
+  // muestra: la regla de "/admin" vive en utils/rutas.
+  const mostrarFooter = !esRutaDeAdmin(pathname);
 
   return (
     <div
@@ -50,7 +56,7 @@ function AppLayout() {
         <BannersNotificaciones />
         <AppRoutes />
       </main>
-      <Footer />
+      {mostrarFooter && <Footer />}
       <NavInferior />
     </div>
   );

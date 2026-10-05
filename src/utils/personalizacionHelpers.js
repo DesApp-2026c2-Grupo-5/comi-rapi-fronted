@@ -37,7 +37,7 @@ export function crearPersonalizacionDesdeEstado({ extra, acompanar, condimento, 
     extras: Object.entries(extra || {})
       .filter(([, v]) => v > 0)
       .map(([key, cantidad]) => {
-        const map = { tomate: { id: 'ex_tomate', nombre: 'Tomate', precio: 2000 }, bacon: { id: 'ex_bacon', nombre: 'Bacon', precio: 2700 }, cheddar: { id: 'ex_cheddar', nombre: 'Queso Cheddar en fetas', precio: 2000 } };
+        const map = { tomate: { id: 'ex_tomate', nombre: 'Tomate', precio: 1800 }, bacon: { id: 'ex_bacon', nombre: 'Bacon', precio: 3200 }, cheddar: { id: 'ex_cheddar', nombre: 'Queso Cheddar en fetas', precio: 2400 } };
         return map[key] ? { ...map[key], cantidad } : null;
       })
       .filter(Boolean),
@@ -45,7 +45,7 @@ export function crearPersonalizacionDesdeEstado({ extra, acompanar, condimento, 
     acompanamientos: Object.entries(acompanar || {})
       .filter(([, v]) => v > 0)
       .map(([key, cantidad]) => {
-        const map = { cheddar: { id: 'ac_cheddar', nombre: 'Pileta de Cheddar', precio: 4000 }, burger: { id: 'ac_burger', nombre: 'Hamburguesa Con Queso', precio: 7100 }, papas: { id: 'ac_papas', nombre: 'Papas Fritas Grandes', precio: 5300 } };
+        const map = { cheddar: { id: 'ac_cheddar', nombre: 'Pileta de Cheddar', precio: 5400 }, burger: { id: 'ac_burger', nombre: 'Hamburguesa Con Queso', precio: 13900 }, papas: { id: 'ac_papas', nombre: 'Papas Fritas Grandes', precio: 6900 } };
         return map[key] ? { ...map[key], cantidad } : null;
       })
       .filter(Boolean),

@@ -1,5 +1,6 @@
 /**
- * Propósito: Definición de todas las rutas de la aplicación (públicas, cliente y admin).
+ * Propósito: Definición de todas las rutas de la aplicación (públicas, de compra
+ *            sin sesión, cliente y admin).
  * Contenido: Componente AppRoutes con Routes y Route anidados, usando ProtectedRoute.
  * Dependencias: react-router-dom, ProtectedRoute, Loader, páginas.
  * Uso: Se renderiza dentro de App.jsx dentro del BrowserRouter.
@@ -12,21 +13,25 @@
  * que ve la mayoría.
  */
 
-import React, { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 // Componentes comunes
-import ProtectedRoute, { PublicOnlyRoute, destinoPorRol } from '../components/comunes/ProtectedRoute';
+import ProtectedRoute, {
+  PublicOnlyRoute,
+  RutaCompra,
+  destinoPorRol,
+} from '../components/comunes/ProtectedRoute';
 import Loader from '../components/comunes/Loader';
 import { useAuth } from '../hooks/useAuth';
 
-// Redirige a /login si no hay sesión, o al inicio del usuario si ya está autenticado
+// Redirige al inicio del rol si hay sesión y a la home si no la hay
 const RootRedirect = () => {
   const { isAuthenticated, user, hydrated } = useAuth();
 
   if (!hydrated) return null;
 
-  return <Navigate to={isAuthenticated ? destinoPorRol(user) : '/login'} replace />;
+  return <Navigate to={isAuthenticated ? destinoPorRol(user) : '/cliente/inicio'} replace />;
 };
 
 /**
@@ -97,6 +102,7 @@ const EditarPromocion = lazy(() => import('../pages/admin/EditarPromocion'));
 /**
  * Definición de rutas de la aplicación.
  * Rutas públicas: /login, /registro, /admin-login, /admin-registro
+ * Rutas de compra sin sesión: /cliente/inicio, /cliente/catalogo, /cliente/carrito
  * Rutas protegidas cliente: /cliente/*
  * Rutas protegidas admin: /admin/*
  */
@@ -124,11 +130,18 @@ const AppRoutes = () => {
             <Route path="/reset-password" element={<NuevaPassword />} />
           </Route>
 
-          {/* Rutas protegidas de cliente */}
-          <Route element={<ProtectedRoute requiredRole="CLIENTE" />}>
+          {/* Camino de compra sin sesión: mirar el catálogo y armar el carrito no
+              piden cuenta. El pedido sí la pide, y se pide desde el carrito al
+              confirmar (ver Carrito.jsx). */}
+          <Route element={<RutaCompra />}>
             <Route path="/cliente/inicio" element={<Inicio />} />
             <Route path="/cliente/catalogo" element={<Catalogo />} />
             <Route path="/cliente/carrito" element={<Carrito />} />
+          </Route>
+
+          {/* Rutas protegidas de cliente (requieren sesión: son pedidos y datos
+              personales del usuario) */}
+          <Route element={<ProtectedRoute requiredRole="CLIENTE" />}>
             <Route path="/cliente/pago" element={<Pago />} />
             <Route path="/cliente/confirmacion" element={<ConfirmacionPedido />} />
             <Route path="/cliente/mis-pedidos" element={<MisPedidos />} />

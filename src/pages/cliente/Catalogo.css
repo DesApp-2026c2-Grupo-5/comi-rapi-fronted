@@ -72,3 +72,13 @@
   border-radius: 12px;
   color: #7a5c2e;
 }
+
+/* Aviso para el visitante sin sesión: mismo lenguaje que el aviso de catálogo
+   vacío, pero con borde continuo. Es informativo, no un error ni un paso
+   obligatorio, así que no lleva el fondo de alerta amarillo de Bootstrap. */
+.catalogo-aviso-invitado {
+  background-color: #fff;
+  border: 2px solid #ffe0b2;
+  border-radius: 12px;
+  color: #7a5c2e;
+}

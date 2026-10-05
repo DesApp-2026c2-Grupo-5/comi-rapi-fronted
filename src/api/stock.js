@@ -6,9 +6,9 @@
  * Uso: import { obtenerStock, actualizarStock } from '../api/stock';
  *
  * El stock es a nivel producto terminado por sucursal (DER §2.10): una fila es
- * el par (sucursalId, productoId). En un combo la cantidad es "combos que ofrece
- * la sucursal" y no puede superar lo que da el stock de sus componentes, por eso
- * `actualizarStock` puede rechazar con ese motivo y `obtenerMaximosDeCombos`
+ * el par (sucursalId, productoId). En un combo la cantidad NO se edita: sale del
+ * stock de sus componentes, y el backend la devuelve ya calculada. Por eso
+ * `actualizarStock` sólo cambia `disponible` en un combo, y `obtenerMaximosDeCombos`
  * existe para mostrárselo al admin mientras arma la receta.
  *
  * Todo esto es del admin: el cliente nunca escribe stock.
@@ -52,8 +52,8 @@ export const crearStock = async (sucursalId, productoId) =>
 
 /**
  * Ajusta la cantidad y/o la disponibilidad.
- * En un combo, `cantidad` son combos en venta y no puede pasar el máximo que da
- * el stock de los componentes; el backend responde 400 con ese motivo.
+ * En un combo la `cantidad` se ignora: sale del stock de sus componentes. Ahí lo
+ * único que se cambia es `disponible`.
  * @param {{cantidad?: number, disponible?: boolean}} cambios
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
@@ -71,8 +71,7 @@ export const eliminarStock = async (sucursalId, productoId) => {
 
 /**
  * Cuántas unidades se pueden vender de verdad. Para un combo devuelve el máximo
- * derivado de los componentes (`maximoPorComponentes`), que es el número que
- * frena la venta aunque la fila del combo tenga más.
+ * derivado de los componentes, que es su `cantidad`.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const obtenerDisponibilidad = async (sucursalId, productoId) =>
