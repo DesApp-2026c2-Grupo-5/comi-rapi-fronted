@@ -25,6 +25,7 @@ import {
   FaSlidersH,
   FaTags,
   FaPercent,
+  FaUsers,
   FaUserCircle,
   FaSignOutAlt,
   FaChevronDown,
@@ -107,6 +108,7 @@ const menuAdmin = [
   },
   { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore, prefijo: '/admin/sucursal' },
   { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
+  { to: '/admin/clientes', etiqueta: 'Clientes', icono: FaUsers, prefijo: '/admin/clientes' },
 ];
 
 const Navbar = () => {

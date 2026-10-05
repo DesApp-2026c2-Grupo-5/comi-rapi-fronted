@@ -40,6 +40,24 @@ export const obtenerDireccionPorId = async (id) => {
 };
 
 /**
+ * Obtiene las direcciones activas de un cliente con su cobertura vigente
+ * (sucursal asignada por cercanía). Solo administradores.
+ * @param {number|string} usuarioId - ID del cliente.
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ */
+export const obtenerDireccionesDeCliente = async (usuarioId) => {
+  const params = new URLSearchParams({
+    usuarioId: String(usuarioId),
+    cobertura: 'true',
+  });
+  const result = await apiGet(`/direcciones?${params.toString()}`);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
  * Crea una nueva dirección para el cliente autenticado.
  * Iteración 1-geo: obligatorios calle, altura y provincia; el partido
  * (`departamento`) es obligatorio para Buenos Aires; localidad y código

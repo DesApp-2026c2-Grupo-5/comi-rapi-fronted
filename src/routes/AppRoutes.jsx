@@ -93,6 +93,8 @@ const GestionPersonalizacion = lazy(() => import('../pages/admin/GestionPersonal
 const EditarPersonalizacion = lazy(() => import('../pages/admin/EditarPersonalizacion'));
 const GestionPromociones = lazy(() => import('../pages/admin/GestionPromociones'));
 const EditarPromocion = lazy(() => import('../pages/admin/EditarPromocion'));
+const GestionClientes = lazy(() => import('../pages/admin/GestionClientes'));
+const DetalleCliente = lazy(() => import('../pages/admin/DetalleCliente'));
 
 /**
  * Definición de rutas de la aplicación.
@@ -158,6 +160,8 @@ const AppRoutes = () => {
             <Route path="/admin/promociones" element={<GestionPromociones />} />
             <Route path="/admin/promocion/nuevo" element={<EditarPromocion />} />
             <Route path="/admin/promocion/editar/:id" element={<EditarPromocion />} />
+            <Route path="/admin/clientes" element={<GestionClientes />} />
+            <Route path="/admin/clientes/:id" element={<DetalleCliente />} />
           </Route>
 
           {/* Ruta 404 - redirige según estado de sesión */}
