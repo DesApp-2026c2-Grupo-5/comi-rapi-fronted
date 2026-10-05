@@ -102,6 +102,10 @@ async function ejecutar(method, path, datos) {
       // dirección coincide con varias ubicaciones (identidades territoriales
       // de Georef); el formulario las muestra para que el usuario elija.
       opciones: (body && body.opciones) || null,
+      // Iteración 5: detalle funcional de los 422 de cobertura (p. ej. la
+      // distancia de la sucursal activa más cercana) para explicar el
+      // rechazo sin rediseñar los mensajes.
+      detalle: (body && body.detalle) || null,
     };
   }
   return { success: true, status: res.status, data: body ? body.data : null };

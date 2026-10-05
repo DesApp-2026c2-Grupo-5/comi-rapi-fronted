@@ -77,15 +77,20 @@ export const obtenerZonas = async () => {
 };
 
 /**
- * Preview de dirección: geocodifica sin persistir ni validar cobertura.
- * Devuelve el estado de la resolución para que el formulario confirme la
- * dirección (y resuelva la ambigüedad) ANTES de guardar.
+ * Preview de dirección: geocodifica sin persistir. Devuelve el estado de la
+ * resolución para que el formulario confirme la dirección (y resuelva la
+ * ambigüedad) ANTES de guardar.
+ * Iteración 5: con `opciones.cobertura` el backend agrega al `data` el
+ * resultado de la validación real de cobertura (zona + sucursal activa a
+ * ≤5 km por ruta). Solo el formulario del cliente lo pide: el de
+ * administrador no valida cobertura comercial.
  * @param {object} datos - { calle, altura, provincia, departamento?, localidad? }.
- * @returns {Promise<{success: boolean, data?: { estado: 'unica'|'ambigua'|'no_encontrada', resultado?: object, opciones?: Array }, error?: string}>}
+ * @param {object} [opciones] - { cobertura = false }.
+ * @returns {Promise<{success: boolean, data?: { estado: 'unica'|'ambigua'|'no_encontrada', resultado?: object, opciones?: Array, cobertura?: object }, error?: string, status?: number}>}
  */
-export const previsualizarDireccion = async (datos) => {
-  const result = await apiPost('/geo/preview', datos);
+export const previsualizarDireccion = async (datos, { cobertura = false } = {}) => {
+  const result = await apiPost('/geo/preview', { ...datos, cobertura });
   return result.success
     ? { success: true, data: result.data }
-    : { success: false, error: result.error };
+    : { success: false, error: result.error, status: result.status };
 };

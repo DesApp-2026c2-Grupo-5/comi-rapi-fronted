@@ -28,6 +28,7 @@ import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
 import Autocomplete from '../comunes/Autocomplete';
 import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
 import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
+import ResultadoDireccion from '../comunes/ResultadoDireccion';
 import '../comunes/DireccionFormulario.css';
 // Convención de dev (rediseño UI): estilos compartidos de formularios admin.
 import './FormularioAdmin.css';
@@ -65,8 +66,17 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
       direccionApi.mostrarOpcionesExternas(resultado.opciones);
       return;
     }
+    // Iteración 5/6: taxonomía del error (técnico vs funcional). El
+    // administrador NO valida cobertura comercial: su preview y su guardado
+    // no se bloquean por zona ni distancia (exigirCobertura false).
+    const esTecnico =
+      resultado && (resultado.status === undefined || resultado.status >= 500);
     direccionApi.mostrarError(
-      (resultado && resultado.error) || 'No se pudo guardar la sucursal.'
+      (resultado && resultado.error) || 'No se pudo guardar la sucursal.',
+      {
+        tipo: esTecnico ? 'tecnico' : 'funcional',
+        detalle: resultado && resultado.detalle,
+      }
     );
   };
 
@@ -101,21 +111,27 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             nivel superior). */}
         <h3 className="h5 mb-4">Datos de la sucursal</h3>
         <Form onSubmit={handleSubmit} noValidate>
-          {direccionApi.errores.length > 0 && (
-            <div className="text-danger mb-3 dir-form-errores" role="alert">
-              <ul className="mb-0 ps-3">
-                {direccionApi.errores.map((error, i) => (
-                  <li key={i}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           {(direccionApi.avisoFueraZona || direccionApi.avisoPartidoFueraZona) && (
             <Alert variant="warning" role="alert" className="mb-3 dir-form-aviso">
               {direccionApi.MENSAJE_FUERA_DE_ZONA}
             </Alert>
           )}
+
+          {/* Iteración 6: región de resultados con estado unificado. El admin
+              NO valida cobertura comercial (sin flag cobertura): los estados
+              de cobertura-zona/sucursal solo podrían llegar del guardado. */}
+          <div aria-live="polite">
+            <ResultadoDireccion
+              resultado={direccionApi.resultado}
+              resumen={
+                direccionApi.preview?.estado === 'unica'
+                  ? direccionApi.preview.resultado.nomenclatura
+                  : null
+              }
+              onReintentar={direccionApi.previsualizar}
+              onEditar={direccionApi.editarDatos}
+            />
+          </div>
 
           <Form.Group className="mb-3">
             <Form.Label>Nombre *</Form.Label>
@@ -292,6 +308,9 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             <div className="dir-form-confirmacion">
               <ConfirmacionDireccion
                 resultado={direccionApi.preview.resultado}
+                altura={direccionApi.altura}
+                referencia={referencia.trim() || null}
+                cargando={direccionApi.guardando}
                 textoConfirmar="Guardar sucursal"
                 onConfirmar={direccionApi.confirmar}
                 onEditar={direccionApi.editarDatos}

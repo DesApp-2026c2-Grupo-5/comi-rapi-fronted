@@ -50,7 +50,11 @@ export function normalizarTextoZona(valor) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) => {
+export const useDireccionTerritorial = ({
+  inicial = null,
+  onConfirmado,
+  validarCobertura = false,
+} = {}) => {
   // ---- Campos territoriales ------------------------------------------------
   const [calle, setCalle] = useState('');
   const [altura, setAltura] = useState('');
@@ -79,11 +83,22 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
   const [avisoFueraZona, setAvisoFueraZona] = useState(false);
 
   // ---- Resolución (preview) de la dirección --------------------------------
-  // preview: { estado: 'unica'|'ambigua', resultado?, opciones? } | null
+  // preview: { estado: 'unica'|'ambigua', resultado?, opciones?, cobertura? } | null
   const [preview, setPreview] = useState(null);
   const [opcionElegida, setOpcionElegida] = useState('');
   const [cargandoPreview, setCargandoPreview] = useState(false);
-  const [errores, setErrores] = useState([]);
+  // Iteración 6: estado UNIFICADO de resultados (reemplaza al trío
+  // errores+tipoError+bloqueo del Alert separado — evita presentaciones
+  // contradictorias). La lógica de invalidación y guard no cambia.
+  // resultado: null | {
+  //   tipo: 'datos' | 'cobertura-zona' | 'cobertura-sucursal' | 'tecnico',
+  //   mensaje?: string,      // mensaje principal (cuando no hay items)
+  //   items?: string[],      // correcciones de campo (tipo 'datos')
+  //   detalle?: object,     // cobertura del preview o detalle del 422 del save
+  // }
+  const [resultado, setResultado] = useState(null);
+  // Iteración 5: guard anti doble-submit del guardado final.
+  const [guardando, setGuardando] = useState(false);
 
   // El guardado final lo dispara el hook, pero el payload completo lo arma el
   // formulario (alias/referencia o datos de sucursal): se llama SIEMPRE a la
@@ -97,6 +112,7 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
   const limpiarResolucion = useCallback(() => {
     setPreview(null);
     setOpcionElegida('');
+    setResultado(null);
   }, []);
 
   // ---- Precarga (modo edición) ----------------------------------------------
@@ -112,7 +128,7 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
     setLocalidad('');
     setPreview(null);
     setOpcionElegida('');
-    setErrores([]);
+    setResultado(null);
     setSugerencias([]);
     setErrorSugerencias(null);
     calleSeleccionadaRef.current = null;
@@ -364,38 +380,68 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
   });
 
   /**
-   * Resuelve la dirección con el backend (preview: sin persistir ni validar
-   * cobertura). 'unica' → confirmación; 'ambigua' → opciones para elegir;
+   * Resuelve la dirección con el backend (preview: sin persistir).
+   * 'unica' → confirmación; 'ambigua' → opciones para elegir;
    * 'no_encontrada' → error amigable.
+   * Iteración 5: con `validarCobertura` el preview incluye el resultado de
+   * la validación real (zona + sucursal activa ≤5 km por ruta); los fallos
+   * se clasifican en funcionales (bloquean) vs técnicos/temporales (reintentar).
    */
   const previsualizar = async () => {
     const erroresValidacion = validar();
-    setErrores(erroresValidacion);
     if (erroresValidacion.length > 0) {
+      setResultado({ tipo: 'datos', items: erroresValidacion });
       setPreview(null);
       return;
     }
+    setResultado(null);
     setCargandoPreview(true);
     try {
-      const result = await previsualizarDireccion(construirDatos());
+      const result = await previsualizarDireccion(construirDatos(), {
+        cobertura: validarCobertura,
+      });
       if (!result.success) {
-        setErrores([result.error || 'No se pudo verificar la dirección.']);
+        // Taxonomía de resultados: 5xx (o sin status) = técnico/temporal →
+        // reintentar; el resto (400/409/422) = funcional → corregir datos.
+        const esTecnico =
+          result.status === undefined || result.status >= 500;
+        setResultado({
+          tipo: esTecnico ? 'tecnico' : 'datos',
+          mensaje:
+            result.error ||
+            (esTecnico
+              ? 'Servicio temporalmente no disponible. Esperá unos segundos y volvé a intentar.'
+              : 'No se pudo verificar la dirección.'),
+        });
         setPreview(null);
         return;
       }
-      const { estado, resultado, opciones } = result.data;
+      const { estado, resultado, opciones, cobertura } = result.data;
       if (estado === 'no_encontrada') {
-        setErrores([MENSAJE_NO_ENCONTRADA]);
+        setResultado({ tipo: 'datos', mensaje: MENSAJE_NO_ENCONTRADA });
         setPreview(null);
         return;
       }
-      setErrores([]);
       setPreview({
         estado,
         resultado: resultado || null,
         opciones: opciones || [],
+        cobertura: cobertura || null,
       });
       setOpcionElegida('');
+      // Iteración 6: la cobertura bloqueante se presenta como resultado
+      // diferenciado (zona vs sucursal), no como un Alert aparte.
+      if (validarCobertura && cobertura && !cobertura.coberturaDisponible) {
+        setResultado({
+          tipo: cobertura.dentroZona
+            ? 'cobertura-sucursal'
+            : 'cobertura-zona',
+          mensaje: cobertura.mensaje,
+          detalle: cobertura,
+        });
+      } else {
+        setResultado(null);
+      }
     } finally {
       setCargandoPreview(false);
     }
@@ -418,14 +464,33 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
       setCalle(opcion.calle);
     }
     setOpcionElegida(nomenclatura);
-    setErrores([]);
+    setResultado(null);
   };
 
-  /** Confirma la resolución única y dispara el guardado del formulario. */
-  const confirmar = () => {
+  /**
+   * Iteración 5: la cobertura del preview bloquea la confirmación cuando la
+   * dirección no es atendible (fuera de zona o sin sucursal activa ≤5 km).
+   * Guard anti doble-submit: el botón queda deshabilitado mientras dura el
+   * guardado (un doble click creaba dos direcciones).
+   */
+  const bloqueadaPorCobertura = Boolean(
+    validarCobertura &&
+      preview?.estado === 'unica' &&
+      preview?.cobertura &&
+      !preview.cobertura.coberturaDisponible
+  );
+
+  const confirmar = async () => {
+    if (guardando) return;
     if (preview?.estado !== 'unica') return;
+    if (bloqueadaPorCobertura) return;
     if (onConfirmadoRef.current) {
-      onConfirmadoRef.current(construirDatos());
+      setGuardando(true);
+      try {
+        await onConfirmadoRef.current(construirDatos());
+      } finally {
+        setGuardando(false);
+      }
     }
   };
 
@@ -433,12 +498,13 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
   const editarDatos = () => {
     setPreview(null);
     setOpcionElegida('');
+    setResultado(null);
   };
 
   // ---- Superficie para que el formulario procese el resultado del guardado ----
   /** Muestra opciones de ambigüedad recibidas del propio guardado (409 residual). */
   const mostrarOpcionesExternas = (opcionesExternas) => {
-    setErrores([]);
+    setResultado(null);
     setPreview({
       estado: 'ambigua',
       resultado: null,
@@ -447,10 +513,32 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
     setOpcionElegida('');
   };
 
-  /** Muestra un error del guardado (cobertura, geolocalización, etc.). */
-  const mostrarError = (mensaje) => {
+  /**
+   * Muestra un error del guardado (cobertura, geolocalización, etc.).
+   * Iteración 6: clasifica en el estado unificado. 'tecnico' es temporal y
+   * se reintenta; los funcionales se refinan por mensaje/detalle (el 422 de
+   * sin cobertura trae `detalle.distanciaMasCercanaMetros`).
+   */
+  const mostrarError = (mensaje, { tipo, detalle } = {}) => {
     setPreview(null);
-    setErrores([mensaje || 'No se pudo guardar la dirección.']);
+    const texto = mensaje || 'No se pudo guardar la dirección.';
+    if (tipo === 'tecnico') {
+      setResultado({ tipo: 'tecnico', mensaje: texto });
+      return;
+    }
+    if (detalle && detalle.distanciaMasCercanaMetros !== undefined) {
+      setResultado({
+        tipo: 'cobertura-sucursal',
+        mensaje: texto,
+        detalle,
+      });
+      return;
+    }
+    if (/fuera de la zona/i.test(texto)) {
+      setResultado({ tipo: 'cobertura-zona', mensaje: texto });
+      return;
+    }
+    setResultado({ tipo: 'datos', mensaje: texto });
   };
 
   return {
@@ -483,7 +571,10 @@ export const useDireccionTerritorial = ({ inicial = null, onConfirmado } = {}) =
     preview,
     opcionElegida,
     cargandoPreview,
-    errores,
+    // Iteración 6: estado unificado de resultados (antes errores+tipoError).
+    resultado,
+    guardando,
+    bloqueadaPorCobertura,
     previsualizar,
     elegirOpcion,
     confirmar,

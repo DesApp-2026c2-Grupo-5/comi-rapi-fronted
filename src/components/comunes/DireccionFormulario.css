@@ -77,3 +77,51 @@
 .dir-form-confirmacion .alert {
   border-radius: 0.75rem;
 }
+
+/* ============ Iteración 6: ficha de confirmación ============ */
+.dir-form-ficha {
+  background: rgba(25, 135, 84, 0.06); /* verde success muy tenue */
+  border: 1px solid rgba(25, 135, 84, 0.25);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+}
+.dir-form-ficha-fila {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  font-size: 0.92rem;
+}
+.dir-form-ficha-etiqueta {
+  min-width: 8.5rem;
+  color: #6c757d;
+  font-weight: 600;
+}
+.dir-form-ficha-valor {
+  font-weight: 500;
+}
+
+/* ============ Iteración 6: resultado unificado ============ */
+/* Título con ícono alineado y jerarquía clara por tipo. */
+.dir-form-resultado .d-flex {
+  font-size: 1rem;
+}
+.dir-form-resultado.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+.dir-form-resultado.alert-danger {
+  border-left: 4px solid #dc3545;
+}
+.dir-form-resultado.alert-secondary {
+  border-left: 4px solid #6c757d;
+}
+/* En pantallas angostas la ficha apila etiqueta y valor. */
+@media (max-width: 30rem) {
+  .dir-form-ficha-fila {
+    flex-direction: column;
+    gap: 0;
+    padding: 0.25rem 0;
+  }
+  .dir-form-ficha-etiqueta {
+    min-width: 0;
+  }
+}

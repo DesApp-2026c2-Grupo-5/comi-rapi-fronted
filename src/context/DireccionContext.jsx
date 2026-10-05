@@ -65,7 +65,14 @@ export const DireccionProvider = ({ children }) => {
       return { ok: true, data: result.data };
     }
     setError(result.error);
-    return { ok: false, error: result.error, opciones: result.opciones };
+    // Iteración 5: status (funcional vs técnico) y detalle de cobertura.
+    return {
+      ok: false,
+      error: result.error,
+      status: result.status,
+      detalle: result.detalle,
+      opciones: result.opciones,
+    };
   }, []);
 
   /**
@@ -86,7 +93,14 @@ export const DireccionProvider = ({ children }) => {
       return { ok: true, data: result.data };
     }
     setError(result.error);
-    return { ok: false, error: result.error, opciones: result.opciones };
+    // Iteración 5: status (funcional vs técnico) y detalle de cobertura.
+    return {
+      ok: false,
+      error: result.error,
+      status: result.status,
+      detalle: result.detalle,
+      opciones: result.opciones,
+    };
   }, []);
 
   /**

@@ -53,7 +53,15 @@ export const crearDireccion = async (datos) => {
   if (result.success) {
     return { success: true, data: result.data };
   }
-  return { success: false, error: result.error, opciones: result.opciones };
+  // Iteración 5: status (funcional vs técnico) y detalle (distancia de la
+  // sucursal más cercana en los 422 de cobertura).
+  return {
+    success: false,
+    error: result.error,
+    status: result.status,
+    detalle: result.detalle,
+    opciones: result.opciones,
+  };
 };
 
 /**
@@ -68,7 +76,14 @@ export const actualizarDireccion = async (id, datos) => {
   if (result.success) {
     return { success: true, data: result.data };
   }
-  return { success: false, error: result.error, opciones: result.opciones };
+  // Iteración 5: status (funcional vs técnico) y detalle de cobertura.
+  return {
+    success: false,
+    error: result.error,
+    status: result.status,
+    detalle: result.detalle,
+    opciones: result.opciones,
+  };
 };
 
 /**

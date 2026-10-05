@@ -28,6 +28,7 @@ import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
 import Autocomplete from '../comunes/Autocomplete';
 import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
 import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
+import ResultadoDireccion from '../comunes/ResultadoDireccion';
 import '../comunes/DireccionFormulario.css';
 // Convención de dev (rediseño UI): el ancho de la tarjeta vive en CSS.
 import './FormularioDireccion.css';
@@ -52,15 +53,24 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
       direccionApi.mostrarOpcionesExternas(resultado.opciones);
       return;
     }
-    // El error real (cobertura, geolocalización, etc.), con su mensaje.
+    // Iteración 5: taxonomía del error. 5xx (o sin status) = técnico →
+    // reintentar; el resto = funcional (cobertura, validación) → el hook
+    // clasifica por mensaje/detalle en el estado unificado.
+    const esTecnico =
+      resultado && (resultado.status === undefined || resultado.status >= 500);
     direccionApi.mostrarError(
-      (resultado && resultado.error) || 'No se pudo guardar la dirección.'
+      (resultado && resultado.error) || 'No se pudo guardar la dirección.',
+      {
+        tipo: esTecnico ? 'tecnico' : 'funcional',
+        detalle: resultado && resultado.detalle,
+      }
     );
   };
 
   const direccionApi = useDireccionTerritorial({
     inicial: direccion,
     onConfirmado: confirmarGuardado,
+    validarCobertura: true,
   });
 
   // Precargan alias/referencia al entrar en modo edición (los campos
@@ -86,16 +96,6 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
           {direccion ? 'Editar dirección' : 'Nueva dirección'}
         </h3>
         <Form onSubmit={handleSubmit} noValidate>
-          {direccionApi.errores.length > 0 && (
-            <div className="text-danger mb-3 dir-form-errores" role="alert">
-              <ul className="mb-0 ps-3">
-                {direccionApi.errores.map((error, i) => (
-                  <li key={i}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           {/* Avisos informativos de zona (provincia y, en la iteración 4,
               también partido). El backend sigue decidiendo al guardar. */}
           {(direccionApi.avisoFueraZona || direccionApi.avisoPartidoFueraZona) && (
@@ -107,6 +107,21 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
               {direccionApi.MENSAJE_FUERA_DE_ZONA}
             </Alert>
           )}
+
+          {/* Iteración 6: región de resultados con estado unificado — el
+              lector de pantalla anuncia los cambios (verificar → resultado). */}
+          <div aria-live="polite">
+            <ResultadoDireccion
+              resultado={direccionApi.resultado}
+              resumen={
+                direccionApi.preview?.estado === 'unica'
+                  ? direccionApi.preview.resultado.nomenclatura
+                  : null
+              }
+              onReintentar={direccionApi.previsualizar}
+              onEditar={direccionApi.editarDatos}
+            />
+          </div>
 
           {/* ===== Ubicación: de lo más general a lo más específico ===== */}
           <div className="dir-form-seccion">Ubicación</div>
@@ -250,17 +265,25 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             />
           )}
 
-          {/* Confirmación de la resolución (componente compartido). */}
-          {direccionApi.preview?.estado === 'unica' && (
-            <div className="dir-form-confirmacion">
-              <ConfirmacionDireccion
-                resultado={direccionApi.preview.resultado}
-                textoConfirmar="Guardar dirección"
-                onConfirmar={direccionApi.confirmar}
-                onEditar={direccionApi.editarDatos}
-              />
-            </div>
-          )}
+          {/* Confirmación (ficha validada). Solo cuando la cobertura está
+              disponible: si está bloqueada, el estado unificado de arriba
+              muestra el motivo (zona o sucursal) con la distancia. */}
+          {direccionApi.preview?.estado === 'unica' &&
+            !direccionApi.bloqueadaPorCobertura && (
+              <div className="dir-form-confirmacion">
+                <ConfirmacionDireccion
+                  resultado={direccionApi.preview.resultado}
+                  cobertura={direccionApi.preview.cobertura}
+                  altura={direccionApi.altura}
+                  codigoPostal={direccion?.codigoPostal}
+                  referencia={referencia.trim() || null}
+                  cargando={direccionApi.guardando}
+                  textoConfirmar="Guardar dirección"
+                  onConfirmar={direccionApi.confirmar}
+                  onEditar={direccionApi.editarDatos}
+                />
+              </div>
+            )}
 
           <div className="d-flex gap-2">
             <Button
