@@ -27,7 +27,9 @@ import { useSucursal } from '../../hooks/useSucursal';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useDirecciones } from '../../hooks/useDirecciones';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { asignarSucursalOptima } from '../../services/asignacionSucursal';
+// T1: la sucursal la asigna el backend con las reglas reales (más cercana
+// con stock dentro de cobertura) — el espejo local (asignacionSucursal.js)
+// se eliminó del flujo de creación.
 import { calcularCostoEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO } from '../../utils/constants';
 import ItemCarrito from '../../components/cliente/ItemCarrito';
@@ -121,30 +123,16 @@ const Carrito = () => {
       return;
     }
 
-    // 1. Sucursales activas (la asignación interna del servicio filtra las activas)
-    const sucursalesActivas = sucursales.filter((s) => s.activa !== false);
-
-    // 2. Pedidos pendientes para la lógica de asignación
-    const pedidosPendientes = obtenerPedidosPendientes();
-
-    // 3. Asignar la sucursal con menos pedidos pendientes (automático)
-    const sucursalAsignada = asignarSucursalOptima(sucursalesActivas, pedidosPendientes);
-
-    if (!sucursalAsignada) {
-      notificar('No hay sucursales disponibles en este momento.', 'warning');
-      return;
-    }
-
-    // 4. Crear el pedido en la API real (Postgres). El total se recalcula en
-    //    el backend; acá se envía como referencia. Sin fallback: si la API
-    //    falla, el contexto muestra el error y no se navega a la pantalla de pago.
+    // T1 (plan maestro): el backend selecciona la sucursal con las reglas
+    // reales (más cercana por ruta con stock, dentro de cobertura). El
+    // frontend YA NO pre-asigna — se eliminó el espejo de
+    // asignacionSucursal.js que duplicaba la lógica y podía divergir.
     const pedidoCreado = await crearPedido(
-construirDatosPedido(direccion),
-        sucursalAsignada
-      );
+      construirDatosPedido(direccion)
+    );
     if (!pedidoCreado) return;
 
-    // 5. Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
+    // Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
     navigate('/cliente/pago');
   };
 
@@ -169,18 +157,9 @@ construirDatosPedido(direccion),
         ESTADOS_PEDIDO.CANCELADO
       );
       if (!cancelado) return;
-      const sucursalesActivas = sucursales.filter((s) => s.activa !== false);
-      const sucursalAsignada = asignarSucursalOptima(
-        sucursalesActivas,
-        obtenerPedidosPendientes()
-      );
-      if (!sucursalAsignada) {
-        notificar('No hay sucursales disponibles en este momento.', 'warning');
-        return;
-      }
+      // T1: el backend asigna la sucursal con las reglas reales.
       const pedidoCreado = await crearPedido(
-        construirDatosPedido(direccion),
-        sucursalAsignada
+        construirDatosPedido(direccion)
       );
       if (!pedidoCreado) return;
       navigate('/cliente/pago');
