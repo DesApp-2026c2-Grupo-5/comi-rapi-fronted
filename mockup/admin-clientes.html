@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup Lista de Clientes (Admin)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+}
+body{ background:#f8f9fa; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#212529; }
+.card-comi{ border:1px solid #dee2e6; border-radius:0; background:#fff; box-shadow:0 .125rem .25rem rgba(0,0,0,.075); overflow:hidden; }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:999px; font-weight:600; letter-spacing:.3px; transition:transform .2s ease, box-shadow .25s ease; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-color:#fff; --bs-btn-bg:#ff9f1c; --bs-btn-border-color:#ff9f1c; --bs-btn-hover-color:#fff; --bs-btn-hover-bg:#e88900; --bs-btn-hover-border-color:#e88900; box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.btn-secondary{ --bs-btn-color:#b55d00; --bs-btn-bg:#fff4e2; --bs-btn-border-color:#f1c27d; --bs-btn-hover-color:#b55d00; --bs-btn-hover-bg:#ffe6c2; --bs-btn-hover-border-color:#ff9f1c; }
+.badge-comi{ background:#e9ecef; color:#212529; border:1px solid #dee2e6; font-weight:700; }
+.mockup-nav{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(255,250,240,.92); border-bottom:2px solid var(--borde-card); }
+.vista{ display:none; }
+.vista.activa{ display:block; animation:fade .2s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+.table-dark{ --bs-table-bg:#2b2b2b; }
+.form-control, .form-select{ border:1px solid #dee2e6; border-radius:.375rem; }
+.form-control:focus, .form-select:focus{ border-color:#86b7fe; box-shadow:0 0 0 .25rem rgba(13,110,253,.25); }
+.avatar{ width:38px; height:38px; border-radius:50%; background:var(--crema); border:1px solid var(--crema-borde); color:var(--naranja-osc); font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+.dato-etiqueta{ font-size:.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--gris-text,#6c757d); }
+</style>
+</head>
+<body>
+
+<!-- Header mockup -->
+<div class="mockup-nav text-center py-3">
+  <div class="container">
+    <span class="fw-bold"><i class="fa-solid fa-burger" style="color:var(--naranja)"></i> Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP — Lista de Clientes (Admin)</span></span>
+    <div class="small text-muted">Tabla <strong>solo lectura</strong> con <strong>buscador</strong> y <strong>filtro por estado</strong> + vista <strong>detalle</strong> (datos, direcciones y últimos pedidos) — estilos 100% Comi-Rapi</div>
+    <div class="mt-2 small">
+      <a href="./admin-promociones.html" class="text-decoration-none" style="color:var(--naranja-osc)"><i class="fa-solid fa-arrow-left"></i> Promociones</a>
+      <span class="mx-2 text-muted">·</span>
+      <span class="badge bg-dark">Admin</span>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4" style="max-width:1120px;">
+
+  <div class="alert py-2 small d-flex gap-2 align-items-start" style="background:var(--crema); border-color:var(--crema-borde); color:var(--naranja-osc);">
+    <i class="fa-solid fa-circle-info mt-1"></i>
+    <div>
+      <strong>Mockup interactivo — sin backend.</strong> Probá el buscador, el filtro por estado y el botón <em>Ver detalle</em> de cada fila.
+      <br><span style="font-size:.78rem;">Rutas reales: <code>/admin/clientes</code> · <code>/admin/clientes/:id</code> (GET, solo lectura)</span>
+    </div>
+  </div>
+
+  <!-- ===== VISTA LISTA ===== -->
+  <div id="vista-lista" class="vista activa">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h4 class="fw-bold mb-0"><i class="fa-solid fa-users me-2" style="color:var(--naranja)"></i> Clientes <span class="badge badge-comi" id="total-clientes"></span></h4>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-12 col-md-6">
+        <input class="form-control form-control-sm" id="q-buscar" placeholder="Buscar por nombre o email..." oninput="renderTabla()" />
+      </div>
+      <div class="col-6 col-md-3">
+        <select class="form-select form-select-sm" id="f-estado" onchange="renderTabla()">
+          <option value="todos">Estado: Todos</option>
+          <option value="activos">Estado: Activos</option>
+          <option value="inactivos">Estado: Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card-comi">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0 align-middle">
+          <thead class="table-dark">
+            <tr><th>ID</th><th>Cliente</th><th>Email</th><th>Teléfono</th><th>Pedidos</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="tbody-clientes"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="sin-resultados" class="text-center text-muted py-4" style="display:none;">Sin resultados para los filtros.</div>
+  </div>
+
+  <!-- ===== VISTA DETALLE ===== -->
+  <div id="vista-detalle" class="vista">
+    <a href="#" class="text-danger text-decoration-none mb-3 d-inline-block" onclick="irLista(); return false;">← Volver a clientes</a>
+    <h4 class="fw-bold mb-3"><i class="fa-solid fa-user me-2" style="color:var(--naranja)"></i> <span id="det-titulo">Detalle del cliente</span></h4>
+
+    <div class="card-comi p-4 mb-3">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <span class="avatar" id="det-avatar" style="width:52px;height:52px;font-size:1.2rem;">--</span>
+        <div>
+          <div class="fw-bold fs-5" id="det-nombre">—</div>
+          <div class="text-muted small" id="det-email">—</div>
+        </div>
+        <span class="ms-auto" id="det-estado"></span>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4"><div class="dato-etiqueta">Teléfono</div><div class="fw-bold" id="det-tel">—</div></div>
+        <div class="col-md-4"><div class="dato-etiqueta">Pedidos totales</div><div class="fw-bold" id="det-pedidos">—</div></div>
+        <div class="col-md-4"><div class="dato-etiqueta">Cliente desde</div><div class="fw-bold" id="det-alta">—</div></div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card-comi p-3 h-100">
+          <h6 class="fw-bold mb-3"><i class="fa-solid fa-location-dot me-1" style="color:var(--naranja)"></i> Direcciones</h6>
+          <div id="det-direcciones"></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card-comi p-3 h-100">
+          <h6 class="fw-bold mb-3"><i class="fa-solid fa-receipt me-1" style="color:var(--naranja)"></i> Últimos pedidos</h6>
+          <div id="det-ultimos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const CLIENTES = [
+  { id: 2, nombre: 'María', apellido: 'González', email: 'maria.gonzalez@mail.com', telefono: '11-5555-0101', pedidos: 14, activo: true, alta: '12/03/2026',
+    sucursal: { nombre: 'Sucursal Centro', direccion: 'Av. Principal 123, CABA' },
+    direcciones: [{ texto: 'Av. Siempreviva 742, CABA', sucursal: 'Sucursal Centro' }, { texto: 'Calle Falsa 123, Morón', sucursal: 'Sucursal Oeste' }],
+    ultimos: [{ n: 1042, fecha: '28/09/2026', total: '$ 8.450', estado: 'Entregado' }, { n: 1031, fecha: '21/09/2026', total: '$ 5.200', estado: 'Entregado' }, { n: 1019, fecha: '14/09/2026', total: '$ 6.900', estado: 'Cancelado' }] },
+  { id: 5, nombre: 'Juan', apellido: 'Pérez', email: 'juan.perez@mail.com', telefono: '11-5555-0202', pedidos: 7, activo: true, alta: '05/06/2026',
+    sucursal: { nombre: 'Sucursal Norte', direccion: 'Av. San Martín 4500, San Miguel' },
+    direcciones: [{ texto: 'Belgrano 840, San Miguel', sucursal: 'Sucursal Norte' }],
+    ultimos: [{ n: 1040, fecha: '27/09/2026', total: '$ 3.100', estado: 'En camino' }, { n: 1028, fecha: '19/09/2026', total: '$ 4.750', estado: 'Entregado' }] },
+  { id: 8, nombre: 'Lucía', apellido: 'Fernández', email: 'lucia.f@mail.com', telefono: null, pedidos: 0, activo: true, alta: '22/09/2026',
+    sucursal: null,
+    direcciones: [], ultimos: [] },
+  { id: 11, nombre: 'Pedro', apellido: 'Gómez', email: 'pedro.gomez@mail.com', telefono: '11-5555-0303', pedidos: 3, activo: false, alta: '19/01/2026',
+    sucursal: { nombre: 'Sucursal Oeste', direccion: 'Rivadavia 1500, Haedo' },
+    direcciones: [{ texto: 'Rivadavia 1500, Haedo', sucursal: null }],
+    ultimos: [{ n: 990, fecha: '02/08/2026', total: '$ 2.300', estado: 'Cancelado' }] },
+];
+
+function badgeEstado(a){ return a ? '<span class="badge text-bg-success">Activo</span>' : '<span class="badge text-bg-secondary">Inactivo</span>'; }
+function badgePedido(e){
+  const mapa = { 'Entregado': 'success', 'Cancelado': 'danger', 'En camino': 'info' };
+  return `<span class="badge text-bg-${mapa[e] || 'secondary'}">${e}</span>`;
+}
+
+function renderTabla(){
+  const q = (document.getElementById('q-buscar').value || '').toLowerCase();
+  const fe = document.getElementById('f-estado').value;
+  const tb = document.getElementById('tbody-clientes');
+  tb.innerHTML = '';
+  const filtrados = CLIENTES.filter(c =>
+    (fe === 'todos' || (fe === 'activos') === c.activo) &&
+    (!q || `${c.nombre} ${c.apellido} ${c.email}`.toLowerCase().includes(q))
+  );
+  document.getElementById('total-clientes').textContent = `${filtrados.length} de ${CLIENTES.length}`;
+  document.getElementById('sin-resultados').style.display = filtrados.length ? 'none' : 'block';
+  filtrados.forEach(c => {
+    const tr = document.createElement('tr');
+    const iniciales = (c.nombre[0] + c.apellido[0]).toUpperCase();
+    tr.innerHTML = `<td>${c.id}</td>
+      <td><span class="avatar me-2">${iniciales}</span><strong>${c.nombre} ${c.apellido}</strong></td>
+      <td>${c.email}</td>
+      <td>${c.telefono || '<span class="text-muted">—</span>'}</td>
+      <td><span class="badge badge-comi">${c.pedidos}</span></td>
+      <td>${badgeEstado(c.activo)}</td>
+      <td><button class="btn btn-sm btn-secondary" onclick="irDetalle(${c.id})"><i class="fa-solid fa-eye me-1"></i> Ver detalle</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function irDetalle(id){
+  const c = CLIENTES.find(x => x.id === id);
+  document.getElementById('det-titulo').textContent = `Cliente #${c.id}`;
+  document.getElementById('det-avatar').textContent = (c.nombre[0] + c.apellido[0]).toUpperCase();
+  document.getElementById('det-nombre').textContent = `${c.nombre} ${c.apellido}`;
+  document.getElementById('det-email').textContent = c.email;
+  document.getElementById('det-estado').innerHTML = badgeEstado(c.activo);
+  document.getElementById('det-tel').textContent = c.telefono || '—';
+  document.getElementById('det-pedidos').textContent = c.pedidos;
+  document.getElementById('det-alta').textContent = c.alta;
+  document.getElementById('det-direcciones').innerHTML = c.direcciones.length
+    ? c.direcciones.map(d => `<div class="border rounded p-2 mb-2 small"><i class="fa-solid fa-location-dot me-1" style="color:var(--naranja)"></i>${d.texto}<br><span class="ms-3"><i class="fa-solid fa-store me-1 text-muted"></i>${d.sucursal ? `<strong>${d.sucursal}</strong> <span class="badge badge-comi">a menos de 5 km</span>` : '<span class="text-danger">Sin cobertura (a más de 5 km).</span>'}</span></div>`).join('')
+    : '<span class="text-muted small">Sin direcciones cargadas.</span>';
+  document.getElementById('det-ultimos').innerHTML = c.ultimos.length
+    ? `<table class="table table-sm mb-0"><thead><tr><th>#</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>` +
+      c.ultimos.map(p => `<tr><td>${p.n}</td><td>${p.fecha}</td><td>${p.total}</td><td>${badgePedido(p.estado)}</td></tr>`).join('') + `</tbody></table>`
+    : '<span class="text-muted small">Sin pedidos todavía.</span>';
+  document.getElementById('vista-lista').classList.remove('activa');
+  document.getElementById('vista-detalle').classList.add('activa');
+  window.scrollTo(0,0);
+}
+
+function irLista(){ document.getElementById('vista-detalle').classList.remove('activa'); document.getElementById('vista-lista').classList.add('activa'); window.scrollTo(0,0); }
+
+renderTabla();
+</script>
+</body>
+</html>

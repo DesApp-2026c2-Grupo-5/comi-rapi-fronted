@@ -8,9 +8,11 @@
  * - DOS_POR_UNO: por producto alcanzado, floor(cantidad / 2) unidades gratis
  *   al precio unitario personalizado. `valor` se ignora.
  * - Si varias promociones alcanzan la misma línea, gana la de mayor descuento.
+ * - Un combo (producto.tipo === 'COMBO') nunca se descuenta: su precio ya es la
+ *   promoción respecto de sus componentes.
  *
  * Entrada:
- *   lineas: líneas del carrito [{ producto: { id }, cantidad,
+ *   lineas: líneas del carrito [{ producto: { id, tipo? }, cantidad,
  *             precioUnitarioPersonalizado?, producto.precio? }]
  *   promos: [{ id, tipo, valor, productoIds: [ids alcanzados] }]
  * Salida:
@@ -25,6 +27,9 @@ function precioUnitarioDe(linea) {
 }
 
 function descuentoLinea(linea, promo, precioUnitario, cantidad) {
+  // El combo es la promoción: nunca baja de precio, aunque una promoción
+  // alcance a su producto o a alguno de sus componentes.
+  if (linea?.producto?.tipo === 'COMBO') return 0;
   const alcanzada = (promo.productoIds || []).some(
     (id) => String(id) === String(linea?.producto?.id)
   );

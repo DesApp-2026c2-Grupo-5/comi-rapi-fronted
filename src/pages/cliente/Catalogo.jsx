@@ -1,28 +1,34 @@
 /**
  * Propósito: Página de catálogo con filtro por categoría y grid de productos.
- * Contenido: Componente Catalogo con título grande, filtros tipo pill y grid
- *            responsive de ProductoCard.
- * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert), seedData.js,
- *               ProductoCard, Catalogo.css.
+ *            Accesible sin sesión: mirar el catálogo no pide cuenta.
+ * Contenido: Componente Catalogo con título grande, filtros tipo pill, aviso
+ *            para el invitado y grid responsive de ProductoCard.
+ * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert, Form),
+ *               api/productos.js, api/categorias.js, ProductoCard, Catalogo.css.
  * Uso: Ruta "/cliente/catalogo" → <Catalogo />
  *
  * CAMBIOS REALIZADOS:
  *  - Título grande "Nuestro Catálogo" en tipografía bold oscura.
-*  - Filtros de categorías en forma de pills (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
-*  - Las categorías de la home llegan por query param (?categoria=...) y se aplican al instante.
-*  - Al elegir una pill también se actualiza el query param (el filtro queda en la URL).
-*  - Grid responsive (3 columnas en md, 4 en lg).
-*  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
-*  - Búsqueda por nombre y rango de precio, también persistidos en la URL.
-*  - Validación de rango de precio: mínimo no puede ser negativo ni mayor al máximo y viceversa.
-* 
-*/
+ *  - Filtros de categorías en forma de pills (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
+ *  - Las categorías de la home llegan por query param (?categoria=...) y se aplican al instante.
+ *  - Al elegir una pill también se actualiza el query param (el filtro queda en la URL).
+ *  - Grid responsive (3 columnas en md, 4 en lg).
+ *  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
+ *  - Búsqueda por nombre y rango de precio, también persistidos en la URL.
+ *  - Validación de rango de precio: mínimo no puede ser negativo ni mayor al máximo y viceversa.
+ *  - Aviso para el visitante sin sesión: el carrito se arma sin cuenta, pero
+ *    confirmar el pedido no, así que se lo dice acá y no recién al final del
+ *    proceso, cuando ya eligió todo.
+ *
+ */
 
 import { useMemo, useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
 import { obtenerProductos } from '../../api/productos';
 import { obtenerCategorias } from '../../api/categorias';
+import { useAuth } from '../../hooks/useAuth';
+import { rutaActual } from '../../utils/rutas';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Catalogo.css';
 
@@ -34,6 +40,13 @@ const Catalogo = () => {
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  // Origen para los enlaces de acceso: se vuelve al catálogo con los filtros
+  // que el visitante tenía puestos.
+  const origen = rutaActual(location);
+
 
   useEffect(() => {
     const cargar = async () => {
@@ -154,6 +167,26 @@ const Catalogo = () => {
         <h1 className="catalogo-titulo mb-2">Nuestro Catálogo</h1>
         <p className="text-muted mb-0">Elegí tu favorito y añadilo al carrito.</p>
       </div>
+
+      {/* Aviso para el visitante sin sesión. Va arriba de todo, antes de los
+          filtros: la cuenta se pide recién al confirmar, pero conviene que sepa
+          desde el principio que va a necesitarla. Se usa `light` y no `warning`
+          (como el aviso del carrito) para no competir con los productos: acá es
+          información, no un paso obligatorio. */}
+      {!isAuthenticated && (
+        <Alert variant="light" className="catalogo-aviso-invitado text-center mb-4">
+          Estás viendo el catálogo sin iniciar sesión. Podés armar tu pedido
+          libremente; para confirmarlo vas a necesitar{' '}
+          <Link to="/login" state={{ from: origen }} className="alert-link">
+            iniciar sesión
+          </Link>{' '}
+          o{' '}
+          <Link to="/registro" state={{ from: origen }} className="alert-link">
+            registrarte
+          </Link>
+          .
+        </Alert>
+      )}
 
       {/* Filtros / categorías en forma de pills.
           Van en un `role="group"` con etiqueta, y cada pill lleva `aria-pressed`

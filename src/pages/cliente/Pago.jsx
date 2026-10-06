@@ -207,11 +207,12 @@ const Pago = () => {
             promociones={pedido.promociones}
           />
 
+          {/* Un solo botón. Antes coexistían "Volver al carrito" (navegación pura,
+              que dejaba el pedido PENDIENTE reservando el stock) y "Cancelar
+              pedido" (que lo cancelaba y repone el stock): los dos llevaban al
+              mismo lado y el cliente no tenía forma de saber que no eran lo
+              mismo. Ahora el botón dice lo que hace y el stock vuelve siempre. */}
           <div className="text-center mt-4 d-flex justify-content-center gap-2 flex-wrap">
-            <Button as={Link} to="/cliente/carrito" variant="outline-secondary" className="rounded-pill px-4">
-              <FaArrowLeft aria-hidden="true" />
-              Volver al carrito
-            </Button>
             <Button
               variant="outline-danger"
               className="rounded-pill px-4"
@@ -219,15 +220,16 @@ const Pago = () => {
               disabled={paginando}
             >
               <FaTimesCircle aria-hidden="true" />
-              Cancelar pedido
+              Cancelar y volver al carrito
             </Button>
           </div>
 
           <ConfirmarModal
             mostrar={mostrarConfirmarCancelar}
             titulo="Cancelar pedido"
-            mensaje="¿Seguro que querés cancelar el pedido?"
-            textoConfirmar="Sí, cancelar pedido"
+            mensaje="Se cancela el pedido y las unidades vuelven al stock. Vas a volver al carrito con los mismos productos, por si querés rehacerlo."
+            textoConfirmar="Sí, cancelar"
+            textoCancelar="Quedarme con el pedido"
             cargando={paginando}
             onConfirmar={handleCancelarPedido}
             onCancelar={() => setMostrarConfirmarCancelar(false)}

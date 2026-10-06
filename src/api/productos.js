@@ -33,6 +33,22 @@ export const obtenerProductoPorId = async (id) => {
 };
 
 /**
+ * Obtiene los productos más vendidos del día, para la portada.
+ *
+ * El backend lo arma con las ventas reales del día (excluyendo pedidos
+ * cancelados) y, si no llegan a 3, completa con los productos más caros. Cada
+ * producto viene con `vendidos`, que es 0 para los completados.
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ */
+export const obtenerMasVendidos = async () => {
+  const result = await apiGet('/productos/mas-vendidos');
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
  * Crea un nuevo producto.
  * @param {object} nuevoProducto - { nombre, precio, categoriaId, tipo, imagen?, descripcion? }.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}

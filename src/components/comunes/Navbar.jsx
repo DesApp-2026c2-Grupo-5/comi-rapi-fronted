@@ -3,11 +3,12 @@
  * Contenido: Navbar naranja con marca Comi-Rapi y enlaces con íconos (react-icons),
  *            resaltado de la página activa y animación al hover.
  *            El acceso al perfil del cliente es el avatar con su nombre, junto al
- *            botón de cerrar sesión.
+ *            botón de cerrar sesión. Para el invitado (sin sesión) el mismo lugar
+ *            lo ocupan los botones de iniciar sesión y registrarse.
  * Dependencias: react-bootstrap (Navbar, Nav, Container, Button, Dropdown),
  *               react-router-dom (NavLink, useLocation, useNavigate), react-icons/fa,
  *               useAuth hook, useIndicadoresNav, Avatar, Navbar.css.
- * Uso: <Navbar /> - Se renderiza en todas las páginas autenticadas.
+ * Uso: <Navbar /> - Se renderiza en todas las páginas.
  */
 
 import { useState } from 'react';
@@ -25,14 +26,16 @@ import {
   FaSlidersH,
   FaTags,
   FaPercent,
+  FaUsers,
   FaUserCircle,
   FaSignOutAlt,
+  FaSignInAlt,
   FaChevronDown,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import useIndicadoresNav from '../../hooks/useIndicadoresNav';
 import { ROLES } from '../../utils/constants';
-import { esRutaDeAlguna } from '../../utils/rutas';
+import { esRutaDeAlguna, rutaActual } from '../../utils/rutas';
 import { nombreCompleto } from '../../utils/formatters';
 import Avatar from './Avatar';
 import './Navbar.css';
@@ -57,6 +60,11 @@ const enlacesCliente = [
     badge: 'pedidos',
   },
 ];
+
+/* Menú del invitado: el mismo camino de compra, sin "Mis Pedidos". Ver el
+   catálogo y armar el carrito no piden cuenta; el historial de pedidos sí, así
+   que ese enlace no aparece hasta que hay sesión. */
+const enlacesInvitado = enlacesCliente.filter((enlace) => enlace.to !== '/cliente/mis-pedidos');
 
 /* Menú del administrador.
  *
@@ -107,10 +115,11 @@ const menuAdmin = [
   },
   { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore, prefijo: '/admin/sucursal' },
   { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
+  { to: '/admin/clientes', etiqueta: 'Clientes', icono: FaUsers, prefijo: '/admin/clientes' },
 ];
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, hydrated } = useAuth();
   // Los contadores de badge y sus pulsos viven en un hook aparte porque la barra
   // inferior muestra los mismos números: si cada componente los calculara por su
   // cuenta, dejarían de coincidir en algún momento.
@@ -122,7 +131,8 @@ const Navbar = () => {
     pulsoPedidoBadge,
   } = useIndicadoresNav();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   // Estado del desplegable de "Catálogo". Se maneja acá en vez de dejarlo interno
   // para poder cerrarlo también al navegar: si no, el menú queda colgando
   // abierto sobre la página nueva.
@@ -133,17 +143,44 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  if (!isAuthenticated) return null;
+  /* Sin saber si hay sesión no se puede elegir la zona de la derecha: se
+     dibujaría el botón de acceso y un instante después el avatar. Se espera a
+     que /auth/me responda (lo hace AuthContext al montar) y recién ahí se
+     pinta la barra. */
+  if (!hydrated) return null;
 
   const isCliente = user?.rol === ROLES.CLIENTE;
   const isAdmin = user?.rol === ROLES.ADMIN;
-  const destinoInicio = isCliente ? '/cliente/inicio' : '/admin/dashboard';
-  const menu = isCliente ? enlacesCliente : isAdmin ? menuAdmin : [];
+  const destinoInicio = isAdmin ? '/admin/dashboard' : '/cliente/inicio';
+  const menu = isAdmin ? menuAdmin : isCliente ? enlacesCliente : enlacesInvitado;
   const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
+
+  /* Pantalla de origen para los botones de acceso: al entrar se vuelve a donde
+     estaba el visitante, y si llegó al login desde el carrito vuelve al carrito
+     con lo que había elegido. */
+  const origen = rutaActual(location);
 
   const cerrarNavegacion = () => {
     setGrupoAbierto(false);
   };
+
+  /* Botón de acceso del invitado. El color lleno marca la acción que la app
+     pide (entrar); "Regístrate" queda al contorno, como el cierre de sesión, para
+     que no compitan con el primero. Se usa NavLink y no Button para que sea un
+     enlace de verdad: así se abre con ctrl+clic y queda en el historial.
+     La copia móvil lleva aria-label porque abajo de 576px el texto se oculta y
+     sin él el enlace se quedaría sin nombre accesible. */
+  const accesoInvitado = (movil) => (
+    <NavLink
+      to="/login"
+      state={{ from: origen }}
+      aria-label={movil ? 'Iniciar sesión' : undefined}
+      className={`btn btn-acceso-comirapi${movil ? ' btn-acceso-movil' : ''}`}
+    >
+      <FaSignInAlt aria-hidden="true" />
+      <span className={movil ? 'btn-acceso-texto' : undefined}>Iniciar sesión</span>
+    </NavLink>
+  );
 
   /* El desplegable se marca activo si la ruta actual es una de sus secciones o
      una de sus subpantallas de alta/edición: dentro de /admin/producto/editar/3
@@ -227,16 +264,23 @@ const Navbar = () => {
             />
           </NavLink>
         )}
-        <Button
-          variant="outline-dark"
-          size="sm"
-          className="btn-logout-comirapi btn-logout-movil"
-          aria-label="Cerrar sesión"
-          title="Cerrar sesión"
-          onClick={handleLogout}
-        >
-          <FaSignOutAlt aria-hidden="true" />
-        </Button>
+        {/* El invitado no tiene perfil ni sesión que cerrar, así que en su lugar
+            va el acceso. Va en la fila superior (no dentro del colapsable) por lo
+            mismo que el avatar: en móvil el colapsable está plegado y sería
+            inalcanzable. */}
+        {!isAuthenticated && accesoInvitado(true)}
+        {isAuthenticated && (
+          <Button
+            variant="outline-dark"
+            size="sm"
+            className="btn-logout-comirapi btn-logout-movil"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+            onClick={handleLogout}
+          >
+            <FaSignOutAlt aria-hidden="true" />
+          </Button>
+        )}
         <BSNavbar.Collapse id="main-navbar" className="d-none d-lg-flex">
           <Nav className="me-auto align-items-center gap-lg-1">
             {menu.map((item) => {
@@ -318,7 +362,21 @@ const Navbar = () => {
             })}
           </Nav>
           <Nav className="navbar-acciones">
-            {isCliente ? (
+            {!isAuthenticated ? (
+              /* El invitado llega acá desde el colapsable. Se le ofrece entrar y,
+                 si no tiene cuenta, crearla: es el mismo par de acciones que la
+                 app pide al final del camino de compra. */
+              <>
+                {accesoInvitado(false)}
+                <NavLink
+                  to="/registro"
+                  state={{ from: origen }}
+                  className="btn btn-acceso-secundario"
+                >
+                  Registrate
+                </NavLink>
+              </>
+            ) : isCliente ? (
               /* Acceso al perfil con avatar + nombre. Se oculta en móvil porque
                  ahí el mismo destino ya está en la fila superior
                  (navbar-perfil-movil): dos accesos idénticos en pantalla
@@ -346,17 +404,19 @@ const Navbar = () => {
                 {user?.nombre}
               </span>
             )}
-            <Button
-              variant="outline-dark"
-              size="sm"
-              className="btn-logout-comirapi"
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
-              onClick={handleLogout}
-            >
-              <FaSignOutAlt aria-hidden="true" />
-              <span className="btn-logout-texto">Cerrar sesión</span>
-            </Button>
+            {isAuthenticated && (
+              <Button
+                variant="outline-dark"
+                size="sm"
+                className="btn-logout-comirapi"
+                aria-label="Cerrar sesión"
+                title="Cerrar sesión"
+                onClick={handleLogout}
+              >
+                <FaSignOutAlt aria-hidden="true" />
+                <span className="btn-logout-texto">Cerrar sesión</span>
+              </Button>
+            )}
           </Nav>
         </BSNavbar.Collapse>
       </Container>

@@ -1,9 +1,9 @@
 /**
- * Propósito: Página de inicio del cliente con hero, categorías, favoritos y envío a domicilio.
+ * Propósito: Página de inicio del cliente con hero, categorías, más vendidos y envío a domicilio.
  * Contenido: Hero naranja (COMI + hamburguesa flotante + RAPI), 5 categorías circulares,
- *            favoritos de la semana, sección de envío a domicilio.
+ *            más vendidos del día, sección de envío a domicilio.
  * Dependencias: react-bootstrap (Container, Row, Col, Button), react-router-dom (Link),
- *               seedData.js, ProductoCard, Inicio.css.
+ *               api/categorias, api/productos, ProductoCard, Inicio.css.
  * Uso: Ruta "/cliente/inicio" → <Inicio />
  *
  * CAMBIOS REALIZADOS:
@@ -11,8 +11,9 @@
  *     (no se superponen porque cada uno ocupa una columna propia en filas del Row).
  *     Badge de Google Play abajo a la izquierda y botón ORDENAR abajo a la derecha.
  *  2. Categorías: 6 cards circulares (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
- *  3. Favoritos de la semana: 3 products reutilizando <ProductoCard /> para
- *     mantener un estilo idéntico con el catálogo.
+ *  3. Más vendidos de hoy: los 3 productos más vendidos del día según
+ *     GET /api/productos/mas-vendidos, reutilizando <ProductoCard /> para mantener
+ *     un estilo idéntico con el catálogo. Antes eran 3 ids fijos.
  *  4. Envío a domicilio: fondo naranja, título, subtítulo y botón "PIDE AHORA" con bicicleta.
  *  5. Footer oscuro: ya lo provee el componente global <Footer /> (bg-dark) en App.jsx.
  *  Extra: toda la customización visual vive en ./Inicio.css.
@@ -22,20 +23,20 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { FaShoppingCart } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
-import { obtenerProductos } from '../../api/productos';
 import { obtenerCategorias } from '../../api/categorias';
+import { obtenerMasVendidos } from '../../api/productos';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Inicio.css';
 
 const Inicio = () => {
   const [categorias, setCategorias] = useState([]);
-  const [favoritos, setFavoritos] = useState([]);
+  const [masVendidos, setMasVendidos] = useState([]);
 
   useEffect(() => {
     const cargar = async () => {
-      const [resCategorias, resProductos] = await Promise.all([
+      const [resCategorias, resMasVendidos] = await Promise.all([
         obtenerCategorias(),
-        obtenerProductos(),
+        obtenerMasVendidos(),
       ]);
       if (resCategorias.success) {
         setCategorias(
@@ -48,8 +49,11 @@ const Inicio = () => {
           }))
         );
       }
-      if (resProductos.success) {
-        setFavoritos(resProductos.data.filter((p) => [1, 3, 4].includes(p.id)));
+      // Se muestran los más vendidos del día, no una lista fija: el backend los
+      // calcula con las ventas reales y, si hoy no llegan a 3, completa con los
+      // más caros para que la sección nunca quede vacía.
+      if (resMasVendidos.success) {
+        setMasVendidos(resMasVendidos.data);
       }
     };
     cargar();
@@ -195,14 +199,14 @@ const Inicio = () => {
         </Container>
       </section>
 
-      {/* ===================== 3. FAVORITOS DE LA SEMANA ===================== */}
+      {/* ============ 3. MÁS VENDIDOS HOY ============ */}
       <section className="pb-5">
         <Container>
-          <h2 className="seccion-titulo mb-4">FAVORITOS DE LA SEMANA</h2>
+          <h2 className="seccion-titulo mb-4">MÁS VENDIDOS HOY</h2>
           <Row className="justify-content-center">
-            {favoritos.map((producto) => (
+            {masVendidos.map((producto, index) => (
               <Col key={producto.id} md={4} className="mb-4">
-                <ProductoCard producto={producto} />
+                <ProductoCard producto={producto} rank={index + 1} />
               </Col>
             ))}
           </Row>

@@ -1,9 +1,11 @@
 /**
- * Propósito: Regla única para decidir si la ruta actual pertenece a una sección
- *            del menú, contando las pantallas de alta y edición de esa sección.
- * Contenido: esRutaDeSeccion y esRutaDeAlguna.
+ * Propósito: Reglas de rutas: a qué sección pertenece la pantalla actual,
+ *            cómo se arma la ruta de origen para volver a ella y cómo se valida
+ *            ese destino antes de navegar.
+ * Contenido: esRutaDeSeccion, esRutaDeAlguna, rutaActual, esDestinoSeguro y
+ *            esRutaDeAdmin.
  * Dependencias: Ninguna.
- * Uso: import { esRutaDeAlguna } from '../utils/rutas';
+ * Uso: import { esRutaDeAlguna, rutaActual, esDestinoSeguro, esRutaDeAdmin } from '../utils/rutas';
  *
  * El problema que resuelve: la lista de una sección está en plural y sus
  * formularios en singular — /admin/productos para el listado y
@@ -39,3 +41,47 @@ export const esRutaDeSeccion = (seccion, ruta) => {
  */
 export const esRutaDeAlguna = (secciones, ruta) =>
   secciones.some((seccion) => esRutaDeSeccion(seccion, ruta));
+
+/**
+ * Ruta de origen con su query, tal como se la pasa al login en `state.from`.
+ * Se incluye el query porque los filtros del catálogo se guardan en la URL: al
+ * volver, el invitado tiene que encontrar el carrito y no la lista completa.
+ * @param {object} location Location de react-router.
+ * @returns {string} Ruta interna, o '/' si no se pasa location.
+ */
+export const rutaActual = (location) =>
+  location ? `${location.pathname || ''}${location.search || ''}` || '/' : '/';
+
+/**
+ * Indica si un destino guardado en `state.from` es una ruta interna válida.
+ *
+ * El valor viene de la URL (se puede abrir /login?o sea /login con state a
+ * mano), y `navigate()` lo usaría tal cual: sin esta comprobación, un
+ * `from` con "//ejemplo.com" mandaría al usuario fuera de la app al entrar.
+ * Se acepta sólo una ruta interna de un solo nivel ("/cliente/carrito?x=1").
+ * @param {*} destino Valor a validar.
+ * @returns {boolean} true si se puede navegar con seguridad.
+ */
+export const esDestinoSeguro = (destino) =>
+  typeof destino === 'string' &&
+  destino.startsWith('/') &&
+  !destino.startsWith('//') &&
+  !destino.includes('\\');
+
+/**
+ * Indica si la ruta es del panel de administración.
+ *
+ * El pie de página con horarios y redes sociales es de la tienda, no del panel:
+ * dentro de /admin queda abajo de tablas largas y no aporta nada. Se decide
+ * por ruta y no por rol para no atar el shell a un permiso: alcanza con que la
+ * pantalla esté bajo /admin.
+ *
+ * El corte de segmento es por lo mismo que en `esRutaDeSeccion`: sin el "/"
+ * final, "/administracion" contaría como admin.
+ *
+ * @param {string} ruta Ruta actual (pathname), sin query.
+ * @returns {boolean} true si la ruta es del panel.
+ */
+export const esRutaDeAdmin = (ruta) =>
+  typeof ruta === 'string' &&
+  (ruta === '/admin' || ruta.startsWith('/admin/'));

@@ -321,6 +321,61 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
 
+/* Acceso del invitado: "Iniciar sesión" y "Regístrate" ocupan el lugar del
+   avatar y del cierre de sesión, así la barra no cambia de ancho al entrar.
+   Comparten forma y transiciones con el cierre de sesión; lo que cambia es el
+   relleno, para que la acción que la app pide quede por encima de la
+   alternativa. */
+.btn-acceso-comirapi,
+.btn-acceso-secundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.9rem;
+  border-radius: 50px;
+  border: 2px solid #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.btn-acceso-comirapi:focus-visible,
+.btn-acceso-secundario:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.btn-acceso-comirapi {
+  color: #b55d00;
+  background: #fff;
+}
+.btn-acceso-comirapi:hover,
+.btn-acceso-comirapi:focus-visible {
+  color: #fff !important;
+  background: transparent;
+  border-color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* El secundario es el mismo contorno del cierre de sesión: menos peso visual
+   para la alternativa. */
+.btn-acceso-secundario {
+  color: #fff;
+  background: transparent;
+}
+.btn-acceso-secundario:hover,
+.btn-acceso-secundario:focus-visible {
+  background: #fff;
+  color: #b55d00 !important;
+  border-color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
 /* ============ Responsive de la zona del usuario ============ */
 /* Avatar del cliente en la fila superior: da acceso al perfil sin abrir nada.
     Es el mismo elemento que la versión con nombre, pero se muestra fuera del
@@ -365,10 +420,23 @@
   .btn-logout-movil {
     display: inline-flex;
   }
+
+  /* El acceso del invitado, igual que el cierre de sesión, sale en la fila
+     superior porque el colapsable está plegado acá. `margin-left: auto` lo
+     pega a la derecha: el orden del DOM es marca → acceso, pero sin el margen
+     quedaría en el medio de la fila. */
+  .btn-acceso-movil {
+    display: inline-flex;
+    margin-left: auto;
+  }
 }
 
 @media (min-width: 992px) {
   .btn-logout-movil {
+    display: none !important;
+  }
+
+  .btn-acceso-movil {
     display: none !important;
   }
 }
@@ -377,6 +445,13 @@
    mantiene el nombre accesible del botón). */
 @media (max-width: 575.98px) {
   .btn-logout-texto {
+    display: none;
+  }
+
+  /* El acceso también: con el ícono alcanza, y el aria-label del enlace
+     conserva el nombre accesible (un texto con display:none deja el botón sin
+     nombre para quien navega con lector de pantalla). */
+  .btn-acceso-texto {
     display: none;
   }
 }

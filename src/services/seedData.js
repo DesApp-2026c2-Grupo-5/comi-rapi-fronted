@@ -10,7 +10,7 @@ export const productosMock = [
   {
     id: 1,
     nombre: 'Hamburguesa Clásica',
-    precio: 1500,
+    precio: 9800,
     categoria: 'Hamburguesas',
     imagen: 'https://via.placeholder.com/300x200?text=Hamburguesa+Clásica',
     descripcion: 'Deliciosa hamburguesa con lechuga, tomate y queso.',
@@ -18,7 +18,7 @@ export const productosMock = [
   {
     id: 2,
     nombre: 'Hamburguesa Doble',
-    precio: 2200,
+    precio: 12900,
     categoria: 'Hamburguesas',
     imagen: 'https://via.placeholder.com/300x200?text=Hamburguesa+Doble',
     descripcion: 'Doble carne, doble queso, doble sabor.',
@@ -26,7 +26,7 @@ export const productosMock = [
   {
     id: 3,
     nombre: 'Pizza Muzzarella',
-    precio: 2500,
+    precio: 16900,
     categoria: 'Pizzas',
     imagen: 'https://via.placeholder.com/300x200?text=Pizza+Muzzarella',
     descripcion: 'Pizza clásica con abundante muzzarella.',
@@ -34,7 +34,7 @@ export const productosMock = [
   {
     id: 4,
     nombre: 'Pizza Napolitana',
-    precio: 2800,
+    precio: 19500,
     categoria: 'Pizzas',
     imagen: 'https://via.placeholder.com/300x200?text=Pizza+Napolitana',
     descripcion: 'Con tomate, muzzarella y albahaca fresca.',
@@ -42,7 +42,7 @@ export const productosMock = [
   {
     id: 5,
     nombre: 'Coca-Cola 500ml',
-    precio: 800,
+    precio: 3600,
     categoria: 'Bebidas',
     imagen: 'https://via.placeholder.com/300x200?text=Coca-Cola',
     descripcion: 'Coca-Cola bien fría de 500ml.',
@@ -50,7 +50,7 @@ export const productosMock = [
   {
     id: 6,
     nombre: 'Limonada Natural',
-    precio: 600,
+    precio: 3400,
     categoria: 'Bebidas',
     imagen: 'https://via.placeholder.com/300x200?text=Limonada',
     descripcion: 'Limonada natural recién preparada.',
@@ -58,7 +58,7 @@ export const productosMock = [
   {
     id: 7,
     nombre: 'Combo Doble',
-    precio: 3200,
+    precio: 21900,
     categoria: 'Combos',
     imagen: 'https://via.placeholder.com/300x200?text=Combo+Doble',
     descripcion: 'Hamburguesa doble, papas fritas y bebida incluida.',
@@ -66,7 +66,7 @@ export const productosMock = [
   {
     id: 8,
     nombre: 'Papas Fritas Grandes',
-    precio: 900,
+    precio: 6900,
     categoria: 'Papas',
     imagen: 'https://via.placeholder.com/300x200?text=Papas+Fritas',
     descripcion: 'Porción grande de papas crujientes con sal.',
@@ -74,7 +74,7 @@ export const productosMock = [
   {
     id: 9,
     nombre: 'Papas Cheddar',
-    precio: 1200,
+    precio: 8700,
     categoria: 'Papas',
     imagen: 'https://via.placeholder.com/300x200?text=Papas+Cheddar',
     descripcion: 'Papas con abundante cheddar fundido y cebollín.',
@@ -82,7 +82,7 @@ export const productosMock = [
   {
     id: 10,
     nombre: 'Lava Cake',
-    precio: 1100,
+    precio: 7400,
     categoria: 'Postres',
     imagen: 'https://via.placeholder.com/300x200?text=Lava+Cake',
     descripcion: 'Bizcocho de chocolate con centro fundido.',
@@ -90,7 +90,7 @@ export const productosMock = [
   {
     id: 11,
     nombre: 'Cheesecake',
-    precio: 1300,
+    precio: 7900,
     categoria: 'Postres',
     imagen: 'https://via.placeholder.com/300x200?text=Cheesecake',
     descripcion: 'Cheesecake cremoso con salsa de frutos rojos.',
@@ -145,8 +145,8 @@ export const pedidosMock = [
     id: 1,
     cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Hamburguesa', cantidad: 2, precio: 1500 },
-      { nombre: 'Papas fritas', cantidad: 1, precio: 800 },
+      { nombre: 'Hamburguesa', cantidad: 2, precio: 9800 },
+      { nombre: 'Papas fritas', cantidad: 1, precio: 3600 },
     ],
     total: 3800,
     sucursal: { id: 1, nombre: 'Sucursal Centro', direccion: 'Av. Principal 123' },
@@ -165,7 +165,7 @@ export const pedidosMock = [
     id: 2,
     cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Pizza', cantidad: 1, precio: 2500 },
+      { nombre: 'Pizza', cantidad: 1, precio: 16900 },
     ],
     total: 2500,
     sucursal: { id: 2, nombre: 'Sucursal Norte', direccion: 'Calle Norte 456' },
@@ -183,7 +183,7 @@ export const pedidosMock = [
     id: 3,
     cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Combo', cantidad: 1, precio: 3200 },
+      { nombre: 'Combo', cantidad: 1, precio: 21900 },
     ],
     total: 3200,
     sucursal: { id: 1, nombre: 'Sucursal Centro', direccion: 'Av. Principal 123' },
@@ -197,8 +197,8 @@ export const pedidosMock = [
     id: 4,
     cliente: 'cliente@test.com',
     productos: [
-      { nombre: 'Pizza Muzzarella', cantidad: 1, precio: 2500 },
-      { nombre: 'Papas Fritas Grandes', cantidad: 2, precio: 900 },
+      { nombre: 'Pizza Muzzarella', cantidad: 1, precio: 16900 },
+      { nombre: 'Papas Fritas Grandes', cantidad: 2, precio: 6900 },
     ],
     total: 4300,
     sucursal: { id: 3, nombre: 'Sucursal Sur', direccion: 'Av. Sur 789' },
@@ -224,26 +224,26 @@ export const usuariosMock = [
 // - acompanar: productoReferenciaId referencia a otro producto (excluye el propio)
 export const personalizacionElementosMock = [
   // Hamburguesa Clásica id:1
-  { id: 101, productoId: 1, tipo: 'extra', nombre: 'Bacon', precio: 2700, productoReferenciaId: null, activo: true },
-  { id: 102, productoId: 1, tipo: 'extra', nombre: 'Queso Cheddar en fetas', precio: 2000, productoReferenciaId: null, activo: true },
-  { id: 103, productoId: 1, tipo: 'extra', nombre: 'Tomate', precio: 2000, productoReferenciaId: null, activo: true },
+  { id: 101, productoId: 1, tipo: 'extra', nombre: 'Bacon', precio: 3200, productoReferenciaId: null, activo: true },
+  { id: 102, productoId: 1, tipo: 'extra', nombre: 'Queso Cheddar en fetas', precio: 2400, productoReferenciaId: null, activo: true },
+  { id: 103, productoId: 1, tipo: 'extra', nombre: 'Tomate', precio: 2400, productoReferenciaId: null, activo: true },
   { id: 104, productoId: 1, tipo: 'personalizar', nombre: 'Pan XL', precio: null, productoReferenciaId: null, activo: true },
   { id: 105, productoId: 1, tipo: 'personalizar', nombre: 'Queso Cheddar en fetas', precio: null, productoReferenciaId: null, activo: true },
   { id: 106, productoId: 1, tipo: 'personalizar', nombre: 'Bacon', precio: null, productoReferenciaId: null, activo: true },
-  { id: 107, productoId: 1, tipo: 'acompanar', nombre: 'Papas Cheddar', precio: 1200, productoReferenciaId: 9, activo: true },
-  { id: 108, productoId: 1, tipo: 'acompanar', nombre: 'Coca-Cola 500ml', precio: 800, productoReferenciaId: 5, activo: true },
-  { id: 109, productoId: 1, tipo: 'acompanar', nombre: 'Pileta de Cheddar', precio: 4000, productoReferenciaId: 9, activo: false },
+  { id: 107, productoId: 1, tipo: 'acompanar', nombre: 'Papas Cheddar', precio: 8700, productoReferenciaId: 9, activo: true },
+  { id: 108, productoId: 1, tipo: 'acompanar', nombre: 'Coca-Cola 500ml', precio: 3600, productoReferenciaId: 5, activo: true },
+  { id: 109, productoId: 1, tipo: 'acompanar', nombre: 'Pileta de Cheddar', precio: 5400, productoReferenciaId: 9, activo: false },
   { id: 110, productoId: 1, tipo: 'condimento', nombre: 'Sobre de Ketchup', precio: null, productoReferenciaId: null, activo: true },
   { id: 111, productoId: 1, tipo: 'condimento', nombre: 'Sobre de Mayonesa', precio: null, productoReferenciaId: null, activo: true },
   // Hamburguesa Doble id:2
-  { id: 201, productoId: 2, tipo: 'extra', nombre: 'Bacon', precio: 2700, productoReferenciaId: null, activo: true },
+  { id: 201, productoId: 2, tipo: 'extra', nombre: 'Bacon', precio: 3200, productoReferenciaId: null, activo: true },
   { id: 202, productoId: 2, tipo: 'personalizar', nombre: 'Lechuga', precio: null, productoReferenciaId: null, activo: true },
   // Pizza Muzzarella id:3
-  { id: 301, productoId: 3, tipo: 'extra', nombre: 'Muzzarella extra', precio: 1800, productoReferenciaId: null, activo: true },
-  { id: 302, productoId: 3, tipo: 'extra', nombre: 'Jamón', precio: 2200, productoReferenciaId: null, activo: true },
+  { id: 301, productoId: 3, tipo: 'extra', nombre: 'Muzzarella extra', precio: 2200, productoReferenciaId: null, activo: true },
+  { id: 302, productoId: 3, tipo: 'extra', nombre: 'Jamón', precio: 2800, productoReferenciaId: null, activo: true },
   { id: 303, productoId: 3, tipo: 'personalizar', nombre: 'Albahaca', precio: null, productoReferenciaId: null, activo: true },
-  { id: 304, productoId: 3, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 900, productoReferenciaId: 8, activo: true },
+  { id: 304, productoId: 3, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 6900, productoReferenciaId: 8, activo: true },
   { id: 305, productoId: 3, tipo: 'condimento', nombre: 'Sobre de Orégano', precio: null, productoReferenciaId: null, activo: true },
   // Combo Doble id:7
-  { id: 701, productoId: 7, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 900, productoReferenciaId: 8, activo: true },
+  { id: 701, productoId: 7, tipo: 'acompanar', nombre: 'Papas Fritas Grandes', precio: 6900, productoReferenciaId: 8, activo: true },
 ];
