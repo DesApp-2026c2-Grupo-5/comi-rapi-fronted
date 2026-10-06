@@ -11,7 +11,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Card, Table, Badge, Button, Row, Col } from 'react-bootstrap';
-import { FaArrowLeft, FaRedo } from 'react-icons/fa';
+import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
@@ -59,6 +59,13 @@ const DetallePedido = () => {
   const esFinal =
     pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||
     pedido.estado === ESTADOS_PEDIDO.CANCELADO;
+  // ETA: visible desde confirmado hasta en_camino (no en finales, no antes
+  // de pagar). Solo si el backend pudo calcularlo (ORS puede fallar → null).
+  const mostrarEta =
+    !esFinal &&
+    pedido.etaMinutos !== null &&
+    pedido.etaMinutos !== undefined &&
+    pedido.estado !== ESTADOS_PEDIDO.PENDIENTE;
 
   return (
     <Container className="py-5">
@@ -70,13 +77,21 @@ const DetallePedido = () => {
       <Card className="detalle-card">
         <Card.Header className="detalle-card-header d-flex justify-content-between align-items-center">
           <h1 className="h4 mb-0">Pedido #{pedido.id}</h1>
-          <Badge
-            bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
-            className="badge-estado fs-6 d-inline-flex align-items-center gap-1"
-          >
-            <IconoEstado estado={pedido.estado} size={16} />
-            {estadoLabel}
-          </Badge>
+          <div className="d-flex align-items-center gap-2">
+            {mostrarEta && (
+              <Badge bg="info" className="fs-6">
+                <FaClock className="me-1" aria-hidden="true" size={12} />
+                ~{pedido.etaMinutos} min
+              </Badge>
+            )}
+            <Badge
+              bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
+              className="badge-estado fs-6 d-inline-flex align-items-center gap-1"
+            >
+              <IconoEstado estado={pedido.estado} size={16} />
+              {estadoLabel}
+            </Badge>
+          </div>
         </Card.Header>
 
         <Card.Body className="p-4">

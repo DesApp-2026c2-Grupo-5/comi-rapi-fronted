@@ -72,6 +72,11 @@ const ConfirmacionPedido = () => {
               <p className="text-muted mb-0">
                 <strong>Fecha:</strong> {formatDate(pedidoActual.fecha)}
               </p>
+              {pedidoActual.etaMinutos !== null && pedidoActual.etaMinutos !== undefined && (
+                <p className="text-muted mb-0">
+                  <strong>Tiempo estimado de entrega:</strong> ~{pedidoActual.etaMinutos} min
+                </p>
+              )}
               <p className="mb-0">
                 <strong>Estado:</strong>{' '}
                 <Badge bg="success">{estadoLabel}</Badge>

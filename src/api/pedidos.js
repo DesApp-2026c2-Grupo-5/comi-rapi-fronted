@@ -58,6 +58,8 @@ export const mapearPedido = (p) => {
     estado,
     sucursal: p.Sucursal || p.sucursal || (p.sucursalId ? { id: p.sucursalId } : undefined),
     fecha: p.fechaHora || p.fecha,
+    etaMinutos: p.etaMinutos !== undefined ? p.etaMinutos : null,
+    etaCalculadoEn: p.etaCalculadoEn || null,
     direccion: p.calle
       ? {
           direccion: [p.calle, p.altura].filter(Boolean).join(' '),

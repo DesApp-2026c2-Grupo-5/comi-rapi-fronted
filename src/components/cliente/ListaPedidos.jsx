@@ -7,7 +7,7 @@
 
 import { Link } from 'react-router-dom';
 import { Card, Badge, Button } from 'react-bootstrap';
-import { FaEye, FaTimesCircle, FaRedo } from 'react-icons/fa';
+import { FaEye, FaTimesCircle, FaRedo, FaClock } from 'react-icons/fa';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
@@ -42,16 +42,24 @@ const ListaPedidos = ({
         ? formatDate(registroCancelacion.fecha)
         : null;
       return (
-        <Card key={pedido.id} className="mb-3 shadow-sm">
+          <Card key={pedido.id} className="mb-3 shadow-sm">
           <Card.Header className="d-flex justify-content-between align-items-center">
             <strong>Pedido #{pedido.id}</strong>
-            <Badge
-              bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
-              className="d-inline-flex align-items-center gap-1"
-            >
-              <IconoEstado estado={pedido.estado} size={15} />
-              {estadoLabel}
-            </Badge>
+            <div className="d-flex align-items-center gap-2">
+              {!esFinal && pedido.etaMinutos !== null && pedido.etaMinutos !== undefined && (
+                <Badge bg="info">
+                  <FaClock className="me-1" aria-hidden="true" size={11} />
+                  ~{pedido.etaMinutos} min
+                </Badge>
+              )}
+              <Badge
+                bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
+                className="d-inline-flex align-items-center gap-1"
+              >
+                <IconoEstado estado={pedido.estado} size={15} />
+                {estadoLabel}
+              </Badge>
+            </div>
           </Card.Header>
           <Card.Body>
             <p className="mb-1"><strong>Fecha:</strong> {formatDate(pedido.fecha)}</p>
