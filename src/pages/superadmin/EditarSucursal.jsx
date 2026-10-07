@@ -4,10 +4,10 @@
  *            precarga los datos de la sucursal a editar y delega en el contexto.
  * Dependencias: react-bootstrap (Container, Spinner, Button), react-router-dom
  *               (useParams, Link, useNavigate), FormularioSucursal, context/SucursalContext (useSucursal).
- * Uso: Ruta "/admin/sucursal/nuevo" o "/admin/sucursal/editar/:id" → <EditarSucursal />
+ * Uso: Ruta "/superadmin/sucursal/nuevo" o "/superadmin/sucursal/editar/:id" → <EditarSucursal />
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Spinner, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -59,7 +59,7 @@ const EditarSucursal = () => {
         'success'
       );
     }
-    navigate('/admin/sucursales');
+    navigate('/superadmin/sucursales');
     return { ok: true };
   };
 
@@ -75,7 +75,7 @@ const EditarSucursal = () => {
     return (
       <Container className="py-5 text-center">
         <h2>Sucursal no encontrada</h2>
-        <Link to="/admin/sucursales">
+        <Link to="/superadmin/sucursales">
           <Button variant="secondary" className="mt-3">
             <FaArrowLeft className="me-1" aria-hidden="true" />
             Volver a sucursales
@@ -87,7 +87,7 @@ const EditarSucursal = () => {
 
   return (
     <Container className="py-4">
-      <Link to="/admin/sucursales" className="text-danger text-decoration-none mb-3 d-inline-block">
+      <Link to="/superadmin/sucursales" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a sucursales
       </Link>
       <h1 className="h2 mb-4">{id ? `Editar Sucursal #${id}` : 'Nueva Sucursal'}</h1>

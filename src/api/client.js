@@ -94,10 +94,14 @@ async function ejecutar(method, path, datos) {
   }
 
   if (!res.ok) {
+    // `error` es el shape común; `message` lo usan recursos como /api/usuarios
+    // (ver swagger), así que se aceptan los dos para no mostrar "Error 400".
+    const mensaje =
+      (body && (body.error || body.message)) || `Error ${res.status}`;
     return {
       success: false,
       status: res.status,
-      error: (body && body.error) || `Error ${res.status}`,
+      error: mensaje,
       // Iteración 1-geo: el backend responde 409 con `opciones` cuando una
       // dirección coincide con varias ubicaciones (identidades territoriales
       // de Georef); el formulario las muestra para que el usuario elija.

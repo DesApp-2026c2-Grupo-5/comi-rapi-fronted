@@ -96,8 +96,8 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
   };
 
   const handleCancelar = () => {
-    if (productoId) navigate(`/admin/personalizacion?productoId=${productoId}`);
-    else navigate('/admin/personalizacion');
+    if (productoId) navigate(`/superadmin/personalizacion?productoId=${productoId}`);
+    else navigate('/superadmin/personalizacion');
   };
 
   const esAcompanar = tipo === TIPO_PERSONALIZACION.ACOMPANAR;

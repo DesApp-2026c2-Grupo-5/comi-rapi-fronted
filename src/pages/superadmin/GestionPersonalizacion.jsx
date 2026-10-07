@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { Container, Table, Button, Spinner, Badge, Form } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -9,7 +10,7 @@ import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { formatPrice } from '../../utils/formatters';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 
-const GestionPersonalizacion = () => {
+const GestionPersonalizacion = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { elementos, loading, eliminar } = usePersonalizacion();
@@ -37,10 +38,10 @@ const GestionPersonalizacion = () => {
       return;
     }
     const tipoQuery = filtroTipo !== 'todos' ? `&tipo=${filtroTipo}` : '';
-    navigate(`/admin/personalizacion/nuevo?productoId=${productoSeleccionado}${tipoQuery}`);
+    navigate(`/superadmin/personalizacion/nuevo?productoId=${productoSeleccionado}${tipoQuery}`);
   };
 
-  const handleEditar = (id) => navigate(`/admin/personalizacion/editar/${id}`);
+  const handleEditar = (id) => navigate(`/superadmin/personalizacion/editar/${id}`);
 
   const etiquetaDe = (el) =>
     el.tipo === 'acompanar' ? `→ ${el.nombre}` : el.nombre;
@@ -89,10 +90,19 @@ const GestionPersonalizacion = () => {
     <Container fluid className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 className="h2 mb-0">Gestión de Personalización</h1>
-        <Button variant="primary" onClick={handleNuevo} disabled={!productoSeleccionado}>
-          <FaPlus className="me-1" aria-hidden="true" /> Agregar elemento
-        </Button>
+        {!soloLectura && (
+          <Button variant="primary" onClick={handleNuevo} disabled={!productoSeleccionado}>
+            <FaPlus className="me-1" aria-hidden="true" /> Agregar elemento
+          </Button>
+        )}
       </div>
+
+      {soloLectura && (
+        <div className="alert alert-info" role="alert">
+          Vista de solo lectura: el CRUD de personalización lo hace el
+          SUPERADMINISTRADOR.
+        </div>
+      )}
 
       <div className="card shadow-sm p-3 mb-3" style={{ border: '2px solid #ffe9c9', borderRadius: '18px' }}>
         <div className="row g-3 align-items-end">
@@ -166,13 +176,13 @@ const GestionPersonalizacion = () => {
                     <th style={{ width: 130 }}>Tipo</th>
                     <th style={{ width: 120 }}>Precio</th>
                     <th style={{ width: 100 }}>Estado</th>
-                    <th style={{ width: 180 }}>Acciones</th>
+                    {!soloLectura && <th style={{ width: 180 }}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {elementosFiltrados.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center">
+                      <td colSpan={soloLectura ? 5 : 6} className="text-center">
                         {counts.total === 0 ? 'No hay elementos para este producto. Agregá el primero.' : 'No hay elementos de este tipo para el producto seleccionado.'}
                       </td>
                     </tr>
@@ -216,14 +226,16 @@ const GestionPersonalizacion = () => {
                         <td>
                           <Badge bg={el.activo ? 'success' : 'secondary'}>{el.activo ? 'Activo' : 'Inactivo'}</Badge>
                         </td>
-                        <td className="text-nowrap">
-                          <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(el.id)}>
-                            <FaEdit className="me-1" aria-hidden="true" /> Editar
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleEliminar(el)}>
-                            <FaTrashAlt className="me-1" aria-hidden="true" /> Eliminar
-                          </Button>
-                        </td>
+                        {!soloLectura && (
+                          <td className="text-nowrap">
+                            <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(el.id)}>
+                              <FaEdit className="me-1" aria-hidden="true" /> Editar
+                            </Button>
+                            <Button variant="danger" size="sm" onClick={() => handleEliminar(el)}>
+                              <FaTrashAlt className="me-1" aria-hidden="true" /> Eliminar
+                            </Button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -259,3 +271,7 @@ const GestionPersonalizacion = () => {
 };
 
 export default GestionPersonalizacion;
+
+GestionPersonalizacion.propTypes = {
+  soloLectura: PropTypes.bool,
+};

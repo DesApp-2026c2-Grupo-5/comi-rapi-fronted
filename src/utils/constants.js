@@ -10,6 +10,7 @@
 export const ROLES = {
   CLIENTE: 'CLIENTE',
   ADMIN: 'ADMINISTRADOR',
+  SUPERADMIN: 'SUPERADMINISTRADOR',
 };
 
 // Estados del ciclo de vida de un pedido (valores en minúscula, igual que en los datos mock).

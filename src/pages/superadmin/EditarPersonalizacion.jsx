@@ -36,14 +36,14 @@ const EditarPersonalizacion = () => {
     if (id) {
       const res = await actualizar(id, datos);
       if (res.success) {
-        navigate(`/admin/personalizacion?productoId=${datos.productoId || elemento.productoId}`);
+        navigate(`/superadmin/personalizacion?productoId=${datos.productoId || elemento.productoId}`);
       } else {
         setError(res.error || 'No se pudo actualizar.');
       }
     } else {
       const res = await agregar(datos);
       if (res.success) {
-        navigate(`/admin/personalizacion?productoId=${datos.productoId}`);
+        navigate(`/superadmin/personalizacion?productoId=${datos.productoId}`);
       } else {
         setError(res.error || 'No se pudo crear.');
       }
@@ -62,14 +62,14 @@ const EditarPersonalizacion = () => {
     return (
       <Container className="py-5 text-center">
         <h1 className="h2">Elemento no encontrado</h1>
-        <Button as={Link} to="/admin/personalizacion" variant="secondary" className="mt-3">
+        <Button as={Link} to="/superadmin/personalizacion" variant="secondary" className="mt-3">
             <FaArrowLeft className="me-1" aria-hidden="true" /> Volver
           </Button>
       </Container>
     );
   }
 
-  const volverTo = elemento ? `/admin/personalizacion?productoId=${elemento.productoId}` : productoPreseleccionado ? `/admin/personalizacion?productoId=${productoPreseleccionado}` : '/admin/personalizacion';
+  const volverTo = elemento ? `/superadmin/personalizacion?productoId=${elemento.productoId}` : productoPreseleccionado ? `/superadmin/personalizacion?productoId=${productoPreseleccionado}` : '/superadmin/personalizacion';
 
   return (
     <Container className="py-4">

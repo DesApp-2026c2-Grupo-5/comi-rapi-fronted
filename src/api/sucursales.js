@@ -10,7 +10,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from './client';
 /**
  * Obtiene sucursales del backend.
  * Por defecto devuelve solo las activas (listado público).
- * Pasando incluirInactivas=true (ADMIN autenticado) se piden todas con ?activa=false.
+ * Pasando incluirInactivas=true (ADMIN o SUPERADMIN autenticados) se piden todas con ?activa=false.
  * @param {object} [opciones]
  * @param {boolean} [opciones.incluirInactivas=false]
  * @returns {Promise<{success: boolean, data?: Array, error?: string}>}

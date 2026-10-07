@@ -1,14 +1,15 @@
 /**
- * Propósito: Tabla de promociones para gestión del admin usando Table de Bootstrap.
+ * Propósito: Tabla de promociones para la gestión del panel usando Table de Bootstrap.
  * Contenido: Componente ListaPromociones con tabla, filtros por estado/tipo,
- *            botones Editar/Reactivar/Eliminar y carga desde el backend
- *            (incluye inactivas). Muestra nº de productos por promoción.
+ *            botones Editar/Reactivar/Eliminar (CRUD del superadmin) o la vista
+ *            de solo lectura para el admin. Muestra nº de productos por promoción.
  * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert, Badge, Form),
  *               api/promociones.js, react-router-dom, react-icons.
- * Uso: <ListaPromociones /> - Se renderiza en GestionPromociones.
+ * Uso: <ListaPromociones /> (superadmin) o <ListaPromociones soloLectura /> (admin).
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
@@ -21,7 +22,7 @@ import {
 import { formatDate } from '../../utils/formatters';
 import ConfirmarModal from '../comunes/ConfirmarModal';
 
-const ListaPromociones = () => {
+const ListaPromociones = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const [promociones, setPromociones] = useState([]);
   const [conteoProductos, setConteoProductos] = useState({});
@@ -58,11 +59,11 @@ const ListaPromociones = () => {
   }, []);
 
   const handleEditar = (id) => {
-    navigate(`/admin/promocion/editar/${id}`);
+    navigate(`/superadmin/promocion/editar/${id}`);
   };
 
   const handleNuevo = () => {
-    navigate('/admin/promocion/nuevo');
+    navigate('/superadmin/promocion/nuevo');
   };
 
   const handleEliminar = (id, nombre) => setPromoAEliminar({ id, nombre });
@@ -121,11 +122,20 @@ const ListaPromociones = () => {
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 className="h2 mb-0">Gestión de Promociones</h1>
-        <Button variant="primary" onClick={handleNuevo}>
-          <FaPlus className="me-1" aria-hidden="true" />
-          Agregar nueva promoción
-        </Button>
+        {!soloLectura && (
+          <Button variant="primary" onClick={handleNuevo}>
+            <FaPlus className="me-1" aria-hidden="true" />
+            Agregar nueva promoción
+          </Button>
+        )}
       </div>
+
+      {soloLectura && (
+        <Alert variant="info" role="alert" className="mb-3">
+          Listado de solo lectura: el CRUD de promociones lo hace el
+          SUPERADMINISTRADOR.
+        </Alert>
+      )}
 
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
@@ -168,7 +178,7 @@ const ListaPromociones = () => {
               <th>Valor</th>
               <th>Vigencia</th>
               <th>Estado</th>
-              <th>Acciones</th>
+              {!soloLectura && <th>Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -201,37 +211,39 @@ const ListaPromociones = () => {
                     <Badge bg="secondary">Inactiva</Badge>
                   )}
                 </td>
-                <td data-label="Acciones">
-                  <div className="d-flex gap-1 flex-wrap">
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      onClick={() => handleEditar(promocion.id)}
-                    >
-                      <FaEdit aria-hidden="true" />
-                      Editar
-                    </Button>
-                    {promocion.activa ? (
+                {!soloLectura && (
+                  <td data-label="Acciones">
+                    <div className="d-flex gap-1 flex-wrap">
                       <Button
-                        variant="outline-danger"
+                        variant="outline-primary"
                         size="sm"
-                        onClick={() => handleEliminar(promocion.id, promocion.nombre)}
+                        onClick={() => handleEditar(promocion.id)}
                       >
-                        <FaTrashAlt aria-hidden="true" />
-                        Dar de baja
+                        <FaEdit aria-hidden="true" />
+                        Editar
                       </Button>
-                    ) : (
-                      <Button
-                        variant="outline-success"
-                        size="sm"
-                        onClick={() => handleReactivar(promocion.id, promocion.nombre)}
-                      >
-                        <FaUndoAlt aria-hidden="true" />
-                        Reactivar
-                      </Button>
-                    )}
-                  </div>
-                </td>
+                      {promocion.activa ? (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleEliminar(promocion.id, promocion.nombre)}
+                        >
+                          <FaTrashAlt aria-hidden="true" />
+                          Dar de baja
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => handleReactivar(promocion.id, promocion.nombre)}
+                        >
+                          <FaUndoAlt aria-hidden="true" />
+                          Reactivar
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -270,3 +282,7 @@ const ListaPromociones = () => {
 };
 
 export default ListaPromociones;
+
+ListaPromociones.propTypes = {
+  soloLectura: PropTypes.bool,
+};

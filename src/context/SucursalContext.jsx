@@ -1,6 +1,6 @@
 /**
  * Propósito: Contexto de sucursal para manejar la asignación de sucursal al cliente y la gestión
- *            de sucursales por parte del administrador.
+ *            de sucursales por parte del superadministrador.
  * Contenido: SucursalProvider, SucursalContext, con el estado de sucursales, sucursales cercanas,
  *            pedidos pendientes, la sucursal asignada y funciones de gestión (CRUD simulado).
  * Dependencias: React (createContext, useState, useCallback, useMemo, useEffect),

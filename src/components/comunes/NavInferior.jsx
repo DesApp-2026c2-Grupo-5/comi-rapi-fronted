@@ -2,11 +2,11 @@
  * Propósito: Barra de navegación inferior fija para pantallas chicas, con los
  *            destinos principales de cada rol al alcance del pulgar.
  * Contenido: <nav> con una lista de destinos (ícono, etiqueta y badge de
- *            contador) y, en el admin, una hoja inferior que despliega las
- *            secciones del catálogo.
- * Dependencias: react-router-dom (NavLink, useLocation), react-bootstrap (Offcanvas),
- *               react-icons/fa, useAuth, useIndicadoresNav, useMuestraNavInferior,
- *               NavInferior.css.
+ *            contador). El admin y el superadmin tienen además una "hoja" de
+ *            Catálogo que abre un Offcanvas con los listados.
+ * Dependencias: react-router-dom (NavLink, useLocation), react-bootstrap
+ *               (Offcanvas), react-icons/fa, useAuth, useIndicadoresNav,
+ *               useMuestraNavInferior, esRutaDeAlguna, NavInferior.css.
  * Uso: <NavInferior /> - Se renderiza en App.jsx, debajo de <main>.
  *
  * Reemplaza en la práctica al menú hamburguesa en el móvil: abrir el colapsable
@@ -33,11 +33,13 @@ import {
   FaReceipt,
   FaTachometerAlt,
   FaBoxes,
-  FaStore,
-  FaSlidersH,
   FaTags,
   FaPercent,
   FaHamburger,
+  FaUsers,
+  FaUserTie,
+  FaSlidersH,
+  FaStore,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
@@ -46,10 +48,11 @@ import useIndicadoresNav from '../../hooks/useIndicadoresNav';
 import useMuestraNavInferior from '../../hooks/useMuestraNavInferior';
 import './NavInferior.css';
 
-/* El del cliente entra completo en la barra. El admin tiene cinco secciones de
-   primer nivel (Dashboard, Pedidos, Catálogo, Sucursales y Stock) y cinco
-   columnas de ícono con etiqueta a 320px quedan justas, así que el catálogo va
-   en una hoja desplegada desde el mismo lugar. */
+/* El del cliente entra completo en la barra. La del admin lleva la operación de
+   su sucursal (Inicio, Pedidos, Clientes y Stock) y una hoja de Catálogo: el
+   CRUD de productos, categorías, promociones y personalización es del
+   SUPERADMINISTRADOR, y el admin los ve en SOLO LECTURA (con el interruptor de
+   disponibilidad en Productos). Las sucursales tampoco son del admin. */
 const enlacesCliente = [
   { to: '/cliente/inicio', etiqueta: 'Inicio', icono: FaHome },
   { to: '/cliente/catalogo', etiqueta: 'Catálogo', icono: FaUtensils },
@@ -80,9 +83,16 @@ const enlacesAdmin = [
     badge: 'pedidos',
   },
   {
-    tipo: 'hoja',
+    to: '/admin/clientes',
+    etiqueta: 'Clientes',
+    icono: FaUsers,
+    prefijo: '/admin/clientes',
+  },
+  {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
+    esCatalogo: true,
+    hojaTitulo: 'Catálogo (solo lectura)',
     hijos: [
       {
         to: '/admin/productos',
@@ -97,11 +107,6 @@ const enlacesAdmin = [
         prefijo: '/admin/categoria',
       },
       {
-        to: '/admin/personalizacion',
-        etiqueta: 'Personalización',
-        icono: FaSlidersH,
-      },
-      {
         to: '/admin/promociones',
         etiqueta: 'Promociones',
         icono: FaPercent,
@@ -109,13 +114,64 @@ const enlacesAdmin = [
       },
     ],
   },
-  { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore },
   { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
 ];
 
-/* Una subpantalla de alta o edición cuenta como la misma sección, así que el
-   catálogo queda marcado también dentro de /admin/producto/editar/3. El detalle
-   está en utils/rutas.js. */
+/* El superadministrador comparte el andamiaje de la barra inferior: panel,
+   administradores, clientes, hoja de Catálogo (el CRUD completo) y sucursales.
+   Así, en el móvil navega igual que el admin, con los destinos al alcance del
+   pulgar y sin depender del menú hamburguesa. */
+const enlacesSuperadmin = [
+  { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
+  {
+    to: '/superadmin/administradores',
+    etiqueta: 'Administradores',
+    icono: FaUserTie,
+  },
+  {
+    to: '/superadmin/clientes',
+    etiqueta: 'Clientes',
+    icono: FaUsers,
+  },
+  {
+    etiqueta: 'Catálogo',
+    icono: FaUtensils,
+    esCatalogo: true,
+    hojaTitulo: 'Catálogo',
+    hijos: [
+      {
+        to: '/superadmin/productos',
+        etiqueta: 'Productos',
+        icono: FaHamburger,
+        prefijo: '/superadmin/producto',
+      },
+      {
+        to: '/superadmin/categorias',
+        etiqueta: 'Categorías',
+        icono: FaTags,
+        prefijo: '/superadmin/categoria',
+      },
+      {
+        to: '/superadmin/personalizacion',
+        etiqueta: 'Personalización',
+        icono: FaSlidersH,
+      },
+      {
+        to: '/superadmin/promociones',
+        etiqueta: 'Promociones',
+        icono: FaPercent,
+        prefijo: '/superadmin/promocion',
+      },
+    ],
+  },
+  {
+    to: '/superadmin/sucursales',
+    etiqueta: 'Sucursales',
+    icono: FaStore,
+    prefijo: '/superadmin/sucursal',
+  },
+];
+
 const NavInferior = () => {
   // Se monta siempre en el shell, así que el filtro por rol va acá y no en el
   // padre: si el filtro quedara en AppLayout, cualquier otro rol en el móvil
@@ -123,6 +179,8 @@ const NavInferior = () => {
   const visible = useMuestraNavInferior();
   const { user } = useAuth();
   const { pathname } = useLocation();
+  // La hoja de Catálogo del admin (móvil) se abre y cierra con su propio estado;
+  // al navegar a un hijo se cierra sola.
   const [hojaAbierta, setHojaAbierta] = useState(false);
 
   const {
@@ -139,9 +197,14 @@ const NavInferior = () => {
 
   const esAdmin = user?.rol === ROLES.ADMIN;
   const esCliente = user?.rol === ROLES.CLIENTE;
-  const enlaces = esAdmin ? enlacesAdmin : esCliente ? enlacesCliente : enlacesInvitado;
-  const hoja = enlaces.find((enlace) => enlace.tipo === 'hoja');
-  const hojaActiva = hoja ? esRutaDeAlguna(hoja.hijos, pathname) : false;
+  const esSuperadmin = user?.rol === ROLES.SUPERADMIN;
+  const enlaces = esAdmin
+    ? enlacesAdmin
+    : esSuperadmin
+      ? enlacesSuperadmin
+      : esCliente
+        ? enlacesCliente
+        : enlacesInvitado;
 
   // Badge del contador. El número visible es decorativo: el texto para lectores
   // de pantalla va aparte, porque un aria-label sobre un <span> sin rol no se
@@ -179,6 +242,11 @@ const NavInferior = () => {
       ? ' nav-enlace-ico-pulso'
       : '';
 
+  /* La hoja del Catálogo del admin se marca activa si la ruta actual es una de
+     sus subpantallas (por ejemplo, /admin/productos). */
+  const hijoSuscriptor = enlaces.find((enlace) => enlace.esCatalogo);
+  const catalogoActivo = hijoSuscriptor ? esRutaDeAlguna(hijoSuscriptor.hijos, pathname) : false;
+
   return (
     <>
       {/* Nombre propio: en móvil conviven esta barra y la superior, y dos <nav>
@@ -187,35 +255,28 @@ const NavInferior = () => {
       <nav className="nav-inferior" aria-label="Navegación principal">
         <ul className="nav-inferior-lista">
           {enlaces.map((enlace) => {
-            const { tipo, etiqueta, icono: Icono } = enlace;
-
-            if (tipo === 'hoja') {
+            if (enlace.esCatalogo) {
               return (
-                <li key={etiqueta} className="nav-inferior-item">
-                  {/* Botón y no enlace: este ítem no navega, abre un panel. Un <a>
-                      sin destino obligaría a elegir entre "no pasa nada" y un
-                      href="#" que además suma un destino al historial. Los
-                      enlaces de verdad están en la hoja. */}
+                <li key={enlace.etiqueta} className="nav-inferior-item">
                   <button
                     type="button"
-                    className={`nav-inferior-enlace nav-inferior-boton${
-                      hojaActiva || hojaAbierta ? ' activo' : ''
-                    }`}
                     onClick={() => setHojaAbierta(true)}
                     aria-expanded={hojaAbierta}
-                    aria-haspopup="dialog"
-                    aria-controls="nav-inferior-hoja"
+                    aria-haspopup="true"
+                    className={`nav-inferior-enlace nav-inferior-boton${
+                      catalogoActivo || hojaAbierta ? ' activo' : ''
+                    }`}
                   >
                     <span className="nav-inferior-ico-wrap">
-                      <Icono className="nav-inferior-ico" aria-hidden="true" />
+                      <enlace.icono className="nav-inferior-ico" aria-hidden="true" />
                     </span>
-                    <span className="nav-inferior-texto">{etiqueta}</span>
+                    <span className="nav-inferior-texto">{enlace.etiqueta}</span>
                   </button>
                 </li>
               );
             }
 
-            const { to, badge } = enlace;
+            const { to, badge, etiqueta, icono: Icono } = enlace;
             return (
               <li key={to} className="nav-inferior-item">
                 <NavLink
@@ -237,34 +298,34 @@ const NavInferior = () => {
         </ul>
       </nav>
 
-      {hoja && (
-        /* Hoja inferior en vez de submenú flotante: el ítem está en el borde de
-           abajo y un desplegable hacia arriba taparía la propia barra y quedaría a
-           media distancia del pulgar. react-bootstrap aporta el fondo oscurecido,
-           el Escape, el foco atrapado y el bloqueo del scroll de fondo, que es lo
-           caro de resolver a mano. */
+      {/* Hoja del Catálogo (admin en solo lectura, superadmin con CRUD). La hoja
+          crece desde abajo, igual que esta barra, para mantener la mano en el
+          mismo lugar. Al tocar un destino se navega y se cierra. Sólo existe
+          para los roles con `esCatalogo` en sus enlaces (admin/superadmin). */}
+      {hijoSuscriptor && (
         <Offcanvas
           show={hojaAbierta}
           onHide={() => setHojaAbierta(false)}
           placement="bottom"
-          id="nav-inferior-hoja"
-          aria-labelledby="nav-inferior-hoja-titulo"
-          className="nav-hoja"
+          className="nav-hoja offcanvas"
         >
-          <Offcanvas.Header closeButton>
-            <Offcanvas.Title id="nav-inferior-hoja-titulo">{hoja.etiqueta}</Offcanvas.Title>
+          <Offcanvas.Header closeButton closeVariant="white">
+            <Offcanvas.Title as="span">
+              <FaUtensils className="me-2" aria-hidden="true" />
+              {hijoSuscriptor.hojaTitulo || hijoSuscriptor.etiqueta}
+            </Offcanvas.Title>
           </Offcanvas.Header>
           <Offcanvas.Body>
             <ul className="nav-hoja-lista">
-              {hoja.hijos.map((hijo) => (
+              {hijoSuscriptor.hijos.map((hijo) => (
                 <li key={hijo.to}>
                   <NavLink
                     to={hijo.to}
                     end
-                    className={({ isActive }) =>
-                      `nav-hoja-enlace${isActive ? ' activo' : ''}`
-                    }
                     onClick={() => setHojaAbierta(false)}
+                    className={`nav-hoja-enlace${
+                      esRutaDeAlguna([hijo], pathname) ? ' activo' : ''
+                    }`}
                   >
                     <hijo.icono className="nav-hoja-ico" aria-hidden="true" />
                     {hijo.etiqueta}

@@ -1,14 +1,17 @@
 /**
- * Propósito: Detalle de un cliente para el admin (solo lectura).
+ * Propósito: Detalle de un cliente (solo lectura) para el admin y, con
+ *            `backRoute="/superadmin/clientes"`, para el SUPERADMINISTRADOR.
  * Contenido: Componente DetalleCliente con datos, direcciones (cada una con
  *            su sucursal asignada por cercanía) y últimos pedidos.
  * Dependencias: react-bootstrap, react-router-dom, api/usuarios.js,
  *               api/direcciones.js, api/pedidos.js, formatters, react-icons.
  * Uso: Ruta "/admin/clientes/:id" → <DetalleCliente />
+ *      Ruta "/superadmin/clientes/:id" → <DetalleCliente backRoute="/superadmin/clientes" />
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { Container, Card, Spinner, Alert, Badge, Table, Row, Col } from 'react-bootstrap';
 import { FaStore, FaLocationDot } from 'react-icons/fa6';
 import { obtenerClientePorId } from '../../api/usuarios';
@@ -28,7 +31,7 @@ const textoDireccion = (d) =>
     .filter(Boolean)
     .join(' ') || '—';
 
-const DetalleCliente = () => {
+const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
   const { id } = useParams();
   const [cliente, setCliente] = useState(null);
   const [direcciones, setDirecciones] = useState([]);
@@ -75,7 +78,7 @@ const DetalleCliente = () => {
   if (error || !cliente) {
     return (
       <Container className="py-4">
-        <Link to="/admin/clientes" className="text-danger text-decoration-none mb-3 d-inline-block">
+        <Link to={backRoute} className="text-danger text-decoration-none mb-3 d-inline-block">
           ← Volver a clientes
         </Link>
         <Alert variant="danger">{error || 'Cliente no encontrado.'}</Alert>
@@ -85,7 +88,7 @@ const DetalleCliente = () => {
 
   return (
     <Container fluid className="py-4">
-      <Link to="/admin/clientes" className="text-danger text-decoration-none mb-3 d-inline-block">
+      <Link to={backRoute} className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a clientes
       </Link>
       <h1 className="h2 mb-4">Cliente #{cliente.id}</h1>
@@ -204,3 +207,7 @@ const DetalleCliente = () => {
 };
 
 export default DetalleCliente;
+
+DetalleCliente.propTypes = {
+  backRoute: PropTypes.string,
+};

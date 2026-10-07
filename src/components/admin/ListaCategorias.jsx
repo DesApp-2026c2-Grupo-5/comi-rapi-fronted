@@ -1,20 +1,22 @@
 /**
- * Propósito: Tabla de categorías para gestión del admin usando Table de Bootstrap.
+ * Propósito: Tabla de categorías para la gestión del panel usando Table de Bootstrap.
  * Contenido: Componente ListaCategorias con tabla, botones Editar/Reactivar/Eliminar
- *            y carga desde el backend (incluye inactivas).
+ *            (CRUD del superadmin) o la vista de solo lectura para el admin.
+ *            Incluye inactivas para los roles de gestión.
  * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert, Badge),
  *               api/categorias.js, react-router-dom, react-icons.
- * Uso: <ListaCategorias /> - Se renderiza en GestionCategorias.
+ * Uso: <ListaCategorias /> (superadmin) o <ListaCategorias soloLectura /> (admin).
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Container, Spinner, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import { obtenerCategorias, eliminarCategoria, editarCategoria } from '../../api/categorias';
 import ConfirmarModal from '../comunes/ConfirmarModal';
 
-const ListaCategorias = () => {
+const ListaCategorias = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -41,11 +43,11 @@ const ListaCategorias = () => {
   }, []);
 
   const handleEditar = (id) => {
-    navigate(`/admin/categoria/editar/${id}`);
+    navigate(`/superadmin/categoria/editar/${id}`);
   };
 
   const handleNuevo = () => {
-    navigate('/admin/categoria/nuevo');
+    navigate('/superadmin/categoria/nuevo');
   };
 
   const handleEliminar = (id, nombre) => setCategoriaAEliminar({ id, nombre });
@@ -82,11 +84,20 @@ const ListaCategorias = () => {
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 className="h2 mb-0">Gestión de Categorías</h1>
-        <Button variant="primary" onClick={handleNuevo}>
-          <FaPlus className="me-1" aria-hidden="true" />
-          Agregar nueva categoría
-        </Button>
+        {!soloLectura && (
+          <Button variant="primary" onClick={handleNuevo}>
+            <FaPlus className="me-1" aria-hidden="true" />
+            Agregar nueva categoría
+          </Button>
+        )}
       </div>
+
+      {soloLectura && (
+        <Alert variant="info" role="alert" className="mb-3">
+          Listado de solo lectura: el CRUD de categorías lo hace el
+          SUPERADMINISTRADOR.
+        </Alert>
+      )}
 
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
@@ -102,7 +113,7 @@ const ListaCategorias = () => {
               <th>Nombre</th>
               <th>Descripción</th>
               <th>Estado</th>
-              <th>Acciones</th>
+              {!soloLectura && <th>Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -118,22 +129,24 @@ const ListaCategorias = () => {
                     <Badge bg="secondary">Inactiva</Badge>
                   )}
                 </td>
-                <td className="columna-acciones">
-                  <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(categoria.id)}>
-                    <FaEdit className="me-1" aria-hidden="true" />
-                    Editar
-                  </Button>
-                  {!categoria.activa && (
-                    <Button variant="warning" size="sm" className="me-2" onClick={() => handleReactivar(categoria.id, categoria.nombre)}>
-                      <FaUndoAlt className="me-1" aria-hidden="true" />
-                      Reactivar
+                {!soloLectura && (
+                  <td className="columna-acciones">
+                    <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(categoria.id)}>
+                      <FaEdit className="me-1" aria-hidden="true" />
+                      Editar
                     </Button>
-                  )}
-                  <Button variant="danger" size="sm" onClick={() => handleEliminar(categoria.id, categoria.nombre)}>
-                    <FaTrashAlt className="me-1" aria-hidden="true" />
-                    Eliminar
-                  </Button>
-                </td>
+                    {!categoria.activa && (
+                      <Button variant="warning" size="sm" className="me-2" onClick={() => handleReactivar(categoria.id, categoria.nombre)}>
+                        <FaUndoAlt className="me-1" aria-hidden="true" />
+                        Reactivar
+                      </Button>
+                    )}
+                    <Button variant="danger" size="sm" onClick={() => handleEliminar(categoria.id, categoria.nombre)}>
+                      <FaTrashAlt className="me-1" aria-hidden="true" />
+                      Eliminar
+                    </Button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -172,3 +185,7 @@ const ListaCategorias = () => {
 };
 
 export default ListaCategorias;
+
+ListaCategorias.propTypes = {
+  soloLectura: PropTypes.bool,
+};

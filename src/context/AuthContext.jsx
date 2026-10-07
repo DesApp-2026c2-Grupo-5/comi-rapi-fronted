@@ -11,9 +11,8 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 import {
   loginCliente,
-  loginAdmin,
+  loginPanel,
   registroCliente,
-  registroAdmin,
   logout as apiLogout,
   obtenerUsuarioActual,
 } from '../api/auth';
@@ -39,10 +38,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const loginAdministrador = useCallback(async (email, password) => {
+  const loginPanelAdmin = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const result = await loginAdmin(email, password);
+      const result = await loginPanel(email, password);
       if (result.success) {
         setUser(result.user);
       }
@@ -56,19 +55,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const result = await registroCliente(datos);
-      if (result.success) {
-        setUser(result.user);
-      }
-      return result;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const registerAdmin = useCallback(async (datos) => {
-    setLoading(true);
-    try {
-      const result = await registroAdmin(datos);
       if (result.success) {
         setUser(result.user);
       }
@@ -109,6 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = useMemo(() => user !== null, [user]);
   const isAdmin = useMemo(() => user?.rol === ROLES.ADMIN, [user]);
+  const isSuperadmin = useMemo(() => user?.rol === ROLES.SUPERADMIN, [user]);
   const isCliente = useMemo(() => user?.rol === ROLES.CLIENTE, [user]);
 
   const value = useMemo(
@@ -118,15 +105,15 @@ export const AuthProvider = ({ children }) => {
       hydrated,
       isAuthenticated,
       isAdmin,
+      isSuperadmin,
       isCliente,
       login,
-      loginAdministrador,
+      loginPanelAdmin,
       register,
-      registerAdmin,
       logout,
       refrescarUsuario,
     }),
-    [user, loading, hydrated, isAuthenticated, isAdmin, isCliente, login, loginAdministrador, register, registerAdmin, logout, refrescarUsuario]
+    [user, loading, hydrated, isAuthenticated, isAdmin, isSuperadmin, isCliente, login, loginPanelAdmin, register, logout, refrescarUsuario]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

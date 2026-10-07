@@ -1,14 +1,20 @@
 /**
- * Propósito: Tabla de clientes para gestión del admin (solo lectura).
+ * Propósito: Tabla de clientes (solo rol CLIENTE) en solo lectura. Con la
+ *            prop `todos` lista todos los clientes registrados (sin la
+ *            acotación por sucursal del administrador), para el panel del
+ *            SUPERADMINISTRADOR.
  * Contenido: Componente ListaClientes con buscador, filtro por estado y
- *            botón Ver detalle por fila. Carga desde el backend (rol CLIENTE).
+ *            botón Ver detalle por fila (apunta al detalle según el rol).
+ *            Carga desde el backend (rol CLIENTE).
  * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col),
  *               api/usuarios.js, react-router-dom, react-icons.
- * Uso: <ListaClientes /> - Se renderiza en GestionClientes.
+ * Uso: <ListaClientes /> - Se renderiza en GestionClientes (admin).
+ *      <ListaClientes todos /> - Se renderiza en la gestión de clientes del superadmin.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
 import { FaEye, FaUsers } from 'react-icons/fa';
 import { obtenerClientes } from '../../api/usuarios';
@@ -22,7 +28,7 @@ const inicialesDe = (cliente) => {
 const nombreCompleto = (cliente) =>
   `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim() || '—';
 
-const ListaClientes = () => {
+const ListaClientes = ({ todos = false }) => {
   const navigate = useNavigate();
   const [clientes, setClientes] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -58,7 +64,9 @@ const ListaClientes = () => {
   }, [clientes, buscar, filtroEstado]);
 
   const handleVerDetalle = (id) => {
-    navigate(`/admin/clientes/${id}`);
+    navigate(
+      todos ? `/superadmin/clientes/${id}` : `/admin/clientes/${id}`
+    );
   };
 
   return (
@@ -71,6 +79,11 @@ const ListaClientes = () => {
             {visibles.length} de {clientes.length}
           </Badge>
         </h1>
+        <p className="text-muted mb-0">
+          {todos
+            ? 'Todos los clientes registrados.'
+            : 'Clientes con al menos un pedido en tu sucursal.'}
+        </p>
       </div>
 
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
@@ -168,3 +181,7 @@ const ListaClientes = () => {
 };
 
 export default ListaClientes;
+
+ListaClientes.propTypes = {
+  todos: PropTypes.bool,
+};

@@ -27,6 +27,7 @@ import {
   FaTags,
   FaPercent,
   FaUsers,
+  FaUserTie,
   FaUserCircle,
   FaSignOutAlt,
   FaSignInAlt,
@@ -71,11 +72,16 @@ const enlacesInvitado = enlacesCliente.filter((enlace) => enlace.to !== '/client
  * Antes eran ocho enlaces sueltos en la barra. Con el ícono, la pastilla y el
  * texto de cada uno, no entraban en una fila a 1280px: como el container de
  * Bootstrap es `flex-wrap: wrap`, la barra se partía en dos y al ser `sticky-top`
- * tapaba parte de la pantalla. Ahora hay cinco destinos al nivel principal y el
- * catálogo va agrupado en un desplegable.
+ * tapaba parte de la pantalla.
  *
- * Sucursales y Stock quedan sueltos a propósito: son dos destinos, y meterlos en
- * un desplegable obligaría a un clic de más para llegar a un solo lugar. */
+ * El CRUD del catálogo (productos, categorías, promociones, personalización e
+ * imágenes) es corporativo y lo hace el SUPERADMINISTRADOR. El admin conserva
+ * el acceso a "Catálogo", pero en SOLO LECTURA: ve los listados y, en
+ * Productos, activa/desactiva la disponibilidad de cada ítem en su sucursal.
+ * Además opera pedidos, stock y clientes. Sucursales quedó fuera del menú
+ * admin por lo mismo: lo maneja el superadmin. Stock queda suelto a propósito:
+ * es un solo destino, y meterlo en un desplegable obligaría a un clic de más
+ * para llegar a un solo lugar. */
 const menuAdmin = [
   { to: '/admin/dashboard', etiqueta: 'Dashboard', icono: FaTachometerAlt },
   {
@@ -101,11 +107,6 @@ const menuAdmin = [
         prefijo: '/admin/categoria',
       },
       {
-        to: '/admin/personalizacion',
-        etiqueta: 'Personalización',
-        icono: FaSlidersH,
-      },
-      {
         to: '/admin/promociones',
         etiqueta: 'Promociones',
         icono: FaPercent,
@@ -113,9 +114,64 @@ const menuAdmin = [
       },
     ],
   },
-  { to: '/admin/sucursales', etiqueta: 'Sucursales', icono: FaStore, prefijo: '/admin/sucursal' },
   { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
   { to: '/admin/clientes', etiqueta: 'Clientes', icono: FaUsers, prefijo: '/admin/clientes' },
+];
+
+/* Menú del superadministrador: su panel es global (métricas agregadas), la
+   gestión de administradores, la lista de todos los usuarios registrados
+   (clientes), el CRUD de sucursales y el CRUD del catálogo.
+   El catálogo es único y corporativo (productos, categorías, promociones y
+   personalización valen para todas las sucursales), así que lo edita este rol
+   y no cada administrador; el admin sólo lo activa/desactiva en su sucursal. */
+const menuSuperadmin = [
+  { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
+  {
+    to: '/superadmin/administradores',
+    etiqueta: 'Administradores',
+    icono: FaUserTie,
+  },
+  {
+    to: '/superadmin/clientes',
+    etiqueta: 'Clientes',
+    icono: FaUsers,
+    prefijo: '/superadmin/clientes',
+  },
+  {
+    etiqueta: 'Catálogo',
+    icono: FaUtensils,
+    hijos: [
+      {
+        to: '/superadmin/productos',
+        etiqueta: 'Productos',
+        icono: FaHamburger,
+        prefijo: '/superadmin/producto',
+      },
+      {
+        to: '/superadmin/categorias',
+        etiqueta: 'Categorías',
+        icono: FaTags,
+        prefijo: '/superadmin/categoria',
+      },
+      {
+        to: '/superadmin/personalizacion',
+        etiqueta: 'Personalización',
+        icono: FaSlidersH,
+      },
+      {
+        to: '/superadmin/promociones',
+        etiqueta: 'Promociones',
+        icono: FaPercent,
+        prefijo: '/superadmin/promocion',
+      },
+    ],
+  },
+  {
+    to: '/superadmin/sucursales',
+    etiqueta: 'Sucursales',
+    icono: FaStore,
+    prefijo: '/superadmin/sucursal',
+  },
 ];
 
 const Navbar = () => {
@@ -151,8 +207,19 @@ const Navbar = () => {
 
   const isCliente = user?.rol === ROLES.CLIENTE;
   const isAdmin = user?.rol === ROLES.ADMIN;
-  const destinoInicio = isAdmin ? '/admin/dashboard' : '/cliente/inicio';
-  const menu = isAdmin ? menuAdmin : isCliente ? enlacesCliente : enlacesInvitado;
+  const isSuperadmin = user?.rol === ROLES.SUPERADMIN;
+  const destinoInicio = isAdmin
+    ? '/admin/dashboard'
+    : isSuperadmin
+      ? '/superadmin/panel'
+      : '/cliente/inicio';
+  const menu = isAdmin
+    ? menuAdmin
+    : isSuperadmin
+      ? menuSuperadmin
+      : isCliente
+        ? enlacesCliente
+        : enlacesInvitado;
   const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
 
   /* Pantalla de origen para los botones de acceso: al entrar se vuelve a donde
@@ -183,7 +250,7 @@ const Navbar = () => {
   );
 
   /* El desplegable se marca activo si la ruta actual es una de sus secciones o
-     una de sus subpantallas de alta/edición: dentro de /admin/producto/editar/3
+     una de sus subpantallas de alta/edición: dentro de /superadmin/producto/editar/3
      se sigue estando en Productos. */
   const esHijoDe = (hijos) => esRutaDeAlguna(hijos, pathname);
 

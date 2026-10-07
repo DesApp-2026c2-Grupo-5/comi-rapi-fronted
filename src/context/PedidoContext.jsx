@@ -187,7 +187,7 @@ export const PedidoProvider = ({ children }) => {
   }, [filtrarPorRol, detectarCambios]);
 
   // Avisos en tiempo real: reemplaza al refresco periódico de 3 s.
-  //   - admin:   recibe pedido_actualizado de cualquier pedido, sin suscribirse.
+  //   - admin:   recibe pedido_actualizado de su sucursal, sin suscribirse.
   //   - cliente: recibe pedido_actualizado de los pedidos a los que se suscribió.
   // No hay aviso al crear un pedido: el admin solo lo necesita cuando se
   // confirma, y el cliente ya tiene la respuesta de su propio POST.
@@ -199,7 +199,8 @@ export const PedidoProvider = ({ children }) => {
 
     // Las rooms pertenecen al socket: al reconectar hay un socket.id nuevo y
     // la suscripción se perdió. Por eso se re-suscribe en cada 'connect'.
-    // El admin no necesita rooms individuales: ya está en la room 'admins'.
+    // El admin no necesita rooms individuales: el backend lo ingresa solo a
+    // `sucursal:{id}` (y a `admins` si es SUPERADMINISTRADOR) al conectar.
     const alConectar = () => {
       if (!isAdmin) ids.forEach((id) => { suscribirPedido(id); });
       // Si se perdió un cambio mientras no había conexión, el aviso no llegó.

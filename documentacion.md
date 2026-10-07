@@ -160,6 +160,19 @@ Archivos de estilo propios por página (además de los `.css` citados): `Inicio.
 | `/admin/sucursal/nuevo` | `EditarSucursal` |
 | `/admin/sucursal/editar/:id` | `EditarSucursal` |
 
+**Protegidas SUPERADMIN** (`ProtectedRoute requiredRole="SUPERADMINISTRADOR"`):
+
+| Ruta | Componente |
+|---|---|
+| `/superadmin/panel` | `PanelSuperadmin` (métricas globales vía `GET /api/superadmin/resumen`) |
+| `/superadmin/administradores` | `GestionAdministradores` (alta, edición y activación de administradores) |
+
+El SUPERADMINISTRADOR entra por el mismo login del panel (`/admin-login`): con el
+rol jerárquico el login es neutral por rol (`loginPanel` acepta ADMINISTRADOR y
+SUPERADMINISTRADOR) y redirige con `destinoPorRol` a `/superadmin/panel`. Su
+navbar es `menuSuperadmin` (Panel, Administradores) y no lleva la barra inferior
+móvil (ver `useMuestraNavInferior`).
+
 ---
 
 ## 4. Autenticación y roles
@@ -167,29 +180,31 @@ Archivos de estilo propios por página (además de los `.css` citados): `Inicio.
 **Roles** definidos en `utils/constants.js`:
 - `ROLES.CLIENTE = 'CLIENTE'`
 - `ROLES.ADMIN = 'ADMIN'`
+- `ROLES.SUPERADMIN = 'SUPERADMINISTRADOR'`
 
 **Flujo de login (`AuthContext`):**
 
 | Función | Comportamiento |
 |---|---|
 | `login(email, password)` | `loginCliente` (`api/auth.js`) |
-| `loginAdministrador(...)` | `loginAdmin` |
+| `loginPanelAdmin(email, password)` | `loginPanel` (acepta ADMINISTRADOR y SUPERADMINISTRADOR) |
 | `register(datos)` | `registroCliente` |
-| `registerAdmin(datos)` | `registroAdmin` |
 | `logout()` | limpia estado y `localStorage` |
 
 - Al loguearse/registrarse correctamente se guarda el usuario en `localStorage` (`'user'`). Al montar la app se restaura la sesión.
 - En `api/auth.js` el login valida contra `usuariosMock` buscando `email + password + rol`. La password nunca se persiste.
 
 **Roles y UI:**
-- `AuthContext` expone `isAuthenticated`, `isAdmin`, `isCliente`.
+- `AuthContext` expone `isAuthenticated`, `isAdmin`, `isSuperadmin`, `isCliente`.
 - La `Navbar` muestra menús diferentes por rol:
   - **Cliente:** Inicio, Catálogo, Carrito, Mis Pedidos, Mis direcciones.
-  - **Admin:** Dashboard, Productos, Pedidos, Sucursales.
+  - **Admin:** Dashboard, Pedidos, Catálogo, Sucursales, Stock, Clientes.
+  - **Superadmin:** Panel (métricas globales), Administradores.
 
 **Protección de rutas (`components/comunes/ProtectedRoute.jsx`):**
 - Si no está autenticado → redirige a `/login`.
-- Si el rol no coincide → redirige a la home del rol que corresponda (`/cliente/inicio` o `/admin/dashboard`).
+- Si el rol no coincide → redirige a la home del rol que corresponda
+  (`/cliente/inicio`, `/admin/dashboard` o `/superadmin/panel`) vía `destinoPorRol`.
 - Soporta modo wrapper (con `children`) y modo outlet (rutas anidadas).
 
 **Pisos de autenticación (`App.jsx` → `pages/*Login` con estilo Comi-Rapi):**
@@ -210,7 +225,7 @@ PedidoProvider > DireccionProvider > (Navbar + AppRoutes + Footer)
 
 ### AuthContext
 
-- **Estado:** `user`, `loading`. **Funciones:** `login`, `loginAdministrador`, `register`, `registerAdmin`, `logout`. **Derivados:** `isAuthenticated`, `isAdmin`, `isCliente`.
+- **Estado:** `user`, `loading`. **Funciones:** `login`, `loginPanelAdmin`, `register`, `logout`. **Derivados:** `isAuthenticated`, `isAdmin`, `isSuperadmin`, `isCliente`. `isSuperadmin` indica `user.rol === 'SUPERADMINISTRADOR'`.
 - Usado por `Navbar`, `ProtectedRoute`, `Carrito` y todas las páginas.
 
 ### CarritoContext
