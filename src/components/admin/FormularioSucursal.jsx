@@ -101,7 +101,7 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   };
 
   const handleCancelar = () => {
-    navigate('/admin/sucursales');
+    navigate('/superadmin/sucursales');
   };
 
   return (

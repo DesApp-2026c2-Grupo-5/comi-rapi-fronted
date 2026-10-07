@@ -12,9 +12,11 @@
  * Autenticación por sesión: la conexión viaja con la misma cookie HttpOnly
  * `comirapi.sid` que el resto de la API (`withCredentials: true`). No hay JWT.
  *
- * Roles: el admin entra solo a la room `admins` (automática en el backend); el
- * cliente se suscribe a cada uno de sus pedidos con `suscribirPedido`. El
- * backend verifica la autorización: pedir la room de un pedido ajeno falla.
+ * Roles: el admin entra de forma automática a la room `sucursal:{id}` de su
+ * local (tras el rol jerárquico) y el SUPERADMINISTRADOR a la room global
+ * `admins`; el cliente se suscribe a cada uno de sus pedidos con
+ * `suscribirPedido`. El backend verifica la autorización: pedir la room de un
+ * pedido ajeno falla.
  *
  * Solo hay un evento de servidor, `pedido_actualizado`. No existe aviso al
  * crear un pedido: todo pedido nace `pendiente` y el panel de administración no

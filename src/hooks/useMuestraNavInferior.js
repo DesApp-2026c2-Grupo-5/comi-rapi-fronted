@@ -1,7 +1,7 @@
 /**
  * Propósito: Decidir si corresponde la barra de navegación inferior.
  * Contenido: Hook booleano que devuelve true para el invitado y para cualquier
- *            usuario con sesión, sea cliente o administrador.
+ *            usuario con sesión, sea cliente, administrador o superadministrador.
  * Dependencias: useAuth, constants (ROLES).
  * Uso: const visible = useMuestraNavInferior();
  *
@@ -29,7 +29,14 @@ const useMuestraNavInferior = () => {
 
   if (!isAuthenticated) return true;
 
-  return user?.rol === ROLES.CLIENTE || user?.rol === ROLES.ADMIN;
+  // El SUPERADMINISTRADOR lleva la misma barra inferior que el admin: en el
+  // móvil navega con los destinos al alcance del pulgar, igual que el resto de
+  // los roles, en lugar del menú hamburguesa de la barra superior.
+  return [
+    ROLES.CLIENTE,
+    ROLES.ADMIN,
+    ROLES.SUPERADMIN,
+  ].includes(user?.rol);
 };
 
 export default useMuestraNavInferior;

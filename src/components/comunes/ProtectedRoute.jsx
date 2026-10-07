@@ -20,7 +20,11 @@ import Loader from './Loader';
  * @param {object} user - Usuario autenticado.
  * @returns {string} Ruta de inicio del usuario.
  */
-const destinoPorRol = (user) => (user?.rol === ROLES.ADMIN ? '/admin/dashboard' : '/cliente/inicio');
+const destinoPorRol = (user) => {
+  if (user?.rol === ROLES.SUPERADMIN) return '/superadmin/panel';
+  if (user?.rol === ROLES.ADMIN) return '/admin/dashboard';
+  return '/cliente/inicio';
+};
 
 /**
  * Ruta protegida que requiere autenticación.

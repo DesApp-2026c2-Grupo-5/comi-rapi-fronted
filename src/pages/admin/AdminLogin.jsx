@@ -1,5 +1,6 @@
 /**
- * Propósito: Página de login para administradores con la identidad visual Comi-Rapi.
+ * Propósito: Página de login del panel de administración (ADMINISTRADOR y
+ *            SUPERADMINISTRADOR) con la identidad visual Comi-Rapi.
  * Contenido: Componente AdminLogin con formulario controlado, estilo naranja degradado
  *            (cabecera con marca, inputs con ícono y botón pill) y navegación.
  * Dependencias: react-bootstrap (Form, Button, Alert), react-router-dom, useAuth hook,
@@ -13,13 +14,14 @@ import { Form, Button, Alert } from 'react-bootstrap';
 import { FaUserShield, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import CampoPassword from '../../components/comunes/CampoPassword';
+import { destinoPorRol } from '../../components/comunes/ProtectedRoute';
 import '../comunes/Login.css';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { loginAdministrador, loading } = useAuth();
+  const { loginPanelAdmin, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -31,9 +33,9 @@ const AdminLogin = () => {
       return;
     }
 
-    const result = await loginAdministrador(email, password);
+    const result = await loginPanelAdmin(email, password);
     if (result.success) {
-      navigate('/admin/dashboard');
+      navigate(destinoPorRol(result.user));
     } else {
       setError(result.error || 'Error al iniciar sesión');
     }
@@ -46,8 +48,8 @@ const AdminLogin = () => {
           <div className="auth-brand-ico">
             <FaUserShield aria-hidden="true" />
           </div>
-          <h1 className="h2">Login Administrador</h1>
-          <p>Accede al panel de administración</p>
+          <h1 className="h2">Acceso al panel</h1>
+          <p>Administradores y superadministradores</p>
         </div>
 
         <div className="auth-card-body">
@@ -96,12 +98,8 @@ const AdminLogin = () => {
           </Form>
 
           <div className="text-center">
-            <p className="mb-1">
-              ¿No tienes cuenta?{' '}
-              <Link to="/admin-registro" className="auth-enlace">
-                Regístrate aquí
-              </Link>
-            </p>
+            {/* El alta de administradores ya no es pública: la realiza un
+                superadministrador desde el panel de administración. */}
             <p className="mb-0">
               <Link to="/login" className="auth-enlace">
                 Login de cliente
@@ -111,6 +109,7 @@ const AdminLogin = () => {
 
           <p className="auth-demo mb-0">
             <strong>Demo:</strong> <span translate="no">admin@test.com</span> /{' '}
+            <span translate="no">123456</span> · <span translate="no">superadmin@test.com</span> /{' '}
             <span translate="no">123456</span>
           </p>
         </div>

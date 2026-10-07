@@ -1,13 +1,13 @@
 /**
- * Propósito: Página de gestión de sucursales para el administrador.
+ * Propósito: Página de gestión de sucursales para el superadministrador.
  * Contenido: Tabla con todas las sucursales (ID, Nombre, Dirección, Teléfono, Estado, Acciones),
  *            botón "Agregar nueva sucursal" y acciones de Editar/Eliminar con confirmación.
  * Dependencias: react-bootstrap (Container, Table, Button, Spinner), react-router-dom (useNavigate),
  *               context/SucursalContext (useSucursal).
- * Uso: Ruta "/admin/sucursales" → <GestionSucursales />
+ * Uso: Ruta "/superadmin/sucursales" → <GestionSucursales />
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Container, Table, Button, Spinner, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -31,12 +31,12 @@ const GestionSucursales = () => {
 
   // Redirige al formulario de nueva sucursal
   const handleNuevo = () => {
-    navigate('/admin/sucursal/nuevo');
+    navigate('/superadmin/sucursal/nuevo');
   };
 
   // Redirige a la edición de una sucursal
   const handleEditar = (id) => {
-    navigate(`/admin/sucursal/editar/${id}`);
+    navigate(`/superadmin/sucursal/editar/${id}`);
   };
 
   // Abre el modal de confirmación para eliminar

@@ -40,9 +40,9 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   // Catálogo para elegir los productos de la receta.
   const [productos, setProductos] = useState([]);
 
-  // El tipo se deduce solo de la pantalla: /admin/producto/nuevo crea un
-  // PRODUCTO y /admin/producto/nuevo-combo crea un COMBO. En la edición es el
-  // que ya tiene el producto. No se le pregunta al admin.
+  // El tipo se deduce solo de la pantalla: /superadmin/producto/nuevo crea un
+  // PRODUCTO y /superadmin/producto/nuevo-combo crea un COMBO. En la edición es el
+  // que ya tiene el producto. No se le pregunta al superadministrador.
   const tipoEfectivo = forzarTipo || producto?.tipo || 'PRODUCTO';
 
   // Un combo se guarda siempre en la categoría "Combos": el admin no la elige.

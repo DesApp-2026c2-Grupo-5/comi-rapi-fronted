@@ -1,6 +1,6 @@
 /**
  * Propósito: Servicio de autenticación que consume el backend real (sesiones + CSRF).
- * Contenido: obtenerUsuarioActual, loginCliente, loginAdmin, registroCliente, registroAdmin, logout.
+ * Contenido: obtenerUsuarioActual, loginCliente, loginAdmin, registroCliente, logout.
  * Dependencias: client.js (apiGet/apiPost), constants.js (ROLES).
  * Uso: import { loginCliente, registroCliente } from '../api/auth';
  */
@@ -22,27 +22,34 @@ export const obtenerUsuarioActual = async () => {
 };
 
 /**
- * Login común: llama al backend y valida el rol esperado.
- * Si el usuario autenticado no tiene el rol pedido, cierra la sesión y devuelve error.
+ * Login común: llama al backend y valida uno (o varios) roles aceptados.
+ * Si el usuario autenticado no tiene ninguno de los roles pedidos, cierra la
+ * sesión y devuelve error.
  * @param {string} email
  * @param {string} password
- * @param {string} rolEsperado - ROLES.CLIENTE o ROLES.ADMIN.
+ * @param {string|string[]} rolesAceptados - ROLES.CLIENTE, ROLES.ADMIN, ROLES.SUPERADMIN…
  */
-const loginComun = async (email, password, rolEsperado) => {
+const loginComun = async (email, password, rolesAceptados) => {
+  const roles = Array.isArray(rolesAceptados) ? rolesAceptados : [rolesAceptados];
   const result = await apiPost('/auth/login', { email, password });
   if (!result.success) {
     return { success: false, error: result.error };
   }
   const usuario = result.data;
-  if (usuario.rol !== rolEsperado) {
+  if (!roles.includes(usuario.rol)) {
     await apiPost('/auth/logout', {});
-    return {
-      success: false,
-      error:
-        rolEsperado === ROLES.ADMIN
-          ? 'Las credenciales no corresponden a un administrador'
-          : 'Las credenciales no corresponden a un cliente',
-    };
+    let error;
+    if (roles.includes(ROLES.CLIENTE)) {
+      error = 'Las credenciales no corresponden a un cliente';
+    } else if (
+      roles.includes(ROLES.ADMIN) ||
+      roles.includes(ROLES.SUPERADMIN)
+    ) {
+      error = 'Las credenciales no corresponden a un administrador';
+    } else {
+      error = 'Este rol no puede iniciar sesión acá';
+    }
+    return { success: false, error };
   }
   return { success: true, user: usuario };
 };
@@ -60,27 +67,25 @@ export const loginAdmin = (email, password) =>
   loginComun(email, password, ROLES.ADMIN);
 
 /**
- * Registro común: crea un usuario con el rol indicado.
- * @param {object} datos - { nombre, apellido?, email, password, telefono? }.
- * @param {string} rol - ROLES.CLIENTE o ROLES.ADMIN.
+ * Inicia sesión en el panel de administración (ADMINISTRADOR o
+ * SUPERADMINISTRADOR): el mismo login sirve para los dos roles y la redirección
+ * al panel correspondiente la decide cada página con `destinoPorRol`.
  */
-const registroComun = async (datos, rol) => {
-  const result = await apiPost('/auth/registro', { ...datos, rol });
+export const loginPanel = (email, password) =>
+  loginComun(email, password, [ROLES.ADMIN, ROLES.SUPERADMIN]);
+
+/**
+ * Registra un cliente. El backend fuerza el rol CLIENTE: el registro público
+ * no puede crear administradores ni superadministradores.
+ * @param {object} datos - { nombre, apellido?, email, password, telefono? }.
+ */
+export const registroCliente = async (datos) => {
+  const result = await apiPost('/auth/registro', datos);
   if (!result.success) {
     return { success: false, error: result.error };
   }
   return { success: true, user: result.data };
 };
-
-/**
- * Registra un cliente.
- */
-export const registroCliente = (datos) => registroComun(datos, ROLES.CLIENTE);
-
-/**
- * Registra un administrador.
- */
-export const registroAdmin = (datos) => registroComun(datos, ROLES.ADMIN);
 
 /**
  * Cierra la sesión en el backend.

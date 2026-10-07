@@ -8,8 +8,8 @@
  * Uso: import { esRutaDeAlguna, rutaActual, esDestinoSeguro, esRutaDeAdmin } from '../utils/rutas';
  *
  * El problema que resuelve: la lista de una sección está en plural y sus
- * formularios en singular — /admin/productos para el listado y
- * /admin/producto/editar/3 y /admin/producto/nuevo para editar o crear. Con
+ * formularios en singular — /superadmin/productos para el listado y
+ * /superadmin/producto/editar/3 y /superadmin/producto/nuevo para editar o crear. Con
  * `startsWith` sobre el plural, entrar a editar un producto dejaba el menú sin
  * marcar, que es justo cuando más hace falta saber en qué sección se está.
  *
@@ -17,8 +17,8 @@
  * viven todos sus destinos. Cuando coincide con `to` (el caso de
  * Personalización) no hace falta declararlo.
  *
- * La comparación exige el corte de segmento: /admin/producto es prefijo de
- * /admin/productos, así que sin el "/" final un `startsWith` pelado marcaría la
+ * La comparación exige el corte de segmento: /superadmin/producto es prefijo de
+ * /superadmin/productos, así que sin el "/" final un `startsWith` pelado marcaría la
  * sección de Productos estando en la lista de Categorías.
  */
 
@@ -72,9 +72,9 @@ export const esDestinoSeguro = (destino) =>
  * Indica si la ruta es del panel de administración.
  *
  * El pie de página con horarios y redes sociales es de la tienda, no del panel:
- * dentro de /admin queda abajo de tablas largas y no aporta nada. Se decide
- * por ruta y no por rol para no atar el shell a un permiso: alcanza con que la
- * pantalla esté bajo /admin.
+ * dentro de /admin o /superadmin queda abajo de tablas largas y no aporta nada.
+ * Se decide por ruta y no por rol para no atar el shell a un permiso: alcanza
+ * con que la pantalla esté bajo /admin o /superadmin.
  *
  * El corte de segmento es por lo mismo que en `esRutaDeSeccion`: sin el "/"
  * final, "/administracion" contaría como admin.
@@ -84,4 +84,5 @@ export const esDestinoSeguro = (destino) =>
  */
 export const esRutaDeAdmin = (ruta) =>
   typeof ruta === 'string' &&
-  (ruta === '/admin' || ruta.startsWith('/admin/'));
+  ((ruta === '/admin' || ruta.startsWith('/admin/')) ||
+    (ruta === '/superadmin' || ruta.startsWith('/superadmin/')));

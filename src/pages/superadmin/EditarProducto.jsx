@@ -3,7 +3,7 @@
  * Contenido: Componente EditarProducto con carga de datos por ID y FormularioProducto.
  * Dependencias: react-bootstrap (Container, Spinner, Alert, Button), react-router-dom,
  *               FormularioProducto, api/productos.js.
- * Uso: Ruta "/admin/producto/editar/:id" o "/admin/producto/nuevo" → <EditarProducto />
+ * Uso: Ruta "/superadmin/producto/editar/:id" o "/superadmin/producto/nuevo" → <EditarProducto />
  */
 
 import React, { useState, useEffect } from 'react';
@@ -49,7 +49,7 @@ const EditarProducto = () => {
       ? await editarProducto(id, datosProducto)
       : await crearProducto(datosProducto);
     if (result.success) {
-      navigate('/admin/productos');
+      navigate('/superadmin/productos');
     } else {
       setError(result.error || 'No se pudo guardar el producto.');
     }
@@ -67,7 +67,7 @@ const EditarProducto = () => {
     return (
       <Container className="py-5 text-center">
         <h1 className="h2">{error || 'Producto no encontrado'}</h1>
-        <Button as={Link} to="/admin/productos" variant="secondary" className="mt-3">
+        <Button as={Link} to="/superadmin/productos" variant="secondary" className="mt-3">
           <FaArrowLeft className="me-1" aria-hidden="true" />
           Volver a productos
         </Button>
@@ -77,7 +77,7 @@ const EditarProducto = () => {
 
   return (
     <Container className="py-4">
-      <Link to="/admin/productos" className="text-danger text-decoration-none mb-3 d-inline-block">
+      <Link to="/superadmin/productos" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a productos
       </Link>
       <h1 className="h2 mb-4">

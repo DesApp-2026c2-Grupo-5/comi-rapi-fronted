@@ -5,7 +5,7 @@
  *            asignaciones (agrega nuevos, quita removidos).
  * Dependencias: react-bootstrap (Container, Spinner, Alert), react-router-dom,
  *               FormularioPromocion, api/promociones.js.
- * Uso: Ruta "/admin/promocion/editar/:id" o "/admin/promocion/nuevo" → <EditarPromocion />
+ * Uso: Ruta "/superadmin/promocion/editar/:id" o "/superadmin/promocion/nuevo" → <EditarPromocion />
  */
 
 import React, { useState, useEffect } from 'react';
@@ -89,7 +89,7 @@ const EditarPromocion = () => {
         return;
       }
     }
-    navigate('/admin/promociones');
+    navigate('/superadmin/promociones');
   };
 
   if (cargando) {
@@ -102,7 +102,7 @@ const EditarPromocion = () => {
 
   return (
     <Container className="py-4">
-      <Link to="/admin/promociones" className="text-danger text-decoration-none mb-3 d-inline-block">
+      <Link to="/superadmin/promociones" className="text-danger text-decoration-none mb-3 d-inline-block">
         ← Volver a promociones
       </Link>
       <h1 className="h2 mb-4">{id ? `Editar Promoción #${id}` : 'Nueva Promoción'}</h1>
