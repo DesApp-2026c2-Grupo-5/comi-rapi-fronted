@@ -228,3 +228,23 @@ export const cambiarEstado = async (id, estado, medioPago) => {
 export const confirmarPedido = async (id, medioPago) => {
   return cambiarEstado(id, 'confirmado', medioPago);
 };
+
+/**
+ * T4: reasigna un pedido a otra sucursal (solo ADMIN).
+ * @param {number} id - ID del pedido.
+ * @param {number} sucursalId - ID de la sucursal destino.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const reasignarSucursal = async (id, sucursalId) => {
+  try {
+    const csrf = await obtenerCsrfToken();
+    const data = await requestJson(`/pedidos/${id}/sucursal`, {
+      method: 'PATCH',
+      headers: { 'x-csrf-token': csrf },
+      body: JSON.stringify({ sucursalId }),
+    });
+    return { success: true, data: mapearPedido(data) };
+  } catch (error) {
+    return { success: false, error: error?.message || 'No se pudo reasignar el pedido' };
+  }
+};

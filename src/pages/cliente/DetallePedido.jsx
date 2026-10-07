@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Table, Badge, Button, Row, Col } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Row, Col, Alert } from 'react-bootstrap';
 import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
@@ -66,6 +66,11 @@ const DetallePedido = () => {
     pedido.etaMinutos !== null &&
     pedido.etaMinutos !== undefined &&
     pedido.estado !== ESTADOS_PEDIDO.PENDIENTE;
+  // T4: aviso de reasignación — el cliente ve que su pedido cambió de
+  // sucursal (detectado por la observación "Reasignado..." en el historial).
+  const reasignado = (pedido.historialEstados || []).some(
+    (h) => h.observacion && /reasignado/i.test(h.observacion)
+  );
 
   return (
     <Container className="py-5">
@@ -95,6 +100,13 @@ const DetallePedido = () => {
         </Card.Header>
 
         <Card.Body className="p-4">
+          {/* T4: aviso de reasignación de sucursal */}
+          {reasignado && (
+            <Alert variant="warning" className="mb-4">
+              <strong>Tu pedido fue reasignado de sucursal.</strong> El
+              tiempo de entrega puede verse afectado.
+            </Alert>
+          )}
           {/* Información del cliente y sucursal asignada */}
           <Row className="g-3 mb-4">
             <Col md={6}>

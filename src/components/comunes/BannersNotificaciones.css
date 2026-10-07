@@ -1,17 +1,28 @@
 /**
- * Propósito: Estilos de los banners de notificación inline de Comi-Rapi.
+ * Propósito: Estilos de los banners de notificación de Comi-Rapi.
  * Contenido: Banners redondeados con fondo crema, borde naranja de marca,
  *            borde izquierdo de color según el tipo, icono, mensaje y botón de
- *            cierre. Entran con una animación suave desde arriba.
+ *            cierre. Se muestran como toast FIJO arriba de la pantalla.
  * Dependencias: Se importa desde src/components/comunes/BannersNotificaciones.jsx.
  * Uso: Importado por BannersNotificaciones.jsx.
+ *
+ * Fix de visibilidad: antes eran inline (se perdían al scrollear o cuando
+ * había un Modal abierto encima). Ahora son position: fixed con z-index 2000
+ * (por encima del backdrop y dialog de react-bootstrap, que usan ~1050-1055)
+ * y ocupan el ancho del contenido, centrados, para que no tapen el form.
  */
 
 .banners-inline {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  margin-bottom: 1rem;
+  width: min(100%, 680px);
+  pointer-events: auto;
 }
 
 .batch-notificacion {
@@ -26,7 +37,7 @@
   padding: 0.75rem 1rem 0.75rem 1.25rem;
   font-weight: 600;
   color: #2b2b2b;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   animation: batch-notificacion-entrada 0.3s ease-out;
 }
 

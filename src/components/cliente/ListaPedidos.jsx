@@ -52,6 +52,14 @@ const ListaPedidos = ({
                   ~{pedido.etaMinutos} min
                 </Badge>
               )}
+              {/* T4: badge de reasignación de sucursal */}
+              {(pedido.historialEstados || []).some(
+                (h) => h.observacion && /reasignado/i.test(h.observacion)
+              ) && (
+                <Badge bg="warning" className="text-dark">
+                  Reasignado
+                </Badge>
+              )}
               <Badge
                 bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
                 className="d-inline-flex align-items-center gap-1"

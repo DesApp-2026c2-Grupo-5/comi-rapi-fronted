@@ -74,7 +74,7 @@ const GestionStock = () => {
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
   // stock de la sucursal: con un producto filtrado, `stocks` trae una sola fila y
   // el resto del catálogo aparecería como "disponible" cuando ya está en la
-  // sucursal. Por eso el alta se oculta mientras haya filtro de producto.
+  // sucursal.
   const productosDisponibles = useMemo(() => {
     const enEstaSucursal = new Set(
       stocks.map((s) => Number(s.productoId))
@@ -82,20 +82,23 @@ const GestionStock = () => {
     return productos.filter((p) => !enEstaSucursal.has(Number(p.id)));
   }, [productos, stocks]);
 
-  const hayFiltroDeProducto = Boolean(productoId);
-
   const [productoNuevo, setProductoNuevo] = useState('');
+  // Selector propio del alta (independiente del filtro de tabla): el usuario
+  // no tiene que filtrar la tabla para poder cargar stock a una sucursal.
+  const [sucursalAlta, setSucursalAlta] = useState('');
 
   const agregarProducto = async () => {
-    if (!sucursalId || !productoNuevo) {
+    const sucursalDestino = sucursalAlta || sucursalId;
+    if (!sucursalDestino || !productoNuevo) {
       notificar('Elegí una sucursal y un producto.', 'warning');
       return;
     }
     setGuardando(true);
-    const resultado = await crearStock(sucursalId, productoNuevo);
+    const resultado = await crearStock(sucursalDestino, productoNuevo);
     if (resultado.success) {
       notificar(`"${resultado.data.producto}" agregado a la sucursal.`, 'success');
       setProductoNuevo('');
+      setSucursalAlta('');
       await cargar();
     } else {
       notificar(resultado.error || 'No se pudo agregar.', 'danger');
@@ -185,37 +188,53 @@ const GestionStock = () => {
           </Form.Select>
         </Form.Group>
 
-        {sucursalId && !hayFiltroDeProducto && (
-          <>
-            <Form.Group className="filtro-stock" controlId="stock-agregar-producto">
-              <Form.Label className="small mb-1">
-                Agregar producto a la sucursal
-              </Form.Label>
-              <Form.Select
-                name="productoNuevo"
-                value={productoNuevo}
-                onChange={(e) => setProductoNuevo(e.target.value)}
-              >
-                <option value="">Seleccionar producto</option>
-                {productosDisponibles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                    {p.tipo === 'COMBO' ? ' (combo)' : ''}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Button
-              variant="primary"
-              className="boton-agregar-stock"
-              onClick={agregarProducto}
-              disabled={guardando || !productoNuevo}
-            >
-              <FaPlus className="me-1" aria-hidden="true" />
-              Agregar
-            </Button>
-          </>
-        )}
+        {/* Alta de stock: SIEMPRE visible, con selector propio de sucursal
+            (independiente del filtro de tabla). Si el filtro de tabla ya tiene
+            una sucursal seleccionada, el selector de alta arranca con ese valor
+            (pero el usuario puede cambiarlo). */}
+        <Form.Group className="filtro-stock" controlId="stock-alta-sucursal">
+          <Form.Label className="small mb-1">
+            Cargar stock — Sucursal
+          </Form.Label>
+          <Form.Select
+            name="sucursalAlta"
+            value={sucursalAlta || sucursalId}
+            onChange={(e) => setSucursalAlta(e.target.value)}
+          >
+            <option value="">Seleccionar sucursal…</option>
+            {sucursales.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+        <Form.Group className="filtro-stock" controlId="stock-agregar-producto">
+          <Form.Label className="small mb-1">Producto</Form.Label>
+          <Form.Select
+            name="productoNuevo"
+            value={productoNuevo}
+            onChange={(e) => setProductoNuevo(e.target.value)}
+            disabled={!(sucursalAlta || sucursalId)}
+          >
+            <option value="">Seleccionar producto…</option>
+            {productosDisponibles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+                {p.tipo === 'COMBO' ? ' (combo)' : ''}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+        <Button
+          variant="primary"
+          className="boton-agregar-stock"
+          onClick={agregarProducto}
+          disabled={guardando || !productoNuevo || !(sucursalAlta || sucursalId)}
+        >
+          <FaPlus className="me-1" aria-hidden="true" />
+          Agregar
+        </Button>
       </div>
 
       {error && <Alert variant="danger" role="alert">{error}</Alert>}

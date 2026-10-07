@@ -14,10 +14,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Card, Badge, Button, Container } from 'react-bootstrap';
-import { FaTimesCircle, FaArrowRight, FaTimes } from 'react-icons/fa';
+import { Card, Badge, Button, Container, Modal, Form, Spinner } from 'react-bootstrap';
+import { FaTimesCircle, FaArrowRight, FaTimes, FaStore } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
+import { useSucursal } from '../../hooks/useSucursal';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { reasignarSucursal } from '../../api/pedidos';
 import { puedeTransicionar, obtenerEstadosSiguientes } from '../../services/estadosPedido';
 import {
   ESTADOS_PEDIDO,
@@ -53,8 +55,9 @@ const ACCIONES_SIGUIENTE = {
 };
 
 const PedidosPendientes = () => {
-  const { pedidos, cambiarEstado } = usePedidos();
+  const { pedidos, cambiarEstado, refrescarPedidos } = usePedidos();
   const { notificar } = useNotificaciones();
+  const { sucursales, cargarSucursales } = useSucursal();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Filtro de estado activo (desde la URL ?estado=..., que el dashboard setea al
@@ -62,6 +65,29 @@ const PedidosPendientes = () => {
   const estadoFiltro = searchParams.get('estado');
   // Evita doble clic mientras un cambio de estado está en curso
   const [cambiando, setCambiando] = useState(false);
+  // T4: reasignación manual de sucursal
+  const [pedidoAReasignar, setPedidoAReasignar] = useState(null);
+  const [sucursalDestino, setSucursalDestino] = useState('');
+  const [reasignando, setReasignando] = useState(false);
+
+  useEffect(() => {
+    cargarSucursales();
+  }, [cargarSucursales]);
+
+  const handleReasignar = async () => {
+    if (!pedidoAReasignar || !sucursalDestino) return;
+    setReasignando(true);
+    const result = await reasignarSucursal(pedidoAReasignar.id, sucursalDestino);
+    setReasignando(false);
+    if (result.success) {
+      notificar('Pedido reasignado correctamente.', 'success');
+      setPedidoAReasignar(null);
+      setSucursalDestino('');
+      refrescarPedidos();
+    } else {
+      notificar(result.error || 'No se pudo reasignar el pedido.', 'danger');
+    }
+  };
 
   // Cola de trabajo: se descartan los estados finales (entregado/cancelado).
   // El contexto ya filtró los PENDIENTE por no estar pagados.
@@ -244,6 +270,21 @@ const PedidosPendientes = () => {
                           Cancelar pedido
                         </Button>
                       )}
+                      {/* T4: reasignación manual de sucursal (solo en estados tempranos) */}
+                      {[ESTADOS_PEDIDO.CONFIRMADO, ESTADOS_PEDIDO.EN_PREPARACION].includes(pedido.estado) && (
+                        <Button
+                          size="lg"
+                          variant="outline-warning"
+                          className="ms-2"
+                          onClick={() => {
+                            setPedidoAReasignar(pedido);
+                            setSucursalDestino('');
+                          }}
+                        >
+                          <FaStore className="me-2" aria-hidden="true" />
+                          Reasignar sucursal
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -252,6 +293,58 @@ const PedidosPendientes = () => {
         );
         })
       )}
+
+      {/* T4: modal de reasignación de sucursal */}
+      <Modal show={Boolean(pedidoAReasignar)} onHide={() => setPedidoAReasignar(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Reasignar pedido #{pedidoAReasignar?.id}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-muted">
+            El stock se transfiere automáticamente y el tiempo estimado se
+            recalcula. El pedido debe estar en estado confirmado o en
+            preparación.
+          </p>
+          <Form.Group>
+            <Form.Label>Sucursal destino</Form.Label>
+            <Form.Select
+              value={sucursalDestino}
+              onChange={(e) => setSucursalDestino(e.target.value)}
+              disabled={reasignando}
+            >
+              <option value="">Seleccioná una sucursal…</option>
+              {sucursales
+                .filter((s) => s.activa !== false && s.id !== pedidoAReasignar?.sucursal?.id)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+            </Form.Select>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setPedidoAReasignar(null)} disabled={reasignando}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleReasignar}
+            disabled={!sucursalDestino || reasignando}
+          >
+            {reasignando ? (
+              <>
+                <Spinner size="sm" className="me-1" animation="border" />
+                Reasignando…
+              </>
+            ) : (
+              'Reasignar'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };
