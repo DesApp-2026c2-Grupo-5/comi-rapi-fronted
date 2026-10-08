@@ -1,12 +1,15 @@
 import { Card, Button, Form, Row, Col } from 'react-bootstrap';
 import { FaTimes } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
+import { useParametros } from '../../hooks/useParametros';
 import { formatPrice } from '../../utils/formatters';
 import './ItemCarrito.css';
 
 const ItemCarrito = ({ item }) => {
   const { producto, cantidad, idLinea, personalizacion, precioUnitarioPersonalizado } = item;
   const { eliminarDelCarrito, actualizarCantidad } = useCarrito();
+  const { parametros } = useParametros();
+  const maxUnidades = parametros.cantidadMaximaProductoCarrito;
 
   const precioUnitario = precioUnitarioPersonalizado ?? producto.precio;
   const subtotal = precioUnitario * cantidad;
@@ -24,7 +27,8 @@ const ItemCarrito = ({ item }) => {
   const handleCambiarCantidad = (e) => {
     const nuevaCantidad = parseInt(e.target.value, 10);
     if (!Number.isNaN(nuevaCantidad)) {
-      actualizarCantidad(idLinea || producto.id, nuevaCantidad);
+      const acotada = Math.max(1, Math.min(maxUnidades, nuevaCantidad));
+      actualizarCantidad(idLinea || producto.id, acotada);
     }
   };
 
@@ -81,7 +85,7 @@ const ItemCarrito = ({ item }) => {
               type="number"
               name={`cantidad-${idLinea || producto.id}`}
               min="1"
-              max="20"
+              max={maxUnidades}
               inputMode="numeric"
               value={cantidad}
               onChange={handleCambiarCantidad}

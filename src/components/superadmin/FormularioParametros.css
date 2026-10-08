@@ -1,0 +1,20 @@
+/* Estilos del formulario de parámetros del superadministrador. */
+
+.parametros-card {
+  border: none;
+}
+
+.parametros-grupo-titulo {
+  color: #b23a00;
+  border-bottom: 1px solid #f0d9c8;
+  padding-bottom: 0.5rem;
+}
+
+.parametros-unidad {
+  font-weight: 400;
+  vertical-align: middle;
+}
+
+.parametros-card input[type='number'] {
+  max-width: 320px;
+}

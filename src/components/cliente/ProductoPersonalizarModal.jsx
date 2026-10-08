@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useCarrito } from '../../hooks/useCarrito';
+import { useParametros } from '../../hooks/useParametros';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
 import { LIMITES, calcularPrecioUnitario } from '../../services/personalizacionConfig';
 import { formatPrice } from '../../utils/formatters';
@@ -10,6 +11,7 @@ import './ProductoPersonalizarModal.css';
 
 const ProductoPersonalizarModal = ({ show, onHide, producto }) => {
   const { agregarAlCarrito } = useCarrito();
+  const { parametros } = useParametros();
   const { getConfigParaProducto } = usePersonalizacion();
   const config = getConfigParaProducto(producto);
   const [vista, setVista] = useState('principal');
@@ -56,7 +58,7 @@ const ProductoPersonalizarModal = ({ show, onHide, producto }) => {
     setSinCant((prev) => ({ ...prev, [key]: nuevo }));
   };
 
-  const MAX_UNIDADES = 20;
+  const MAX_UNIDADES = parametros.cantidadMaximaProductoCarrito;
 
 const cambiarUnidades = (d) =>
     setUnidades((u) => Math.max(1, Math.min(MAX_UNIDADES, u + d)));

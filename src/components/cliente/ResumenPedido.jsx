@@ -26,6 +26,7 @@
 import { Card, Button } from 'react-bootstrap';
 import { FaCheckCircle } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
+import { useParametros } from '../../hooks/useParametros';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
 import { formatearDireccion } from '../../utils/direccion';
@@ -47,6 +48,7 @@ const ResumenPedido = ({
   fija = false,
 }) => {
   const { items, total } = useCarrito();
+  const { parametros } = useParametros();
 
   // Prioriza los datos recibidos por props (modo confirmación/lectura) sobre los del carrito.
   const productos = itemsProp || items;
@@ -64,7 +66,7 @@ const ResumenPedido = ({
   const enModoLectura = totalProp !== undefined;
   const costoEnvio = enModoLectura
     ? costoEnvioProp ?? 0
-    : calcularCostoEnvio(montoTotal);
+    : calcularCostoEnvio(montoTotal, parametros);
   const subtotal = enModoLectura ? montoTotal - costoEnvio : montoTotal;
   // En modo carrito el descuento es estimado (el backend lo confirma al crear).
   // En modo lectura el total del backend ya lo incluye: no se resta de nuevo.

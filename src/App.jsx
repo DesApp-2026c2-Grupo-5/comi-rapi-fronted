@@ -1,7 +1,7 @@
 /**
  * Propósito: Componente principal de la aplicación que configura Router y Contextos.
- * Contenido: Función App que envuelve la app con AuthProvider, CarritoProvider, SucursalProvider y BrowserRouter.
- * Dependencias: react-router-dom, context/AuthContext, context/CarritoContext, context/SucursalContext, routes/AppRoutes, Navbar, NavInferior, Footer.
+ * Contenido: Función App que envuelve la app con NotificacionProvider, ParametrosProvider, AuthProvider, CarritoProvider, SucursalProvider y BrowserRouter.
+ * Dependencias: react-router-dom, context/AuthContext, context/CarritoContext, context/SucursalContext, context/ParametrosContext, routes/AppRoutes, Navbar, NavInferior, Footer.
  * Uso: Se renderiza en main.jsx como componente raíz.
  */
 
@@ -14,6 +14,7 @@ import { SucursalProvider } from './context/SucursalContext';
 import { PedidoProvider } from './context/PedidoContext';
 import { DireccionProvider } from './context/DireccionContext';
 import { PersonalizacionProvider } from './context/PersonalizacionContext';
+import { ParametrosProvider } from './context/ParametrosContext';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/comunes/Navbar';
 import NavInferior from './components/comunes/NavInferior';
@@ -69,19 +70,21 @@ function App() {
   return (
     <BrowserRouter>
       <NotificacionProvider>
-        <AuthProvider>
-          <CarritoProvider>
-            <SucursalProvider>
-              <PedidoProvider>
-                <DireccionProvider>
-                  <PersonalizacionProvider>
-                    <AppLayout />
-                  </PersonalizacionProvider>
-                </DireccionProvider>
-              </PedidoProvider>
-            </SucursalProvider>
-          </CarritoProvider>
-        </AuthProvider>
+        <ParametrosProvider>
+          <AuthProvider>
+            <CarritoProvider>
+              <SucursalProvider>
+                <PedidoProvider>
+                  <DireccionProvider>
+                    <PersonalizacionProvider>
+                      <AppLayout />
+                    </PersonalizacionProvider>
+                  </DireccionProvider>
+                </PedidoProvider>
+              </SucursalProvider>
+            </CarritoProvider>
+          </AuthProvider>
+        </ParametrosProvider>
       </NotificacionProvider>
     </BrowserRouter>
   );

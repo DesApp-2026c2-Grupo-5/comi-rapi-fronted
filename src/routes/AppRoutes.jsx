@@ -100,6 +100,7 @@ const GestionAdministradores = lazy(() => import('../pages/superadmin/GestionAdm
 const GestionClientesSuperadmin = lazy(() => import('../pages/superadmin/GestionClientes'));
 const DetalleClienteSuperadmin = lazy(() => import('../pages/superadmin/DetalleCliente'));
 const GestionSucursales = lazy(() => import('../pages/superadmin/GestionSucursales'));
+const Parametros = lazy(() => import('../pages/superadmin/Parametros'));
 const EditarSucursal = lazy(() => import('../pages/superadmin/EditarSucursal'));
 const GestionProductos = lazy(() => import('../pages/superadmin/GestionProductos'));
 const EditarProducto = lazy(() => import('../pages/superadmin/EditarProducto'));
@@ -188,6 +189,7 @@ const AppRoutes = () => {
             <Route path="/superadmin/clientes" element={<GestionClientesSuperadmin />} />
             <Route path="/superadmin/clientes/:id" element={<DetalleClienteSuperadmin />} />
             <Route path="/superadmin/sucursales" element={<GestionSucursales />} />
+            <Route path="/superadmin/parametros" element={<Parametros />} />
             <Route path="/superadmin/sucursal/nuevo" element={<EditarSucursal />} />
             <Route path="/superadmin/sucursal/editar/:id" element={<EditarSucursal />} />
             <Route path="/superadmin/productos" element={<GestionProductos />} />

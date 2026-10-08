@@ -28,6 +28,7 @@ import {
   FaPercent,
   FaUsers,
   FaUserTie,
+  FaCog,
   FaUserCircle,
   FaSignOutAlt,
   FaSignInAlt,
@@ -171,6 +172,12 @@ const menuSuperadmin = [
     etiqueta: 'Sucursales',
     icono: FaStore,
     prefijo: '/superadmin/sucursal',
+  },
+  {
+    to: '/superadmin/parametros',
+    etiqueta: 'Parámetros',
+    icono: FaCog,
+    prefijo: '/superadmin/parametros',
   },
 ];
 

@@ -14,8 +14,9 @@ import { FaSave } from 'react-icons/fa';
 import { obtenerCategorias } from '../../api/categorias';
 import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { useParametros } from '../../hooks/useParametros';
 import SubirImagen from './SubirImagen';
-import EditarComponentes, { MIN_COMPONENTES } from './EditarComponentes';
+import EditarComponentes from './EditarComponentes';
 import './FormularioAdmin.css';
 
 // La categoría "Combos" es la de los combos y no se le ofrece al admin: se
@@ -28,6 +29,7 @@ const esCategoriaCombos = (categoria) =>
 
 const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   const { notificar } = useNotificaciones();
+  const { parametros } = useParametros();
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
@@ -141,9 +143,10 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
         .filter((c) => c.productoId > 0 && c.cantidad > 0);
 
       // Se valida acá para avisar sin ida y vuelta; el backend igual lo exige.
-      if (receta.length < MIN_COMPONENTES) {
+      const minimoComponentes = parametros.minimoComponentesCombo;
+      if (receta.length < minimoComponentes) {
         notificar(
-          `Un combo tiene que armarse con ${MIN_COMPONENTES} o más productos.`,
+          `Un combo tiene que armarse con ${minimoComponentes} o más productos.`,
           'warning'
         );
         return;

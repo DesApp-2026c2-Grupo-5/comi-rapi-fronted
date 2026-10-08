@@ -18,11 +18,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Form, Button, Card, Alert, Spinner, Badge } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt } from 'react-icons/fa';
 import { obtenerMaximosDeCombos } from '../../api/stock';
+import { useParametros } from '../../hooks/useParametros';
 import './FormularioAdmin.css';
 
-export const MIN_COMPONENTES = 2;
-
 const EditarComponentes = ({ productos = [], componentes = [], onChange }) => {
+  const { parametros } = useParametros();
+  const MIN_COMPONENTES = parametros.minimoComponentesCombo;
   const [maximos, setMaximos] = useState(null);
   const [calculando, setCalculando] = useState(false);
   const [errorMaximos, setErrorMaximos] = useState('');
@@ -73,7 +74,7 @@ const EditarComponentes = ({ productos = [], componentes = [], onChange }) => {
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [componentes]);
+  }, [componentes, MIN_COMPONENTES]);
 
   const cambiar = (indice, campo, valor) => {
     const siguiente = componentes.map((componente, i) =>

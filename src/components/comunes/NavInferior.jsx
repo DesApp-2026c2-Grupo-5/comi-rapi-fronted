@@ -40,6 +40,7 @@ import {
   FaUserTie,
   FaSlidersH,
   FaStore,
+  FaCog,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
@@ -169,6 +170,12 @@ const enlacesSuperadmin = [
     etiqueta: 'Sucursales',
     icono: FaStore,
     prefijo: '/superadmin/sucursal',
+  },
+  {
+    to: '/superadmin/parametros',
+    etiqueta: 'Parámetros',
+    icono: FaCog,
+    prefijo: '/superadmin/parametros',
   },
 ];
 

@@ -14,6 +14,7 @@ import { Container, Card, Table, Badge, Button, Row, Col, Alert } from 'react-bo
 import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
+import { useParametros } from '../../hooks/useParametros';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
@@ -27,6 +28,7 @@ import './DetallePedido.css';
 const DetallePedido = () => {
   const { id } = useParams();
   const { pedidos } = usePedidos();
+  const { parametros } = useParametros();
   const {
     repitiendoId,
     pedidoARepetir,
@@ -54,7 +56,7 @@ const DetallePedido = () => {
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
   // El total del backend ya incluye el envío (los seed más viejos lo calculan).
-  const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
+  const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total, parametros);
   const subtotal = pedido.total - costoEnvio;
   const esFinal =
     pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||

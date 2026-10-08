@@ -4,9 +4,9 @@
  *            es la promoción).
  * Contenido: Componente FormularioPromocion con campos controlados (nombre,
  *            descripcion, tipo, valor, fechas, activa) y checkboxes de productos.
- *            Valida en espejo al backend (tipo, valor 0-100 en porcentual,
- *            fechaFin >= fechaInicio). Devuelve productoIds; la página debe
- *            sincronizar los vínculos (asignar/quitar).
+ *            Valida en espejo al backend (tipo, valor 0-porcentajeMaximo en
+ *            porcentual, fechaFin >= fechaInicio). Devuelve productoIds; la
+ *            página debe sincronizar los vínculos (asignar/quitar).
  * Dependencias: react-bootstrap (Form, Button, Card, Spinner, Alert),
  *               react-icons (FaSave), prop-types, api/productos.js,
  *               useNotificaciones.
@@ -23,6 +23,7 @@ import { Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
 import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { useParametros } from '../../hooks/useParametros';
 import './FormularioAdmin.css';
 
 const TIPOS = [
@@ -51,6 +52,8 @@ const nombreCategoria = (producto) => {
 
 const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => {
   const { notificar } = useNotificaciones();
+  const { parametros } = useParametros();
+  const porcentajeMaximo = parametros.porcentajeMaximoDescuento;
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('DESCUENTO_PORCENTUAL');
@@ -157,8 +160,11 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
       notificar('El valor debe ser un número mayor o igual a 0.', 'warning');
       return;
     }
-    if (tipo === 'DESCUENTO_PORCENTUAL' && valorNumero > 100) {
-      notificar('El descuento porcentual no puede superar 100.', 'warning');
+    if (tipo === 'DESCUENTO_PORCENTUAL' && valorNumero > porcentajeMaximo) {
+      notificar(
+        `El descuento porcentual no puede superar ${porcentajeMaximo}.`,
+        'warning'
+      );
       return;
     }
     if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
@@ -252,7 +258,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
               type="number"
               name="valor"
               min="0"
-              max={esDosPorUno ? undefined : 100}
+              max={esDosPorUno ? undefined : porcentajeMaximo}
               value={esDosPorUno ? 50 : valor}
               disabled={esDosPorUno}
               onChange={(e) => setValor(e.target.value)}
@@ -262,7 +268,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
             <Form.Text className="text-muted">
               {esDosPorUno
                 ? '2x1 literal: llevás 2 y pagás 1. Se guarda 50 por convención y se ignora en el cálculo.'
-                : 'Porcentaje de descuento (0–100).'}
+                : `Porcentaje de descuento (0–${porcentajeMaximo}).`}
             </Form.Text>
           </Form.Group>
           <Form.Group className="mb-3" controlId="promocion-fecha-inicio">

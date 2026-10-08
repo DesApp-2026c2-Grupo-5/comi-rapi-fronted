@@ -40,6 +40,7 @@ import { useNotificaciones } from '../../hooks/useNotificaciones';
 // T1: la sucursal la asigna el backend con las reglas reales (más cercana
 // con stock dentro de cobertura) — el espejo local (asignacionSucursal.js)
 // se eliminó del flujo de creación.
+import { useParametros } from '../../hooks/useParametros';
 import { calcularCostoEnvio } from '../../services/envio';
 import { ESTADOS_PEDIDO } from '../../utils/constants';
 import { rutaActual } from '../../utils/rutas';
@@ -57,6 +58,7 @@ const Carrito = () => {
     usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
+  const { parametros } = useParametros();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,7 +100,7 @@ const Carrito = () => {
 
   // El pendiente queda obsoleto si cambiaron promos o importes desde que se creó:
   // en ese caso hay que recrearlo para que el Pago coincida con el carrito.
-  const costoEnvioActual = calcularCostoEnvio(total);
+  const costoEnvioActual = calcularCostoEnvio(total, parametros);
   const totalEstimado = total + costoEnvioActual - descuentoTotal;
   const idsPrevistos = useMemo(
     () => [...promocionIds].map(String).sort(),
