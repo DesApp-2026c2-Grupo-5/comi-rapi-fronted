@@ -1,10 +1,14 @@
 /**
- * Propósito: Pantalla de stock por sucursal para el administrador.
- * Contenido: Filtro por sucursal, tabla producto×cantidad con edición en el
+ * Propósito: Pantalla de stock de la sucursal del administrador.
+ * Contenido: Filtro por producto, tabla producto×cantidad con edición en el
  *            lugar, alta de un producto al catálogo de la sucursal y, para los
  *            combos, la cantidad de los que se pueden armar con el stock actual.
  * Dependencias: react-bootstrap, react-icons, api/stock.js, api/productos.js,
- *               context/SucursalContext (useSucursal).
+ *               context/AuthContext (useAuth).
+ *
+ * Un administrador tiene UNA sola sucursal asignada, así que la pantalla no
+ * ofrece selector de sucursal: opera siempre sobre la suya (`user.sucursalId`) y
+ * el backend acota el stock a esa sucursal.
  * Uso: Ruta "/admin/stock" → <GestionStock />
  *
  * El stock es a nivel producto terminado (DER §2.10): una fila es el par
@@ -17,7 +21,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Container, Table, Button, Spinner, Badge, Form, Alert } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt, FaBoxes } from 'react-icons/fa';
-import { useSucursal } from '../../hooks/useSucursal';
+import { useAuth } from '../../hooks/useAuth';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import {
   obtenerStock,
@@ -30,11 +34,13 @@ import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 
 const GestionStock = () => {
   const { notificar } = useNotificaciones();
-  const { sucursales } = useSucursal();
+  const { user } = useAuth();
+  // La sucursal del admin: única y fija. El backend además acota el stock a
+  // ella, así que no hay nada que elegir en la pantalla.
+  const sucursalId = user?.sucursalId ? String(user.sucursalId) : '';
 
   const [stocks, setStocks] = useState([]);
   const [productos, setProductos] = useState([]);
-  const [sucursalId, setSucursalId] = useState('');
   const [productoId, setProductoId] = useState('');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -43,16 +49,13 @@ const GestionStock = () => {
   const [stockAEliminar, setStockAEliminar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
 
-  // El filtro va al backend: `GET /api/stock` ya acepta sucursalId y productoId,
-  // así que la tabla nunca trae más de lo que se está mirando.
+  // El filtro va al backend: `GET /api/stock` ya acepta productoId; el
+  // `sucursalId` no se envía porque el backend usa la sucursal de la sesión.
   const cargar = async () => {
     setCargando(true);
     setError('');
     try {
-      const filtros = {
-        ...(sucursalId ? { sucursalId } : {}),
-        ...(productoId ? { productoId } : {}),
-      };
+      const filtros = productoId ? { productoId } : {};
       const [resultadoStock, resultadoProductos] = await Promise.all([
         obtenerStock(filtros),
         obtenerProductos(),
@@ -68,7 +71,7 @@ const GestionStock = () => {
   useEffect(() => {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sucursalId, productoId]);
+  }, [productoId]);
 
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
@@ -83,22 +86,17 @@ const GestionStock = () => {
   }, [productos, stocks]);
 
   const [productoNuevo, setProductoNuevo] = useState('');
-  // Selector propio del alta (independiente del filtro de tabla): el usuario
-  // no tiene que filtrar la tabla para poder cargar stock a una sucursal.
-  const [sucursalAlta, setSucursalAlta] = useState('');
 
   const agregarProducto = async () => {
-    const sucursalDestino = sucursalAlta || sucursalId;
-    if (!sucursalDestino || !productoNuevo) {
-      notificar('Elegí una sucursal y un producto.', 'warning');
+    if (!sucursalId || !productoNuevo) {
+      notificar('Elegí un producto.', 'warning');
       return;
     }
     setGuardando(true);
-    const resultado = await crearStock(sucursalDestino, productoNuevo);
+    const resultado = await crearStock(sucursalId, productoNuevo);
     if (resultado.success) {
       notificar(`"${resultado.data.producto}" agregado a la sucursal.`, 'success');
       setProductoNuevo('');
-      setSucursalAlta('');
       await cargar();
     } else {
       notificar(resultado.error || 'No se pudo agregar.', 'danger');
@@ -155,22 +153,6 @@ const GestionStock = () => {
       </p>
 
       <div className="d-flex gap-2 align-items-end flex-wrap mb-3">
-        <Form.Group className="filtro-stock" controlId="stock-filtro-sucursal">
-          <Form.Label className="small mb-1">Sucursal</Form.Label>
-          <Form.Select
-            name="sucursalId"
-            value={sucursalId}
-            onChange={(e) => setSucursalId(e.target.value)}
-          >
-            <option value="">Todas las sucursales</option>
-            {sucursales.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
-
         <Form.Group className="filtro-stock" controlId="stock-filtro-producto">
           <Form.Label className="small mb-1">Producto</Form.Label>
           <Form.Select
@@ -188,34 +170,17 @@ const GestionStock = () => {
           </Form.Select>
         </Form.Group>
 
-        {/* Alta de stock: SIEMPRE visible, con selector propio de sucursal
-            (independiente del filtro de tabla). Si el filtro de tabla ya tiene
-            una sucursal seleccionada, el selector de alta arranca con ese valor
-            (pero el usuario puede cambiarlo). */}
-        <Form.Group className="filtro-stock" controlId="stock-alta-sucursal">
-          <Form.Label className="small mb-1">
-            Cargar stock — Sucursal
-          </Form.Label>
-          <Form.Select
-            name="sucursalAlta"
-            value={sucursalAlta || sucursalId}
-            onChange={(e) => setSucursalAlta(e.target.value)}
-          >
-            <option value="">Seleccionar sucursal…</option>
-            {sucursales.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
+        {/* Alta de stock en la sucursal del admin (única): no hay selector de
+            sucursal, el producto se carga directo en la propia. */}
         <Form.Group className="filtro-stock" controlId="stock-agregar-producto">
-          <Form.Label className="small mb-1">Producto</Form.Label>
+          <Form.Label className="small mb-1">
+            Cargar stock — Producto
+          </Form.Label>
           <Form.Select
             name="productoNuevo"
             value={productoNuevo}
             onChange={(e) => setProductoNuevo(e.target.value)}
-            disabled={!(sucursalAlta || sucursalId)}
+            disabled={!sucursalId}
           >
             <option value="">Seleccionar producto…</option>
             {productosDisponibles.map((p) => (
@@ -230,7 +195,7 @@ const GestionStock = () => {
           variant="primary"
           className="boton-agregar-stock"
           onClick={agregarProducto}
-          disabled={guardando || !productoNuevo || !(sucursalAlta || sucursalId)}
+          disabled={guardando || !productoNuevo || !sucursalId}
         >
           <FaPlus className="me-1" aria-hidden="true" />
           Agregar
@@ -258,7 +223,7 @@ const GestionStock = () => {
             {stocks.length === 0 && (
               <tr>
                 <td colSpan={5} className="stock-vacio text-center">
-                  No hay stock cargado. Elegí una sucursal y agregá productos.
+                  No hay stock cargado. Agregá productos del catálogo.
                 </td>
               </tr>
             )}
