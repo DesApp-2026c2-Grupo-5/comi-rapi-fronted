@@ -6,6 +6,7 @@
  */
 
 import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { Card, Badge, Button } from 'react-bootstrap';
 import { FaEye, FaTimesCircle, FaRedo, FaClock } from 'react-icons/fa';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
@@ -173,5 +174,15 @@ const ListaPedidos = ({
     })}
   </>
 );
+
+ListaPedidos.propTypes = {
+  pedidos: PropTypes.arrayOf(PropTypes.object).isRequired,
+  user: PropTypes.shape({ id: PropTypes.number }),
+  cancelandoId: PropTypes.number,
+  repitiendoId: PropTypes.number,
+  pedirCancelacion: PropTypes.func,
+  pedirRepeticion: PropTypes.func,
+  mostrarCancelar: PropTypes.bool,
+};
 
 export default ListaPedidos;

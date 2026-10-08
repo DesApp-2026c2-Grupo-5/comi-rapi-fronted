@@ -8,7 +8,6 @@
  * Uso: Ruta "/cliente/confirmacion" → <ConfirmacionPedido />
  */
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Card, Button, Badge, Row, Col } from 'react-bootstrap';
 import { FaUtensils, FaReceipt } from 'react-icons/fa';
