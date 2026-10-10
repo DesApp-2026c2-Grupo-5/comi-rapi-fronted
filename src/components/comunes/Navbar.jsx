@@ -29,6 +29,7 @@ import {
   FaUsers,
   FaUserTie,
   FaCog,
+  FaBriefcase,
   FaUserCircle,
   FaSignOutAlt,
   FaSignInAlt,
@@ -133,14 +134,9 @@ const menuSuperadmin = [
     icono: FaUserTie,
   },
   {
-    to: '/superadmin/clientes',
-    etiqueta: 'Clientes',
-    icono: FaUsers,
-    prefijo: '/superadmin/clientes',
-  },
-  {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
+    grupo: 'catalogo',
     hijos: [
       {
         to: '/superadmin/productos',
@@ -168,16 +164,29 @@ const menuSuperadmin = [
     ],
   },
   {
-    to: '/superadmin/sucursales',
-    etiqueta: 'Sucursales',
-    icono: FaStore,
-    prefijo: '/superadmin/sucursal',
-  },
-  {
-    to: '/superadmin/parametros',
-    etiqueta: 'Parámetros',
-    icono: FaCog,
-    prefijo: '/superadmin/parametros',
+    etiqueta: 'Negocio',
+    icono: FaBriefcase,
+    grupo: 'negocio',
+    hijos: [
+      {
+        to: '/superadmin/parametros',
+        etiqueta: 'Parámetros',
+        icono: FaCog,
+        prefijo: '/superadmin/parametros',
+      },
+      {
+        to: '/superadmin/sucursales',
+        etiqueta: 'Sucursales',
+        icono: FaStore,
+        prefijo: '/superadmin/sucursal',
+      },
+      {
+        to: '/superadmin/clientes',
+        etiqueta: 'Clientes',
+        icono: FaUsers,
+        prefijo: '/superadmin/clientes',
+      },
+    ],
   },
 ];
 
@@ -196,10 +205,10 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { pathname } = location;
-  // Estado del desplegable de "Catálogo". Se maneja acá en vez de dejarlo interno
-  // para poder cerrarlo también al navegar: si no, el menú queda colgando
-  // abierto sobre la página nueva.
-  const [grupoAbierto, setGrupoAbierto] = useState(false);
+  // Estado de los desplegables ("Catálogo" y "Negocio"). Se maneja acá en vez de
+  // dejarlo interno para poder cerrarlos también al navegar: si no, el menú queda
+  // colgando abierto sobre la página nueva. `null` = ninguno abierto.
+  const [grupoAbierto, setGrupoAbierto] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -235,7 +244,7 @@ const Navbar = () => {
   const origen = rutaActual(location);
 
   const cerrarNavegacion = () => {
-    setGrupoAbierto(false);
+    setGrupoAbierto(null);
   };
 
   /* Botón de acceso del invitado. El color lleno marca la acción que la app
@@ -369,8 +378,10 @@ const Navbar = () => {
                         sólo abre y cierra un menú. react-bootstrap le aporta el
                         teclado (flechas, Escape) y los aria-expanded. */}
                     <Dropdown
-                      show={grupoAbierto}
-                      onToggle={(abierto) => setGrupoAbierto(abierto)}
+                      show={grupoAbierto === item.grupo}
+                      onToggle={(abierto) =>
+                        setGrupoAbierto(abierto ? item.grupo : null)
+                      }
                       align="end"
                     >
                       <Dropdown.Toggle
@@ -378,7 +389,7 @@ const Navbar = () => {
                         type="button"
                         variant=""
                         className={`nav-enlace nav-enlace-toggle${
-                          grupoActivo || grupoAbierto ? ' activo' : ''
+                          grupoActivo || grupoAbierto === item.grupo ? ' activo' : ''
                         }`}
                       >
                         <span className="nav-enlace-ico-wrap">

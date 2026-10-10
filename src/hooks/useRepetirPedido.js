@@ -119,10 +119,6 @@ export const useRepetirPedido = () => {
       lineas.forEach((linea) => {
         agregarAlCarrito(linea.producto, linea.cantidad, linea.personalizacion);
       });
-      notificar(
-        `Pedido #${pedidoARepetir.id} agregado al carrito a precio actual.`,
-        'success'
-      );
       setPedidoARepetir(null);
       setVistaPrevia({ cargando: false, cambiosPrecio: [], totalAntes: 0, totalAhora: 0 });
       navigate('/cliente/carrito');

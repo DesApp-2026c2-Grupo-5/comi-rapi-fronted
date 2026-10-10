@@ -27,6 +27,11 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
 import { obtenerProductos } from '../../api/productos';
 import { obtenerCategorias } from '../../api/categorias';
+import {
+  obtenerPromociones,
+  obtenerPromocionPorId,
+  obtenerProductosDePromocion,
+} from '../../api/promociones';
 import { useAuth } from '../../hooks/useAuth';
 import { rutaActual } from '../../utils/rutas';
 import ProductoCard from '../../components/cliente/ProductoCard';
@@ -40,6 +45,10 @@ const Catalogo = () => {
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [idsProductosPromocion, setIdsProductosPromocion] = useState(null);
+  const [nombrePromocion, setNombrePromocion] = useState('');
+  const [errorPromocion, setErrorPromocion] = useState('');
+  const [promocionesPorProducto, setPromocionesPorProducto] = useState(new Map());
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
@@ -52,9 +61,10 @@ const Catalogo = () => {
     const cargar = async () => {
       setCargando(true);
       setError('');
-      const [resProductos, resCategorias] = await Promise.all([
+      const [resProductos, resCategorias, resPromociones] = await Promise.all([
         obtenerProductos(),
         obtenerCategorias(),
+        obtenerPromociones(),
       ]);
       if (resProductos.success) {
         setProductos(resProductos.data);
@@ -64,10 +74,65 @@ const Catalogo = () => {
       if (resCategorias.success) {
         setCategorias(resCategorias.data);
       }
+      // Mapa productoId → mejor promoción activa que lo alcanza, para el badge
+      // de las tarjetas. Un producto puede estar en varias promociones: se
+      // queda con la de mayor descuento (2x1 equivale a 50%).
+      if (resPromociones.success) {
+        const descuentoEquivalente = (promo) =>
+          promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor);
+        const productosDePromos = await Promise.all(
+          resPromociones.data.map(async (promo) => {
+            const resProd = await obtenerProductosDePromocion(promo.id);
+            return resProd.success
+              ? resProd.data.map((p) => ({ productoId: p.id, promo }))
+              : [];
+          })
+        );
+        const porProducto = new Map();
+        productosDePromos.flat().forEach(({ productoId, promo }) => {
+          const actual = porProducto.get(productoId);
+          if (!actual || descuentoEquivalente(promo) > descuentoEquivalente(actual)) {
+            porProducto.set(productoId, promo);
+          }
+        });
+        setPromocionesPorProducto(porProducto);
+      }
       setCargando(false);
     };
     cargar();
   }, []);
+
+  // Promoción activa: viene del query param (?promocion=<id>) desde la home
+  // ("Aprovechar"). Se cargan los productos alcanzados y se filtra la grilla.
+  const promocionId = searchParams.get('promocion');
+
+  useEffect(() => {
+    if (!promocionId) {
+      setIdsProductosPromocion(null);
+      setNombrePromocion('');
+      setErrorPromocion('');
+      return;
+    }
+    const cargar = async () => {
+      const [resPromocion, resProductos] = await Promise.all([
+        obtenerPromocionPorId(promocionId),
+        obtenerProductosDePromocion(promocionId),
+      ]);
+      if (resPromocion.success) {
+        setNombrePromocion(resPromocion.data.nombre);
+      }
+      if (resProductos.success) {
+        setIdsProductosPromocion(new Set(resProductos.data.map((p) => p.id)));
+        setErrorPromocion('');
+      } else {
+        setIdsProductosPromocion(null);
+        setErrorPromocion(
+          resProductos.error || 'No se pudieron cargar los productos de la promoción.'
+        );
+      }
+    };
+    cargar();
+  }, [promocionId]);
 
   // Categoría activa: viene del query param (?categoria=<id>) o por defecto "Todos"
   const categoriaParam = searchParams.get('categoria');
@@ -87,6 +152,10 @@ const Catalogo = () => {
     const max = precioMax !== '' ? Number(precioMax) : null;
 
     return productos.filter((p) => {
+      // Filtro por promoción: solo los productos alcanzados por ella.
+      if (idsProductosPromocion && !idsProductosPromocion.has(p.id)) {
+        return false;
+      }
       if (categoriaValida && p.categoriaId !== categoriaId) {
         return false;
       }
@@ -101,7 +170,7 @@ const Catalogo = () => {
       }
       return true;
     });
-  }, [productos, categoriaValida, categoriaId, busqueda, precioMin, precioMax]);
+  }, [productos, idsProductosPromocion, categoriaValida, categoriaId, busqueda, precioMin, precioMax]);
 
   // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
   // Conserva los filtros de búsqueda y precio ya presentes en la URL.
@@ -185,6 +254,32 @@ const Catalogo = () => {
             registrarte
           </Link>
           .
+        </Alert>
+      )}
+
+      {/* Aviso de filtro por promoción (viene de "Aprovechar" en la home).
+          Se quita el filtro con el botón, que limpia el query param. */}
+      {errorPromocion && (
+        <Alert variant="warning" className="cat-aviso text-center mb-4">
+          {errorPromocion}
+        </Alert>
+      )}
+      {!errorPromocion && nombrePromocion && idsProductosPromocion && (
+        <Alert
+          variant="info"
+          className="d-flex align-items-center justify-content-between gap-3 cat-aviso text-center mb-4"
+        >
+          <span className="mx-auto">
+            Mostrando los productos de la promoción <strong>{nombrePromocion}</strong>
+          </span>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            className="flex-shrink-0"
+            onClick={() => setParam('promocion', '')}
+          >
+            Quitar filtro
+          </Button>
         </Alert>
       )}
 
@@ -325,7 +420,10 @@ const Catalogo = () => {
           <Row className="justify-content-center">
             {productosFiltrados.map((producto) => (
               <Col key={producto.id} md={4} lg={3} className="mb-4">
-                <ProductoCard producto={producto} />
+                <ProductoCard
+                  producto={producto}
+                  promocion={promocionesPorProducto.get(producto.id)}
+                />
               </Col>
             ))}
           </Row>

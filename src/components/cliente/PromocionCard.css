@@ -1,0 +1,54 @@
+.promocion-card {
+  position: relative;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promocion-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.promocion-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 0.45rem 0.85rem;
+  border-radius: 50px;
+  box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
+}
+
+.promocion-nombre {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #2b2b2b;
+  /* El badge es absoluto arriba a la izquierda: este margen deja el nombre
+     debajo y evita que el "2x1" / "-10%" lo tape. */
+  margin-top: 2.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.promocion-descripcion {
+  font-size: 0.95rem;
+}
+
+.promocion-boton {
+  background-color: #e63946;
+  border: none;
+  border-radius: 50px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 0.5rem 1.4rem;
+}
+
+.promocion-boton:hover,
+.promocion-boton:focus {
+  background-color: #c1121f;
+}

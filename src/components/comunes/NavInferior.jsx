@@ -41,6 +41,7 @@ import {
   FaSlidersH,
   FaStore,
   FaCog,
+  FaBriefcase,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
@@ -92,7 +93,7 @@ const enlacesAdmin = [
   {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
-    esCatalogo: true,
+    hoja: 'catalogo',
     hojaTitulo: 'Catálogo (solo lectura)',
     hijos: [
       {
@@ -119,9 +120,10 @@ const enlacesAdmin = [
 ];
 
 /* El superadministrador comparte el andamiaje de la barra inferior: panel,
-   administradores, clientes, hoja de Catálogo (el CRUD completo) y sucursales.
-   Así, en el móvil navega igual que el admin, con los destinos al alcance del
-   pulgar y sin depender del menú hamburguesa. */
+   administradores, hoja de Catálogo (el CRUD completo) y hoja de Negocio
+   (parámetros, sucursales y clientes). Así, en el móvil navega igual que el
+   admin, con los destinos al alcance del pulgar y sin depender del menú
+   hamburguesa. */
 const enlacesSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
   {
@@ -130,14 +132,9 @@ const enlacesSuperadmin = [
     icono: FaUserTie,
   },
   {
-    to: '/superadmin/clientes',
-    etiqueta: 'Clientes',
-    icono: FaUsers,
-  },
-  {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
-    esCatalogo: true,
+    hoja: 'catalogo',
     hojaTitulo: 'Catálogo',
     hijos: [
       {
@@ -166,16 +163,30 @@ const enlacesSuperadmin = [
     ],
   },
   {
-    to: '/superadmin/sucursales',
-    etiqueta: 'Sucursales',
-    icono: FaStore,
-    prefijo: '/superadmin/sucursal',
-  },
-  {
-    to: '/superadmin/parametros',
-    etiqueta: 'Parámetros',
-    icono: FaCog,
-    prefijo: '/superadmin/parametros',
+    etiqueta: 'Negocio',
+    icono: FaBriefcase,
+    hoja: 'negocio',
+    hojaTitulo: 'Negocio',
+    hijos: [
+      {
+        to: '/superadmin/parametros',
+        etiqueta: 'Parámetros',
+        icono: FaCog,
+        prefijo: '/superadmin/parametros',
+      },
+      {
+        to: '/superadmin/sucursales',
+        etiqueta: 'Sucursales',
+        icono: FaStore,
+        prefijo: '/superadmin/sucursal',
+      },
+      {
+        to: '/superadmin/clientes',
+        etiqueta: 'Clientes',
+        icono: FaUsers,
+        prefijo: '/superadmin/clientes',
+      },
+    ],
   },
 ];
 
@@ -187,8 +198,9 @@ const NavInferior = () => {
   const { user } = useAuth();
   const { pathname } = useLocation();
   // La hoja de Catálogo del admin (móvil) se abre y cierra con su propio estado;
-  // al navegar a un hijo se cierra sola.
-  const [hojaAbierta, setHojaAbierta] = useState(false);
+  // al navegar a un hijo se cierra sola. Guarda el nombre de la hoja abierta
+  // ('catalogo' | 'negocio') o null, para poder tener más de una.
+  const [hojaAbierta, setHojaAbierta] = useState(null);
 
   const {
     productosDistintos,
@@ -249,10 +261,15 @@ const NavInferior = () => {
       ? ' nav-enlace-ico-pulso'
       : '';
 
-  /* La hoja del Catálogo del admin se marca activa si la ruta actual es una de
+  /* Cada hoja (Catálogo, Negocio) se marca activa si la ruta actual es una de
      sus subpantallas (por ejemplo, /admin/productos). */
-  const hijoSuscriptor = enlaces.find((enlace) => enlace.esCatalogo);
-  const catalogoActivo = hijoSuscriptor ? esRutaDeAlguna(hijoSuscriptor.hijos, pathname) : false;
+  const hojas = enlaces.filter((enlace) => enlace.hoja);
+  const hojaActiva = (clave) => {
+    const hoja = hojas.find((enlace) => enlace.hoja === clave);
+    return hoja ? esRutaDeAlguna(hoja.hijos, pathname) : false;
+  };
+  // La hoja que se muestra: la abierta o, si ninguna lo está, ninguna.
+  const hojaVisible = hojas.find((enlace) => enlace.hoja === hojaAbierta);
 
   return (
     <>
@@ -262,16 +279,16 @@ const NavInferior = () => {
       <nav className="nav-inferior" aria-label="Navegación principal">
         <ul className="nav-inferior-lista">
           {enlaces.map((enlace) => {
-            if (enlace.esCatalogo) {
+            if (enlace.hoja) {
               return (
                 <li key={enlace.etiqueta} className="nav-inferior-item">
                   <button
                     type="button"
-                    onClick={() => setHojaAbierta(true)}
-                    aria-expanded={hojaAbierta}
+                    onClick={() => setHojaAbierta(enlace.hoja)}
+                    aria-expanded={hojaAbierta === enlace.hoja}
                     aria-haspopup="true"
                     className={`nav-inferior-enlace nav-inferior-boton${
-                      catalogoActivo || hojaAbierta ? ' activo' : ''
+                      hojaActiva(enlace.hoja) || hojaAbierta === enlace.hoja ? ' activo' : ''
                     }`}
                   >
                     <span className="nav-inferior-ico-wrap">
@@ -305,31 +322,31 @@ const NavInferior = () => {
         </ul>
       </nav>
 
-      {/* Hoja del Catálogo (admin en solo lectura, superadmin con CRUD). La hoja
+      {/* Hoja de Catálogo (admin en solo lectura, superadmin con CRUD) y hoja de
+          Negocio (parámetros, sucursales y clientes del superadmin). La hoja
           crece desde abajo, igual que esta barra, para mantener la mano en el
-          mismo lugar. Al tocar un destino se navega y se cierra. Sólo existe
-          para los roles con `esCatalogo` en sus enlaces (admin/superadmin). */}
-      {hijoSuscriptor && (
+          mismo lugar. Al tocar un destino se navega y se cierra. */}
+      {hojaVisible && (
         <Offcanvas
-          show={hojaAbierta}
-          onHide={() => setHojaAbierta(false)}
+          show={Boolean(hojaVisible)}
+          onHide={() => setHojaAbierta(null)}
           placement="bottom"
           className="nav-hoja offcanvas"
         >
           <Offcanvas.Header closeButton closeVariant="white">
             <Offcanvas.Title as="span">
-              <FaUtensils className="me-2" aria-hidden="true" />
-              {hijoSuscriptor.hojaTitulo || hijoSuscriptor.etiqueta}
+              <hojaVisible.icono className="me-2" aria-hidden="true" />
+              {hojaVisible.hojaTitulo || hojaVisible.etiqueta}
             </Offcanvas.Title>
           </Offcanvas.Header>
           <Offcanvas.Body>
             <ul className="nav-hoja-lista">
-              {hijoSuscriptor.hijos.map((hijo) => (
+              {hojaVisible.hijos.map((hijo) => (
                 <li key={hijo.to}>
                   <NavLink
                     to={hijo.to}
                     end
-                    onClick={() => setHojaAbierta(false)}
+                    onClick={() => setHojaAbierta(null)}
                     className={`nav-hoja-enlace${
                       esRutaDeAlguna([hijo], pathname) ? ' activo' : ''
                     }`}

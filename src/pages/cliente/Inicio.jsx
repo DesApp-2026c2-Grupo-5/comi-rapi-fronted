@@ -14,8 +14,11 @@
  *  3. Más vendidos de hoy: los 3 productos más vendidos del día según
  *     GET /api/productos/mas-vendidos, reutilizando <ProductoCard /> para mantener
  *     un estilo idéntico con el catálogo. Antes eran 3 ids fijos.
- *  4. Envío a domicilio: fondo naranja, título, subtítulo y botón "PIDE AHORA" con bicicleta.
- *  5. Footer oscuro: ya lo provee el componente global <Footer /> (bg-dark) en App.jsx.
+ *  4. Promociones del día: las 3 mejores promociones activas según
+ *     GET /api/promociones, ordenadas por descuento equivalente (2x1 = 50%),
+ *     con <PromocionCard />.
+ *  5. Envío a domicilio: fondo naranja, título, subtítulo y botón "PIDE AHORA" con bicicleta.
+ *  6. Footer oscuro: ya lo provee el componente global <Footer /> (bg-dark) en App.jsx.
  *  Extra: toda la customización visual vive en ./Inicio.css.
  */
 
@@ -25,18 +28,39 @@ import { FaShoppingCart } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import { obtenerCategorias } from '../../api/categorias';
 import { obtenerMasVendidos } from '../../api/productos';
+import { obtenerPromociones } from '../../api/promociones';
 import ProductoCard from '../../components/cliente/ProductoCard';
+import PromocionCard from '../../components/cliente/PromocionCard';
 import './Inicio.css';
+
+// Un DOS_POR_UNO equivale a un 50% de descuento: así se compara contra las
+// promociones porcentuales para elegir las mejores.
+const DESCUENTO_EQUIVALENTE = {
+  DESCUENTO_PORCENTUAL: (valor) => Number(valor),
+  DOS_POR_UNO: () => 50,
+};
+
+const mejoresPromociones = (promociones, limite = 3) =>
+  promociones
+    .map((promocion) => ({
+      ...promocion,
+      _descuento:
+        DESCUENTO_EQUIVALENTE[promocion.tipo]?.(promocion.valor) ?? 0,
+    }))
+    .sort((a, b) => b._descuento - a._descuento)
+    .slice(0, limite);
 
 const Inicio = () => {
   const [categorias, setCategorias] = useState([]);
   const [masVendidos, setMasVendidos] = useState([]);
+  const [promociones, setPromociones] = useState([]);
 
   useEffect(() => {
     const cargar = async () => {
-      const [resCategorias, resMasVendidos] = await Promise.all([
+      const [resCategorias, resMasVendidos, resPromociones] = await Promise.all([
         obtenerCategorias(),
         obtenerMasVendidos(),
+        obtenerPromociones(),
       ]);
       if (resCategorias.success) {
         setCategorias(
@@ -54,6 +78,11 @@ const Inicio = () => {
       // más caros para que la sección nunca quede vacía.
       if (resMasVendidos.success) {
         setMasVendidos(resMasVendidos.data);
+      }
+      // Las mejores 3 promociones activas del día: se ordena por descuento
+      // equivalente (2x1 = 50%) y se cortan en 3, igual que los más vendidos.
+      if (resPromociones.success) {
+        setPromociones(mejoresPromociones(resPromociones.data));
       }
     };
     cargar();
@@ -213,7 +242,23 @@ const Inicio = () => {
         </Container>
       </section>
 
-      {/* ===================== 4. ENVÍO A DOMICILIO ===================== */}
+      {/* ============ 4. PROMOCIONES DEL DÍA ============ */}
+      {promociones.length > 0 && (
+        <section className="pb-5">
+          <Container>
+            <h2 className="seccion-titulo mb-4">PROMOCIONES DEL DÍA</h2>
+            <Row className="justify-content-center">
+              {promociones.map((promocion) => (
+                <Col key={promocion.id} md={4} className="mb-4">
+                  <PromocionCard promocion={promocion} />
+                </Col>
+              ))}
+            </Row>
+          </Container>
+        </section>
+      )}
+
+      {/* ===================== 5. ENVÍO A DOMICILIO ===================== */}
       <section className="envio-section py-5">
         <Container className="text-center">
           <h2 className="seccion-titulo text-white mb-3">ENVÍO A DOMICILIO RÁPIDO</h2>
@@ -232,7 +277,7 @@ const Inicio = () => {
         </Container>
       </section>
 
-      {/* ===================== 5. FOOTER OSCURO ===================== */}
+      {/* ===================== 6. FOOTER OSCURO ===================== */}
       {/* El footer oscuro ya lo renderiza el componente global <Footer /> (bg-dark)
           definido en src/components/comunes/Footer.jsx y montado en App.jsx. */}
     </>

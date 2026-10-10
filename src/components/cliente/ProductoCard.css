@@ -7,6 +7,7 @@
  */
 
 .producto-card {
+  position: relative;
   border: 2px solid #ffe9c9;
   border-radius: 18px;
   overflow: hidden;
@@ -37,6 +38,10 @@
 .producto-precio {
   color: #e63946;
   font-size: 1.2rem;
+}
+
+.producto-precio-tachado {
+  font-size: 0.85rem;
 }
 
 .producto-boton {
@@ -83,4 +88,21 @@
 
 .producto-rank svg {
   font-size: 1.6rem;
+}
+
+/* Badge de promoción: arriba a la derecha, para no pisar el rank (izquierda). */
+.producto-promocion-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background-color: #e63946;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.4);
+  pointer-events: none;
 }

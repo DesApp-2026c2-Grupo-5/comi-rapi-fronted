@@ -6,7 +6,7 @@ import { formatPrice } from '../../utils/formatters';
 import ProductoPersonalizarModal from './ProductoPersonalizarModal';
 import './ProductoCard.css';
 
-const ProductoCard = ({ producto, rank }) => {
+const ProductoCard = ({ producto, rank, promocion }) => {
   const [showModal, setShowModal] = useState(false);
   // La receta del combo: [{ productoId, cantidad, nombre? }]. El backend la
   // devuelve en el índice y en el detalle del producto.
@@ -21,6 +21,21 @@ const ProductoCard = ({ producto, rank }) => {
     if (rank === 3) return <FaAward aria-label="#3" />;
     return null;
   };
+  // Badge de promoción: arriba a la derecha para no pisar el rank (izquierda).
+  // El backend no deja promocionar combos (el combo ya es la promoción), así
+  // que en la práctica el badge cae siempre en productos simples.
+  const badgePromocion = promocion
+    ? promocion.tipo === 'DOS_POR_UNO'
+      ? '2x1'
+      : `-${Math.round(Number(promocion.valor))}%`
+    : null;
+  // Precio con descuento porcentual: el original va tachado y más chico, y el
+  // precio final abajo en tamaño normal. Con 2x1 no se toca: el descuento es
+  // por cantidad en el carrito, no sobre el precio unitario de la tarjeta.
+  const precioConDescuento =
+    promocion && promocion.tipo === 'DESCUENTO_PORCENTUAL'
+      ? Number(producto.precio) * (1 - Number(promocion.valor) / 100)
+      : null;
 
   return (
     <>
@@ -29,6 +44,11 @@ const ProductoCard = ({ producto, rank }) => {
           <div className={`producto-rank producto-rank--${rank}`}>
             {getRankIcon()}
           </div>
+        )}
+        {badgePromocion && (
+          <span className="producto-promocion-badge" aria-label={`Promoción ${badgePromocion}`}>
+            {badgePromocion}
+          </span>
         )}
         {/* `alt=""` a propósito: el nombre del producto ya está en el título de
             la tarjeta, y repetirlo hace que el lector de pantalla lo lea dos
@@ -62,7 +82,18 @@ const ProductoCard = ({ producto, rank }) => {
               ))}
             </ul>
           )}
-          <Card.Text className="fw-bold producto-precio">{formatPrice(producto.precio)}</Card.Text>
+          {precioConDescuento !== null ? (
+            <div className="d-flex flex-column">
+              <Card.Text className="text-muted text-decoration-line-through producto-precio-tachado mb-0">
+                {formatPrice(producto.precio)}
+              </Card.Text>
+              <Card.Text className="fw-bold producto-precio">
+                {formatPrice(precioConDescuento)}
+              </Card.Text>
+            </div>
+          ) : (
+            <Card.Text className="fw-bold producto-precio">{formatPrice(producto.precio)}</Card.Text>
+          )}
           <Button className="producto-boton w-100" onClick={() => setShowModal(true)}>
             <FaCartPlus aria-hidden="true" />
             Añadir
@@ -93,8 +124,15 @@ ProductoCard.propTypes = {
     ),
   }).isRequired,
   rank: PropTypes.number,
+  promocion: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    nombre: PropTypes.string,
+    tipo: PropTypes.string.isRequired,
+    valor: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
 };
 
 ProductoCard.defaultProps = {
   rank: undefined,
+  promocion: undefined,
 };

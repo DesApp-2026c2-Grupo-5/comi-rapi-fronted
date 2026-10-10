@@ -229,6 +229,7 @@ export function mapearPedidoACarrito(
         id: vigente.id,
         nombre: vigente.nombre,
         precio: precioBaseAhora,
+        imagen: vigente.imagen,
       },
       cantidad,
       personalizacion: pers,
