@@ -91,13 +91,18 @@ export const PedidoProvider = ({ children }) => {
         snapshot[pedido.id] = pedido.estado;
         const previo = previos[pedido.id];
 
-        // Transición → EN_CAMINO: avisa al cliente dueño del pedido.
+        // Transición → EN_CAMINO: avisa a ambas partes incluyendo el número
+        // de pedido (mismo criterio que ENTREGADO).
         if (
           pedido.estado === ESTADOS_PEDIDO.EN_CAMINO &&
           previo &&
           previo !== ESTADOS_PEDIDO.EN_CAMINO
         ) {
-          notificar('Tu pedido está en camino.', 'info');
+          if (isAdmin) {
+            notificar(`El pedido #${pedido.id} está en camino.`, 'info');
+          } else {
+            notificar(`Tu pedido #${pedido.id} está en camino.`, 'info');
+          }
           return;
         }
 

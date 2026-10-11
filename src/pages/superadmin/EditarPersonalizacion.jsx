@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Container, Spinner, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -69,6 +69,15 @@ const EditarPersonalizacion = () => {
     );
   }
 
+  const elementoInicial = id
+    ? elemento
+    : tipoPreseleccionado
+      ? {
+          tipo: tipoPreseleccionado,
+          productoId: productoPreseleccionado ? Number(productoPreseleccionado) : null,
+        }
+      : null;
+
   const volverTo = elemento ? `/superadmin/personalizacion?productoId=${elemento.productoId}` : productoPreseleccionado ? `/superadmin/personalizacion?productoId=${productoPreseleccionado}` : '/superadmin/personalizacion';
 
   return (
@@ -79,7 +88,7 @@ const EditarPersonalizacion = () => {
       <h1 className="h2 mb-4">{id ? `Editar elemento #${id}` : 'Nuevo elemento'}</h1>
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <FormularioPersonalizacion
-        elemento={id ? elemento : tipoPreseleccionado ? { tipo: tipoPreseleccionado } : null}
+        elemento={elementoInicial}
         productos={productosMock}
         productoPreseleccionado={productoPreseleccionado}
         onGuardar={handleGuardar}

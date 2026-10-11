@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { Form, Button, Card, InputGroup } from 'react-bootstrap';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -20,13 +21,22 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
   const [activo, setActivo] = useState(elemento?.activo ?? true);
 
   useEffect(() => {
-    if (elemento) {
-      setProductoId(String(elemento.productoId || ''));
+    if (elemento && elemento.productoId) {
+      setProductoId(String(elemento.productoId));
       setTipo(elemento.tipo || '');
       setNombre(elemento.nombre || '');
       setPrecio(elemento.precio ?? '');
       setProductoReferenciaId(elemento.productoReferenciaId ? String(elemento.productoReferenciaId) : '');
       setActivo(elemento.activo ?? true);
+    } else if (elemento) {
+      // Elemento parcial (p. ej. "nuevo" con tipo preseleccionado): solo el
+      // tipo viene dado; el producto se toma de la URL.
+      setTipo(elemento.tipo || '');
+      if (elemento.nombre) setNombre(elemento.nombre);
+      if (elemento.precio !== undefined) setPrecio(elemento.precio);
+      if (elemento.productoReferenciaId) setProductoReferenciaId(String(elemento.productoReferenciaId));
+      if (elemento.activo !== undefined) setActivo(elemento.activo);
+      if (productoPreseleccionado) setProductoId(String(productoPreseleccionado));
     } else if (productoPreseleccionado) {
       setProductoId(String(productoPreseleccionado));
     }
@@ -109,7 +119,7 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
         <Form onSubmit={handleSubmit} noValidate>
           <Form.Group className="mb-3" controlId="personalizacion-producto">
             <Form.Label>Producto *</Form.Label>
-            <Form.Select name="productoId" value={productoId} onChange={(e) => setProductoId(e.target.value)} disabled={!!elemento}>
+            <Form.Select name="productoId" value={productoId} onChange={(e) => setProductoId(e.target.value)}>
               <option value="">— Elegí producto —</option>
               {productos.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -117,7 +127,6 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
                 </option>
               ))}
             </Form.Select>
-            {elemento && <Form.Text className="text-muted">No se cambia de producto al editar.</Form.Text>}
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="personalizacion-tipo">
@@ -218,6 +227,13 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
       </Card.Body>
     </Card>
   );
+};
+
+FormularioPersonalizacion.propTypes = {
+  elemento: PropTypes.object,
+  productos: PropTypes.arrayOf(PropTypes.object),
+  productoPreseleccionado: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onGuardar: PropTypes.func,
 };
 
 export default FormularioPersonalizacion;

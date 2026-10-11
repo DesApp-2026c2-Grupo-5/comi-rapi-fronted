@@ -41,7 +41,11 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
     navigate(`/superadmin/personalizacion/nuevo?productoId=${productoSeleccionado}${tipoQuery}`);
   };
 
-  const handleEditar = (id) => navigate(`/superadmin/personalizacion/editar/${id}`);
+  const handleEditar = (id) => {
+    const el = elementos.find((e) => String(e.id) === String(id));
+    const pid = el?.productoId || productoSeleccionado;
+    navigate(`/superadmin/personalizacion/editar/${id}?productoId=${pid}`);
+  };
 
   const etiquetaDe = (el) =>
     el.tipo === 'acompanar' ? `→ ${el.nombre}` : el.nombre;
