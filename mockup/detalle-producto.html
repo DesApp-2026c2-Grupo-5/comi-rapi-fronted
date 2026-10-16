@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comi-Rapi — Mockup Detalle de Producto</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --naranja:#ff9f1c; --naranja-hover:#e88900; --naranja-osc:#b55d00;
+  --crema:#fff4e2; --crema-borde:#f1c27d; --crema-card:#fff8ef; --borde-card:#ffe9c9;
+  --verde:#22c55e; --verde-hover:#16a34a; --rojo:#e63946;
+  --gris-pill:#f1f1f5; --gris-text:#6c757d;
+}
+body{ background:#fffaf0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#2b2b2b; }
+.btn{ border-radius:999px; font-weight:600; gap:.5rem; display:inline-flex; align-items:center; justify-content:center; transition:transform .2s, box-shadow .25s; }
+.btn:hover{ transform:translateY(-2px); }
+.btn-primary{ --bs-btn-bg:var(--naranja); --bs-btn-border-color:var(--naranja); --bs-btn-hover-bg:var(--naranja-hover); --bs-btn-hover-border-color:var(--naranja-hover); box-shadow:0 4px 12px rgba(240,127,16,.25); }
+.card-comi{ border:2px solid var(--borde-card); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.08); overflow:hidden; }
+.badge-comi{ background:var(--crema); color:var(--naranja-osc); border:1px solid var(--crema-borde); font-weight:700; }
+.precio-destacado{ color:var(--rojo); font-weight:800; font-size:1.5rem; }
+.precio-tachado{ color:var(--gris-text); text-decoration:line-through; font-size:1rem; }
+.promo-badge{ background-color:var(--rojo); color:#fff; font-weight:800; letter-spacing:.5px; padding:.35rem .9rem; border-radius:50px; box-shadow:0 4px 10px rgba(230,57,70,.4); }
+.pill-control{ background:var(--gris-pill); border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
+.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
+.pill-control button:hover{ background:var(--naranja); color:#fff; }
+.pill-control span{ min-width:18px; text-align:center; font-weight:700; }
+.detalle-hero-img{ width:100%; height:100%; min-height:280px; object-fit:cover; }
+.detalle-etiqueta{ display:block; font-size:.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--naranja-hover); margin-bottom:.5rem; }
+.ing-chip{ background:var(--crema-card); border:2px solid var(--borde-card); border-radius:50px; padding:.35rem .9rem; font-weight:600; font-size:.9rem; }
+.acomp-item{ display:flex; justify-content:space-between; align-items:center; background:var(--crema-card); border:2px solid var(--borde-card); border-radius:14px; padding:.6rem .9rem; margin-bottom:.5rem; }
+.promo-box{ background:#fff5e6; border:2px solid var(--borde-card); border-radius:14px; padding:1rem 1.25rem; }
+.resena{ border-bottom:1px solid var(--borde-card); padding:.8rem 0; }
+.resena:last-child{ border-bottom:none; }
+.estrellas{ color:var(--naranja); letter-spacing:2px; }
+.rel-card{ border:2px solid var(--borde-card); border-radius:18px; overflow:hidden; background:#fff; transition:transform .2s ease, box-shadow .2s ease; cursor:pointer; }
+.rel-card:hover{ transform:translateY(-4px); box-shadow:0 14px 26px rgba(0,0,0,.13); }
+.rel-card img{ height:130px; object-fit:cover; width:100%; }
+.boton-volver{ display:inline-flex; align-items:center; gap:.5rem; color:#2b2b2b; font-weight:600; background:#fff; border:2px solid var(--crema-borde); border-radius:50px; padding:.5rem 1.15rem; text-decoration:none; }
+.mockup-tag{ position:sticky; top:0; z-index:10; background:rgba(255,250,240,.92); border-bottom:2px solid var(--borde-card); backdrop-filter:blur(6px); }
+.vista{ display:none; }
+.vista.activa{ display:block; animation:fade .2s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<div class="mockup-tag text-center py-2">
+  <span class="fw-bold">🍔 Comi-Rapi <span class="badge badge-comi ms-2">MOCKUP — Detalle de producto</span></span>
+  <div class="small text-muted">Click en imagen/nombre de la card → <code>/producto/:id</code> · Reseñas fijas (demo, sin backend)</div>
+</div>
+
+<div class="container py-4" style="max-width:1120px;">
+
+  <!-- Volver -->
+  <div class="mb-3">
+    <a href="#" class="boton-volver" onclick="irCatalogo(); return false;">← Volver al catálogo</a>
+  </div>
+
+  <!-- ===== VISTA CATÁLOGO (origen del click) ===== -->
+  <div id="vista-catalogo" class="vista">
+    <h2 class="fw-bold mb-1">Hamburguesas</h2>
+    <p class="text-muted">Hacé click en la <strong>imagen</strong> o el <strong>nombre</strong> para ver el detalle. El botón Añadir sigue abriendo el modal.</p>
+    <div class="row g-3" style="max-width:640px;">
+      <div class="col-6">
+        <div class="card-comi h-100">
+          <span class="promo-badge position-absolute m-2">-10%</span>
+          <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80" class="w-100" style="height:150px;object-fit:cover;cursor:pointer;" onclick="irDetalle()" alt="Hamburguesa Clásica">
+          <div class="p-3">
+            <h5 class="fw-bold" style="cursor:pointer;" onclick="irDetalle()">Hamburguesa Clásica</h5>
+            <p class="text-muted small">Medallón de carne, cheddar, lechuga y tomate.</p>
+            <div class="fw-bold" style="color:var(--rojo);">$ 1.500</div>
+            <button class="btn btn-primary w-100 mt-2 btn-sm">Añadir</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="card-comi h-100">
+          <img src="https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&q=80" class="w-100" style="height:150px;object-fit:cover;cursor:pointer;" onclick="irDetalle()" alt="Hamburguesa Doble">
+          <div class="p-3">
+            <h5 class="fw-bold" style="cursor:pointer;" onclick="irDetalle()">Hamburguesa Doble</h5>
+            <p class="text-muted small">Doble carne, doble cheddar, panceta.</p>
+            <div class="fw-bold" style="color:var(--rojo);">$ 2.100</div>
+            <button class="btn btn-primary w-100 mt-2 btn-sm">Añadir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VISTA DETALLE ===== -->
+  <div id="vista-detalle" class="vista activa">
+    <div class="card-comi mb-4">
+      <div class="row g-0">
+        <div class="col-md-5 position-relative">
+          <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80" class="detalle-hero-img" alt="Hamburguesa Clásica">
+          <span class="promo-badge position-absolute" style="top:12px;right:12px;">-10%</span>
+        </div>
+        <div class="col-md-7">
+          <div class="p-4 d-flex flex-column h-100">
+            <span class="badge badge-comi align-self-start mb-2">Hamburguesas</span>
+            <h1 class="fw-bold mb-1">Hamburguesa Clásica</h1>
+            <div class="mb-2"><span class="estrellas">★★★★☆</span> <strong>4.2</strong> <span class="text-muted small">(23 reseñas)</span></div>
+            <p class="text-muted flex-grow-1">Medallón de carne vacuna a la parrilla, queso cheddar fundido, lechuga fresca, tomate y pan de papa tostado. La clásica que nunca falla.</p>
+            <div class="mb-3">
+              <span class="precio-tachado me-2">$ 1.500</span>
+              <span class="precio-destacado">$ 1.350</span>
+              <span class="badge badge-comi ms-2">con tarjeta</span>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <span class="pill-control"><button onclick="cambiarCant(-1)">−</button><span id="cant">1</span><button onclick="cambiarCant(1)">+</button></span>
+              <button class="btn btn-primary" onclick="toast('Agregado al carrito (demo)')">Añadir</button>
+              <button class="btn btn-success" onclick="toast('Abre modal personalizar (demo)')">Personalizar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-7">
+        <div class="card-comi p-4 h-100">
+          <span class="detalle-etiqueta">Ingredientes</span>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="ing-chip">🥩 Carne vacuna</span>
+            <span class="ing-chip">🧀 Queso cheddar</span>
+            <span class="ing-chip">🥬 Lechuga</span>
+            <span class="ing-chip">🍅 Tomate</span>
+            <span class="ing-chip">🍞 Pan de papa</span>
+          </div>
+          <p class="text-muted small mt-3 mb-0">¿Sacás o agregás algo? Personalizalo a tu gusto.</p>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="card-comi p-4 h-100">
+          <span class="detalle-etiqueta">Con qué acompañar</span>
+          <div class="acomp-item"><span>🍟 Pileta de cheddar <small class="text-muted">+$400</small></span></div>
+          <div class="acomp-item"><span>🥤 Papas fritas <small class="text-muted">+$350</small></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="promo-box mb-4">
+      <span class="detalle-etiqueta">Promoción</span>
+      <div class="fw-bold">10% OFF con tarjeta <span class="badge badge-comi ms-1">vigente hasta 30/11</span></div>
+      <div class="text-muted small">El descuento se aplica solo. En combos no aplica: el combo ya es la promoción.</div>
+    </div>
+
+    <div class="card-comi p-4 mb-4">
+      <span class="detalle-etiqueta">Reseñas de clientes <span class="badge badge-comi ms-1">demo</span></span>
+      <div class="resena">
+        <div><span class="estrellas">★★★★★</span> <strong>María G.</strong> <small class="text-muted">· hace 2 días</small></div>
+        <div>La mejor hamburguesa del barrio, el pan es increíble.</div>
+      </div>
+      <div class="resena">
+        <div><span class="estrellas">★★★★☆</span> <strong>Juan P.</strong> <small class="text-muted">· hace 1 semana</small></div>
+        <div>Riquísima, llegó caliente. Le sacaría un poco de sal.</div>
+      </div>
+      <div class="resena">
+        <div><span class="estrellas">★★★★★</span> <strong>Lucía F.</strong> <small class="text-muted">· hace 2 semanas</small></div>
+        <div>El cheddar fundido es un 10. Vuelvo seguro.</div>
+      </div>
+    </div>
+
+    <h3 class="fw-bold mb-3">También podrían gustarte</h3>
+    <div class="row g-3">
+      <div class="col-6 col-md-4"><div class="rel-card"><img src="https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&q=80" alt=""><div class="p-3"><div class="fw-bold">Hamburguesa Doble</div><div class="fw-bold" style="color:var(--rojo);">$ 2.100</div></div></div></div>
+      <div class="col-6 col-md-4"><div class="rel-card"><img src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&q=80" alt=""><div class="p-3"><div class="fw-bold">Hamburguesa Completa</div><div class="fw-bold" style="color:var(--rojo);">$ 1.800</div></div></div></div>
+      <div class="col-6 col-md-4"><div class="rel-card"><img src="https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=400&q=80" alt=""><div class="p-3"><div class="fw-bold">Hamburguesa Clásica XL</div><div class="fw-bold" style="color:var(--rojo);">$ 1.950</div></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="toast-ok" class="toast align-items-center border-0" style="background:var(--verde);color:#fff;" role="alert">
+    <div class="d-flex"><div class="toast-body fw-bold" id="toast-msg"></div>
+    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let cant = 1;
+function cambiarCant(d){ cant = Math.max(1, Math.min(9, cant + d)); document.getElementById('cant').textContent = cant; }
+function toast(msg){ document.getElementById('toast-msg').textContent = msg; bootstrap.Toast.getOrCreateInstance(document.getElementById('toast-ok')).show(); }
+function irDetalle(){ document.getElementById('vista-catalogo').classList.remove('activa'); document.getElementById('vista-detalle').classList.add('activa'); window.scrollTo(0,0); }
+function irCatalogo(){ document.getElementById('vista-detalle').classList.remove('activa'); document.getElementById('vista-catalogo').classList.add('activa'); window.scrollTo(0,0); }
+</script>
+</body>
+</html>

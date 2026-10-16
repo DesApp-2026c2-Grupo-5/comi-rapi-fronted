@@ -81,6 +81,7 @@ const ConfirmacionPedido = lazy(() => import('../pages/cliente/ConfirmacionPedid
 const MisPedidos = lazy(() => import('../pages/cliente/MisPedidos'));
 const HistorialPedidos = lazy(() => import('../pages/cliente/HistorialPedidos'));
 const DetallePedido = lazy(() => import('../pages/cliente/DetallePedido'));
+const DetalleProducto = lazy(() => import('../pages/cliente/DetalleProducto'));
 const Perfil = lazy(() => import('../pages/cliente/Perfil'));
 
 // Páginas admin
@@ -147,6 +148,7 @@ const AppRoutes = () => {
           <Route element={<RutaCompra />}>
             <Route path="/cliente/inicio" element={<Inicio />} />
             <Route path="/cliente/catalogo" element={<Catalogo />} />
+            <Route path="/producto/:id" element={<DetalleProducto />} />
             <Route path="/cliente/carrito" element={<Carrito />} />
           </Route>
 

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { FaCartPlus, FaTrophy, FaMedal, FaAward } from 'react-icons/fa';
 import { formatPrice } from '../../utils/formatters';
@@ -7,7 +8,11 @@ import ProductoPersonalizarModal from './ProductoPersonalizarModal';
 import './ProductoCard.css';
 
 const ProductoCard = ({ producto, rank, promocion }) => {
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  // Click en imagen o nombre → página de detalle. El botón Añadir mantiene
+  // el modal de personalizar.
+  const irDetalle = () => navigate(`/producto/${producto.id}`);
   // La receta del combo: [{ productoId, cantidad, nombre? }]. El backend la
   // devuelve en el índice y en el detalle del producto.
   const componentes = producto.tipo === 'COMBO' && Array.isArray(producto.componentes)
@@ -62,11 +67,13 @@ const ProductoCard = ({ producto, rank, promocion }) => {
           loading="lazy"
           decoding="async"
           className="producto-card-imagen"
+          style={{ cursor: 'pointer' }}
+          onClick={irDetalle}
         />
         <Card.Body className="d-flex flex-column p-3">
           {/* Card.Title por defecto renderiza un <div>; se fuerza heading para
               que el nombre del producto entre en la navegación por encabezados. */}
-          <Card.Title as="h3" className="producto-nombre">
+          <Card.Title as="h3" className="producto-nombre" style={{ cursor: 'pointer' }} onClick={irDetalle}>
             {producto.nombre}
             {componentes.length > 0 && (
               <Badge bg="info" className="ms-2">Combo</Badge>
