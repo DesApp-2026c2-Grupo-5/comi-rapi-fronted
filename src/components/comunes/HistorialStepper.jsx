@@ -14,7 +14,8 @@
  *                                                           el admin no lo muestra)
  */
 
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   FaClock,
   FaCheckCircle,
@@ -47,6 +48,24 @@ const ICONO_ESTADO = {
 // Orden visual del flujo principal (sin cancelado, que es un nodo especial)
 const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDIDO.CANCELADO);
 
+// Minutos acumulados desde la creación del pedido (minuto 0).
+// El nodo actual tickea en vivo; al cambiar de estado (WebSocket → refetch)
+// se congela con su fecha real y empieza a tickear el siguiente.
+const INTERVALO_TICK_MS = 30 * 1000;
+
+function minutosEntre(desdeIso, hastaMs) {
+  const desde = new Date(desdeIso).getTime();
+  if (Number.isNaN(desde)) return null;
+  return Math.max(0, Math.floor((hastaMs - desde) / 60000));
+}
+
+function formatearMinutos(minutos) {
+  if (minutos < 60) return `+${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  const resto = String(minutos % 60).padStart(2, '0');
+  return `+${horas} h ${resto} min`;
+}
+
 const HistorialStepper = ({
   pedido,
   onCambiar,
@@ -69,6 +88,34 @@ const HistorialStepper = ({
       .find((h) => flujoEstados.includes(h.estado));
     alcanzado = ultimoEnFlujo ? flujoEstados.indexOf(ultimoEnFlujo.estado) : -1;
   }
+  const pedidoFinalizado =
+    pedido.estado === ESTADOS_PEDIDO.ENTREGADO || esCancelado;
+
+  // Ticker local: solo el nodo actual avanza en vivo; el resto usa su fecha
+  // congelada del historial. Se detiene en pedidos finalizados.
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    if (pedidoFinalizado) return undefined;
+    const intervalo = setInterval(() => setAhora(Date.now()), INTERVALO_TICK_MS);
+    return () => clearInterval(intervalo);
+  }, [pedidoFinalizado, pedido.id]);
+
+  const fechaCrudaDe = (estado) => {
+    const registro = (pedido.historialEstados || []).find((h) => h.estado === estado);
+    return registro ? registro.fecha : null;
+  };
+
+  // Minutos acumulados desde la creación para un nodo alcanzado. El nodo
+  // actual usa el reloj en vivo; los anteriores, su fecha congelada.
+  const minutosDe = (estado, esNodoActual) => {
+    if (!pedido.fecha) return null;
+    if (esNodoActual && !pedidoFinalizado) {
+      return minutosEntre(pedido.fecha, ahora);
+    }
+    const fechaNodo = fechaCrudaDe(estado);
+    if (!fechaNodo) return null;
+    return minutosEntre(pedido.fecha, new Date(fechaNodo).getTime());
+  };
 
   // Próximo estado principal (el primer siguiente que pertenece al flujo)
   const principal = estadosSiguientes.find((e) => flujoEstados.includes(e)) || null;
@@ -99,6 +146,19 @@ const HistorialStepper = ({
     return partes.join(', ');
   };
 
+  // Minutos visibles bajo cada nodo alcanzado (los futuros no muestran nada).
+  const contenidoMinutos = (estado, idx) => {
+    if (idx > alcanzado) return null;
+    const esNodoActual = !esCancelado && idx === alcanzado;
+    const minutos = minutosDe(estado, esNodoActual);
+    if (minutos === null) return null;
+    return (
+      <span className="estado-step-minutos" aria-label={`${formatearMinutos(minutos)} desde el pedido`}>
+        {formatearMinutos(minutos)}
+      </span>
+    );
+  };
+
   const renderNodo = (estado, idx) => {
     const Icono = ICONO_ESTADO[estado];
     const clase = claseDe(idx);
@@ -114,6 +174,7 @@ const HistorialStepper = ({
         {fechaDe(estado) && (
           <span className="visually-hidden">{`, ${fechaDe(estado)}`}</span>
         )}
+        {contenidoMinutos(estado, idx)}
       </>
     );
 
@@ -186,6 +247,14 @@ const HistorialStepper = ({
                     {`, ${fechaDe(ESTADOS_PEDIDO.CANCELADO)}`}
                   </span>
                 )}
+                {(() => {
+                  const minutos = minutosDe(ESTADOS_PEDIDO.CANCELADO, false);
+                  return minutos !== null ? (
+                    <span className="estado-step-minutos" aria-label={`${formatearMinutos(minutos)} desde el pedido`}>
+                      {formatearMinutos(minutos)}
+                    </span>
+                  ) : null;
+                })()}
               </div>
             </li>
           ) : (
@@ -209,3 +278,26 @@ const HistorialStepper = ({
 };
 
 export default HistorialStepper;
+
+HistorialStepper.propTypes = {
+  pedido: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    estado: PropTypes.string,
+    fecha: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    historialEstados: PropTypes.arrayOf(
+      PropTypes.shape({
+        estado: PropTypes.string,
+        fecha: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+      })
+    ),
+  }).isRequired,
+  onCambiar: PropTypes.func,
+  sinNodoCancelado: PropTypes.bool,
+  sinNodoPendiente: PropTypes.bool,
+};
+
+HistorialStepper.defaultProps = {
+  onCambiar: undefined,
+  sinNodoCancelado: false,
+  sinNodoPendiente: false,
+};

@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Container, Card, Button } from 'react-bootstrap';
+import { Container, Card, Button, Spinner } from 'react-bootstrap';
 import { FaUtensils, FaHistory } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
@@ -36,7 +36,7 @@ import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRe
 const ESTADOS_ACTIVOS = ESTADOS_ACTIVOS_PEDIDO;
 
 const MisPedidos = () => {
-  const { pedidos, cambiarEstado } = usePedidos();
+  const { pedidos, cambiarEstado, cargandoPedidos } = usePedidos();
   const { notificar } = useNotificaciones();
   const { user } = useAuth();
   // Evita doble clic mientras una cancelación está en curso
@@ -131,7 +131,12 @@ const MisPedidos = () => {
         sucursales={sucursales}
       />
 
-      {activos.length === 0 ? (
+      {cargandoPedidos && pedidos.length === 0 ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="danger" role="status" />
+          <p className="text-muted mt-3">Cargando tus pedidos…</p>
+        </div>
+      ) : activos.length === 0 ? (
         <Card className="shadow-sm text-center p-5">
           <h2 className="h4 fw-bold mb-2">No tenés pedidos en curso</h2>
           <p className="text-muted mb-4">¡Hacé tu primer pedido y seguí su estado acá!</p>

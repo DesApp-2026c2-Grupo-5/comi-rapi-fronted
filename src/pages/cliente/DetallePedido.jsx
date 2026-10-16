@@ -8,9 +8,9 @@
  * Uso: Ruta "/cliente/pedido/:id" → <DetallePedido />
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Table, Badge, Button, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
@@ -27,7 +27,7 @@ import './DetallePedido.css';
 
 const DetallePedido = () => {
   const { id } = useParams();
-  const { pedidos } = usePedidos();
+  const { pedidos, cargandoPedidos } = usePedidos();
   const { parametros } = useParametros();
   const {
     repitiendoId,
@@ -41,7 +41,28 @@ const DetallePedido = () => {
   } = useRepetirPedido();
   const pedido = pedidos.find((p) => p.id === Number(id));
 
+  // Anuncio accesible de cambios de estado (WebSocket → refetch): solo en
+  // transiciones, no en el tick de minutos, para no spamear al lector.
+  const [anuncioEstado, setAnuncioEstado] = useState('');
+  const estadoAnterior = useRef(pedido?.estado);
+  useEffect(() => {
+    if (!pedido) return;
+    if (estadoAnterior.current !== undefined && estadoAnterior.current !== pedido.estado) {
+      const etiqueta = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
+      setAnuncioEstado(`Tu pedido #${pedido.id} pasó a estado: ${etiqueta}.`);
+    }
+    estadoAnterior.current = pedido.estado;
+  }, [pedido]);
+
   if (!pedido) {
+    if (cargandoPedidos) {
+      return (
+        <Container className="py-5 text-center">
+          <Spinner animation="border" variant="danger" role="status" />
+          <p className="text-muted mt-3">Cargando tu pedido…</p>
+        </Container>
+      );
+    }
     return (
       <Container className="py-5 text-center">
         <h1 className="h2 detalle-no-encontrado">Pedido no encontrado</h1>
@@ -208,6 +229,9 @@ const DetallePedido = () => {
           <div className="historial-box">
             <span className="historial-titulo">Progreso del pedido</span>
             <HistorialStepper pedido={pedido} />
+            <div className="visually-hidden" role="status" aria-live="polite">
+              {anuncioEstado}
+            </div>
           </div>
 
           {esFinal && (

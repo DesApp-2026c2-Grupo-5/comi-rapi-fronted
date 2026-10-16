@@ -118,6 +118,23 @@
   color: #dc3545;
 }
 
+/* Minutos acumulados desde la creación, bajo cada estado alcanzado */
+.estado-step-minutos {
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #6c757d;
+}
+.estado-step.completado .estado-step-minutos {
+  color: #198754;
+}
+.estado-step.actual .estado-step-minutos {
+  color: #c07000;
+}
+.estado-step.cancelado .estado-step-minutos {
+  color: #dc3545;
+}
+
 /* Nodos clicables (solo admin: los estados siguientes permitidos) */
 .estado-step.clickeable {
   cursor: pointer;
