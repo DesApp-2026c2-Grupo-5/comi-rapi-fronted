@@ -128,30 +128,9 @@ const ConfirmacionPedido = () => {
             </Card.Body>
           </Card>
 
-          {/* Desglose de productos con personalización */}
-          {pedidoActual.productos.some((p) => p.extras?.length || p.sin?.length || p.acompanamientos?.length || p.condimentos?.length) && (
-            <div className="card shadow-sm mb-3">
-              <div className="card-body">
-                {pedidoActual.productos.map((p, idx) => (
-                  <div key={idx} className={idx < pedidoActual.productos.length - 1 ? 'mb-3 pb-3 border-bottom' : ''}>
-                    <div className="fw-bold small">{p.nombre} x{p.cantidad}</div>
-                    {p.extras?.map((ex) => (
-                      <div key={ex.id} className="small text-muted">› Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</div>
-                    ))}
-                    {p.acompanamientos?.map((ac) => (
-                      <div key={ac.id} className="small text-muted">› Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</div>
-                    ))}
-                    {p.sin?.map((s) => (
-                      <div key={s} className="small text-muted">› <strong>Sin {s}</strong></div>
-                    ))}
-                    {p.condimentos?.map((c) => (
-                      <div key={c.nombre} className="small text-muted">› {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span></div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* El desglose de personalización (extras, "sin", acompañamientos y
+              condimentos) ya lo renderiza `ResumenPedido` → `DetalleItemsPedido`
+              más abajo; tener otra tarjeta acá lo mostraría duplicado. */}
 
           {/* Resumen de productos */}
           <ResumenPedido

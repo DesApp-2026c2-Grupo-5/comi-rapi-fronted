@@ -43,12 +43,20 @@ export const validateProducto = (producto) => {
   return errores;
 };
 
-export const validatePersonalizacionElemento = ({ productoId, tipo, nombre, precio, productoReferenciaId, productos }) => {
+export const validatePersonalizacionElemento = ({ productoId, tipo, nombre, precio, productoReferenciaId, minimo, maximo, productos }) => {
   const errores = {};
   if (!productoId) errores.productoId = 'El producto es obligatorio';
   else if (productos && !productos.find((p) => String(p.id) === String(productoId))) errores.productoId = 'Producto no encontrado';
   const tiposValidos = ['extra', 'personalizar', 'acompanar', 'condimento'];
   if (!tipo || !tiposValidos.includes(tipo)) errores.tipo = 'Tipo inválido';
+
+  // Rango de cantidad por elemento (mínimo 0, máximo 1 por defecto).
+  const min = minimo === undefined || minimo === '' ? 0 : Number(minimo);
+  const max = maximo === undefined || maximo === '' ? 1 : Number(maximo);
+  if (!Number.isInteger(min) || min < 0) errores.minimo = 'El mínimo debe ser un entero mayor o igual a 0';
+  else if (!Number.isInteger(max) || max < 1) errores.maximo = 'El máximo debe ser un entero mayor o igual a 1';
+  else if (max < min) errores.maximo = 'El máximo no puede ser menor que el mínimo';
+
   if (tipo === 'acompanar') {
     if (!productoReferenciaId) errores.productoReferenciaId = 'El producto a ofrecer es obligatorio';
     else if (String(productoReferenciaId) === String(productoId)) errores.productoReferenciaId = 'No podés ofrecer el mismo producto';

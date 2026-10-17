@@ -70,8 +70,6 @@ export const personalizacionPorCategoria = {
   },
 };
 
-export const LIMITES = { extra: 6, personalizar: 7, acompanar: 3, condimento: 2 };
-
 export function getConfigParaCategoria(categoria) {
   return personalizacionPorCategoria[categoria] || { extra: [], personalizar: [], acompanar: [], condimento: [] };
 }

@@ -18,6 +18,8 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
   const [nombre, setNombre] = useState(elemento?.nombre || '');
   const [precio, setPrecio] = useState(elemento?.precio ?? '');
   const [productoReferenciaId, setProductoReferenciaId] = useState(elemento?.productoReferenciaId ? String(elemento.productoReferenciaId) : '');
+  const [minimo, setMinimo] = useState(elemento?.minimo ?? 0);
+  const [maximo, setMaximo] = useState(elemento?.maximo ?? 1);
   const [activo, setActivo] = useState(elemento?.activo ?? true);
 
   useEffect(() => {
@@ -27,6 +29,8 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
       setNombre(elemento.nombre || '');
       setPrecio(elemento.precio ?? '');
       setProductoReferenciaId(elemento.productoReferenciaId ? String(elemento.productoReferenciaId) : '');
+      setMinimo(elemento.minimo ?? 0);
+      setMaximo(elemento.maximo ?? 1);
       setActivo(elemento.activo ?? true);
     } else if (elemento) {
       // Elemento parcial (p. ej. "nuevo" con tipo preseleccionado): solo el
@@ -35,6 +39,8 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
       if (elemento.nombre) setNombre(elemento.nombre);
       if (elemento.precio !== undefined) setPrecio(elemento.precio);
       if (elemento.productoReferenciaId) setProductoReferenciaId(String(elemento.productoReferenciaId));
+      if (elemento.minimo !== undefined) setMinimo(elemento.minimo);
+      if (elemento.maximo !== undefined) setMaximo(elemento.maximo);
       if (elemento.activo !== undefined) setActivo(elemento.activo);
       if (productoPreseleccionado) setProductoId(String(productoPreseleccionado));
     } else if (productoPreseleccionado) {
@@ -81,6 +87,8 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
       productoId: productoId ? Number(productoId) : null,
       tipo,
       activo,
+      minimo: Number(minimo),
+      maximo: Number(maximo),
     };
 
     let datos = { ...datosBase };
@@ -210,6 +218,45 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
               </Form.Text>
             </Form.Group>
           )}
+
+          <Form.Group className="mb-3" controlId="personalizacion-cantidades">
+            <Form.Label>Cantidad mínima y máxima</Form.Label>
+            <div className="row g-2">
+              <div className="col-6">
+                <InputGroup>
+                  <InputGroup.Text className="precio-adorno">Mín</InputGroup.Text>
+                  <Form.Control
+                    type="number"
+                    name="minimo"
+                    value={minimo}
+                    onChange={(e) => setMinimo(e.target.value)}
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    aria-describedby="personalizacion-cantidades-ayuda"
+                  />
+                </InputGroup>
+              </div>
+              <div className="col-6">
+                <InputGroup>
+                  <InputGroup.Text className="precio-adorno">Máx</InputGroup.Text>
+                  <Form.Control
+                    type="number"
+                    name="maximo"
+                    value={maximo}
+                    onChange={(e) => setMaximo(e.target.value)}
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    aria-describedby="personalizacion-cantidades-ayuda"
+                  />
+                </InputGroup>
+              </div>
+            </div>
+            <Form.Text id="personalizacion-cantidades-ayuda" className="text-muted">
+              Cuántas unidades de ESTE elemento puede elegir el cliente. Mínimo 0 = opcional, máximo 1 = una sola. Por defecto: mín 0, máx 1.
+            </Form.Text>
+          </Form.Group>
 
           <Form.Group className="mb-4">
             <Form.Check type="switch" id="activo-switch" name="activo" label="Activo" checked={activo} onChange={(e) => setActivo(e.target.checked)} />

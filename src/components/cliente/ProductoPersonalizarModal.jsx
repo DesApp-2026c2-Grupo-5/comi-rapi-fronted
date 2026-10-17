@@ -3,7 +3,8 @@ import { Modal, Button } from 'react-bootstrap';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
-import { LIMITES, calcularPrecioUnitario } from '../../services/personalizacionConfig';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { calcularPrecioUnitario } from '../../services/personalizacionConfig';
 import { formatPrice } from '../../utils/formatters';
 import GrupoOpciones from './GrupoOpciones';
 import Contador from './Contador';
@@ -13,6 +14,7 @@ const ProductoPersonalizarModal = ({ show, onHide, producto }) => {
   const { agregarAlCarrito } = useCarrito();
   const { parametros } = useParametros();
   const { getConfigParaProducto } = usePersonalizacion();
+  const { notificar } = useNotificaciones();
   const config = getConfigParaProducto(producto);
   const [vista, setVista] = useState('principal');
   const [unidades, setUnidades] = useState(1);
@@ -35,26 +37,23 @@ const ProductoPersonalizarModal = ({ show, onHide, producto }) => {
     onHide();
   };
 
-  const cambiar = (grupo, key, delta, limite) => {
+  const cambiar = (grupo, key, delta, minimo, maximo) => {
     const setters = { extra: setExtraCant, acompanar: setAcompCant, condimento: setCondCant };
     const estados = { extra: extraCant, acompanar: acompCant, condimento: condCant };
     const actual = estados[grupo][key] || 0;
-    let nuevo = actual + delta;
-    nuevo = Math.max(0, Math.min(limite, nuevo));
-    const totalSel = Object.values(estados[grupo]).reduce((a, b) => a + b, 0) - actual + nuevo;
-    if (totalSel > limite) return;
+    // Cada elemento tiene su propio rango: sin tope global por grupo.
+    const nuevo = Math.max(minimo, Math.min(maximo, actual + delta));
+    if (nuevo === actual) return;
     setters[grupo]((prev) => ({ ...prev, [key]: nuevo }));
   };
 
   /* Respetar el delta que manda el Contador: si se usara un toggle, el botón
      "+" sólo llegaría a 1 aunque el límite permita más, y el "−" no distinguiría
      entre bajar de 2 a 1 y de 1 a 0. */
-  const cambiarSin = (key, delta) => {
+  const cambiarSin = (key, delta, minimo, maximo) => {
     const actual = sinCant[key] || 0;
-    const nuevo = actual + delta;
-    if (nuevo < 0 || nuevo > LIMITES.personalizar) return;
-    const totalSel = Object.values(sinCant).reduce((a, b) => a + b, 0);
-    if (nuevo > actual && totalSel >= LIMITES.personalizar) return;
+    const nuevo = Math.max(minimo, Math.min(maximo, actual + delta));
+    if (nuevo === actual) return;
     setSinCant((prev) => ({ ...prev, [key]: nuevo }));
   };
 
@@ -82,8 +81,8 @@ const cambiarUnidades = (d) =>
   const condLista = useMemo(
     () =>
       (config.condimento || [])
-        .filter((n) => (condCant[n] || 0) > 0)
-        .map((n) => ({ nombre: n, cantidad: condCant[n] })),
+        .filter((op) => (condCant[op.nombre] || 0) > 0)
+        .map((op) => ({ nombre: op.nombre, cantidad: condCant[op.nombre] })),
     [config.condimento, condCant]
   );
 
@@ -104,6 +103,24 @@ const cambiarUnidades = (d) =>
   const condCount = Object.values(condCant).reduce((a, b) => a + b, 0);
 
   const handleAgregar = () => {
+    // El mínimo de cada elemento es obligatorio: si alguno pide (por ejemplo)
+    // al menos 2, no se puede agregar con menos.
+    const incumplidos = [
+      ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0 })),
+      ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0 })),
+      ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0 })),
+      ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.nombre] || 0 })),
+    ].filter(({ op, valor }) => valor < (op.minimo || 0));
+
+    if (incumplidos.length > 0) {
+      const { op, valor } = incumplidos[0];
+      notificar(
+        `Debés elegir al menos ${op.minimo} de "${op.nombre}" (llevás ${valor}).`,
+        'warning'
+      );
+      return;
+    }
+
     const personalizacion = {
       extras: extrasLista,
       sin: sinLista,
@@ -287,7 +304,7 @@ const cambiarUnidades = (d) =>
               {/* Espaciador para que el título quede centrado respecto al botón. */}
               <span className="espaciador-volver" />
             </div>
-            <GrupoOpciones opciones={config.extra} valores={extraCant} onCambiar={(k, d) => cambiar('extra', k, d, LIMITES.extra)} conPrecio limite={LIMITES.extra} />
+            <GrupoOpciones opciones={config.extra} valores={extraCant} onCambiar={(k, d, min, max) => cambiar('extra', k, d, min, max)} conPrecio />
             <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}
@@ -302,18 +319,18 @@ const cambiarUnidades = (d) =>
               <span className="espaciador-volver" />
             </div>
             <p className="fw-bold small">
-              Elige entre 0 y {LIMITES.personalizar} ingredientes para quitar; quitar no descuenta.
+              Elegí qué ingredientes querés quitar; quitar no descuenta.
             </p>
             <div className="card-comi-grupo">
-              {config.personalizar.map((nombre) => (
-                <div key={nombre} className="fila-opcion">
-                  <span className="small">Sin {nombre}</span>
+              {config.personalizar.map((op) => (
+                <div key={op.id || op.nombre} className="fila-opcion">
+                  <span className="small">Sin {op.nombre}</span>
                   <Contador
-                    etiqueta={`el ingrediente ${nombre}`}
-                    valor={sinCant[nombre] || 0}
-                    min={0}
-                    max={LIMITES.personalizar}
-                    onCambiar={(delta) => cambiarSin(nombre, delta)}
+                    etiqueta={`el ingrediente ${op.nombre}`}
+                    valor={sinCant[op.nombre] || 0}
+                    min={op.minimo ?? 0}
+                    max={op.maximo ?? 1}
+                    onCambiar={(delta) => cambiarSin(op.nombre, delta, op.minimo ?? 0, op.maximo ?? 1)}
                   />
                 </div>
               ))}
@@ -331,7 +348,7 @@ const cambiarUnidades = (d) =>
               <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Acompaña tu orden con</h3>
               <span className="espaciador-volver" />
             </div>
-            <GrupoOpciones opciones={config.acompanar} valores={acompCant} onCambiar={(k, d) => cambiar('acompanar', k, d, LIMITES.acompanar)} conPrecio limite={LIMITES.acompanar} />
+            <GrupoOpciones opciones={config.acompanar} valores={acompCant} onCambiar={(k, d, min, max) => cambiar('acompanar', k, d, min, max)} conPrecio />
             <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}
@@ -346,18 +363,18 @@ const cambiarUnidades = (d) =>
               <span className="espaciador-volver" />
             </div>
             <p className="fw-bold small">
-              Elige entre 0 y {LIMITES.condimento}; sin costo.
+              Elegí los condimentos adicionales que quieras; sin costo.
             </p>
             <div className="card-comi-grupo">
-              {config.condimento.map((nombre) => (
-                <div key={nombre} className="fila-opcion">
-                  <span className="small">{nombre}</span>
+              {config.condimento.map((op) => (
+                <div key={op.id || op.nombre} className="fila-opcion">
+                  <span className="small">{op.nombre}</span>
                   <Contador
-                    etiqueta={nombre}
-                    valor={condCant[nombre] || 0}
-                    min={0}
-                    max={LIMITES.condimento}
-                    onCambiar={(d) => cambiar('condimento', nombre, d, LIMITES.condimento)}
+                    etiqueta={op.nombre}
+                    valor={condCant[op.nombre] || 0}
+                    min={op.minimo ?? 0}
+                    max={op.maximo ?? 1}
+                    onCambiar={(d) => cambiar('condimento', op.nombre, d, op.minimo ?? 0, op.maximo ?? 1)}
                   />
                 </div>
               ))}

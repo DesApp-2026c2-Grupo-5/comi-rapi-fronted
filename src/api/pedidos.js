@@ -44,15 +44,25 @@ export const mapearPedido = (p) => {
     id: p.id,
     usuarioId: p.usuarioId,
     cliente: p.cliente?.email || p.cliente || p.usuarioId,
-    productos: (p.items || []).map((item) => ({
-      productoId: item.productoId,
-      nombre: item.nombreProducto || item.nombre,
-      cantidad: item.cantidad,
-      precio: Number(item.precioUnitario ?? item.precio),
-      personalizacion: item.observacion
+    productos: (p.items || []).map((item) => {
+      const personalizacion = item.observacion
         ? safeParsePersonalizacion(item.observacion)
-        : undefined,
-    })),
+        : undefined;
+      // Modo lectura: el desglose se expone también aplanado en el ítem, porque
+      // las vistas de pedido (detalle, listado) lo leen así. Se conserva
+      // `personalizacion` para quien lo consuma anidado.
+      return {
+        productoId: item.productoId,
+        nombre: item.nombreProducto || item.nombre,
+        cantidad: item.cantidad,
+        precio: Number(item.precioUnitario ?? item.precio),
+        personalizacion,
+        extras: personalizacion?.extras || [],
+        sin: personalizacion?.sin || [],
+        acompanamientos: personalizacion?.acompanamientos || [],
+        condimentos: personalizacion?.condimentos || [],
+      };
+    }),
     total: Number(p.total),
     costoEnvio: p.costoEnvio !== undefined ? Number(p.costoEnvio) : 0,
     estado,
@@ -97,6 +107,28 @@ function safeParsePersonalizacion(texto) {
   return undefined;
 }
 
+/**
+ * Normaliza la personalización de una línea al shape que persiste el backend.
+ *
+ * Los ítems del carrito traen las listas aplanadas (extras/acompanamientos/sin/
+ * condimentos); los que ya vienen con `personalizacion` se respetan como base.
+ * Se envían las cuatro listas para no perder "sin" ni condimentos en el pedido
+ * guardado (antes solo viajaban extras y acompañamientos).
+ */
+function personalizacionParaBackend(prod) {
+  const base = prod.personalizacion || {};
+  const extras = prod.extras ?? base.extras ?? [];
+  const acompanamientos = prod.acompanamientos ?? base.acompanamientos ?? [];
+  const sin = prod.sin ?? base.sin ?? [];
+  const condimentos = prod.condimentos ?? base.condimentos ?? [];
+  const vacia =
+    extras.length === 0 &&
+    acompanamientos.length === 0 &&
+    sin.length === 0 &&
+    condimentos.length === 0;
+  return vacia ? undefined : { extras, acompanamientos, sin, condimentos };
+}
+
 function payloadBackend(datosPedido, sucursal) {
   const sucursalId =
     datosPedido.sucursalId || sucursal?.id || datosPedido.sucursal?.id;
@@ -105,14 +137,7 @@ function payloadBackend(datosPedido, sucursal) {
     nombre: prod.nombre,
     cantidad: prod.cantidad ?? 1,
     precio: prod.precio,
-    personalizacion:
-      prod.personalizacion ||
-      (prod.extras || prod.acompanamientos
-        ? {
-            extras: prod.extras || [],
-            acompanamientos: prod.acompanamientos || [],
-          }
-        : undefined),
+    personalizacion: personalizacionParaBackend(prod),
   }));
   // T0 (plan maestro de pedidos): el frontend envía el `direccionId` de la
   // Dirección persistida del usuario — el backend resuelve el snapshot con
