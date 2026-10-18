@@ -11,7 +11,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Card, Table, Badge, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
+import { FaArrowLeft, FaRedo, FaClock, FaShippingFast } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { useParametros } from '../../hooks/useParametros';
@@ -23,6 +23,7 @@ import IconoEstado from '../../components/comunes/IconoEstado';
 import HistorialStepper from '../../components/comunes/HistorialStepper';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
+import { textoLlegada } from '../../utils/llegada';
 import './DetallePedido.css';
 
 const DetallePedido = () => {
@@ -54,6 +55,16 @@ const DetallePedido = () => {
     estadoAnterior.current = pedido.estado;
   }, [pedido]);
 
+  // A6: countdown vivo de la hora de llegada. El estado `tick` se actualiza
+  // cada 30 s para que "quedan X min" baje solo, sin recargar la página.
+  // Va ANTES de cualquier early return: los hooks deben correr siempre.
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!pedido || pedido.estado !== ESTADOS_PEDIDO.EN_CAMINO) return undefined;
+    const intervalo = setInterval(() => setTick((t) => t + 1), 30 * 1000);
+    return () => clearInterval(intervalo);
+  }, [pedido?.estado]);
+
   if (!pedido) {
     if (cargandoPedidos) {
       return (
@@ -82,6 +93,11 @@ const DetallePedido = () => {
   const esFinal =
     pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||
     pedido.estado === ESTADOS_PEDIDO.CANCELADO;
+  // A6: solo visible en en_camino con hora estimada persistida.
+  const textoLlegadaEnCamino =
+    pedido.estado === ESTADOS_PEDIDO.EN_CAMINO && pedido.horaEstimadaLlegada
+      ? textoLlegada(pedido.horaEstimadaLlegada)
+      : null;
   // ETA: visible desde confirmado hasta en_camino (no en finales, no antes
   // de pagar). Solo si el backend pudo calcularlo (ORS puede fallar → null).
   const mostrarEta =
@@ -106,6 +122,12 @@ const DetallePedido = () => {
         <Card.Header className="detalle-card-header d-flex justify-content-between align-items-center">
           <h1 className="h4 mb-0">Pedido #{pedido.id}</h1>
           <div className="d-flex align-items-center gap-2">
+            {textoLlegadaEnCamino && (
+              <Badge bg="success" className="fs-6" key={tick}>
+                <FaShippingFast className="me-1" aria-hidden="true" size={12} />
+                {textoLlegadaEnCamino}
+              </Badge>
+            )}
             {mostrarEta && (
               <Badge bg="info" className="fs-6">
                 <FaClock className="me-1" aria-hidden="true" size={12} />

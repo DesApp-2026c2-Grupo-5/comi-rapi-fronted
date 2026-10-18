@@ -12,6 +12,7 @@ import { FaEye, FaTimesCircle, FaRedo, FaClock } from 'react-icons/fa';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
+import { textoLlegada } from '../../utils/llegada';
 import IconoEstado from '../comunes/IconoEstado';
 import HistorialStepper from '../comunes/HistorialStepper';
 
@@ -53,6 +54,13 @@ const ListaPedidos = ({
                   ~{pedido.etaMinutos} min
                 </Badge>
               )}
+              {/* A6: countdown de llegada solo en en_camino (estático en la
+                  lista; el vivo con interval está en DetallePedido). */}
+              {pedido.estado === ESTADOS_PEDIDO.EN_CAMINO &&
+                pedido.horaEstimadaLlegada &&
+                textoLlegada(pedido.horaEstimadaLlegada) && (
+                  <Badge bg="success">{textoLlegada(pedido.horaEstimadaLlegada)}</Badge>
+                )}
               {/* T4: badge de reasignación de sucursal */}
               {(pedido.historialEstados || []).some(
                 (h) => h.observacion && /reasignado/i.test(h.observacion)
