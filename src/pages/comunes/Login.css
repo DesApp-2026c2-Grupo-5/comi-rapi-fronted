@@ -172,3 +172,10 @@
 .auth-demo strong {
   color: #b55d00;
 }
+/* Lista de cuentas demo del login de admin: un renglón por sucursal. */
+.auth-demo-lista {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+  line-height: 1.5;
+}
