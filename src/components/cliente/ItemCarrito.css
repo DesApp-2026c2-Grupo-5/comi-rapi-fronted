@@ -66,7 +66,7 @@
   color: #2b2b2b;
 }
 /* ============ Grupo de botones de cantidad (B1) ============ */
-/* Reemplaza el input num�rico: solo botones. El display central es fijo
+/* Reemplaza el input num�rico: solo botones. El display central es fijo
    (no editable), los botones laterales suman/restan/eliminan. */
 
 .cantidad-grupo {
@@ -88,6 +88,10 @@
   color: #8a4b00;
   cursor: pointer;
   transition: background 0.15s ease;
+  /* Fix: garantiza que el área clickeable del botón no sea tapada por
+     el span display central (que expande su bounding box en flex). */
+  position: relative;
+  z-index: 2;
 }
 
 .cantidad-btn:hover:not(:disabled) {
@@ -122,4 +126,9 @@
   font-size: 1.1rem;
   color: #212529;
   background: #fff;
+  /* Fix: el display es puramente visual — nunca intercepta clicks que
+     deberían llegar a los botones adyacentes. */
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
 }
