@@ -308,12 +308,13 @@ const Carrito = () => {
               ))}
             </div>
 
-            <div className="text-center text-md-end mt-3">
-              {/* B1: acceso rápido al catálogo para seguir comprando sin
-                  borrar el carrito. */}
+            {/* B1: acceso rápido al catálogo para seguir comprando sin
+                borrar el carrito. flex-wrap + gap-2 da espaciado consistente
+                tanto lado a lado (desktop) como apilados (móvil/tablet). */}
+            <div className="d-flex flex-wrap justify-content-center justify-content-md-end gap-2 mt-3">
               <Button
                 variant="outline-secondary"
-                className="rounded-pill px-4 me-2"
+                className="rounded-pill px-4"
                 onClick={irAlCatalogo}
               >
                 <FaSearch aria-hidden="true" className="me-1" />
