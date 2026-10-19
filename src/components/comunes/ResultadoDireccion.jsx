@@ -100,6 +100,13 @@ const ResultadoDireccion = ({ resultado, resumen, onReintentar, onEditar }) => {
             </div>
             <MapaSucursales
               sucursales={[resultado.detalle.sucursal]}
+              puntoCliente={
+                resultado.detalle.coordenadas &&
+                resultado.detalle.coordenadas.latitud &&
+                resultado.detalle.coordenadas.longitud
+                  ? resultado.detalle.coordenadas
+                  : null
+              }
               alturaPx={220}
             />
           </>

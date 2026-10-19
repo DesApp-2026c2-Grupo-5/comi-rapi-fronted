@@ -85,21 +85,26 @@ const ConfirmacionDireccion = ({
       {cobertura && cobertura.coberturaDisponible && (
         <div className="small mt-2 d-flex align-items-center gap-2">
           <FaStore aria-hidden="true" className="text-success" />
-          Te atiende <strong>{cobertura.sucursal?.nombre}</strong> (
+          Tu sucursal más cercana es{" "}
+          <strong>{cobertura.sucursal?.nombre}</strong> (
           {(cobertura.sucursal?.distanciaMetros / 1000).toFixed(1)} km por ruta)
         </div>
       )}
 
       {/* A5: mapa con hasta 3 sucursales dentro del radio de cobertura.
-          La destacada (pin naranja) es la que atiende. Si no hay cobertura,
-          el mapa vive en ResultadoDireccion (caso B), no acá. */}
+          El círculo azul marca la dirección del cliente; los pines,
+          las sucursales (todas iguales). */}
       {cobertura &&
         cobertura.coberturaDisponible &&
         Array.isArray(cobertura.sucursales) &&
         cobertura.sucursales.length > 0 && (
           <MapaSucursales
             sucursales={cobertura.sucursales}
-            destacadaId={cobertura.sucursal?.id}
+            puntoCliente={
+              resultado.latitud && resultado.longitud
+                ? { latitud: resultado.latitud, longitud: resultado.longitud }
+                : null
+            }
             alturaPx={240}
           />
         )}

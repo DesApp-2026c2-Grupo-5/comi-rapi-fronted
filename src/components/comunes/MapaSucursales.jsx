@@ -3,63 +3,68 @@
  *            Se muestra en el alta de dirección tras "Verificar dirección",
  *            en dos variantes: con cobertura (hasta 3 sucursales dentro del
  *            radio) o sin cobertura (la más cercana con su distancia).
- * Contenido: react-leaflet (MapContainer + TileLayer + Marker + Popup) con
- *            tiles de OpenStreetMap. Auto-centrado y auto-zoom a los markers.
+ *            El punto de la dirección del cliente se marca con un círculo
+ *            azul; todas las sucursales usan el mismo ícono (pin).
+ * Contenido: react-leaflet (MapContainer + TileLayer + Marker + CircleMarker
+ *            + Popup) con tiles de OpenStreetMap. Auto-centrado y auto-zoom.
  *            Todos los markers usan L.divIcon (emoji/pin HTML) para evitar
  *            el clásico problema de Leaflet + bundlers con los iconos PNG.
  * Dependencias: react-leaflet@4.x, leaflet@1.9.x (instaladas por A5).
- * Uso: <MapaSucursales sucursales={[{id, nombre, latitud, longitud,
- *        distanciaMetros?, destacada?}]} alturaPx={260} />
+ * Uso: <MapaSucursales sucursales={[...]} puntoCliente={{latitud, longitud}}
+ *        alturaPx={260} />
  */
 
 import { useEffect } from "react";
 import PropTypes from "prop-types";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  CircleMarker,
+  Popup,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Todos los markers son divIcon: cero dependencia de los PNG default de
-// Leaflet (que rompen con Vite). La destacada es más grande y con filtro
-// naranja; el resto, el mismo emoji más pequeño.
-const iconoDestacada = L.divIcon({
-  className: "mapa-sucursal-destacada",
-  html: '<span class="mapa-sucursal-pin mapa-sucursal-pin-grande">🏪</span>',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-});
-
-const iconoNormal = L.divIcon({
+// Ícono único para todas las sucursales (pin grande, mismo tamaño, misma
+// imagen). Cero dependencia de los PNG default de Leaflet.
+const iconoSucursal = L.divIcon({
   className: "mapa-sucursal-normal",
   html: '<span class="mapa-sucursal-pin">📍</span>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 24],
-  popupAnchor: [0, -24],
+  iconSize: [36, 36],
+  iconAnchor: [18, 36],
+  popupAnchor: [0, -36],
 });
 
 /**
  * Ajusta el mapa a los markers una sola vez (al montar). Necesita un
  * componente hijo porque useMap solo funciona dentro de MapContainer.
+ * Incluye el punto del cliente en el fitBounds si está disponible.
  */
-function AjustarALosMarkers({ puntos }) {
+function AjustarALosMarkers({ puntos, puntoCliente }) {
   const map = useMap();
   useEffect(() => {
-    if (!puntos || puntos.length === 0) return;
-    if (puntos.length === 1) {
-      map.setView([puntos[0].latitud, puntos[0].longitud], 15);
+    const todos = [...puntos];
+    if (puntoCliente) {
+      todos.push(puntoCliente);
+    }
+    if (todos.length === 0) return;
+    if (todos.length === 1) {
+      map.setView([todos[0].latitud, todos[0].longitud], 15);
     } else {
       map.fitBounds(
-        puntos.map((p) => [p.latitud, p.longitud]),
-        { padding: [30, 30] },
+        todos.map((p) => [p.latitud, p.longitud]),
+        { padding: [40, 40] },
       );
     }
-  }, [map, puntos]);
+  }, [map, puntos, puntoCliente]);
   return null;
 }
 
 const MapaSucursales = ({
   sucursales = [],
-  destacadaId = null,
+  puntoCliente = null,
   alturaPx = 260,
 }) => {
   if (!sucursales || sucursales.length === 0) return null;
@@ -67,14 +72,17 @@ const MapaSucursales = ({
   const puntos = sucursales.filter((s) => s.latitud && s.longitud);
   if (puntos.length === 0) return null;
 
-  const centro = [puntos[0].latitud, puntos[0].longitud];
+  // Centro inicial: el punto del cliente si existe, sino la primera sucursal.
+  const centro = puntoCliente
+    ? [Number(puntoCliente.latitud), Number(puntoCliente.longitud)]
+    : [puntos[0].latitud, puntos[0].longitud];
 
   return (
     <div
       className="mapa-sucursales rounded-3 mt-2"
       style={{ height: `${alturaPx}px` }}
       role="img"
-      aria-label={`Mapa con ${puntos.length} sucursal${puntos.length > 1 ? "es" : ""}`}
+      aria-label={`Mapa con ${puntos.length} sucursal${puntos.length > 1 ? "es" : ""}${puntoCliente ? " y tu dirección" : ""}`}
     >
       <MapContainer
         center={centro}
@@ -86,12 +94,36 @@ const MapaSucursales = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <AjustarALosMarkers puntos={puntos} />
+        <AjustarALosMarkers puntos={puntos} puntoCliente={puntoCliente} />
+
+        {/* Círculo azul: la dirección del cliente. */}
+        {puntoCliente && puntoCliente.latitud && puntoCliente.longitud && (
+          <CircleMarker
+            center={[
+              Number(puntoCliente.latitud),
+              Number(puntoCliente.longitud),
+            ]}
+            radius={12}
+            pathOptions={{
+              color: "#2563eb",
+              fillColor: "#3b82f6",
+              fillOpacity: 0.5,
+              weight: 3,
+            }}
+          >
+            <Popup>
+              <strong>Tu dirección</strong>
+            </Popup>
+          </CircleMarker>
+        )}
+
+        {/* Pines de sucursales: todas iguales (📍 mismo tamaño). */}
         {puntos.map((s) => (
           <Marker
             key={s.id || s.nombre}
             position={[s.latitud, s.longitud]}
-            icon={s.id === destacadaId ? iconoDestacada : iconoNormal}
+            icon={iconoSucursal}
+            zIndexOffset={1000}
           >
             <Popup>
               <strong>{s.nombre}</strong>
@@ -119,7 +151,10 @@ MapaSucursales.propTypes = {
       longitud: PropTypes.number,
     }),
   ),
-  destacadaId: PropTypes.number,
+  puntoCliente: PropTypes.shape({
+    latitud: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    longitud: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
   alturaPx: PropTypes.number,
 };
 
@@ -130,6 +165,10 @@ AjustarALosMarkers.propTypes = {
       longitud: PropTypes.number,
     }),
   ).isRequired,
+  puntoCliente: PropTypes.shape({
+    latitud: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    longitud: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
 };
 
 export default MapaSucursales;
