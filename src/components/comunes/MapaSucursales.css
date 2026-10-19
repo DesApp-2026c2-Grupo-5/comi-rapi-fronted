@@ -1,0 +1,29 @@
+/* ============ Mapa de sucursales (A5) ============ */
+/* Contenedor del mapa dentro de la ficha de dirección. */
+.mapa-sucursales {
+  overflow: hidden;
+  border: 1px solid #f0a10e;
+}
+
+/* La librería Leaflet inyecta sus propios estilos; el reset del borde
+   interno evita doble borde con el rounded-3 del contenedor. */
+.mapa-sucursales .leaflet-container {
+  border-radius: 0.75rem;
+  font-family: inherit;
+}
+
+/* Pin destacado (la sucursal que atiende): un emoji sobre un punto. */
+.mapa-sucursal-destacada {
+  background: transparent;
+  border: none;
+}
+
+.mapa-sucursal-pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}

@@ -17,11 +17,13 @@
  *        textoConfirmar="Guardar dirección" onConfirmar={fn} onEditar={fn} />
  */
 
-import { Alert, Button } from 'react-bootstrap';
-import { FaSave, FaEdit, FaStore, FaCheckCircle } from 'react-icons/fa';
+import { Alert, Button } from "react-bootstrap";
+import { FaSave, FaEdit, FaStore, FaCheckCircle } from "react-icons/fa";
+import MapaSucursales from "./MapaSucursales";
+import "./MapaSucursales.css";
 
 const Fila = ({ etiqueta, valor }) => {
-  if (valor === undefined || valor === null || String(valor).trim() === '') {
+  if (valor === undefined || valor === null || String(valor).trim() === "") {
     return null;
   }
   return (
@@ -39,7 +41,7 @@ const ConfirmacionDireccion = ({
   codigoPostal = null,
   referencia = null,
   cargando = false,
-  textoConfirmar = 'Guardar',
+  textoConfirmar = "Guardar",
   onConfirmar,
   onEditar,
 }) => {
@@ -48,7 +50,11 @@ const ConfirmacionDireccion = ({
   }
   const normalizada = resultado.normalizada || {};
   return (
-    <Alert variant="success" role="status" className="mb-4 dir-form-confirmacion">
+    <Alert
+      variant="success"
+      role="status"
+      className="mb-4 dir-form-confirmacion"
+    >
       <div className="d-flex align-items-center gap-2 mb-2 fw-semibold">
         <FaCheckCircle aria-hidden="true" />
         Dirección validada
@@ -71,7 +77,7 @@ const ConfirmacionDireccion = ({
       <div className="text-muted small mt-2">{resultado.nomenclatura}</div>
       <div className="text-muted small">
         Coordenadas: {Number(resultado.latitud).toFixed(5)}
-        {' / '}
+        {" / "}
         {Number(resultado.longitud).toFixed(5)}
       </div>
 
@@ -80,10 +86,23 @@ const ConfirmacionDireccion = ({
         <div className="small mt-2 d-flex align-items-center gap-2">
           <FaStore aria-hidden="true" className="text-success" />
           Te atiende <strong>{cobertura.sucursal?.nombre}</strong> (
-          {(cobertura.sucursal?.distanciaMetros / 1000).toFixed(1)} km por
-          ruta)
+          {(cobertura.sucursal?.distanciaMetros / 1000).toFixed(1)} km por ruta)
         </div>
       )}
+
+      {/* A5: mapa con hasta 3 sucursales dentro del radio de cobertura.
+          La destacada (pin naranja) es la que atiende. Si no hay cobertura,
+          el mapa vive en ResultadoDireccion (caso B), no acá. */}
+      {cobertura &&
+        cobertura.coberturaDisponible &&
+        Array.isArray(cobertura.sucursales) &&
+        cobertura.sucursales.length > 0 && (
+          <MapaSucursales
+            sucursales={cobertura.sucursales}
+            destacadaId={cobertura.sucursal?.id}
+            alturaPx={240}
+          />
+        )}
 
       <div className="d-flex gap-2 mt-3">
         <Button
@@ -93,7 +112,7 @@ const ConfirmacionDireccion = ({
           disabled={cargando}
         >
           <FaSave className="me-1" aria-hidden="true" />
-          {cargando ? 'Guardando…' : textoConfirmar}
+          {cargando ? "Guardando…" : textoConfirmar}
         </Button>
         <Button
           variant="outline-secondary"
