@@ -23,9 +23,9 @@ const BotonCarrito = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // Solo para clientes autenticados, con items, y fuera de /carrito.
+  // Solo para clientes autenticados, con items, y fuera del carrito.
   const esCliente = user?.rol === "CLIENTE";
-  const enCarrito = pathname.startsWith("/carrito");
+  const enCarrito = pathname.startsWith("/cliente/carrito");
   if (!isAuthenticated || !esCliente || enCarrito || totalItems === 0) {
     return null;
   }
@@ -34,7 +34,8 @@ const BotonCarrito = () => {
     <button
       type="button"
       className="boton-carrito-flotante"
-      onClick={() => navigate("/carrito")}
+      onClick={() => navigate("/cliente/carrito")}
+      title="Ver carrito"
       aria-label={`Ver carrito (${totalItems} ${totalItems === 1 ? "item" : "items"})`}
     >
       <FaShoppingCart aria-hidden="true" />

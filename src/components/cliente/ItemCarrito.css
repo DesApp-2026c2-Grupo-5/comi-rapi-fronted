@@ -65,3 +65,61 @@
 .item-carrito-desglose strong {
   color: #2b2b2b;
 }
+/* ============ Grupo de botones de cantidad (B1) ============ */
+/* Reemplaza el input numérico: solo botones. El display central es fijo
+   (no editable), los botones laterales suman/restan/eliminan. */
+
+.cantidad-grupo {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.cantidad-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 42px;
+  border: none;
+  background: #fff4e2;
+  color: #8a4b00;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cantidad-btn:hover:not(:disabled) {
+  background: #f0a10e;
+  color: #fff;
+}
+
+.cantidad-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cantidad-btn:focus-visible {
+  outline: 2px solid #f07f10;
+  outline-offset: -2px;
+}
+
+.cantidad-btn-izq {
+  border-right: 1px solid #dee2e6;
+}
+
+.cantidad-btn-der {
+  border-left: 1px solid #dee2e6;
+}
+
+.cantidad-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #212529;
+  background: #fff;
+}

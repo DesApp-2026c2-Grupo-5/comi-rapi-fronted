@@ -1,12 +1,18 @@
-import { Card, Button, Form, Row, Col } from 'react-bootstrap';
-import { FaTimes } from 'react-icons/fa';
-import { useCarrito } from '../../hooks/useCarrito';
-import { useParametros } from '../../hooks/useParametros';
-import { formatPrice } from '../../utils/formatters';
-import './ItemCarrito.css';
+import { Card, Row, Col } from "react-bootstrap";
+import { FaTrash, FaMinus, FaPlus } from "react-icons/fa";
+import { useCarrito } from "../../hooks/useCarrito";
+import { useParametros } from "../../hooks/useParametros";
+import { formatPrice } from "../../utils/formatters";
+import "./ItemCarrito.css";
 
 const ItemCarrito = ({ item }) => {
-  const { producto, cantidad, idLinea, personalizacion, precioUnitarioPersonalizado } = item;
+  const {
+    producto,
+    cantidad,
+    idLinea,
+    personalizacion,
+    precioUnitarioPersonalizado,
+  } = item;
   const { eliminarDelCarrito, actualizarCantidad } = useCarrito();
   const { parametros } = useParametros();
   const maxUnidades = parametros.cantidadMaximaProductoCarrito;
@@ -17,18 +23,24 @@ const ItemCarrito = ({ item }) => {
     personalizacion &&
     ((personalizacion.extras && personalizacion.extras.length > 0) ||
       (personalizacion.sin && personalizacion.sin.length > 0) ||
-      (personalizacion.acompanamientos && personalizacion.acompanamientos.length > 0) ||
+      (personalizacion.acompanamientos &&
+        personalizacion.acompanamientos.length > 0) ||
       (personalizacion.condimentos && personalizacion.condimentos.length > 0));
 
-  const handleEliminar = () => {
-    eliminarDelCarrito(idLinea || producto.id);
+  const idItem = idLinea || producto.id;
+
+  const handleIncrementar = () => {
+    if (cantidad < maxUnidades) {
+      actualizarCantidad(idItem, cantidad + 1);
+    }
   };
 
-  const handleCambiarCantidad = (e) => {
-    const nuevaCantidad = parseInt(e.target.value, 10);
-    if (!Number.isNaN(nuevaCantidad)) {
-      const acotada = Math.max(1, Math.min(maxUnidades, nuevaCantidad));
-      actualizarCantidad(idLinea || producto.id, acotada);
+  const handleDecrementar = () => {
+    if (cantidad > 1) {
+      actualizarCantidad(idItem, cantidad - 1);
+    } else {
+      // Cantidad 1 y apretó "-": elimina el item (mismo criterio que el trash).
+      eliminarDelCarrito(idItem);
     }
   };
 
@@ -53,53 +65,83 @@ const ItemCarrito = ({ item }) => {
             <h3 className="fw-bold item-carrito-nombre">{producto.nombre}</h3>
             <div className="text-muted small">
               Precio: {formatPrice(precioUnitario)}
-              {precioUnitario !== producto.precio ? ` (base ${formatPrice(producto.precio)})` : ''}
+              {precioUnitario !== producto.precio
+                ? ` (base ${formatPrice(producto.precio)})`
+                : ""}
             </div>
             {tienePersonalizacion && (
               <ul className="item-carrito-desglose small mt-1">
                 {personalizacion.extras?.map((ex) => (
-                  <li key={ex.id}>Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</li>
+                  <li key={ex.id}>
+                    Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
+                    {ex.cantidad}
+                  </li>
                 ))}
                 {personalizacion.acompanamientos?.map((ac) => (
-                  <li key={ac.id}>Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</li>
+                  <li key={ac.id}>
+                    Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x
+                    {ac.cantidad}
+                  </li>
                 ))}
                 {personalizacion.sin?.map((s) => (
-                  <li key={s}><strong>Sin {s}</strong></li>
+                  <li key={s}>
+                    <strong>Sin {s}</strong>
+                  </li>
                 ))}
                 {personalizacion.condimentos?.map((c) => (
                   <li key={c.nombre}>
-                    {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span>
+                    {c.nombre} x{c.cantidad}{" "}
+                    <span className="text-muted">(sin costo)</span>
                   </li>
                 ))}
               </ul>
             )}
           </Col>
           <Col xs={6} sm={2}>
-            {/* Label visible + associated: el `aria-label` que tenía antes pisaba
-                el texto del label y hacía que se anunciara dos veces. */}
-            <Form.Label htmlFor={`cantidad-${idLinea || producto.id}`} className="text-muted small d-block mb-1">
-              Cantidad
-            </Form.Label>
-            <Form.Control
-              id={`cantidad-${idLinea || producto.id}`}
-              type="number"
-              name={`cantidad-${idLinea || producto.id}`}
-              min="1"
-              max={maxUnidades}
-              inputMode="numeric"
-              value={cantidad}
-              onChange={handleCambiarCantidad}
-              className="cantidad-input"
-            />
+            {/* B1: grupo de botones en vez de input manual. Trash si es la
+                última unidad, "-" si hay más de una; "+" siempre (disabled
+                en el máximo). Sin entrada de texto: solo botones. */}
+            <div className="text-muted small d-block mb-1">Cantidad</div>
+            <div
+              className="cantidad-grupo"
+              role="group"
+              aria-label={`Cantidad de ${producto.nombre}`}
+            >
+              <button
+                type="button"
+                className="cantidad-btn cantidad-btn-izq"
+                onClick={handleDecrementar}
+                aria-label={
+                  cantidad === 1
+                    ? `Eliminar ${producto.nombre} del carrito`
+                    : `Quitar una unidad de ${producto.nombre}`
+                }
+              >
+                {cantidad === 1 ? (
+                  <FaTrash aria-hidden="true" size={14} />
+                ) : (
+                  <FaMinus aria-hidden="true" size={14} />
+                )}
+              </button>
+              <span className="cantidad-display" aria-live="polite">
+                {cantidad}
+              </span>
+              <button
+                type="button"
+                className="cantidad-btn cantidad-btn-der"
+                onClick={handleIncrementar}
+                disabled={cantidad >= maxUnidades}
+                aria-label={`Agregar una unidad de ${producto.nombre}`}
+              >
+                <FaPlus aria-hidden="true" size={14} />
+              </button>
+            </div>
           </Col>
-          <Col xs={6} sm={2} className="text-sm-end">
+          <Col xs={6} sm={3} className="text-sm-end">
             <div className="text-muted small">Subtotal</div>
-            <div className="fw-bold item-carrito-subtotal">{formatPrice(subtotal)}</div>
-          </Col>
-          <Col xs={12} sm={1} className="text-sm-end">
-            <Button variant="outline-danger" size="sm" className="item-carrito-eliminar" onClick={handleEliminar} aria-label={`Eliminar ${producto.nombre}`}>
-              <FaTimes aria-hidden="true" />
-            </Button>
+            <div className="fw-bold item-carrito-subtotal">
+              {formatPrice(subtotal)}
+            </div>
           </Col>
         </Row>
       </Card.Body>
