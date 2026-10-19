@@ -11,10 +11,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #2b2b2b;
+  color: var(--color-text);
   font-weight: 600;
   background-color: #fff;
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
   border-radius: 50px;
   padding: 0.5rem 1.15rem;
   text-decoration: none;
@@ -23,8 +23,8 @@
 }
 
 .boton-volver:hover {
-  background-color: #ff9f1c;
-  border-color: #ff9f1c;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
   text-decoration: none;
 }
@@ -43,7 +43,7 @@
 }
 
 .detalle-card-header {
-  background-color: #ff9f1c;
+  background-color: var(--color-primary);
   color: #fff;
   border: none;
   padding: 1.1rem 1.5rem;
@@ -66,8 +66,8 @@
 
 /* ============ Información (cliente / sucursal) ============ */
 .detalle-info {
-  background-color: #fff8ef;
-  border: 2px solid #ffe9c9;
+  background-color: var(--color-cream-soft);
+  border: 2px solid var(--color-border-card);
   border-radius: 14px;
   padding: 1rem 1.25rem;
   height: 100%;
@@ -79,13 +79,13 @@
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #e88900;
+  color: var(--color-primary-hover);
   margin-bottom: 0.25rem;
 }
 
 .detalle-valor {
   font-weight: 700;
-  color: #2b2b2b;
+  color: var(--color-text);
   font-size: 1.05rem;
 }
 
@@ -97,7 +97,7 @@
 /* ============ Título de productos ============ */
 .detalle-tabla-titulo {
   font-weight: 800;
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 /* ============ Tabla moderna ============ */
@@ -106,7 +106,7 @@
 }
 
 .detalle-tabla thead th {
-  background-color: #2b2b2b;
+  background-color: var(--color-text);
   color: #fff;
   text-transform: uppercase;
   font-size: 0.75rem;
@@ -116,13 +116,13 @@
 }
 
 .detalle-tabla tbody td {
-  border-color: #ffe9c9;
+  border-color: var(--color-border-card);
   vertical-align: middle;
   padding: 0.8rem 1rem;
 }
 
 .detalle-tabla tbody tr:last-child td {
-  border-bottom: 2px solid #ffe9c9;
+  border-bottom: 2px solid var(--color-border-card);
 }
 
 .detalle-tabla tbody tr:hover {
@@ -134,13 +134,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #fff5e6;
-  border: 2px solid #ffe9c9;
+  background-color: var(--color-cream-light);
+  border: 2px solid var(--color-border-card);
   border-radius: 14px;
   padding: 1rem 1.25rem;
   font-weight: 800;
   font-size: 1.1rem;
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 .detalle-total .text-danger {
@@ -161,13 +161,13 @@
 /* ============ Estado "no encontrado" ============ */
 .detalle-no-encontrado {
   font-weight: 900;
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 .boton-volver-btn {
-  background-color: #fff4e2;
-  color: #b55d00;
-  border: 1px solid #f1c27d;
+  background-color: var(--color-cream);
+  color: var(--color-primary-dark);
+  border: 1px solid var(--color-border-cream);
   border-radius: 50px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -176,9 +176,9 @@
 }
 
 .boton-volver-btn:hover {
-  background-color: #ffe6c2;
-  color: #b55d00;
-  border-color: #ff9f1c;
+  background-color: var(--color-cream-hover);
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary);
 }
 
 /* ============ Línea de tiempo de estados ============ */
@@ -194,7 +194,7 @@
   top: 0.25rem;
   bottom: 0.25rem;
   width: 2px;
-  background-color: #ffe9c9;
+  background-color: var(--color-border-card);
 }
 
 .timeline-item {

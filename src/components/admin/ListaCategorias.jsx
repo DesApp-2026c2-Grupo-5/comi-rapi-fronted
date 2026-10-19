@@ -3,18 +3,20 @@
  * Contenido: Componente ListaCategorias con tabla, botones Editar/Reactivar/Eliminar
  *            (CRUD del superadmin) o la vista de solo lectura para el admin.
  *            Incluye inactivas para los roles de gestión.
- * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert, Badge),
- *               api/categorias.js, react-router-dom, react-icons.
+ * Dependencias: react-bootstrap (Table, Button, Container, Alert, Badge),
+ *               api/categorias.js, react-router-dom, react-icons,
+ *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <ListaCategorias /> (superadmin) o <ListaCategorias soloLectura /> (admin).
  */
 
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Container, Spinner, Alert, Badge } from 'react-bootstrap';
+import { Table, Button, Container, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import { obtenerCategorias, eliminarCategoria, editarCategoria } from '../../api/categorias';
 import ConfirmarModal from '../comunes/ConfirmarModal';
+import { SkeletonTabla } from '../comunes/Skeleton';
 
 const ListaCategorias = ({ soloLectura = false }) => {
   const navigate = useNavigate();
@@ -102,8 +104,9 @@ const ListaCategorias = ({ soloLectura = false }) => {
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       {cargando ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando categorías…</span>
+          <SkeletonTabla filas={4} columnas={3} />
         </div>
       ) : (
         <Table striped bordered hover responsive className="tabla-admin shadow-sm">

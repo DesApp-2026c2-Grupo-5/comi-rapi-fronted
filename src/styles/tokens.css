@@ -1,0 +1,122 @@
+/**
+ * Propósito: Sistema de diseño de Comi-Rapi — única fuente de verdad de los
+ *   valores visuales (color, tipografía, forma, sombra y movimiento).
+ * Contenido: Variables CSS en :root, más la tipografía base (cuerpo Inter,
+ *   títulos Outfit) aplicada sobre la pila del sistema.
+ * Dependencias: Ninguna. Debe importarse DESPUÉS de bootstrap.min.css en
+ *   main.jsx, para que la tipografía base pise a la del reboot de Bootstrap.
+ *   Las variables existen en :root independientemente del orden, pero las
+ *   reglas de base sí dependen de él.
+ * Uso: Todas las hojas de estilo deben usar estas variables en lugar de hex
+ *   sueltos. Si cambia la marca, se cambia acá una sola vez.
+ *
+ * MOTIVO: los colores venían hardcodeados como ~30 hex repetidos en 30
+ * archivos; un rebranding obligaba a buscar/reemplazar en todos lados.
+ */
+
+:root {
+  /* ============ Color: una paleta dominante naranja + crema ============ */
+  /* Naranja de marca (primario, CTA, acentos) */
+  --color-primary: #ff9f1c;
+  --color-primary-hover: #e88900;
+  --color-primary-active: #d47f00;
+  --color-primary-dark: #b55d00; /* texto naranja sobre crema */
+  --color-primary-deep: #f07f10; /* inicio del degradado de navbar */
+  --color-primary-soft: #ffb347; /* fin del degradado de navbar */
+
+  /* Crema (superficies suaves, botones neutros) */
+  --color-cream: #fff4e2;
+  --color-cream-hover: #ffe6c2;
+  --color-cream-active: #ffdca8;
+  --color-cream-light: #fff5e6;
+  --color-cream-soft: #fff8ef; /* fondo de panel crema */
+
+  /* Bordes */
+  --color-border-cream: #f1c27d;
+  --color-border-card: #ffe9c9;
+  --color-border-strong: #d4b98f;
+
+  /* Neutros */
+  --color-white: #ffffff;
+  --color-text: #2b2b2b;
+  --color-text-muted: #7a6a55; /* secundario cálido */
+  --color-text-brown: #8a5a2b; /* texto de outline secundario */
+
+  /* Estados semánticos */
+  --color-success: #22c55e;
+  --color-success-hover: #16a34a;
+  --color-success-active: #15803d;
+  --color-danger: #e63946;
+  --color-danger-hover: #d12737;
+  --color-danger-active: #b51e2d;
+
+  /* Externos */
+  --color-mp: #009ee3; /* Mercado Pago */
+  --color-mp-active: #0079b8;
+
+  /* ============ Tipografía ============ */
+  --font-display: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* ============ Forma: radios ============ */
+  --radius-card: 16px;
+  --radius-card-lg: 18px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;
+
+  /* ============ Sombras ============ */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-card-hover: 0 8px 18px rgba(0, 0, 0, 0.12);
+  --shadow-cta: 0 4px 12px rgba(240, 127, 16, 0.25);
+  --shadow-cta-hover: 0 8px 18px rgba(240, 127, 16, 0.38);
+
+  /* ============ Movimiento ============ */
+  /* Curvas compartidas: usar estas variables en lugar de curvas hardcodeadas
+     para que todas las animaciones y transiciones hablen el mismo idioma
+     (entradas fuertes y movimientos sobre pantalla). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ============ Tipografía base ============ */
+/* El cuerpo usa Inter (legible en tamaños chicos); los títulos y la marca
+   usan Outfit, más geométrica, con pesos fuertes. Sin Outfit cargada (offline)
+   cae a la pila del sistema sin romper el layout. */
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  /* Suaviza la escala de grises del hinting en tamaños chicos. */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.display-1,
+.display-2,
+.display-3,
+.display-4,
+.display-5,
+.display-6,
+.inicio-hero-titulo,
+.seccion-titulo,
+.navbar-brand-comirapi {
+  font-family: var(--font-display);
+}
+
+/* Títulos grandes con tracking negativo: Outfit se lee más moderna y compacta
+   a tamaños display (el tracking positivo queda reservado a la identidad de
+   marca tipo logotipo, como .inicio-hero-titulo o .navbar-brand-comirapi). */
+h1,
+h2,
+.display-1,
+.display-2,
+.display-3 {
+  letter-spacing: -0.015em;
+  /* Reparte las líneas para evitar viudas en títulos largos. */
+  text-wrap: balance;
+}

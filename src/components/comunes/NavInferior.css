@@ -7,11 +7,11 @@
  *                que están en Navbar.css (siempre montado junto a esta barra).
  * Uso: Importado desde src/components/comunes/NavInferior.jsx.
  *
- * Sobre el color: la barra superior usa el degradado claro (#f07f10 → #ffb347),
+ * Sobre el color: la barra superior usa el degradado claro (var(--color-primary-deep) → var(--color-primary-soft)),
  * pero ahí el texto blanco va sobre links cortos y espaciados. Acá el blanco es
  * el contenido principal y ocupa todo el ancho, y contra el extremo claro del
  * degradado da menos de 2:1. Por eso se usa el naranja oscuro de la marca
- * (#b55d00, el mismo que ya se usa para el texto del ítem activo): 4,6:1 contra
+ * (var(--color-primary-dark), el mismo que ya se usa para el texto del ítem activo): 4,6:1 contra
  * blanco, que es el mínimo AA para texto normal. Es el mismo color de la app,
  * sólo que en el tramo que se puede leer.
  */
@@ -26,7 +26,7 @@
      contenido, pero los modales (1040–1055) la tapan cuando se abren, que es lo
      correcto. */
   z-index: 1020;
-  background: linear-gradient(180deg, #b55d00, #a04e00);
+  background: linear-gradient(180deg, var(--color-primary-dark), #a04e00);
   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.22);
   /* El padding inferior absorbe el gesto de inicio del iPhone: sin esto los
      íconos quedan debajo de la barrita y el toque va al sistema, no al enlace. */
@@ -126,7 +126,7 @@
    sólo un cambio de color de texto, es lo que hace evidente la ubicación de un
    vistazo. */
 .nav-inferior-enlace.activo {
-  color: #b55d00;
+  color: var(--color-primary-dark);
 }
 
 .nav-inferior-enlace.activo .nav-inferior-texto {
@@ -215,12 +215,12 @@
 }
 
 .nav-hoja .offcanvas-header {
-  border-bottom: 2px solid #f1c27d;
+  border-bottom: 2px solid var(--color-border-cream);
   padding: 1.1rem 1.25rem;
 }
 
 .nav-hoja .offcanvas-title {
-  color: #b55d00;
+  color: var(--color-primary-dark);
   font-weight: 800;
   font-size: 1.15rem;
 }
@@ -260,18 +260,18 @@
 }
 
 .nav-hoja-enlace:hover {
-  background-color: #fff4e2;
-  color: #b55d00;
+  background-color: var(--color-cream);
+  color: var(--color-primary-dark);
 }
 
 .nav-hoja-enlace.activo {
-  background-color: #b55d00;
+  background-color: var(--color-primary-dark);
   color: #fff;
 }
 
 /* Bootstrap pone `outline: 0` en los enlaces al tabular. */
 .nav-hoja-enlace:focus-visible {
-  outline: 2px solid #ff9f1c;
+  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 

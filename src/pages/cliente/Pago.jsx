@@ -189,8 +189,8 @@ const Pago = () => {
 
           {/* Sucursal asignada */}
           {sucursal && (
-            <div className="p-3 mb-3" style={{ backgroundColor: '#fff8ef', border: '2px solid #ffe9c9', borderRadius: '12px' }}>
-              <span className="d-block text-uppercase fw-bold text-warning" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>
+            <div className="p-3 mb-3 panel-crema">
+              <span className="panel-crema-etiqueta">
                 Tu pedido será preparado en
               </span>
               <strong className="d-block fs-5">{sucursal.nombre}</strong>

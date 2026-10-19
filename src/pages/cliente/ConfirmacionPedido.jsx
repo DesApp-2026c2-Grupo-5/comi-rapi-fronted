@@ -96,9 +96,8 @@ const ConfirmacionPedido = () => {
 
               {/* Sucursal asignada automáticamente */}
               {sucursal && (
-                <div className="mt-4 p-3 text-start"
-                  style={{ backgroundColor: '#fff8ef', border: '2px solid #ffe9c9', borderRadius: '12px' }}>
-                  <span className="d-block text-uppercase fw-bold text-warning" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>
+                <div className="mt-4 p-3 text-start panel-crema">
+                  <span className="panel-crema-etiqueta">
                     Tu pedido será preparado en
                   </span>
                   <strong className="d-block fs-5">{sucursal.nombre}</strong>
@@ -108,9 +107,8 @@ const ConfirmacionPedido = () => {
 
               {/* Dirección de entrega usada */}
               {pedidoActual.direccion && (
-                <div className="mt-3 p-3 text-start"
-                  style={{ backgroundColor: '#fff8ef', border: '2px solid #ffe9c9', borderRadius: '12px' }}>
-                  <span className="d-block text-uppercase fw-bold text-warning" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>
+                <div className="mt-3 p-3 text-start panel-crema">
+                  <span className="panel-crema-etiqueta">
                     Entregamos en
                   </span>
                   <strong className="d-block fs-5">{pedidoActual.direccion.direccion}</strong>

@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Container, Table, Button, Spinner, Badge, Form } from 'react-bootstrap';
+import { Container, Table, Button, Badge, Form } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { productosMock } from '../../services/seedData';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { SkeletonTabla } from '../../components/comunes/Skeleton';
 import { formatPrice } from '../../utils/formatters';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 
@@ -256,8 +257,9 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
       {productoSeleccionado && (
         <>
           {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="danger" />
+            <div role="status" aria-live="polite">
+              <span className="visually-hidden">Cargando personalización…</span>
+              <SkeletonTabla filas={5} columnas={3} />
             </div>
           ) : (
             <>

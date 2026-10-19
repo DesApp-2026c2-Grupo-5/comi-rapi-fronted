@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Container, Card, Button, Spinner } from 'react-bootstrap';
+import { Container, Card, Button } from 'react-bootstrap';
 import { FaUtensils, FaHistory } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
@@ -29,6 +29,7 @@ import { filtrarPedidos, FILTRO_INICIAL } from '../../utils/filtrosPedidos';
 import FiltrosPedidos from '../../components/cliente/FiltrosPedidos';
 import ListaPedidos from '../../components/cliente/ListaPedidos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { SkeletonListaPedidos } from '../../components/comunes/Skeleton';
 import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
 
 // Sin PENDIENTE: el pedido todavía no se pagó, así que no cuenta como pedido
@@ -132,9 +133,9 @@ const MisPedidos = () => {
       />
 
       {cargandoPedidos && pedidos.length === 0 ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" role="status" />
-          <p className="text-muted mt-3">Cargando tus pedidos…</p>
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando tus pedidos…</span>
+          <SkeletonListaPedidos />
         </div>
       ) : activos.length === 0 ? (
         <Card className="shadow-sm text-center p-5">

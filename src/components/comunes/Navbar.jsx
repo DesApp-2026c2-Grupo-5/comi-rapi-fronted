@@ -335,7 +335,12 @@ const Navbar = () => {
           to={destinoInicio}
           className="navbar-brand-comirapi"
         >
-          <FaHamburger className="brand-ico" aria-hidden="true" />
+          <img
+            src="/imagenes/logo-comirapi.svg"
+            alt=""
+            aria-hidden="true"
+            className="brand-ico"
+          />
           <span translate="no">Comi-Rapi</span>
         </BSNavbar.Brand>
         {/* Avatar del cliente en la fila superior, fuera del colapsable: en móvil

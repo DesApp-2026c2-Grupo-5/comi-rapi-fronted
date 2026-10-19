@@ -30,13 +30,13 @@
   align-items: center;
   gap: 0.7rem;
   width: 100%;
-  background: #fff4e2;
-  border: 2px solid #f1c27d;
+  background: var(--color-cream);
+  border: 2px solid var(--color-border-cream);
   border-left-width: 6px;
   border-radius: 16px;
   padding: 0.75rem 1rem 0.75rem 1.25rem;
   font-weight: 600;
-  color: #2b2b2b;
+  color: var(--color-text);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   animation: batch-notificacion-entrada 0.3s ease-out;
 }
@@ -69,11 +69,11 @@
   transition: color 0.2s ease;
 }
 .batch-notificacion-accion:hover {
-  color: #b55d00;
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }
 .batch-notificacion-accion:focus-visible {
-  outline: 2px solid #ff9f1c;
+  outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -89,7 +89,7 @@
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #8a5a2b;
+  color: var(--color-text-brown);
   font-size: 0.9rem;
   cursor: pointer;
   touch-action: manipulation;
@@ -98,12 +98,12 @@
 }
 
 .batch-notificacion-cerrar:hover {
-  background: #ffe6c2;
-  color: #b55d00;
+  background: var(--color-cream-hover);
+  color: var(--color-primary-dark);
 }
 
 .batch-notificacion-cerrar:focus-visible {
-  outline: 2px solid #ff9f1c;
+  outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 

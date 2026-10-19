@@ -173,19 +173,8 @@ const ListaPedidos = ({
               <span className="historial-titulo">Progreso del pedido</span>
               <HistorialStepper pedido={pedido} sinNodoCancelado />
               {esCancelado && (
-                <div
-                  className="d-flex align-items-start gap-2 mt-3"
-                  style={{
-                    backgroundColor: "#fff4e2",
-                    border: "1px solid #f1c27d",
-                    borderRadius: "12px",
-                    padding: "10px 14px",
-                  }}
-                >
-                  <FaTimesCircle
-                    className="text-danger flex-shrink-0 mt-1"
-                    aria-hidden="true"
-                  />
+                <div className="d-flex align-items-start gap-2 mt-3 panel-crema p-2">
+                  <FaTimesCircle className="text-danger flex-shrink-0 mt-1" aria-hidden="true" />
                   <span>
                     <strong className="text-danger">
                       {esCancelacionPropia

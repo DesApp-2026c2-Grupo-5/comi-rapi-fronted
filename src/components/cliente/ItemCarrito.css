@@ -7,9 +7,9 @@
  */
 
 .item-carrito {
-  border: 2px solid #ffe9c9;
+  border: 2px solid var(--color-border-cream, #ffe9c9);
   border-radius: 16px;
-  background-color: #fff;
+  background-color: var(--color-surface, #fff);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -22,11 +22,11 @@
 }
 
 .item-carrito-nombre {
-  color: #2b2b2b;
+  color: var(--color-text, #2b2b2b);
 }
 
 .item-carrito-subtotal {
-  color: #e63946;
+  color: var(--color-danger, #e63946);
   font-size: 1.05rem;
 }
 
@@ -35,14 +35,14 @@
    cuatro párrafos sueltos indistinguibles. */
 .item-carrito-desglose {
   font-size: 0.82rem;
-  color: #6c757d;
+  color: var(--color-text-muted, #6c757d);
   line-height: 1.5;
   margin-bottom: 0;
   padding-left: 1.1rem;
 }
 
 .item-carrito-desglose strong {
-  color: #2b2b2b;
+  color: var(--color-text, #2b2b2b);
 }
 
 /* ============ Grupo de botones de cantidad (B1) ============ */
@@ -52,7 +52,7 @@
 .cantidad-grupo {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--color-border, #dee2e6);
   border-radius: 0.5rem;
   overflow: hidden;
 }
@@ -64,19 +64,17 @@
   width: 40px;
   height: 42px;
   border: none;
-  background: #fff4e2;
-  color: #8a4b00;
+  background: var(--color-surface-warm, #fff4e2);
+  color: var(--color-text-warm, #8a4b00);
   cursor: pointer;
   transition: background 0.15s ease;
-  /* Fix: garantiza que el área clickeable del botón no sea tapada por
-     el span display central (que expande su bounding box en flex). */
   position: relative;
   z-index: 2;
 }
 
 .cantidad-btn:hover:not(:disabled) {
-  background: #f0a10e;
-  color: #fff;
+  background: var(--color-primary, #f07f10);
+  color: var(--color-surface, #fff);
 }
 
 .cantidad-btn:disabled {
@@ -85,16 +83,16 @@
 }
 
 .cantidad-btn:focus-visible {
-  outline: 2px solid #f07f10;
+  outline: 2px solid var(--color-primary, #f07f10);
   outline-offset: -2px;
 }
 
 .cantidad-btn-izq {
-  border-right: 1px solid #dee2e6;
+  border-right: 1px solid var(--color-border, #dee2e6);
 }
 
 .cantidad-btn-der {
-  border-left: 1px solid #dee2e6;
+  border-left: 1px solid var(--color-border, #dee2e6);
 }
 
 .cantidad-display {
@@ -104,10 +102,8 @@
   min-width: 56px;
   font-weight: 700;
   font-size: 1.1rem;
-  color: #212529;
-  background: #fff;
-  /* Fix: el display es puramente visual — nunca intercepta clicks que
-     deberían llegar a los botones adyacentes. */
+  color: var(--color-text-strong, #212529);
+  background: var(--color-surface, #fff);
   pointer-events: none;
   position: relative;
   z-index: 1;

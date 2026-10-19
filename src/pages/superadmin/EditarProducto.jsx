@@ -1,17 +1,19 @@
 /**
  * Propósito: Página para editar o crear un producto usando Container de Bootstrap.
  * Contenido: Componente EditarProducto con carga de datos por ID y FormularioProducto.
- * Dependencias: react-bootstrap (Container, Spinner, Alert, Button), react-router-dom,
- *               FormularioProducto, api/productos.js.
+ * Dependencias: react-bootstrap (Container, Alert, Button), react-router-dom,
+ *               FormularioProducto, api/productos.js,
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: Ruta "/superadmin/producto/editar/:id" o "/superadmin/producto/nuevo" → <EditarProducto />
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
 import { obtenerProductoPorId, crearProducto, editarProducto } from '../../api/productos';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarProducto = () => {
   const { id } = useParams();
@@ -57,8 +59,9 @@ const EditarProducto = () => {
 
   if (cargando) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando producto…</span>
+        <SkeletonTarjeta />
       </Container>
     );
   }

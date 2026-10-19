@@ -4,7 +4,8 @@
  * Contenido: Componente DetalleCliente con datos, direcciones (cada una con
  *            su sucursal asignada por cercanía) y últimos pedidos.
  * Dependencias: react-bootstrap, react-router-dom, api/usuarios.js,
- *               api/direcciones.js, api/pedidos.js, formatters, react-icons.
+ *               api/direcciones.js, api/pedidos.js, formatters, react-icons,
+ *               components/comunes/Skeleton (SkeletonPagina).
  * Uso: Ruta "/admin/clientes/:id" → <DetalleCliente />
  *      Ruta "/superadmin/clientes/:id" → <DetalleCliente backRoute="/superadmin/clientes" />
  */
@@ -12,13 +13,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { Container, Card, Spinner, Alert, Badge, Table, Row, Col } from 'react-bootstrap';
+import { Container, Card, Alert, Badge, Table, Row, Col } from 'react-bootstrap';
 import { FaStore, FaLocationDot } from 'react-icons/fa6';
 import { obtenerClientePorId } from '../../api/usuarios';
 import { obtenerDireccionesDeCliente } from '../../api/direcciones';
 import { obtenerPedidos } from '../../api/pedidos';
 import { formatDate, formatPrice } from '../../utils/formatters';
 import { ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
+import { SkeletonPagina } from '../../components/comunes/Skeleton';
 
 const inicialesDe = (cliente) => {
   const nombre = (cliente?.nombre || '').trim();
@@ -69,8 +71,9 @@ const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
 
   if (cargando) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando detalle del cliente…</span>
+        <SkeletonPagina />
       </Container>
     );
   }

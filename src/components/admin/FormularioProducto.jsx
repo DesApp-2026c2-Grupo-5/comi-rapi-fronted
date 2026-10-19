@@ -3,18 +3,20 @@
  * Contenido: Componente FormularioProducto con campos controlados y, si el tipo
  *            es COMBO, el editor de componentes (receta). El tipo no se le pide:
  *            se deduce de la pantalla (producto o combo).
- * Dependencias: react-bootstrap (Form, Button, Card, Spinner), react-icons,
- *               api/categorias.js, api/productos.js, EditarComponentes.
+ * Dependencias: react-bootstrap (Form, Button, Card), react-icons,
+ *               api/categorias.js, api/productos.js, EditarComponentes,
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: <FormularioProducto producto={producto} onGuardar={handler} />
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Card, Spinner } from 'react-bootstrap';
+import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
 import { obtenerCategorias } from '../../api/categorias';
 import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
+import { SkeletonTarjeta } from '../comunes/Skeleton';
 import SubirImagen from './SubirImagen';
 import EditarComponentes from './EditarComponentes';
 import './FormularioAdmin.css';
@@ -161,8 +163,9 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
 
   if (cargandoCategorias) {
     return (
-      <div className="text-center py-4">
-        <Spinner animation="border" variant="danger" />
+      <div role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando formulario de producto…</span>
+        <SkeletonTarjeta />
       </div>
     );
   }

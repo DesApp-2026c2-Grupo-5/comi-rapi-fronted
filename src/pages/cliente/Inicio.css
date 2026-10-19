@@ -9,7 +9,7 @@
 
 /* ============ 1. HERO ============ */
 .inicio-hero {
-  background-color: #ff9f1c;
+  background-color: var(--color-primary);
   color: #fff;
   padding: 3rem 0 2.5rem;
   overflow: hidden;
@@ -20,12 +20,12 @@
   color: #fff;
   font-weight: 900;
   font-size: clamp(3rem, 8vw, 5.5rem);
-  letter-spacing: 6px;
+  letter-spacing: 1px;
   line-height: 1;
   text-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
-/* Columna central del hero (contiene la hamburguesa flotante) */
+/* Columna central del hero (contiene la hamburguesa que se arma al entrar) */
 .hero-cola-burger {
   min-height: 300px;
   display: flex;
@@ -33,12 +33,15 @@
   justify-content: center;
 }
 
-/* ============ Hamburguesa flotante (CSS puro) ============ */
+/* ============ Hamburguesa del hero (CSS puro) ============ */
+/* Contenedor de la hamburguesa. El nombre "flotante" es histórico: ya no
+   flota en infinito — las capas entran una sola vez al montar y después
+   queda quieta (el movimiento perpetuo en el hero fallaba el gate de
+   frecuencia: se ve decenas de veces por día). */
 .burger-flotante {
   width: 240px;
   position: relative;
   z-index: 2;
-  animation: flotar 3.2s ease-in-out infinite;
 }
 
 .burger {
@@ -99,7 +102,7 @@
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.18);
 }
 
-/* Sombra suave bajo la hamburguesa */
+/* Sombra suave bajo la hamburguesa: entra junto al pan inferior */
 .burger-flotante::before {
   content: '';
   position: absolute;
@@ -111,46 +114,87 @@
   background: rgba(0, 0, 0, 0.16);
   filter: blur(5px);
   z-index: -1;
-  animation: sombra 3.2s ease-in-out infinite;
+  animation: sombra-entra 320ms var(--ease-out) 180ms backwards;
 }
 
-/* ============ Ingredientes volando ============ */
-.ingrediente-volador {
-  position: absolute;
-  z-index: 1;
-  border-radius: 50%;
-  animation: volar 4s ease-in-out infinite;
+/* ============ Entrada: la hamburguesa se arma (una sola vez) ============ */
+/* De abajo hacia arriba: el pan inferior sube desde abajo y el resto de las
+   capas caen desde arriba, 55 ms de stagger entre cada una. Sólo transform +
+   opacity, curva --ease-out del token global. fill backwards para que cada
+   capa espere oculta durante su delay; el estado base es visible, así que si
+   la animación no corre (o reduced-motion la colapsa) todo aparece armado. */
+.pan-superior {
+  animation: capa-entra-arriba 320ms var(--ease-out) 275ms backwards;
+}
+.ingrediente-lechuga {
+  animation: capa-entra-arriba 320ms var(--ease-out) 220ms backwards;
+}
+.ingrediente-tomate {
+  animation: capa-entra-arriba 320ms var(--ease-out) 165ms backwards;
+}
+.ingrediente-queso {
+  animation: queso-entra 320ms var(--ease-out) 110ms backwards;
+}
+.carne {
+  animation: capa-entra-arriba 320ms var(--ease-out) 55ms backwards;
+}
+.pan-inferior {
+  animation: capa-entra-abajo 320ms var(--ease-out) 0ms backwards;
 }
 
-.iv-lechuga { width: 24px; height: 13px; background: #8bc34a; border-radius: 60% 40% 60% 40%; }
-.iv-tomate  { width: 16px; height: 16px; background: #ef5350; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15); }
-.iv-queso   { width: 20px; height: 10px; background: #fdd835; border-radius: 4px; }
-.iv-carne   { width: 18px; height: 12px; background: #795548; border-radius: 7px; }
-.iv-semilla { width: 7px; height: 7px; background: #ffe0b2; }
-
-.i1 { left: -6%; top: 22%; animation-delay: 0s; }
-.i2 { right: -8%; top: 12%; animation-delay: 0.6s; }
-.i3 { left: -14%; bottom: 18%; animation-delay: 1.2s; }
-.i4 { right: -4%; bottom: 26%; animation-delay: 1.8s; }
-.i5 { left: 55%; top: -16%; animation-delay: 0.9s; }
-.i6 { right: 22%; top: -10%; animation-delay: 2.4s; }
-
-/* ============ Animaciones ============ */
-@keyframes flotar {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
+/* Títulos del hero: entran desde los costados y aterrizan con la hamburguesa */
+.hero-comi {
+  animation: titulo-entra-izq 450ms var(--ease-out) 200ms backwards;
+}
+.hero-rapi {
+  animation: titulo-entra-der 450ms var(--ease-out) 200ms backwards;
 }
 
-@keyframes sombra {
-  0%, 100% { transform: scaleX(1); opacity: 1; }
-  50% { transform: scaleX(0.75); opacity: 0.55; }
+@keyframes capa-entra-arriba {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes volar {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(6px, -14px) rotate(18deg); }
-  50% { transform: translate(-5px, -26px) rotate(45deg); }
-  75% { transform: translate(-10px, -10px) rotate(-12deg); }
+@keyframes capa-entra-abajo {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* El queso va inclinado en su estado base: la entrada respeta la inclinación
+   para que no "salte" el ángulo al terminar la animación. */
+@keyframes queso-entra {
+  from { opacity: 0; transform: translateY(-24px) rotate(-1.5deg); }
+  to { opacity: 1; transform: translateY(0) rotate(-1.5deg); }
+}
+
+@keyframes sombra-entra {
+  from { opacity: 0; transform: scaleX(0.6); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes titulo-entra-izq {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes titulo-entra-der {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Con movimiento reducido todo aparece en su lugar final, sin animar. */
+@media (prefers-reduced-motion: reduce) {
+  .pan-superior,
+  .ingrediente-lechuga,
+  .ingrediente-tomate,
+  .ingrediente-queso,
+  .carne,
+  .pan-inferior,
+  .burger-flotante::before,
+  .hero-comi,
+  .hero-rapi {
+    animation: none;
+  }
 }
 
 /* ============ Badge de Google Play ============ */
@@ -182,26 +226,26 @@
 /* Botón ORDENAR redondo */
 .boton-ordenar {
   background-color: #ffffff;
-  color: #b55d00;
+  color: var(--color-primary-dark);
   border: none;
   border-radius: 50px;
   font-weight: 800;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   padding: 0.9rem 2.8rem;
   font-size: 1.1rem;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .boton-ordenar:hover {
-  background-color: #fff4e2;
-  color: #b55d00;
+  background-color: var(--color-cream);
+  color: var(--color-primary-dark);
 }
 
 /* ============ 2. Categorías ============ */
 .seccion-titulo {
-  font-weight: 900;
-  letter-spacing: 3px;
-  color: #2b2b2b;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--color-text);
   text-align: center;
 }
 
@@ -211,11 +255,18 @@
 
 .categoria-enlace {
   text-decoration: none;
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 .categoria-enlace:hover {
-  color: #e63946;
+  color: var(--color-danger);
+}
+
+/* Anillo de foco para navegación por teclado: solo contorno, sin movimiento. */
+.categoria-enlace:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 12px;
 }
 
 .categoria-circulo {
@@ -227,7 +278,7 @@
   background: #fff;
   border: 6px solid #fff;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
-  transition: transform 0.2s ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .categoria-circulo img {
@@ -236,8 +287,20 @@
   object-fit: cover;
 }
 
-.categoria-circulo:hover {
-  transform: scale(1.07);
+/* Escala de la tarjeta solo con puntero preciso: en táctil el tap dispara un
+   hover falso que deja el círculo agrandado. */
+@media (hover: hover) and (pointer: fine) {
+  .categoria-circulo:hover {
+    transform: scale(1.07);
+  }
+}
+
+/* Con movimiento reducido el hover no escala: se evita el salto instantáneo
+   que queda al anular la transición (la skill pide quitar cambios de posición). */
+@media (prefers-reduced-motion: reduce) {
+  .categoria-circulo:hover {
+    transform: none;
+  }
 }
 
 .categoria-nombre {
@@ -246,7 +309,7 @@
 
 /* ============ 4. Envío a domicilio ============ */
 .envio-section {
-  background-color: #ff9f1c;
+  background-color: var(--color-primary);
   color: #fff;
 }
 
@@ -260,7 +323,7 @@
 
 .envio-boton {
   background-color: #ffffff;
-  color: #b55d00;
+  color: var(--color-primary-dark);
   border: none;
   border-radius: 50px;
   font-weight: 800;
@@ -271,8 +334,8 @@
 }
 
 .envio-boton:hover {
-  background-color: #fff4e2;
-  color: #b55d00;
+  background-color: var(--color-cream);
+  color: var(--color-primary-dark);
 }
 
 /* ============ Responsive ============ */

@@ -1,15 +1,26 @@
+/**
+ * Propósito: Estilos de la tarjeta de promoción del home y del catálogo.
+ * Contenido: Card con badge de descuento, lift en hover (gateado a puntero
+ *            fino), anillo de foco y botón "Aprovechar".
+ * Dependencias: PromocionCard.jsx (se importa al final del mismo), token
+ *               --ease-out de styles/comirapi.css.
+ * Uso: Importado desde src/components/cliente/PromocionCard.jsx.
+ */
+
 .promocion-card {
   position: relative;
   border: none;
   border-radius: 16px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
-.promocion-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+@media (hover: hover) and (pointer: fine) {
+  .promocion-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  }
 }
 
 .promocion-badge {
@@ -28,7 +39,7 @@
 .promocion-nombre {
   font-weight: 800;
   font-size: 1.2rem;
-  color: #2b2b2b;
+  color: var(--color-text);
   /* El badge es absoluto arriba a la izquierda: este margen deja el nombre
      debajo y evita que el "2x1" / "-10%" lo tape. */
   margin-top: 2.75rem;
@@ -40,7 +51,7 @@
 }
 
 .promocion-boton {
-  background-color: #e63946;
+  background-color: var(--color-danger);
   border: none;
   border-radius: 50px;
   font-weight: 700;
@@ -51,4 +62,21 @@
 .promocion-boton:hover,
 .promocion-boton:focus {
   background-color: #c1121f;
+}
+
+.promocion-card:focus-within {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 2px;
+}
+
+/* Movimiento reducido: la tarjeta no se eleva ni se desplaza. Se conserva solo
+   el cambio de sombra, que es color y no movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .promocion-card {
+    transition: none;
+  }
+
+  .promocion-card:hover {
+    transform: none;
+  }
 }

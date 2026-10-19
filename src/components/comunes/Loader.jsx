@@ -1,12 +1,18 @@
 /**
- * Propósito: Componente de spinner/loader usando Spinner de Bootstrap.
- * Contenido: Componente Loader con Spinner de React Bootstrap.
- * Dependencias: react-bootstrap (Spinner).
- * Uso: <Loader /> - Se renderiza durante estados de carga.
+ * Propósito: Indicador de carga global de la app (rutas lazy y verificación
+ *   de sesión).
+ * Contenido: Loader con esqueleto de página genérica (SkeletonPagina) en
+ *   lugar de un spinner circular.
+ * Dependencias: components/comunes/Skeleton.
+ * Uso: <Loader texto="Verificando sesión…" /> dentro de Suspense o guardas.
+ *
+ * MOTIVO: el spinner genérico no anticipaba nada de la pantalla que venía;
+ *   el esqueleto comunica "esto es una página que se está armando" y evita
+ *   el salto de layout al renderizar.
  */
 
 import React from 'react';
-import { Spinner } from 'react-bootstrap';
+import { SkeletonPagina } from './Skeleton';
 
 /* El proyecto no tiene la dependencia "prop-types" (ningún componente declara
    PropTypes), así que se desactiva esa regla en este archivo en vez de agregar
@@ -15,15 +21,11 @@ import { Spinner } from 'react-bootstrap';
 const Loader = ({ texto = 'Cargando…' }) => {
   return (
     // `role="status"` + `aria-live` hace que el lector de pantalla anuncie el
-    // cambio de estado sin stealar el foco. El texto visible se oculta a los
-    // lectores porque el Spinner ya lo dice: si no, se lee dos veces.
-    <div
-      className="d-flex flex-column align-items-center justify-content-center py-5 gap-2"
-      role="status"
-      aria-live="polite"
-    >
-      <Spinner animation="border" variant="danger" aria-hidden="true" />
-      <span className="text-muted">{texto}</span>
+    // estado sin stealar el foco. El texto va visually-hidden porque el
+    // esqueleto ya comunica la carga de forma visible: si no, se lee dos veces.
+    <div className="py-4" role="status" aria-live="polite">
+      <span className="visually-hidden">{texto}</span>
+      <SkeletonPagina />
     </div>
   );
 };

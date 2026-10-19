@@ -1,24 +1,50 @@
 /**
  * Propósito: Estilos de la tarjeta de producto, alineados con el diseño de Comi-Rapi.
- * Contenido: Card redondeada con sombra suave, hover con elevación, precio rojo
- *            y botón "Añadir" redondo.
- * Dependencias: ProductoCard.jsx (se importa al final del mismo).
+ * Contenido: Card redondeada con sombra suave, hover con elevación (gateado a
+ *            puntero fino), precio rojo y botón "Añadir" redondo.
+ * Dependencias: ProductoCard.jsx (se importa al final del mismo), token
+ *               --ease-out de styles/comirapi.css.
  * Uso: Importado desde src/components/cliente/ProductoCard.jsx.
  */
 
 .producto-card {
   position: relative;
-  border: 2px solid #ffe9c9;
+  border: 2px solid var(--color-border-card);
   border-radius: 18px;
   overflow: hidden;
   background-color: #fff;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
-.producto-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.13);
+/* El lift de la tarjeta aplica únicamente en dispositivos con puntero preciso
+   para evitar efectos al tocar en pantallas táctiles. */
+@media (hover: hover) and (pointer: fine) {
+  .producto-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 26px rgba(0, 0, 0, 0.13);
+  }
+}
+
+/* Movimiento reducido: la tarjeta no se eleva ni se desplaza (un salto de
+   posición instantáneo sería peor que no moverse). Se conserva solo el cambio
+   de sombra, que es color y no movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .producto-card {
+    transition: none;
+  }
+
+  .producto-card:hover {
+    transform: none;
+  }
+}
+
+/* Anillo de foco al recorrer con teclado: el contorno hereda el naranja de
+   marca para que la navegación por tabulación sea visible sobre cualquier
+   fondo. */
+.producto-card:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .producto-card-imagen {
@@ -28,7 +54,7 @@
 
 .producto-nombre {
   font-weight: 800;
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 .producto-descripcion {
@@ -36,7 +62,7 @@
 }
 
 .producto-precio {
-  color: #e63946;
+  color: var(--color-danger);
   font-size: 1.2rem;
 }
 
@@ -45,7 +71,7 @@
 }
 
 .producto-boton {
-  background-color: #ff9f1c;
+  background-color: var(--color-primary);
   border: none;
   border-radius: 50px;
   font-weight: 700;
@@ -54,7 +80,7 @@
 }
 
 .producto-boton:hover {
-  background-color: #e88900;
+  background-color: var(--color-primary-hover);
 }
 
 .producto-rank {
@@ -96,7 +122,7 @@
   top: 10px;
   right: 10px;
   z-index: 2;
-  background-color: #e63946;
+  background-color: var(--color-danger);
   color: #fff;
   font-weight: 800;
   font-size: 0.95rem;

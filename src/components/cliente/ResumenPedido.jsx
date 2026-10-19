@@ -136,8 +136,8 @@ const ResumenPedido = ({
 
         {/* Sucursal asignada (visible al confirmar el pedido) */}
         {sucursal && (
-          <div className="mt-3 p-3" style={{ backgroundColor: '#fff8ef', border: '2px solid #ffe9c9', borderRadius: '12px' }}>
-            <span className="d-block text-uppercase fw-bold text-warning" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>
+          <div className="mt-3 p-3 panel-crema">
+            <span className="panel-crema-etiqueta">
               Sucursal asignada
             </span>
             <strong className="d-block">{sucursal.nombre}</strong>
