@@ -1,7 +1,7 @@
 /**
  * Propósito: Tema global de botones Comi-Rapi aplicado después de Bootstrap.
  * Contenido: cada tipo de botón tiene SU propio color (sistema semántico):
- *   - Primary / CTA de marca (añadir, ordenar, guardar): naranja #ff9f1c.
+ *   - Primary / CTA de marca (añadir, ordenar, guardar): naranja var(--color-primary).
  *   - Success / confirmar-avanzar (confirmar pedido, avanzar estado): verde.
  *   - Danger / acciones destructivas (eliminar, cancelar, vaciar): rojo.
  *   - Secondary / neutro (volver, cancelar formulario, editar): crema.
@@ -13,6 +13,10 @@
  * pero asignando a cada uno un color propio para que no todo quede naranja.
  */
 
+/* ============ Tokens de movimiento ============ */
+/* Las curvas --ease-out / --ease-in-out y la paleta viven en styles/tokens.css
+   (importado antes que esta hoja desde main.jsx). No duplicarlas acá. */
+
 /* ============ Base: pill + flex para iconos + micro-interacciones ============ */
 .btn {
   display: inline-flex;
@@ -20,24 +24,39 @@
   justify-content: center;
   gap: 0.5rem;
   border-radius: 999px;
+  /* Outfit en los botones: los labels son cortos y la geométrica de marca
+     hace el conjunto más propio que la Inter del cuerpo. */
+  font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: 0.3px;
   /* `touch-action: manipulation` evita el retardo de doble toque al zoomear en
      móvil sin desactivar el zoom real del usuario. */
   touch-action: manipulation;
   -webkit-tap-highlight-color: rgba(255, 159, 28, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease,
-    color 0.2s ease, border-color 0.2s ease;
+  transition: transform 160ms var(--ease-out), box-shadow 200ms var(--ease-out),
+    background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
-.btn:hover {
-  transform: translateY(-2px);
+/* El lift del hover solo aplica en dispositivos con puntero preciso: en táctil
+   el tap dispara un hover falso que deja el botón levantado. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    transform: translateY(-2px);
+  }
 }
 .btn:active {
   transform: translateY(0) scale(0.97);
 }
 .btn:focus-visible {
-  outline: 2px solid #ff9f1c;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+/* Con movimiento reducido los botones no se desplazan ni escalan: solo cambian
+   de color. Un salto de posición instantáneo sería peor que no moverse. */
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover,
+  .btn:active {
+    transform: none;
+  }
 }
 
 /* ============ Primary: naranja de la marca ============ */
@@ -46,21 +65,35 @@
 .carrito-boton-vacio,
 .filtro-pill.filtro-activo {
   --bs-btn-color: #fff;
-  --bs-btn-bg: #ff9f1c;
-  --bs-btn-border-color: #ff9f1c;
+  --bs-btn-bg: var(--color-primary);
+  --bs-btn-border-color: var(--color-primary);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #e88900;
-  --bs-btn-hover-border-color: #e88900;
+  --bs-btn-hover-bg: var(--color-primary-hover);
+  --bs-btn-hover-border-color: var(--color-primary-hover);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #d47f00;
-  --bs-btn-active-border-color: #d47f00;
-  --bs-btn-disabled-bg: #ff9f1c;
-  --bs-btn-disabled-border-color: #ff9f1c;
+  --bs-btn-active-bg: var(--color-primary-active);
+  --bs-btn-active-border-color: var(--color-primary-active);
+  --bs-btn-disabled-bg: var(--color-primary);
+  --bs-btn-disabled-border-color: var(--color-primary);
   --bs-btn-focus-shadow-rgb: 255, 159, 28;
   box-shadow: 0 4px 12px rgba(240, 127, 16, 0.25);
+  /* Gloss vertical sutil: le da volumen al CTA de marca sin salirse de la
+     paleta (el degradado es transparente → transparente sobre el naranja). */
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
 }
 .btn-primary:hover {
   box-shadow: 0 8px 18px rgba(240, 127, 16, 0.38);
+}
+/* Disabled: sin opacidad plana de Bootstrap, un crema apagado que sigue
+   leyéndose como "no disponible" sin apagar la jerarquía de la pantalla. */
+.btn-primary:disabled,
+.btn-primary.disabled {
+  --bs-btn-disabled-bg: var(--color-cream-hover);
+  --bs-btn-disabled-border-color: var(--color-border-cream);
+  --bs-btn-disabled-color: var(--color-text-muted);
+  box-shadow: none;
+  background-image: none;
+  opacity: 1;
 }
 
 /* ============ Success: verde (confirmar / avanzar) ============ */
@@ -68,16 +101,16 @@
 .resumen-boton,
 .btn-historial-avanzar {
   --bs-btn-color: #fff;
-  --bs-btn-bg: #22c55e;
-  --bs-btn-border-color: #22c55e;
+  --bs-btn-bg: var(--color-success);
+  --bs-btn-border-color: var(--color-success);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #16a34a;
-  --bs-btn-hover-border-color: #16a34a;
+  --bs-btn-hover-bg: var(--color-success-hover);
+  --bs-btn-hover-border-color: var(--color-success-hover);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #15803d;
-  --bs-btn-active-border-color: #15803d;
-  --bs-btn-disabled-bg: #22c55e;
-  --bs-btn-disabled-border-color: #22c55e;
+  --bs-btn-active-bg: var(--color-success-active);
+  --bs-btn-active-border-color: var(--color-success-active);
+  --bs-btn-disabled-bg: var(--color-success);
+  --bs-btn-disabled-border-color: var(--color-success);
   --bs-btn-focus-shadow-rgb: 34, 197, 94;
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
 }
@@ -90,16 +123,16 @@
 /* ============ Danger: rojo (destructivo) ============ */
 .btn-danger {
   --bs-btn-color: #fff;
-  --bs-btn-bg: #e63946;
-  --bs-btn-border-color: #e63946;
+  --bs-btn-bg: var(--color-danger);
+  --bs-btn-border-color: var(--color-danger);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #d12737;
-  --bs-btn-hover-border-color: #d12737;
+  --bs-btn-hover-bg: var(--color-danger-hover);
+  --bs-btn-hover-border-color: var(--color-danger-hover);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #b51e2d;
-  --bs-btn-active-border-color: #b51e2d;
-  --bs-btn-disabled-bg: #e63946;
-  --bs-btn-disabled-border-color: #e63946;
+  --bs-btn-active-bg: var(--color-danger-active);
+  --bs-btn-active-border-color: var(--color-danger-active);
+  --bs-btn-disabled-bg: var(--color-danger);
+  --bs-btn-disabled-border-color: var(--color-danger);
   --bs-btn-focus-shadow-rgb: 230, 57, 70;
   box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
 }
@@ -110,29 +143,29 @@
 /* ============ Secondary: crema con texto naranja oscuro (neutro) ============ */
 .btn-secondary,
 .boton-volver-btn {
-  --bs-btn-color: #b55d00;
-  --bs-btn-bg: #fff4e2;
-  --bs-btn-border-color: #f1c27d;
-  --bs-btn-hover-color: #b55d00;
-  --bs-btn-hover-bg: #ffe6c2;
-  --bs-btn-hover-border-color: #ff9f1c;
-  --bs-btn-active-color: #b55d00;
-  --bs-btn-active-bg: #ffdca8;
-  --bs-btn-active-border-color: #ff9f1c;
+  --bs-btn-color: var(--color-primary-dark);
+  --bs-btn-bg: var(--color-cream);
+  --bs-btn-border-color: var(--color-border-cream);
+  --bs-btn-hover-color: var(--color-primary-dark);
+  --bs-btn-hover-bg: var(--color-cream-hover);
+  --bs-btn-hover-border-color: var(--color-primary);
+  --bs-btn-active-color: var(--color-primary-dark);
+  --bs-btn-active-bg: var(--color-cream-active);
+  --bs-btn-active-border-color: var(--color-primary);
   --bs-btn-focus-shadow-rgb: 255, 159, 28;
 }
 
 /* ============ Hero CTAs: blanco con texto naranja (propio color) ============ */
 .boton-ordenar,
 .envio-boton {
-  --bs-btn-color: #b55d00;
+  --bs-btn-color: var(--color-primary-dark);
   --bs-btn-bg: #fff;
   --bs-btn-border-color: #fff;
-  --bs-btn-hover-color: #b55d00;
-  --bs-btn-hover-bg: #fff4e2;
+  --bs-btn-hover-color: var(--color-primary-dark);
+  --bs-btn-hover-bg: var(--color-cream);
   --bs-btn-hover-border-color: #fff;
-  --bs-btn-active-color: #b55d00;
-  --bs-btn-active-bg: #ffe6c2;
+  --bs-btn-active-color: var(--color-primary-dark);
+  --bs-btn-active-bg: var(--color-cream-hover);
   --bs-btn-active-border-color: #fff;
   --bs-btn-focus-shadow-rgb: 255, 255, 255;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
@@ -144,54 +177,54 @@
 
 /* ============ Contornos: cada uno con su color (se rellenan al hover) ============ */
 .btn-outline-danger {
-  --bs-btn-color: #d12737;
-  --bs-btn-border-color: #e63946;
+  --bs-btn-color: var(--color-danger-hover);
+  --bs-btn-border-color: var(--color-danger);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #e63946;
-  --bs-btn-hover-border-color: #e63946;
+  --bs-btn-hover-bg: var(--color-danger);
+  --bs-btn-hover-border-color: var(--color-danger);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #b51e2d;
-  --bs-btn-active-border-color: #b51e2d;
+  --bs-btn-active-bg: var(--color-danger-active);
+  --bs-btn-active-border-color: var(--color-danger-active);
   --bs-btn-focus-shadow-rgb: 230, 57, 70;
 }
 
 .btn-outline-success {
-  --bs-btn-color: #16a34a;
-  --bs-btn-border-color: #22c55e;
+  --bs-btn-color: var(--color-success-hover);
+  --bs-btn-border-color: var(--color-success);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #22c55e;
-  --bs-btn-hover-border-color: #22c55e;
+  --bs-btn-hover-bg: var(--color-success);
+  --bs-btn-hover-border-color: var(--color-success);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #15803d;
-  --bs-btn-active-border-color: #15803d;
+  --bs-btn-active-bg: var(--color-success-active);
+  --bs-btn-active-border-color: var(--color-success-active);
   --bs-btn-focus-shadow-rgb: 34, 197, 94;
 }
 
 .btn-outline-secondary {
-  --bs-btn-color: #8a5a2b;
-  --bs-btn-border-color: #d4b98f;
-  --bs-btn-hover-color: #b55d00;
-  --bs-btn-hover-bg: #fff4e2;
-  --bs-btn-hover-border-color: #f1c27d;
-  --bs-btn-active-color: #b55d00;
-  --bs-btn-active-bg: #ffe6c2;
-  --bs-btn-active-border-color: #ff9f1c;
+  --bs-btn-color: var(--color-text-brown);
+  --bs-btn-border-color: var(--color-border-strong);
+  --bs-btn-hover-color: var(--color-primary-dark);
+  --bs-btn-hover-bg: var(--color-cream);
+  --bs-btn-hover-border-color: var(--color-border-cream);
+  --bs-btn-active-color: var(--color-primary-dark);
+  --bs-btn-active-bg: var(--color-cream-hover);
+  --bs-btn-active-border-color: var(--color-primary);
   --bs-btn-focus-shadow-rgb: 255, 159, 28;
 }
 
 /* ============ Filtros inactivos (blanco) ============ */
 .filtro-pill.filtro-inactivo {
-  --bs-btn-color: #2b2b2b;
+  --bs-btn-color: var(--color-text);
   --bs-btn-bg: #fff;
-  --bs-btn-border-color: #f1c27d;
-  --bs-btn-hover-color: #2b2b2b;
-  --bs-btn-hover-bg: #fff5e6;
-  --bs-btn-hover-border-color: #ff9f1c;
-  --bs-btn-active-color: #2b2b2b;
-  --bs-btn-active-bg: #ffe6c2;
-  --bs-btn-active-border-color: #ff9f1c;
+  --bs-btn-border-color: var(--color-border-cream);
+  --bs-btn-hover-color: var(--color-text);
+  --bs-btn-hover-bg: var(--color-cream-light);
+  --bs-btn-hover-border-color: var(--color-primary);
+  --bs-btn-active-color: var(--color-text);
+  --bs-btn-active-bg: var(--color-cream-hover);
+  --bs-btn-active-border-color: var(--color-primary);
   --bs-btn-disabled-bg: #fff;
-  --bs-btn-disabled-border-color: #f1c27d;
+  --bs-btn-disabled-border-color: var(--color-border-cream);
   --bs-btn-focus-shadow-rgb: 255, 159, 28;
 }
 
@@ -200,7 +233,7 @@
    foco visible va sobre `.panel-admin-estado` mismo y no sobre un envoltorio. */
 .panel-admin-estado {
   border-radius: 16px;
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
   /* El reboot de Bootstrap subraya todo `a`, y como la tarjeta ES el enlace ese
      subrayado caía también sobre los rótulos y sobre los números: las cifras se
      leían como texto y no como cantidad. Con esto en el propio <a> alcanza, porque
@@ -215,14 +248,14 @@
 
 .panel-admin-estado:hover {
   transform: translateY(-3px);
-  border-color: #ff9f1c;
+  border-color: var(--color-primary);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
 /* Bootstrap pone `outline: 0` en los enlaces de tarjeta, así que el anillo
    hay que devolverlo a mano o el enlace se vuelve invisible al tabular. */
 .panel-admin-estado:focus-visible {
-  outline: 3px solid #ff9f1c;
+  outline: 3px solid var(--color-primary);
   outline-offset: 4px;
 }
 
@@ -283,7 +316,7 @@
   }
 
   .tabla-admin tr {
-    border: 1px solid #f1c27d;
+    border: 1px solid var(--color-border-cream);
     border-radius: 14px;
     padding: 0.25rem 0.5rem;
     background: #fff;
@@ -297,7 +330,7 @@
     gap: 0.75rem;
     text-align: right;
     padding: 0.45rem 0.25rem;
-    border-bottom: 1px dashed #ffe6c2;
+    border-bottom: 1px dashed var(--color-cream-hover);
   }
 
   .tabla-admin tbody td:last-child {
@@ -320,7 +353,7 @@
     content: none;
   }
 
-.tabla-admin td.columna-acciones .btn {
+  .tabla-admin td.columna-acciones .btn {
     margin: 0.15rem 0;
   }
 
@@ -354,7 +387,7 @@
     display: block;
     text-align: left;
     border-bottom: none;
-    border-top: 1px dashed #ffe6c2;
+    border-top: 1px dashed var(--color-cream-hover);
   }
 
   .tabla-admin tbody tr.detalle-combo td::before {
@@ -393,6 +426,30 @@
   }
 }
 
+/* ============ Panel crema (resúmenes de pedido) ============ */
+/* Superficie de resumen repetida en Carrito, Pago, Confirmación y Detalle de
+   pedido. Antes era el mismo bloque `style={{}}` copiado en cada JSX. */
+.panel-crema {
+  background-color: var(--color-cream-soft);
+  border: 2px solid var(--color-border-card);
+  border-radius: var(--radius-panel);
+}
+
+/* Rótulo de sección dentro del panel: versalitas chicas naranja oscuro. */
+.panel-crema-etiqueta {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+
+/* Utilidad de fondo crema (sustituye `style={{ background:'#fff8ef' }}`). */
+.bg-crema {
+  background-color: var(--color-cream-soft) !important;
+}
+
 /* ============ Base global: skip link, scroll, safe areas, movimiento ============ */
 
 /* Enlace de salto: sólo visible cuando recibe foco por teclado. Va fuera del flujo
@@ -405,7 +462,7 @@
   transform: translateY(-120%);
   padding: 0.6rem 1rem;
   border-radius: 0 0 10px 10px;
-  background: #b55d00;
+  background: var(--color-primary-dark);
   color: #fff;
   font-weight: 600;
   text-decoration: none;
@@ -462,6 +519,13 @@ p {
    sigue desplazando la página de atrás. Aplica a todos los `Modal.Body`. */
 .modal-body {
   overscroll-behavior: contain;
+}
+
+/* Selección de texto con la paleta de marca: detalle de identidad que se ve
+   cada vez que alguien selecciona contenido (copiar un precio, un nombre). */
+::selection {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 /* ============ Movimiento reducido ============ */

@@ -54,7 +54,7 @@ const Registro = () => {
       <Card className="shadow registro-card">
         <Card.Body className="p-4">
           <h1 className="h2 text-center mb-1">Crear Cuenta</h1>
-          <p className="text-center text-muted mb-4">Regístrate como cliente</p>
+          <p className="text-center text-muted mb-4">Regístrate</p>
 
           {error && (
             <Alert variant="warning" role="alert" aria-live="polite">

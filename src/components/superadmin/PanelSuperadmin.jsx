@@ -4,9 +4,10 @@
  *            y muestra tarjetas de pedidos, ventas por sucursal, pedidos por
  *            estado, la serie de ingresos de los últimos 30 días y los totales
  *            de operación (catálogo, sucursales, plantel).
- * Dependencias: react-bootstrap (Row, Col, Card, Table, Alert, Spinner, Badge),
+ * Dependencias: react-bootstrap (Row, Col, Card, Table, Alert, Badge),
  *               react-icons (FaChartBar, FaStore…), api/superadmin,
- *               utils/constants (ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO).
+ *               utils/constants (ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO),
+ *               components/comunes/Skeleton (SkeletonPagina).
  * Uso: <PanelSuperadmin /> - Se renderiza en PanelSuperadminPage.
  */
 
@@ -17,11 +18,11 @@ import {
   Card,
   Table,
   Alert,
-  Spinner,
   Badge,
 } from 'react-bootstrap';
 import { FaChartBar, FaStore, FaClipboardCheck } from 'react-icons/fa';
 import { obtenerResumen } from '../../api/superadmin';
+import { SkeletonPagina } from '../comunes/Skeleton';
 import {
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
@@ -72,8 +73,9 @@ const PanelSuperadmin = () => {
 
   if (cargando) {
     return (
-      <div className="text-center py-5">
-        <Spinner animation="border" variant="danger" />
+      <div role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando panel de superadministración…</span>
+        <SkeletonPagina />
       </div>
     );
   }

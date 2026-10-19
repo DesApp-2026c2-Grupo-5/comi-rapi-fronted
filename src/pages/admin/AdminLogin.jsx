@@ -8,7 +8,7 @@
  * Uso: Ruta "/admin-login" → <AdminLogin />
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { FaUserShield, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
@@ -107,11 +107,25 @@ const AdminLogin = () => {
             </p>
           </div>
 
-          <p className="auth-demo mb-0">
-            <strong>Demo:</strong> <span translate="no">admin@test.com</span> /{' '}
-            <span translate="no">123456</span> · <span translate="no">superadmin@test.com</span> /{' '}
-            <span translate="no">123456</span>
-          </p>
+          {/* Credenciales demo: un admin por sucursal (ver seeders del backend)
+              y el superadmin (se crea con `npm run crear:superadmin`). */}
+          <div className="auth-demo mb-0">
+            <strong>Demo (123456):</strong>
+            <ul className="auth-demo-lista mb-0 mt-1">
+              <li>
+                <span translate="no">admin@jmderosas.com</span> — Oeste
+              </li>
+              <li>
+                <span translate="no">admin@santafe.com</span> — Palermo
+              </li>
+              <li>
+                <span translate="no">admin@vergara.com</span> — Vergara
+              </li>
+              <li>
+                <span translate="no">superadmin@test.com</span> — Superadmin
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

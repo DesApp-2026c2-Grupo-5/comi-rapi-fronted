@@ -3,15 +3,16 @@
  * Contenido: Componente ListaPromociones con tabla, filtros por estado/tipo,
  *            botones Editar/Reactivar/Eliminar (CRUD del superadmin) o la vista
  *            de solo lectura para el admin. Muestra nº de productos por promoción.
- * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert, Badge, Form),
- *               api/promociones.js, react-router-dom, react-icons.
+ * Dependencias: react-bootstrap (Table, Button, Container, Alert, Badge, Form),
+ *               api/promociones.js, react-router-dom, react-icons,
+ *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <ListaPromociones /> (superadmin) o <ListaPromociones soloLectura /> (admin).
  */
 
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
+import { Table, Button, Container, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import {
   obtenerPromociones,
@@ -25,6 +26,7 @@ import { formatDate } from '../../utils/formatters';
 import ConfirmarModal from '../comunes/ConfirmarModal';
 import { useAuth } from '../../hooks/useAuth';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { SkeletonTabla } from '../comunes/Skeleton';
 
 const ListaPromociones = ({ soloLectura = false }) => {
   const navigate = useNavigate();
@@ -208,8 +210,9 @@ const ListaPromociones = ({ soloLectura = false }) => {
       </Row>
 
       {cargando ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando promociones…</span>
+          <SkeletonTabla filas={5} columnas={4} />
         </div>
       ) : (
         <Table striped bordered hover responsive className="tabla-admin shadow-sm">

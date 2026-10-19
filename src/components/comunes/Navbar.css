@@ -10,7 +10,7 @@
 
 /* ============ Barra principal ============ */
 .navbar-comirapi {
-  background: linear-gradient(90deg, #f07f10, #ff9f1c 55%, #ffb347);
+  background: linear-gradient(90deg, var(--color-primary-deep), var(--color-primary) 55%, var(--color-primary-soft));
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   padding-top: 0.55rem;
   padding-bottom: 0.55rem;
@@ -31,7 +31,8 @@
   transform: scale(1.04);
 }
 .navbar-brand-comirapi .brand-ico {
-  color: #fff;
+  width: 34px;
+  height: 34px;
   transition: transform 0.3s ease;
 }
 .navbar-brand-comirapi:hover .brand-ico {
@@ -50,19 +51,26 @@
   text-decoration: none;
   padding: 0.5rem 1rem !important;
   border-radius: 50px;
-  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease;
 }
 .nav-enlace::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   bottom: 0.28rem;
-  width: 0;
+  width: 55%;
   height: 2px;
-  transform: translateX(-50%);
+  /* El subrayado se dibuja con scaleX y no con width: transform no repinta
+     ni reflowea, mientras que animar el ancho obliga al navegador a
+     recalcular el layout del enlace en cada frame. */
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
   background: #fff;
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition: transform 0.25s ease;
 }
 .nav-enlace .nav-enlace-ico {
   transition: transform 0.25s ease;
@@ -72,7 +80,7 @@
   transform: translateY(-2px);
 }
 .nav-enlace:hover::after {
-  width: 55%;
+  transform: translateX(-50%) scaleX(1);
 }
 .nav-enlace:hover .nav-enlace-ico {
   transform: rotate(10deg) scale(1.15);
@@ -85,7 +93,7 @@
 }
 .nav-enlace.activo {
   background-color: #fff;
-  color: #b55d00 !important;
+  color: var(--color-primary-dark) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 .nav-enlace.activo::after {
@@ -132,7 +140,7 @@
    corrigió en la barra inferior. */
 .navbar-comirapi .nav-submenu {
   margin-top: 0.3rem;
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
   border-radius: 14px;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
   padding: 0.35rem;
@@ -152,18 +160,20 @@
   color: #5c4300;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .navbar-comirapi .nav-submenu-enlace:hover {
-  background-color: #fff4e2;
-  color: #b55d00;
+  background-color: var(--color-cream);
+  color: var(--color-primary-dark);
 }
 
 /* Sección en la que estás: mismo tratamiento que el ítem activo de la barra. */
 .navbar-comirapi .nav-submenu-enlace.activo,
 .navbar-comirapi .nav-submenu-enlace.activo:hover {
-  background-color: #b55d00;
+  background-color: var(--color-primary-dark);
   color: #fff;
 }
 
@@ -174,7 +184,7 @@
 
 /* Bootstrap pone `outline: 0` en los ítems del desplegable al tabular. */
 .navbar-comirapi .nav-submenu-enlace:focus-visible {
-  outline: 2px solid #ff9f1c;
+  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -192,7 +202,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background-color: #e63946;
+  background-color: var(--color-danger);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 800;
@@ -263,7 +273,10 @@
   font-size: 0.95rem;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 .navbar-perfil:hover,
 .navbar-perfil:focus-visible {
@@ -280,10 +293,10 @@
 .navbar-perfil-activo {
   background: #fff;
   border-color: #fff;
-  color: #b55d00;
+  color: var(--color-primary-dark);
 }
 .navbar-perfil-activo .navbar-perfil-nombre {
-  color: #b55d00;
+  color: var(--color-primary-dark);
 }
 .navbar-perfil-nombre {
   overflow: hidden;
@@ -310,12 +323,15 @@
   background: transparent;
   font-weight: 700;
   letter-spacing: 0.4px;
-  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease,
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease,
     box-shadow 0.25s ease;
 }
 .btn-logout-comirapi:hover {
   background: #fff;
-  color: #b55d00 !important;
+  color: var(--color-primary-dark) !important;
   border-color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
@@ -339,7 +355,10 @@
   letter-spacing: 0.4px;
   white-space: nowrap;
   text-decoration: none;
-  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease,
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease,
     box-shadow 0.25s ease;
 }
 .btn-acceso-comirapi:focus-visible,
@@ -349,7 +368,7 @@
 }
 
 .btn-acceso-comirapi {
-  color: #b55d00;
+  color: var(--color-primary-dark);
   background: #fff;
 }
 .btn-acceso-comirapi:hover,
@@ -370,7 +389,7 @@
 .btn-acceso-secundario:hover,
 .btn-acceso-secundario:focus-visible {
   background: #fff;
-  color: #b55d00 !important;
+  color: var(--color-primary-dark) !important;
   border-color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
@@ -454,4 +473,25 @@
   .btn-acceso-texto {
     display: none;
   }
+}
+/* ============ Badge de sucursal del admin (A0) ============ */
+/* Pill informativo del lado derecho: el admin siempre ve a qu� sucursal
+   pertenece. No es un enlace: contextual, como el nombre del usuario. */
+.navbar-sucursal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #fff4e2;
+  border: 1px solid #f0a10e;
+  color: #8a4b00;
+  border-radius: 2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  margin-right: 0.6rem;
+  white-space: nowrap;
+}
+
+.navbar-sucursal-ico {
+  color: #f07f10;
 }

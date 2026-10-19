@@ -13,7 +13,7 @@
 }
 
 .detalle-producto .promo-badge {
-  background-color: #e63946;
+  background-color: var(--color-danger);
   color: #fff;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -23,14 +23,14 @@
 }
 
 .detalle-producto .badge-comi {
-  background: #fff4e2;
-  color: #b55d00;
-  border: 1px solid #f1c27d;
+  background: var(--color-cream);
+  color: var(--color-primary-dark);
+  border: 1px solid var(--color-border-cream);
   font-weight: 700;
 }
 
 .detalle-producto .precio-destacado {
-  color: #e63946;
+  color: var(--color-danger);
   font-weight: 800;
   font-size: 1.5rem;
 }
@@ -42,7 +42,7 @@
 }
 
 .detalle-producto .card-comi {
-  border: 2px solid #ffe9c9;
+  border: 2px solid var(--color-border-card);
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
@@ -55,13 +55,13 @@
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #e88900;
+  color: var(--color-primary-hover);
   margin-bottom: 0.5rem;
 }
 
 .detalle-producto .ing-chip {
-  background: #fff8ef;
-  border: 2px solid #ffe9c9;
+  background: var(--color-cream-soft);
+  border: 2px solid var(--color-border-card);
   border-radius: 50px;
   padding: 0.35rem 0.9rem;
   font-weight: 600;
@@ -72,22 +72,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff8ef;
-  border: 2px solid #ffe9c9;
+  background: var(--color-cream-soft);
+  border: 2px solid var(--color-border-card);
   border-radius: 14px;
   padding: 0.6rem 0.9rem;
   margin-bottom: 0.5rem;
 }
 
 .detalle-producto .promo-box {
-  background: #fff5e6;
-  border: 2px solid #ffe9c9;
+  background: var(--color-cream-light);
+  border: 2px solid var(--color-border-card);
   border-radius: 14px;
   padding: 1rem 1.25rem;
 }
 
 .detalle-producto .resena {
-  border-bottom: 1px solid #ffe9c9;
+  border-bottom: 1px solid var(--color-border-card);
   padding: 0.8rem 0;
 }
 
@@ -96,7 +96,7 @@
 }
 
 .detalle-producto .estrellas {
-  color: #ff9f1c;
+  color: var(--color-primary);
   letter-spacing: 2px;
 }
 
@@ -121,7 +121,7 @@
 }
 
 .detalle-producto .pill-control button:hover {
-  background: #ff9f1c;
+  background: var(--color-primary);
   color: #fff;
 }
 
@@ -132,7 +132,7 @@
 }
 
 .detalle-producto .producto-boton {
-  background-color: #ff9f1c;
+  background-color: var(--color-primary);
   border: none;
   border-radius: 50px;
   font-weight: 700;
@@ -141,17 +141,17 @@
 }
 
 .detalle-producto .producto-boton:hover {
-  background-color: #e88900;
+  background-color: var(--color-primary-hover);
 }
 
 .detalle-producto .boton-volver {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #2b2b2b;
+  color: var(--color-text);
   font-weight: 600;
   background: #fff;
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
   border-radius: 50px;
   padding: 0.5rem 1.15rem;
   text-decoration: none;

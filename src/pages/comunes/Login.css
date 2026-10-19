@@ -30,7 +30,12 @@
 
 /* ============ Cabecera naranja con marca ============ */
 .auth-card-header {
-  background: linear-gradient(90deg, #f07f10, #ff9f1c 55%, #ffb347);
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-deep),
+    var(--color-primary) 55%,
+    var(--color-primary-soft)
+  );
   color: #fff;
   text-align: center;
   padding: 2rem 1.5rem 1.6rem;
@@ -47,6 +52,13 @@
   background: rgba(255, 255, 255, 0.22);
   font-size: 1.9rem;
   transition: transform 0.3s ease;
+}
+
+/* El logo de marca ocupa casi todo el círculo; su fondo crema ya lo separa
+   del degradado naranja de la cabecera. */
+.auth-brand-ico img {
+  width: 52px;
+  height: 52px;
 }
 
 .auth-card-header:hover .auth-brand-ico {
@@ -83,11 +95,14 @@
   border-color: #f2d4b0;
   background-color: #fffdf9;
   font-weight: 500;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease;
 }
 
 .auth-input-group .form-control:focus {
-  border-color: #f07f10;
+  border-color: var(--color-primary-deep);
   box-shadow: 0 0 0 0.2rem rgba(240, 127, 16, 0.18);
   background-color: #fff;
 }
@@ -103,7 +118,7 @@
   left: 0.9rem;
   top: 2.15rem;
   transform: translateY(-50%);
-  color: #f07f10;
+  color: var(--color-primary-deep);
   font-size: 1rem;
   pointer-events: none;
   /* Necesario para que el ícono se vea en el campo de contraseña: ahí el input
@@ -119,7 +134,11 @@
 /* ============ Botón submit pill naranja ============ */
 .btn-submit-comirapi {
   border: none;
-  background: linear-gradient(90deg, #f07f10, #ff9f1c);
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-deep),
+    var(--color-primary)
+  );
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -129,11 +148,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
 }
 
 .btn-submit-comirapi:hover {
-  background: linear-gradient(90deg, #e06d05, #ff9f1c);
+  background: linear-gradient(90deg, #e06d05, var(--color-primary));
   color: #fff !important;
   transform: translateY(-2px);
   box-shadow: 0 8px 18px rgba(240, 127, 16, 0.4);
@@ -146,21 +168,21 @@
 
 /* ============ Enlaces ============ */
 .auth-enlace {
-  color: #b55d00;
+  color: var(--color-primary-dark);
   font-weight: 600;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .auth-enlace:hover {
-  color: #f07f10;
+  color: var(--color-primary-deep);
   text-decoration: underline;
 }
 
 /* ============ Banner de credenciales demo ============ */
 .auth-demo {
-  background: #fff4e2;
-  border: 1px dashed #f07f10;
+  background: var(--color-cream);
+  border: 1px dashed var(--color-primary-deep);
   color: #8a4b00;
   border-radius: 0.8rem;
   font-size: 0.85rem;
@@ -170,5 +192,12 @@
 }
 
 .auth-demo strong {
-  color: #b55d00;
+  color: var(--color-primary-dark);
+}
+/* Lista de cuentas demo del login de admin: un renglón por sucursal. */
+.auth-demo-lista {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+  line-height: 1.5;
 }

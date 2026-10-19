@@ -6,8 +6,9 @@
  * Contenido: Componente ListaClientes con buscador, filtro por estado y
  *            botón Ver detalle por fila (apunta al detalle según el rol).
  *            Carga desde el backend (rol CLIENTE).
- * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col),
- *               api/usuarios.js, react-router-dom, react-icons.
+ * Dependencias: react-bootstrap (Table, Button, Container, Alert, Badge, Form, Row, Col),
+ *               api/usuarios.js, react-router-dom, react-icons,
+ *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <ListaClientes /> - Se renderiza en GestionClientes (admin).
  *      <ListaClientes todos /> - Se renderiza en la gestión de clientes del superadmin.
  */
@@ -15,9 +16,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
+import { Table, Button, Container, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
 import { FaEye, FaUsers } from 'react-icons/fa';
 import { obtenerClientes } from '../../api/usuarios';
+import { SkeletonTabla } from '../comunes/Skeleton';
 
 const inicialesDe = (cliente) => {
   const nombre = (cliente.nombre || '').trim();
@@ -112,8 +114,9 @@ const ListaClientes = ({ todos = false }) => {
       </Row>
 
       {cargando ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando clientes…</span>
+          <SkeletonTabla filas={5} columnas={4} />
         </div>
       ) : visibles.length === 0 ? (
         <p className="text-center text-muted py-4">Sin resultados para los filtros.</p>

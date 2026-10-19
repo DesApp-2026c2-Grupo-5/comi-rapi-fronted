@@ -26,27 +26,40 @@
  *      de "Confirmar Pedido" (el pedido sigue PENDIENTE hasta abonar).
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Container, Row, Col, Button, Card, Alert, Form } from 'react-bootstrap';
-import { FaUtensils, FaTrashAlt, FaMapMarkerAlt } from 'react-icons/fa';
-import { useAuth } from '../../hooks/useAuth';
-import { useCarrito } from '../../hooks/useCarrito';
-import { usePromocionesCarrito } from '../../hooks/usePromocionesCarrito';
-import { useSucursal } from '../../hooks/useSucursal';
-import { usePedidos } from '../../hooks/usePedidos';
-import { useDirecciones } from '../../hooks/useDirecciones';
-import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Card,
+  Alert,
+  Form,
+} from "react-bootstrap";
+import {
+  FaUtensils,
+  FaTrashAlt,
+  FaMapMarkerAlt,
+  FaSearch,
+} from "react-icons/fa";
+import { useAuth } from "../../hooks/useAuth";
+import { useCarrito } from "../../hooks/useCarrito";
+import { usePromocionesCarrito } from "../../hooks/usePromocionesCarrito";
+import { useSucursal } from "../../hooks/useSucursal";
+import { usePedidos } from "../../hooks/usePedidos";
+import { useDirecciones } from "../../hooks/useDirecciones";
+import { useNotificaciones } from "../../hooks/useNotificaciones";
 // T1: la sucursal la asigna el backend con las reglas reales (más cercana
 // con stock dentro de cobertura) — el espejo local (asignacionSucursal.js)
 // se eliminó del flujo de creación.
-import { useParametros } from '../../hooks/useParametros';
-import { calcularCostoEnvio } from '../../services/envio';
-import { ESTADOS_PEDIDO } from '../../utils/constants';
-import { rutaActual } from '../../utils/rutas';
-import ItemCarrito from '../../components/cliente/ItemCarrito';
-import ResumenPedido from '../../components/cliente/ResumenPedido';
-import './Carrito.css';
+import { useParametros } from "../../hooks/useParametros";
+import { calcularCostoEnvio } from "../../services/envio";
+import { ESTADOS_PEDIDO } from "../../utils/constants";
+import { rutaActual } from "../../utils/rutas";
+import ItemCarrito from "../../components/cliente/ItemCarrito";
+import ResumenPedido from "../../components/cliente/ResumenPedido";
+import "./Carrito.css";
 
 const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
@@ -54,8 +67,13 @@ const Carrito = () => {
     usePromocionesCarrito(items);
   const [actualizando, setActualizando] = useState(false);
   const { sucursales } = useSucursal();
-  const { crearPedido, obtenerPedidosPendientes, pedidoActual, pedidos, cambiarEstado } =
-    usePedidos();
+  const {
+    crearPedido,
+    obtenerPedidosPendientes,
+    pedidoActual,
+    pedidos,
+    cambiarEstado,
+  } = usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
@@ -83,7 +101,7 @@ const Carrito = () => {
     () =>
       (pedidos || []).find((p) => p.estado === ESTADOS_PEDIDO.PENDIENTE) ||
       (pedidoActual?.estado === ESTADOS_PEDIDO.PENDIENTE ? pedidoActual : null),
-    [pedidos, pedidoActual]
+    [pedidos, pedidoActual],
   );
 
   // Si hay un pedido PENDIENTE sin pagar, el carrito ofrece "Ir a Pagar"
@@ -94,8 +112,9 @@ const Carrito = () => {
 
   // Dirección elegida (por defecto, la primera activa)
   const direccionSeleccionada = useMemo(
-    () => direcciones.find((d) => d.id === direccionId) || direcciones[0] || null,
-    [direcciones, direccionId]
+    () =>
+      direcciones.find((d) => d.id === direccionId) || direcciones[0] || null,
+    [direcciones, direccionId],
   );
 
   // El pendiente queda obsoleto si cambiaron promos o importes desde que se creó:
@@ -104,12 +123,14 @@ const Carrito = () => {
   const totalEstimado = total + costoEnvioActual - descuentoTotal;
   const idsPrevistos = useMemo(
     () => [...promocionIds].map(String).sort(),
-    [promocionIds]
+    [promocionIds],
   );
   const idsPersistidos = useMemo(
     () =>
-      ((pedidoPendiente?.promociones || []).map((promo) => String(promo.promocionId))).sort(),
-    [pedidoPendiente]
+      (pedidoPendiente?.promociones || [])
+        .map((promo) => String(promo.promocionId))
+        .sort(),
+    [pedidoPendiente],
   );
   const pendienteObsoleto =
     tienePagoPendiente &&
@@ -142,14 +163,14 @@ const Carrito = () => {
        para que el visitante recorra el catálogo sin interrupciones. Se manda la
        pantalla de origen para que al entrar vuelva con lo que ya eligió. */
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: origen } });
+      navigate("/login", { state: { from: origen } });
       return;
     }
 
     // Sin dirección: el cliente no puede confirmar
     const direccion = direccionSeleccionada;
     if (!direccion) {
-      notificar('Agregá una dirección antes de confirmar.', 'warning');
+      notificar("Agregá una dirección antes de confirmar.", "warning");
       return;
     }
 
@@ -157,13 +178,11 @@ const Carrito = () => {
     // reales (más cercana por ruta con stock, dentro de cobertura). El
     // frontend YA NO pre-asigna — se eliminó el espejo de
     // asignacionSucursal.js que duplicaba la lógica y podía divergir.
-    const pedidoCreado = await crearPedido(
-      construirDatosPedido(direccion)
-    );
+    const pedidoCreado = await crearPedido(construirDatosPedido(direccion));
     if (!pedidoCreado) return;
 
     // Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
-    navigate('/cliente/pago');
+    navigate("/cliente/pago");
   };
 
   // Ya hay un pedido PENDIENTE sin pagar: se retoma el pago directamente,
@@ -174,39 +193,37 @@ const Carrito = () => {
     // anterior, se lo lleva al login en vez de mandarlo a una pantalla de pago
     // que lo va a expulsar igual.
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: origen } });
+      navigate("/login", { state: { from: origen } });
       return;
     }
     if (!pendienteObsoleto) {
-      navigate('/cliente/pago');
+      navigate("/cliente/pago");
       return;
     }
     if (actualizando) return;
     const direccion = direccionSeleccionada;
     if (!direccion) {
-      notificar('Agregá una dirección antes de confirmar.', 'warning');
+      notificar("Agregá una dirección antes de confirmar.", "warning");
       return;
     }
     setActualizando(true);
     try {
       const cancelado = await cambiarEstado(
         pedidoPendiente.id,
-        ESTADOS_PEDIDO.CANCELADO
+        ESTADOS_PEDIDO.CANCELADO,
       );
       if (!cancelado) return;
       // T1: el backend asigna la sucursal con las reglas reales.
-      const pedidoCreado = await crearPedido(
-        construirDatosPedido(direccion)
-      );
+      const pedidoCreado = await crearPedido(construirDatosPedido(direccion));
       if (!pedidoCreado) return;
-      navigate('/cliente/pago');
+      navigate("/cliente/pago");
     } finally {
       setActualizando(false);
     }
   };
 
   const irAlCatalogo = () => {
-    navigate('/cliente/catalogo');
+    navigate("/cliente/catalogo");
   };
 
   return (
@@ -219,8 +236,13 @@ const Carrito = () => {
           <Card className="carrito-vacio">
             <Card.Body className="text-center p-5">
               <h2 className="h4 fw-bold mb-2">Tu carrito está vacío</h2>
-              <p className="text-muted mb-4">¡Añadí tus productos favoritos y hacé tu pedido!</p>
-              <Button className="carrito-boton-vacio rounded-pill" onClick={irAlCatalogo}>
+              <p className="text-muted mb-4">
+                ¡Añadí tus productos favoritos y hacé tu pedido!
+              </p>
+              <Button
+                className="carrito-boton-vacio rounded-pill"
+                onClick={irAlCatalogo}
+              >
                 <FaUtensils aria-hidden="true" />
                 Ir al catálogo
               </Button>
@@ -235,14 +257,22 @@ const Carrito = () => {
           {!isAuthenticated && (
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0" role="status">
-                Podés armar tu pedido sin cuenta.{' '}
-                <Link to="/login" state={{ from: origen }} className="alert-link">
+                Podés armar tu pedido sin cuenta.{" "}
+                <Link
+                  to="/login"
+                  state={{ from: origen }}
+                  className="alert-link"
+                >
                   Iniciá sesión
-                </Link>{' '}
-                o{' '}
-                <Link to="/registro" state={{ from: origen }} className="alert-link">
+                </Link>{" "}
+                o{" "}
+                <Link
+                  to="/registro"
+                  state={{ from: origen }}
+                  className="alert-link"
+                >
                   registrate
-                </Link>{' '}
+                </Link>{" "}
                 para confirmar la compra y elegir la dirección de entrega.
               </Alert>
             </Col>
@@ -252,10 +282,10 @@ const Carrito = () => {
           {isAuthenticated && items.length > 0 && direcciones.length === 0 && (
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0" role="status">
-                No tenés direcciones guardadas.{' '}
+                No tenés direcciones guardadas.{" "}
                 <Link to="/cliente/perfil?direcciones=1" className="alert-link">
                   Agregá una dirección
-                </Link>{' '}
+                </Link>{" "}
                 antes de confirmar tu pedido.
               </Alert>
             </Col>
@@ -265,18 +295,36 @@ const Carrito = () => {
           <Col lg={8} className="mb-4 mb-lg-0">
             {descuentoTotal > 0 && (
               <Alert variant="success" className="mb-3">
-                <strong>¡Tenés promociones aplicadas!</strong>{' '}
-                {promosAplicadas.map((promo) => promo.nombre).join(' · ')}.
+                <strong>¡Tenés promociones aplicadas!</strong>{" "}
+                {promosAplicadas.map((promo) => promo.nombre).join(" · ")}.
               </Alert>
             )}
             <div className="d-flex flex-column gap-3">
               {items.map((item) => (
-                <ItemCarrito key={item.idLinea || item.producto.id} item={item} />
+                <ItemCarrito
+                  key={item.idLinea || item.producto.id}
+                  item={item}
+                />
               ))}
             </div>
 
-            <div className="text-center text-md-end mt-3">
-              <Button variant="outline-danger" className="rounded-pill px-4" onClick={vaciarCarrito}>
+            {/* B1: acceso rápido al catálogo para seguir comprando sin
+                borrar el carrito. flex-wrap + gap-2 da espaciado consistente
+                tanto lado a lado (desktop) como apilados (móvil/tablet). */}
+            <div className="d-flex flex-wrap justify-content-center justify-content-md-end gap-2 mt-3">
+              <Button
+                variant="outline-secondary"
+                className="rounded-pill px-4"
+                onClick={irAlCatalogo}
+              >
+                <FaSearch aria-hidden="true" className="me-1" />
+                Buscar más productos
+              </Button>
+              <Button
+                variant="outline-danger"
+                className="rounded-pill px-4"
+                onClick={vaciarCarrito}
+              >
                 <FaTrashAlt aria-hidden="true" />
                 Vaciar carrito
               </Button>
@@ -289,16 +337,18 @@ const Carrito = () => {
               <Card className="shadow-sm mb-3">
                 <Card.Body>
                   <Form.Group controlId="direccionEntrega">
-                    <Form.Label className="fw-bold">Dirección de entrega</Form.Label>
+                    <Form.Label className="fw-bold">
+                      Dirección de entrega
+                    </Form.Label>
                     <Form.Select
-                      value={direccionSeleccionada?.id ?? ''}
+                      value={direccionSeleccionada?.id ?? ""}
                       onChange={(e) => setDireccionId(Number(e.target.value))}
                     >
                       {direcciones.map((direccion) => (
                         <option key={direccion.id} value={direccion.id}>
-                          {direccion.alias ? `${direccion.alias} - ` : ''}
+                          {direccion.alias ? `${direccion.alias} - ` : ""}
                           {direccion.calle}
-                          {direccion.altura ? ` ${direccion.altura}` : ''}
+                          {direccion.altura ? ` ${direccion.altura}` : ""}
                         </option>
                       ))}
                     </Form.Select>
@@ -317,23 +367,27 @@ const Carrito = () => {
               </Card>
             )}
             <ResumenPedido
-              onConfirmar={tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido}
+              onConfirmar={
+                tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido
+              }
               /* Sólo acá la card va fija: está en la columna lateral y acompaña el
                  scroll de la lista de ítems. En /cliente/pago taparía los botones. */
               fija
               botonTexto={
                 !isAuthenticated
-                  ? 'Iniciá sesión para confirmar'
+                  ? "Iniciá sesión para confirmar"
                   : tienePagoPendiente
                     ? pendienteObsoleto
                       ? actualizando
-                        ? 'Actualizando…'
-                        : 'Actualizar y pagar'
-                      : 'Ir a Pagar'
-                    : 'Confirmar Pedido'
+                        ? "Actualizando…"
+                        : "Actualizar y pagar"
+                      : "Ir a Pagar"
+                    : "Confirmar Pedido"
               }
               descuento={descuentoTotal}
-              detalleDescuento={promosAplicadas.map((promo) => promo.nombre).join(' · ')}
+              detalleDescuento={promosAplicadas
+                .map((promo) => promo.nombre)
+                .join(" · ")}
             />
           </Col>
         </Row>

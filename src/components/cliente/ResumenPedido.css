@@ -6,7 +6,7 @@
  */
 
 .resumen-card {
-  border: 2px solid #ffe9c9;
+  border: 2px solid var(--color-border-card);
   border-radius: 18px;
   overflow: hidden;
   background-color: #fff;
@@ -14,7 +14,7 @@
 }
 
 .resumen-titulo {
-  background-color: #ff9f1c;
+  background-color: var(--color-primary);
   color: #fff;
   font-weight: 800;
   border: none;
@@ -22,18 +22,18 @@
 }
 
 .resumen-divisor {
-  border-top: 2px solid #ffe9c9;
+  border-top: 2px solid var(--color-border-card);
   opacity: 1;
 }
 
 .resumen-total {
-  color: #e63946;
+  color: var(--color-danger);
   font-weight: 900;
   font-size: 1.4rem;
 }
 
 .resumen-boton {
-  background-color: #22c55e;
+  background-color: var(--color-success);
   border: none;
   border-radius: 50px;
   font-weight: 800;
@@ -43,13 +43,13 @@
 }
 
 .resumen-boton:hover {
-  background-color: #16a34a;
+  background-color: var(--color-success-hover);
 }
 
 /* Separador del detalle de ítems; los estilos de los ítems viven en
    DetalleItemsPedido.css (componente compartido con la vista admin) */
 .resumen-items {
-  border-bottom: 2px solid #ffe9c9;
+  border-bottom: 2px solid var(--color-border-card);
   padding-bottom: 0.5rem;
 }
 

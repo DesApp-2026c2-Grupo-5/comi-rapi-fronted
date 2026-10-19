@@ -2,18 +2,20 @@
  * Propósito: Página para crear o editar una sucursal usando FormularioSucursal.
  * Contenido: Componente EditarSucursal que obtiene el ID de la URL (useParams),
  *            precarga los datos de la sucursal a editar y delega en el contexto.
- * Dependencias: react-bootstrap (Container, Spinner, Button), react-router-dom
- *               (useParams, Link, useNavigate), FormularioSucursal, context/SucursalContext (useSucursal).
+ * Dependencias: react-bootstrap (Container, Button), react-router-dom
+ *               (useParams, Link, useNavigate), FormularioSucursal, context/SucursalContext (useSucursal),
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: Ruta "/superadmin/sucursal/nuevo" o "/superadmin/sucursal/editar/:id" → <EditarSucursal />
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Button } from 'react-bootstrap';
+import { Container, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioSucursal from '../../components/admin/FormularioSucursal';
 import { useSucursal } from '../../hooks/useSucursal';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarSucursal = () => {
   const { id } = useParams();
@@ -65,8 +67,9 @@ const EditarSucursal = () => {
 
   if (cargando || loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando sucursal…</span>
+        <SkeletonTarjeta />
       </Container>
     );
   }

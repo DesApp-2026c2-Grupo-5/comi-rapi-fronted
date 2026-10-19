@@ -3,9 +3,10 @@
  * Contenido: Componente ListaProductos con tabla, filtros por tipo, carga desde el
  *            backend y, según `soloLectura`, botones Editar/Eliminar (CRUD del
  *            superadmin) o el switch de disponibilidad por sucursal (admin).
- * Dependencias: react-bootstrap (Table, Button, Container, Spinner, Alert),
+ * Dependencias: react-bootstrap (Table, Button, Container, Alert),
  *               api/productos.js, api/stock.js, hooks/useAuth (solo lectura),
- *               formatters.js, react-router-dom.
+ *               formatters.js, react-router-dom,
+ *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <ListaProductos /> (CRUD del superadmin) o
  *      <ListaProductos soloLectura /> (vista del admin, con disponibilidad).
  */
@@ -13,7 +14,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Container, Spinner, Alert, Form } from 'react-bootstrap';
+import { Table, Button, Container, Alert, Form } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { obtenerProductos, obtenerProductoPorId, eliminarProducto } from '../../api/productos';
 import { obtenerStock, actualizarStock, crearStock } from '../../api/stock';
@@ -23,6 +24,7 @@ import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import ConfirmarModal from '../comunes/ConfirmarModal';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { SkeletonTabla } from '../comunes/Skeleton';
 
 const ListaProductos = ({ soloLectura = false }) => {
   const navigate = useNavigate();
@@ -266,8 +268,9 @@ const ListaProductos = ({ soloLectura = false }) => {
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       {cargando ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando productos…</span>
+          <SkeletonTabla filas={6} columnas={4} />
         </div>
       ) : (
         <Table striped bordered hover responsive className="tabla-admin shadow-sm">

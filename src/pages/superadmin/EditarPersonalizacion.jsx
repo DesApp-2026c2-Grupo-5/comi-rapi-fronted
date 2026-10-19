@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Container, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioPersonalizacion from '../../components/admin/FormularioPersonalizacion';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 import { productosMock } from '../../services/seedData';
 
 const EditarPersonalizacion = () => {
@@ -52,8 +53,9 @@ const EditarPersonalizacion = () => {
 
   if (cargando || loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando elemento de personalización…</span>
+        <SkeletonTarjeta />
       </Container>
     );
   }

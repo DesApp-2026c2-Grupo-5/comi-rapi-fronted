@@ -14,8 +14,8 @@
  *                                                           el admin no lo muestra)
  */
 
-import { Fragment, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import { Fragment, useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import {
   FaClock,
   FaCheckCircle,
@@ -24,15 +24,15 @@ import {
   FaMotorcycle,
   FaFlagCheckered,
   FaTimesCircle,
-} from 'react-icons/fa';
-import { obtenerEstadosSiguientes } from '../../services/estadosPedido';
+} from "react-icons/fa";
+import { obtenerEstadosSiguientes } from "../../services/estadosPedido";
 import {
   ESTADOS_PEDIDO,
   ESTADOS_VISIBLES_CLIENTE,
   ETIQUETAS_ESTADO_PEDIDO,
-} from '../../utils/constants';
-import { formatDateTime } from '../../utils/formatters';
-import './HistorialStepper.css';
+} from "../../utils/constants";
+import { formatDateTime } from "../../utils/formatters";
+import "./HistorialStepper.css";
 
 // Icono grande por estado (react-icons)
 const ICONO_ESTADO = {
@@ -46,7 +46,9 @@ const ICONO_ESTADO = {
 };
 
 // Orden visual del flujo principal (sin cancelado, que es un nodo especial)
-const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDIDO.CANCELADO);
+const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter(
+  (e) => e !== ESTADOS_PEDIDO.CANCELADO,
+);
 
 // Minutos acumulados desde la creación del pedido (minuto 0).
 // El nodo actual tickea en vivo; al cambiar de estado (WebSocket → refetch)
@@ -62,7 +64,7 @@ function minutosEntre(desdeIso, hastaMs) {
 function formatearMinutos(minutos) {
   if (minutos < 60) return `+${minutos} min`;
   const horas = Math.floor(minutos / 60);
-  const resto = String(minutos % 60).padStart(2, '0');
+  const resto = String(minutos % 60).padStart(2, "0");
   return `+${horas} h ${resto} min`;
 }
 
@@ -96,12 +98,17 @@ const HistorialStepper = ({
   const [ahora, setAhora] = useState(() => Date.now());
   useEffect(() => {
     if (pedidoFinalizado) return undefined;
-    const intervalo = setInterval(() => setAhora(Date.now()), INTERVALO_TICK_MS);
+    const intervalo = setInterval(
+      () => setAhora(Date.now()),
+      INTERVALO_TICK_MS,
+    );
     return () => clearInterval(intervalo);
   }, [pedidoFinalizado, pedido.id]);
 
   const fechaCrudaDe = (estado) => {
-    const registro = (pedido.historialEstados || []).find((h) => h.estado === estado);
+    const registro = (pedido.historialEstados || []).find(
+      (h) => h.estado === estado,
+    );
     return registro ? registro.fecha : null;
   };
 
@@ -118,21 +125,25 @@ const HistorialStepper = ({
   };
 
   // Próximo estado principal (el primer siguiente que pertenece al flujo)
-  const principal = estadosSiguientes.find((e) => flujoEstados.includes(e)) || null;
+  const principal =
+    estadosSiguientes.find((e) => flujoEstados.includes(e)) || null;
   const puedeCancelar = estadosSiguientes.includes(ESTADOS_PEDIDO.CANCELADO);
   const mostrarCancelado = esCancelado || puedeCancelar;
 
   const fechaDe = (estado) => {
-    const registro = (pedido.historialEstados || []).find((h) => h.estado === estado);
+    const registro = (pedido.historialEstados || []).find(
+      (h) => h.estado === estado,
+    );
     return registro ? formatDateTime(registro.fecha) : null;
   };
 
   // Clase según la posición en el flujo
   const claseDe = (idx) => {
-    if (esCancelado) return idx <= alcanzado ? 'estado-step completado' : 'estado-step futuro';
-    if (idx < alcanzado) return 'estado-step completado';
-    if (idx === alcanzado) return 'estado-step actual';
-    return 'estado-step futuro';
+    if (esCancelado)
+      return idx <= alcanzado ? "estado-step completado" : "estado-step futuro";
+    if (idx < alcanzado) return "estado-step completado";
+    if (idx === alcanzado) return "estado-step actual";
+    return "estado-step futuro";
   };
 
   // Descripción accesible de un nodo. La fecha va en el texto, no en `title`:
@@ -143,17 +154,23 @@ const HistorialStepper = ({
     const partes = [etiqueta];
     if (fecha) partes.push(fecha);
     if (accion) partes.push(accion);
-    return partes.join(', ');
+    return partes.join(", ");
   };
 
   // Minutos visibles bajo cada nodo alcanzado (los futuros no muestran nada).
+  // Solo se muestran en el panel ADMIN (con onCambiar): el cliente ve el
+  // stepper limpio, sin el "+X min" que le resultaba ruido.
   const contenidoMinutos = (estado, idx) => {
+    if (!onCambiar) return null;
     if (idx > alcanzado) return null;
     const esNodoActual = !esCancelado && idx === alcanzado;
     const minutos = minutosDe(estado, esNodoActual);
     if (minutos === null) return null;
     return (
-      <span className="estado-step-minutos" aria-label={`${formatearMinutos(minutos)} desde el pedido`}>
+      <span
+        className="estado-step-minutos"
+        aria-label={`${formatearMinutos(minutos)} desde el pedido`}
+      >
         {formatearMinutos(minutos)}
       </span>
     );
@@ -162,7 +179,8 @@ const HistorialStepper = ({
   const renderNodo = (estado, idx) => {
     const Icono = ICONO_ESTADO[estado];
     const clase = claseDe(idx);
-    const clickeable = Boolean(onCambiar) && !esCancelado && principal === estado;
+    const clickeable =
+      Boolean(onCambiar) && !esCancelado && principal === estado;
     // `aria-current="step"` marca dónde está el pedido hoy dentro del flujo.
     const esActual = !esCancelado && idx === alcanzado;
     const titulo = descripcionDe(estado);
@@ -170,7 +188,9 @@ const HistorialStepper = ({
     const contenido = (
       <>
         <Icono className="estado-step-icono" aria-hidden="true" />
-        <span className="estado-step-etiqueta">{ETIQUETAS_ESTADO_PEDIDO[estado] || estado}</span>
+        <span className="estado-step-etiqueta">
+          {ETIQUETAS_ESTADO_PEDIDO[estado] || estado}
+        </span>
         {fechaDe(estado) && (
           <span className="visually-hidden">{`, ${fechaDe(estado)}`}</span>
         )}
@@ -184,8 +204,8 @@ const HistorialStepper = ({
           <button
             type="button"
             className={`${clase} clickeable`}
-            aria-label={descripcionDe(estado, { accion: 'clic para avanzar' })}
-            aria-current={esActual ? 'step' : undefined}
+            aria-label={descripcionDe(estado, { accion: "clic para avanzar" })}
+            aria-current={esActual ? "step" : undefined}
             title={`${titulo} - clic para avanzar`}
             onClick={() => onCambiar(estado)}
           >
@@ -198,7 +218,7 @@ const HistorialStepper = ({
       <li key={estado} className="historial-step-item">
         <div
           className={clase}
-          aria-current={esActual ? 'step' : undefined}
+          aria-current={esActual ? "step" : undefined}
           title={titulo}
         >
           {contenido}
@@ -217,7 +237,7 @@ const HistorialStepper = ({
           {idx < flujoEstados.length - 1 && (
             <li className="historial-conector-item" aria-hidden="true">
               <span
-                className={`historial-conector ${idx < alcanzado ? 'activo' : ''}`}
+                className={`historial-conector ${idx < alcanzado ? "activo" : ""}`}
                 aria-hidden="true"
               />
             </li>
@@ -230,7 +250,7 @@ const HistorialStepper = ({
         <Fragment key="cancelado-node">
           <li className="historial-conector-item" aria-hidden="true">
             <span
-              className={`historial-conector ${esCancelado ? 'riesgo' : ''}`}
+              className={`historial-conector ${esCancelado ? "riesgo" : ""}`}
               aria-hidden="true"
             />
           </li>
@@ -240,7 +260,10 @@ const HistorialStepper = ({
                 className="estado-step cancelado"
                 title={descripcionDe(ESTADOS_PEDIDO.CANCELADO)}
               >
-                <FaTimesCircle className="estado-step-icono" aria-hidden="true" />
+                <FaTimesCircle
+                  className="estado-step-icono"
+                  aria-hidden="true"
+                />
                 <span className="estado-step-etiqueta">Cancelado</span>
                 {fechaDe(ESTADOS_PEDIDO.CANCELADO) && (
                   <span className="visually-hidden">
@@ -250,7 +273,10 @@ const HistorialStepper = ({
                 {(() => {
                   const minutos = minutosDe(ESTADOS_PEDIDO.CANCELADO, false);
                   return minutos !== null ? (
-                    <span className="estado-step-minutos" aria-label={`${formatearMinutos(minutos)} desde el pedido`}>
+                    <span
+                      className="estado-step-minutos"
+                      aria-label={`${formatearMinutos(minutos)} desde el pedido`}
+                    >
                       {formatearMinutos(minutos)}
                     </span>
                   ) : null;
@@ -266,7 +292,10 @@ const HistorialStepper = ({
                 title="Cancelar pedido - clic para cancelar"
                 onClick={() => onCambiar && onCambiar(ESTADOS_PEDIDO.CANCELADO)}
               >
-                <FaTimesCircle className="estado-step-icono" aria-hidden="true" />
+                <FaTimesCircle
+                  className="estado-step-icono"
+                  aria-hidden="true"
+                />
                 <span className="estado-step-etiqueta">Cancelar</span>
               </button>
             </li>
@@ -287,8 +316,11 @@ HistorialStepper.propTypes = {
     historialEstados: PropTypes.arrayOf(
       PropTypes.shape({
         estado: PropTypes.string,
-        fecha: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
-      })
+        fecha: PropTypes.oneOfType([
+          PropTypes.string,
+          PropTypes.instanceOf(Date),
+        ]),
+      }),
     ),
   }).isRequired,
   onCambiar: PropTypes.func,

@@ -13,13 +13,13 @@
 
 /* ============ Opciones de pago ============ */
 .pago-opcion {
-  --bs-btn-color: #2b2b2b;
+  --bs-btn-color: var(--color-text);
   --bs-btn-hover-transform: translateY(-2px);
   min-height: 160px;
   flex-direction: column;
   gap: 0.35rem;
   border-radius: 16px;
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
   padding: 1.25rem 1rem;
   font-size: 1.05rem;
@@ -44,31 +44,31 @@
 /* Mercado Pago: estilo celeste de la marca */
 .pago-opcion-mp {
   --bs-btn-bg: #fff;
-  --bs-btn-border-color: #009ee3;
-  --bs-btn-color: #009ee3;
-  --bs-btn-hover-bg: #009ee3;
-  --bs-btn-hover-border-color: #009ee3;
+  --bs-btn-border-color: var(--color-mp);
+  --bs-btn-color: var(--color-mp);
+  --bs-btn-hover-bg: var(--color-mp);
+  --bs-btn-hover-border-color: var(--color-mp);
   --bs-btn-hover-color: #fff;
-  --bs-btn-active-bg: #0079b8;
-  --bs-btn-active-border-color: #0079b8;
+  --bs-btn-active-bg: var(--color-mp-active);
+  --bs-btn-active-border-color: var(--color-mp-active);
   --bs-btn-active-color: #fff;
 }
 
 /* Tarjeta: estilo naranja de la marca */
 .pago-opcion-tarjeta {
   --bs-btn-bg: #fff;
-  --bs-btn-border-color: #ff9f1c;
-  --bs-btn-color: #b55d00;
-  --bs-btn-hover-bg: #ff9f1c;
-  --bs-btn-hover-border-color: #ff9f1c;
+  --bs-btn-border-color: var(--color-primary);
+  --bs-btn-color: var(--color-primary-dark);
+  --bs-btn-hover-bg: var(--color-primary);
+  --bs-btn-hover-border-color: var(--color-primary);
   --bs-btn-hover-color: #fff;
-  --bs-btn-active-bg: #e88900;
-  --bs-btn-active-border-color: #e88900;
+  --bs-btn-active-bg: var(--color-primary-hover);
+  --bs-btn-active-border-color: var(--color-primary-hover);
   --bs-btn-active-color: #fff;
 }
 
 /* ============ Aviso de procesamiento ============ */
 .pago-procesando {
-  border: 2px dashed #f1c27d;
+  border: 2px dashed var(--color-border-cream);
   border-radius: 16px;
 }

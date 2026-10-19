@@ -1,0 +1,51 @@
+/* ============ Botón flotante del carrito (B1) ============ */
+/* Círculo naranja fijo en la esquina inferior derecha, encima de la
+   barra inferior móvil (que ocupa ~56px). El badge rojo muestra el
+   conteo de items en tiempo real (CarritoContext). */
+
+.boton-carrito-flotante {
+  position: fixed;
+  bottom: 72px;
+  right: 20px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f07f10 0%, #e06a00 100%);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(240, 127, 16, 0.4);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.boton-carrito-flotante:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(240, 127, 16, 0.5);
+}
+
+.boton-carrito-flotante:active {
+  transform: scale(0.95);
+}
+
+.boton-carrito-flotante:focus-visible {
+  outline: 3px solid #f0a10e;
+  outline-offset: 3px;
+}
+
+/* Badge con el conteo, superpuesto arriba-derecha del círculo. */
+.boton-carrito-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.3rem 0.45rem;
+  border: 2px solid #fff;
+}

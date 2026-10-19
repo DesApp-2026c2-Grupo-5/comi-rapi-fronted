@@ -37,6 +37,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import useIndicadoresNav from '../../hooks/useIndicadoresNav';
+import { useSucursal } from '../../hooks/useSucursal';
 import { ROLES } from '../../utils/constants';
 import { esRutaDeAlguna, rutaActual } from '../../utils/rutas';
 import { nombreCompleto } from '../../utils/formatters';
@@ -192,6 +193,10 @@ const menuSuperadmin = [
 
 const Navbar = () => {
   const { user, logout, isAuthenticated, hydrated } = useAuth();
+  // La sucursal del admin (badge "Sucursal: X") sale del SucursalContext, que
+  // ya carga todas las sucursales al montar la app: el Navbar está dentro del
+  // provider (App.jsx) y solo hace el match por id con el user.
+  const { sucursales } = useSucursal();
   // Los contadores de badge y sus pulsos viven en un hook aparte porque la barra
   // inferior muestra los mismos números: si cada componente los calculara por su
   // cuenta, dejarían de coincidir en algún momento.
@@ -237,6 +242,14 @@ const Navbar = () => {
         ? enlacesCliente
         : enlacesInvitado;
   const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
+  // A0: el admin siempre ve a qué sucursal pertenece (feedback del profesor).
+  // Superadmin y cliente no: la sucursal es información del panel de admin.
+  // Un admin sin sucursal asignada (no debería existir) ve "Sin sucursal".
+  const sucursalAdmin = isAdmin
+    ? (sucursales.find(
+        (s) => Number(s.id) === Number(user?.sucursalId)
+      ) || {}).nombre || 'Sin sucursal'
+    : null;
 
   /* Pantalla de origen para los botones de acceso: al entrar se vuelve a donde
      estaba el visitante, y si llegó al login desde el carrito vuelve al carrito
@@ -322,7 +335,12 @@ const Navbar = () => {
           to={destinoInicio}
           className="navbar-brand-comirapi"
         >
-          <FaHamburger className="brand-ico" aria-hidden="true" />
+          <img
+            src="/imagenes/logo-comirapi.svg"
+            alt=""
+            aria-hidden="true"
+            className="brand-ico"
+          />
           <span translate="no">Comi-Rapi</span>
         </BSNavbar.Brand>
         {/* Avatar del cliente en la fila superior, fuera del colapsable: en móvil
@@ -447,6 +465,19 @@ const Navbar = () => {
             })}
           </Nav>
           <Nav className="navbar-acciones">
+            {/* A0: badge de la sucursal del admin, siempre visible en el
+                panel. Se anuncia con `title`/`aria-label` para lectores de
+                pantalla; no es un enlace, es información de contexto. */}
+            {isAdmin && sucursalAdmin && (
+              <span
+                className="navbar-sucursal"
+                title="Tu sucursal asignada"
+                aria-label={`Tu sucursal asignada es ${sucursalAdmin}`}
+              >
+                <FaStore className="navbar-sucursal-ico" aria-hidden="true" />
+                <span className="navbar-sucursal-nombre">{sucursalAdmin}</span>
+              </span>
+            )}
             {!isAuthenticated ? (
               /* El invitado llega acá desde el colapsable. Se le ofrece entrar y,
                  si no tiene cuenta, crearla: es el mismo par de acciones que la

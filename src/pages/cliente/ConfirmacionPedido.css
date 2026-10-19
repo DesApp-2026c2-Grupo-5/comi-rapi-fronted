@@ -15,7 +15,7 @@
 .confirmacion-titulo {
   font-weight: 900;
   letter-spacing: 1px;
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 @keyframes confirmacion-pop {

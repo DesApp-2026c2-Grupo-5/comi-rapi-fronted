@@ -12,7 +12,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
-import { FaHamburger, FaLock, FaCheckCircle } from 'react-icons/fa';
+import { FaLock, FaCheckCircle } from 'react-icons/fa';
 import { restablecerPassword } from '../../api/auth';
 import CampoPassword from '../../components/comunes/CampoPassword';
 import './Login.css';
@@ -65,7 +65,7 @@ const NuevaPassword = () => {
         <div className="auth-card-comirapi">
           <div className="auth-card-header">
             <div className="auth-brand-ico">
-              <FaHamburger aria-hidden="true" />
+              <img src="/imagenes/logo-comirapi.svg" alt="" aria-hidden="true" />
             </div>
             <h1 className="h2">Nueva contraseña</h1>
           </div>
@@ -89,7 +89,7 @@ const NuevaPassword = () => {
       <div className="auth-card-comirapi">
         <div className="auth-card-header">
           <div className="auth-brand-ico">
-            <FaHamburger aria-hidden="true" />
+            <img src="/imagenes/logo-comirapi.svg" alt="" aria-hidden="true" />
           </div>
           <h1 className="h2">Nueva contraseña</h1>
           <p>Elegí la contraseña con la que vas a entrar</p>

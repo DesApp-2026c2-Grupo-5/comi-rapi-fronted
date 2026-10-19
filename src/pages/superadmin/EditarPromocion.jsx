@@ -4,14 +4,15 @@
  *            iniciales con productos, recarga ante `catalogo_actualizado` de
  *            ESTA promoción y FormularioPromocion. Al guardar sincroniza
  *            asignaciones (agrega nuevos, quita removidos).
- * Dependencias: react-bootstrap (Container, Spinner, Alert), react-router-dom,
- *               FormularioPromocion, api/promociones.js, hooks/useAuth, services/socket.
+ * Dependencias: react-bootstrap (Container, Alert), react-router-dom,
+ *               FormularioPromocion, api/promociones.js, hooks/useAuth, services/socket,
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: Ruta "/superadmin/promocion/editar/:id" o "/superadmin/promocion/nuevo" → <EditarPromocion />
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Alert } from 'react-bootstrap';
+import { Container, Alert } from 'react-bootstrap';
 import FormularioPromocion from '../../components/admin/FormularioPromocion';
 import {
   obtenerPromocionPorId,
@@ -23,6 +24,7 @@ import {
 } from '../../api/promociones';
 import { useAuth } from '../../hooks/useAuth';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarPromocion = () => {
   const { id } = useParams();
@@ -117,8 +119,9 @@ const EditarPromocion = () => {
 
   if (cargando) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando promoción…</span>
+        <SkeletonTarjeta />
       </Container>
     );
   }

@@ -4,9 +4,9 @@
  * Contenido: Componente FormularioParametros que agrupa el catálogo por `grupo`,
  *            permite editar cada valor y guarda el lote completo con
  *            useParametros().actualizar (PUT /superadmin/parametros).
- * Dependencias: react-bootstrap (Card, Form, Button, Spinner, Alert, Row, Col,
+ * Dependencias: react-bootstrap (Card, Form, Button, Alert, Row, Col,
  *               Badge), react-icons (FaSave, FaUndoAlt), useParametros,
- *               useNotificaciones.
+ *               useNotificaciones, components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: <FormularioParametros />
  *
  * El backend es la autoridad: acá solo se valida en espejo (tipo/rango) para
@@ -19,7 +19,6 @@ import {
   Card,
   Form,
   Button,
-  Spinner,
   Alert,
   Row,
   Col,
@@ -28,6 +27,7 @@ import {
 import { FaSave, FaUndoAlt } from 'react-icons/fa';
 import { useParametros } from '../../hooks/useParametros';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { SkeletonTarjeta } from '../comunes/Skeleton';
 import './FormularioParametros.css';
 
 const TITULOS_GRUPO = {
@@ -145,8 +145,9 @@ const FormularioParametros = () => {
 
   if (loading && lista.length === 0) {
     return (
-      <div className="text-center py-5">
-        <Spinner animation="border" variant="danger" />
+      <div role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando parámetros…</span>
+        <SkeletonTarjeta />
       </div>
     );
   }

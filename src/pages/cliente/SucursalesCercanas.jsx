@@ -8,10 +8,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Badge, Alert, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Alert } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursal } from '../../hooks/useSucursal';
 import { formatearDireccion } from '../../utils/direccion';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 // Ubicación mock del cliente (MOCK - reemplazar por geolocalización real)
 const UBICACION_MOCK = 'Av. Siempre Viva 742, Ciudad';
@@ -67,8 +68,15 @@ const SucursalesCercanas = () => {
       </p>
 
       {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando las sucursales cercanas…</span>
+          <Row>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Col key={i} md={6} lg={4} className="mb-4">
+                <SkeletonTarjeta conFoto />
+              </Col>
+            ))}
+          </Row>
         </div>
       ) : sucursalesCercanas.length === 0 ? (
         <Alert variant="info">No hay sucursales activas disponibles en este momento.</Alert>

@@ -6,7 +6,8 @@
  *            al catálogo de la sucursal de los productos que todavía no están
  *            cargados, p. ej. los que crea el superadministrador).
  * Dependencias: react-bootstrap, react-icons, api/stock.js, api/productos.js,
- *               context/AuthContext (useAuth).
+ *               context/AuthContext (useAuth), components/comunes/Skeleton
+ *               (SkeletonTabla).
  *
  * Un administrador tiene UNA sola sucursal asignada, así que la pantalla no
  * ofrece selector de sucursal: opera siempre sobre la suya (`user.sucursalId`) y
@@ -21,7 +22,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Container, Table, Button, Spinner, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
+import { Container, Table, Button, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt, FaBoxes, FaPlusCircle } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
@@ -35,6 +36,7 @@ import {
 import { obtenerProductos } from '../../api/productos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { SkeletonTabla } from '../../components/comunes/Skeleton';
 
 const GestionStock = () => {
   const { notificar } = useNotificaciones();
@@ -261,8 +263,9 @@ const GestionStock = () => {
           </div>
 
           {cargando ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="danger" />
+            <div role="status" aria-live="polite">
+              <span className="visually-hidden">Cargando stock…</span>
+              <SkeletonTabla filas={5} columnas={4} />
             </div>
           ) : (
             <Table striped bordered hover responsive className="tabla-admin shadow-sm">

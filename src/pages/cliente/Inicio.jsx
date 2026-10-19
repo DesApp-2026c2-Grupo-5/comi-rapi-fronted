@@ -1,14 +1,16 @@
 /**
  * Propósito: Página de inicio del cliente con hero, categorías, más vendidos y envío a domicilio.
- * Contenido: Hero naranja (COMI + hamburguesa flotante + RAPI), 5 categorías circulares,
- *            más vendidos del día, sección de envío a domicilio.
+ * Contenido: Hero naranja (COMI + hamburguesa que se arma al entrar + RAPI), 5 categorías
+ *            circulares, más vendidos del día, sección de envío a domicilio.
  * Dependencias: react-bootstrap (Container, Row, Col, Button), react-router-dom (Link),
  *               api/categorias, api/productos, ProductoCard, Inicio.css.
  * Uso: Ruta "/cliente/inicio" → <Inicio />
  *
  * CAMBIOS REALIZADOS:
- *  1. Hero: fondo #FF9F1C, "COMI"/"RAPI" en blanco + hamburguesa flotante centrada
- *     (no se superponen porque cada uno ocupa una columna propia en filas del Row).
+ *  1. Hero: fondo #FF9F1C, "COMI"/"RAPI" en blanco + hamburguesa centrada que se arma
+ *     una sola vez al montar (entrada escalonada de las capas, sin loops perpetuos:
+ *     antes flotaba en infinito con 6 ingredientes volando). Cada título ocupa una
+ *     columna propia en filas del Row.
  *     Badge de Google Play abajo a la izquierda y botón ORDENAR abajo a la derecha.
  *  2. Categorías: 6 cards circulares (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
  *  3. Más vendidos de hoy: los 3 productos más vendidos del día según
@@ -184,21 +186,15 @@ const Inicio = () => {
                 encabezados. */}
             <h1 className="visually-hidden">Comi-Rapi, tu app de delivery de comida</h1>
 
+            {/* Título COMI: entra desde la izquierda una sola vez, aterrizando
+                con la hamburguesa (decorativo, el h1 real está oculto arriba). */}
             <Col md={4} className="text-center text-md-start" aria-hidden="true">
-              <div className="inicio-hero-titulo">COMI</div>
+              <div className="inicio-hero-titulo hero-comi">COMI</div>
             </Col>
 
-            {/* Hamburguesa flotante en el centro (con ingredientes volando) */}
+            {/* Hamburguesa en el centro: se arma al montar (entrada única de las
+                capas, de abajo hacia arriba) y después queda quieta. */}
             <Col md={4} className="text-center position-relative hero-cola-burger" aria-hidden="true">
-              {/* Ingredientes volando (decoración animada) */}
-              <span className="ingrediente-volador iv-lechuga i1" />
-              <span className="ingrediente-volador iv-tomate i2" />
-              <span className="ingrediente-volador iv-queso i3" />
-              <span className="ingrediente-volador iv-carne i4" />
-              <span className="ingrediente-volador iv-semilla i5" />
-              <span className="ingrediente-volador iv-lechuga i6" />
-
-              {/* Hamburguesa hecha con CSS puro + animación flotar */}
               <div className="burger-flotante">
                 <div className="burger">
                   <div className="pan-superior" />
@@ -211,8 +207,9 @@ const Inicio = () => {
               </div>
             </Col>
 
+            {/* Título RAPI: entra desde la derecha, mismo gesto que COMI. */}
             <Col md={4} className="text-center text-md-end" aria-hidden="true">
-              <div className="inicio-hero-titulo">RAPI</div>
+              <div className="inicio-hero-titulo hero-rapi">RAPI</div>
             </Col>
           </Row>
 

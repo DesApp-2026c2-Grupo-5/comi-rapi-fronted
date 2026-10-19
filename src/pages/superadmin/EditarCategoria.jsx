@@ -2,19 +2,21 @@
  * Propósito: Página para editar o crear una categoría usando Container de Bootstrap.
  * Contenido: Componente EditarCategoria con carga de datos por ID, recarga ante
  *            `catalogo_actualizado` de ESTA categoría y FormularioCategoria.
- * Dependencias: react-bootstrap (Container, Spinner, Alert, Button), react-router-dom,
- *               FormularioCategoria, api/categorias.js, hooks/useAuth, services/socket.
+ * Dependencias: react-bootstrap (Container, Alert, Button), react-router-dom,
+ *               FormularioCategoria, api/categorias.js, hooks/useAuth, services/socket,
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: Ruta "/superadmin/categoria/editar/:id" o "/superadmin/categoria/nuevo" → <EditarCategoria />
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioCategoria from '../../components/admin/FormularioCategoria';
 import { obtenerCategoriaPorId, crearCategoria, editarCategoria } from '../../api/categorias';
 import { useAuth } from '../../hooks/useAuth';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarCategoria = () => {
   const { id } = useParams();
@@ -74,8 +76,9 @@ const EditarCategoria = () => {
 
   if (cargando) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando categoría…</span>
+        <SkeletonTarjeta />
       </Container>
     );
   }

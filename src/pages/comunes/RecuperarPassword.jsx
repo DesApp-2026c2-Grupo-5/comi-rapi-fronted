@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
-import { FaHamburger, FaEnvelope, FaPaperPlane } from 'react-icons/fa';
+import { FaEnvelope, FaPaperPlane } from 'react-icons/fa';
 import { solicitarRecuperacion } from '../../api/auth';
 import './Login.css';
 
@@ -47,7 +47,7 @@ const RecuperarPassword = () => {
       <div className="auth-card-comirapi">
         <div className="auth-card-header">
           <div className="auth-brand-ico">
-            <FaHamburger aria-hidden="true" />
+            <img src="/imagenes/logo-comirapi.svg" alt="" aria-hidden="true" />
           </div>
           <h1 className="h2">Recuperar contraseña</h1>
           <p>Ingresá tu email y te enviamos un enlace para restablecerla</p>

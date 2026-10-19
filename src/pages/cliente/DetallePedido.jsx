@@ -8,22 +8,41 @@
  * Uso: Ruta "/cliente/pedido/:id" → <DetallePedido />
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Table, Badge, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
-import { usePedidos } from '../../hooks/usePedidos';
-import { useRepetirPedido } from '../../hooks/useRepetirPedido';
-import { useParametros } from '../../hooks/useParametros';
-import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
-import { formatPrice } from '../../utils/formatters';
-import { calcularCostoEnvio } from '../../services/envio';
-import { formatearDireccion } from '../../utils/direccion';
-import IconoEstado from '../../components/comunes/IconoEstado';
-import HistorialStepper from '../../components/comunes/HistorialStepper';
-import ConfirmarModal from '../../components/comunes/ConfirmarModal';
-import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
-import './DetallePedido.css';
+import React, { useEffect, useRef, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  Container,
+  Card,
+  Table,
+  Badge,
+  Button,
+  Row,
+  Col,
+  Alert,
+  Spinner,
+} from "react-bootstrap";
+import { FaArrowLeft, FaRedo, FaShippingFast } from "react-icons/fa";
+import { usePedidos } from "../../hooks/usePedidos";
+import { useRepetirPedido } from "../../hooks/useRepetirPedido";
+import { useParametros } from "../../hooks/useParametros";
+import {
+  ESTADOS_PEDIDO,
+  ETIQUETAS_ESTADO_PEDIDO,
+  VARIANTE_ESTADO_PEDIDO,
+} from "../../utils/constants";
+import { formatPrice } from "../../utils/formatters";
+import { calcularCostoEnvio } from "../../services/envio";
+import { formatearDireccion } from "../../utils/direccion";
+import IconoEstado from "../../components/comunes/IconoEstado";
+import HistorialStepper from "../../components/comunes/HistorialStepper";
+import ConfirmarModal from "../../components/comunes/ConfirmarModal";
+import { SkeletonTabla } from "../../components/comunes/Skeleton";
+import {
+  mensajeConfirmarRepetir,
+  mensajeNoRepetible,
+} from "../../utils/avisoRepetir";
+import { textoLlegada } from "../../utils/llegada";
+import "./DetallePedido.css";
 
 const DetallePedido = () => {
   const { id } = useParams();
@@ -43,23 +62,29 @@ const DetallePedido = () => {
 
   // Anuncio accesible de cambios de estado (WebSocket → refetch): solo en
   // transiciones, no en el tick de minutos, para no spamear al lector.
-  const [anuncioEstado, setAnuncioEstado] = useState('');
+  const [anuncioEstado, setAnuncioEstado] = useState("");
   const estadoAnterior = useRef(pedido?.estado);
   useEffect(() => {
     if (!pedido) return;
-    if (estadoAnterior.current !== undefined && estadoAnterior.current !== pedido.estado) {
+    if (
+      estadoAnterior.current !== undefined &&
+      estadoAnterior.current !== pedido.estado
+    ) {
       const etiqueta = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
       setAnuncioEstado(`Tu pedido #${pedido.id} pasó a estado: ${etiqueta}.`);
     }
     estadoAnterior.current = pedido.estado;
   }, [pedido]);
 
+  // A6: badge estático de llegada (la hora es fija, no necesita countdown).
+  // Va ANTES de cualquier early return: los hooks deben correr siempre.
+
   if (!pedido) {
     if (cargandoPedidos) {
       return (
-        <Container className="py-5 text-center">
-          <Spinner animation="border" variant="danger" role="status" />
-          <p className="text-muted mt-3">Cargando tu pedido…</p>
+        <Container className="py-5" role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando tu pedido…</span>
+          <SkeletonTabla filas={4} columnas={3} />
         </Container>
       );
     }
@@ -67,7 +92,11 @@ const DetallePedido = () => {
       <Container className="py-5 text-center">
         <h1 className="h2 detalle-no-encontrado">Pedido no encontrado</h1>
         <p className="text-muted mb-4">No se encontró el pedido con ID #{id}</p>
-        <Button as={Link} to="/cliente/mis-pedidos" className="boton-volver-btn">
+        <Button
+          as={Link}
+          to="/cliente/mis-pedidos"
+          className="boton-volver-btn"
+        >
           <FaArrowLeft className="me-1" aria-hidden="true" />
           Volver a Mis Pedidos
         </Button>
@@ -77,28 +106,29 @@ const DetallePedido = () => {
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
   // El total del backend ya incluye el envío (los seed más viejos lo calculan).
-  const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total, parametros);
+  const costoEnvio =
+    pedido.costoEnvio ?? calcularCostoEnvio(pedido.total, parametros);
   const subtotal = pedido.total - costoEnvio;
   const esFinal =
     pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||
     pedido.estado === ESTADOS_PEDIDO.CANCELADO;
-  // ETA: visible desde confirmado hasta en_camino (no en finales, no antes
-  // de pagar). Solo si el backend pudo calcularlo (ORS puede fallar → null).
-  const mostrarEta =
-    !esFinal &&
-    pedido.etaMinutos !== null &&
-    pedido.etaMinutos !== undefined &&
-    pedido.estado !== ESTADOS_PEDIDO.PENDIENTE;
+  // A6: solo visible en en_camino con hora estimada persistida.
+  const textoLlegadaEnCamino =
+    pedido.estado === ESTADOS_PEDIDO.EN_CAMINO && pedido.horaEstimadaLlegada
+      ? textoLlegada(pedido.horaEstimadaLlegada)
+      : null;
   // T4: aviso de reasignación — el cliente ve que su pedido cambió de
   // sucursal (detectado por la observación "Reasignado..." en el historial).
   const reasignado = (pedido.historialEstados || []).some(
-    (h) => h.observacion && /reasignado/i.test(h.observacion)
+    (h) => h.observacion && /reasignado/i.test(h.observacion),
   );
 
   return (
     <Container className="py-5">
       <Link to="/cliente/mis-pedidos" className="boton-volver mb-4">
-        <span className="boton-volver-arrow" aria-hidden="true">←</span>
+        <span className="boton-volver-arrow" aria-hidden="true">
+          ←
+        </span>
         Volver a Mis Pedidos
       </Link>
 
@@ -106,14 +136,8 @@ const DetallePedido = () => {
         <Card.Header className="detalle-card-header d-flex justify-content-between align-items-center">
           <h1 className="h4 mb-0">Pedido #{pedido.id}</h1>
           <div className="d-flex align-items-center gap-2">
-            {mostrarEta && (
-              <Badge bg="info" className="fs-6">
-                <FaClock className="me-1" aria-hidden="true" size={12} />
-                ~{pedido.etaMinutos} min
-              </Badge>
-            )}
             <Badge
-              bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
+              bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || "secondary"}
               className="badge-estado fs-6 d-inline-flex align-items-center gap-1"
             >
               <IconoEstado estado={pedido.estado} size={16} />
@@ -123,11 +147,30 @@ const DetallePedido = () => {
         </Card.Header>
 
         <Card.Body className="p-4">
+          {/* A6: alert prominente cuando el pedido sale en camino. La hora
+              es fija (persistida al pasar a en_camino), no un countdown. */}
+          {textoLlegadaEnCamino && (
+            <Alert
+              variant="success"
+              className="d-flex align-items-center gap-3 mb-4"
+              role="status"
+            >
+              <FaShippingFast
+                size={28}
+                aria-hidden="true"
+                className="flex-shrink-0"
+              />
+              <div>
+                <strong className="d-block">Tu pedido está en camino</strong>
+                <span className="small">{textoLlegadaEnCamino}</span>
+              </div>
+            </Alert>
+          )}
           {/* T4: aviso de reasignación de sucursal */}
           {reasignado && (
             <Alert variant="warning" className="mb-4">
-              <strong>Tu pedido fue reasignado de sucursal.</strong> El
-              tiempo de entrega puede verse afectado.
+              <strong>Tu pedido fue reasignado de sucursal.</strong> El tiempo
+              de entrega puede verse afectado.
             </Alert>
           )}
           {/* Información del cliente y sucursal asignada */}
@@ -141,7 +184,9 @@ const DetallePedido = () => {
             <Col md={6}>
               <div className="detalle-info">
                 <span className="detalle-etiqueta">Sucursal asignada</span>
-                <p className="detalle-valor mb-0">{pedido.sucursal?.nombre || pedido.sucursal}</p>
+                <p className="detalle-valor mb-0">
+                  {pedido.sucursal?.nombre || pedido.sucursal}
+                </p>
                 {pedido.sucursal?.direccion && (
                   <p className="detalle-valor-secundario mb-0">
                     {formatearDireccion(pedido.sucursal.direccion)}
@@ -165,7 +210,11 @@ const DetallePedido = () => {
             </thead>
             <tbody>
               {pedido.productos.map((prod, idx) => {
-                const tieneDesglose = (prod.extras && prod.extras.length > 0) || (prod.sin && prod.sin.length > 0) || (prod.acompanamientos && prod.acompanamientos.length > 0) || (prod.condimentos && prod.condimentos.length > 0);
+                const tieneDesglose =
+                  (prod.extras && prod.extras.length > 0) ||
+                  (prod.sin && prod.sin.length > 0) ||
+                  (prod.acompanamientos && prod.acompanamientos.length > 0) ||
+                  (prod.condimentos && prod.condimentos.length > 0);
                 return (
                   <React.Fragment key={idx}>
                     <tr>
@@ -176,18 +225,29 @@ const DetallePedido = () => {
                     </tr>
                     {tieneDesglose && (
                       <tr>
-                        <td colSpan={4} className="small text-muted" style={{ background: '#fff8ef' }}>
+                        <td colSpan={4} className="small text-muted bg-crema">
                           {prod.extras?.map((ex) => (
-                            <div key={ex.id}>› Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</div>
+                            <div key={ex.id}>
+                              › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
+                              {ex.cantidad}
+                            </div>
                           ))}
                           {prod.acompanamientos?.map((ac) => (
-                            <div key={ac.id}>› Acompañamiento: {ac.nombre} (+{formatPrice(ac.precio)}) x{ac.cantidad}</div>
+                            <div key={ac.id}>
+                              › Acompañamiento: {ac.nombre} (+
+                              {formatPrice(ac.precio)}) x{ac.cantidad}
+                            </div>
                           ))}
                           {prod.sin?.map((s) => (
-                            <div key={s}>› <strong>Sin {s}</strong></div>
+                            <div key={s}>
+                              › <strong>Sin {s}</strong>
+                            </div>
                           ))}
                           {prod.condimentos?.map((c) => (
-                            <div key={c.nombre}>› {c.nombre} x{c.cantidad} <span className="text-muted">(sin costo)</span></div>
+                            <div key={c.nombre}>
+                              › {c.nombre} x{c.cantidad}{" "}
+                              <span className="text-muted">(sin costo)</span>
+                            </div>
                           ))}
                         </td>
                       </tr>
@@ -205,7 +265,7 @@ const DetallePedido = () => {
           </div>
           <div className="detalle-subtotal-envio mb-2">
             <span>Envío</span>
-            <span>{costoEnvio === 0 ? 'Gratis' : formatPrice(costoEnvio)}</span>
+            <span>{costoEnvio === 0 ? "Gratis" : formatPrice(costoEnvio)}</span>
           </div>
           <div className="detalle-total mt-2 mb-4">
             <span>Total</span>
@@ -214,13 +274,23 @@ const DetallePedido = () => {
           {(pedido.promociones || []).length > 0 && (
             <div className="detalle-subtotal-envio mb-4">
               <span>
-                Descuento{' '}
+                Descuento{" "}
                 <span className="text-muted small">
-                  ({(pedido.promociones || []).map((promo) => promo.nombre || `#${promo.promocionId}`).join(' · ')})
+                  (
+                  {(pedido.promociones || [])
+                    .map((promo) => promo.nombre || `#${promo.promocionId}`)
+                    .join(" · ")}
+                  )
                 </span>
               </span>
               <span className="text-success">
-                −{formatPrice((pedido.promociones || []).reduce((acc, promo) => acc + Number(promo.descuentoAplicado ?? 0), 0))}
+                −
+                {formatPrice(
+                  (pedido.promociones || []).reduce(
+                    (acc, promo) => acc + Number(promo.descuentoAplicado ?? 0),
+                    0,
+                  ),
+                )}
               </span>
             </div>
           )}
@@ -242,7 +312,7 @@ const DetallePedido = () => {
                 disabled={repitiendoId === pedido.id}
               >
                 <FaRedo className="me-1" aria-hidden="true" />
-                {repitiendoId === pedido.id ? 'Agregando…' : 'Repetir pedido'}
+                {repitiendoId === pedido.id ? "Agregando…" : "Repetir pedido"}
               </Button>
             </div>
           )}
@@ -252,7 +322,11 @@ const DetallePedido = () => {
       <ConfirmarModal
         mostrar={Boolean(pedidoARepetir)}
         titulo="Repetir pedido"
-        mensaje={mensajeConfirmarRepetir(pedidoARepetir, vistaPrevia, formatPrice)}
+        mensaje={mensajeConfirmarRepetir(
+          pedidoARepetir,
+          vistaPrevia,
+          formatPrice,
+        )}
         textoConfirmar="Sí, repetir pedido"
         cargando={Boolean(repitiendoId) || Boolean(vistaPrevia?.cargando)}
         onConfirmar={confirmarRepeticion}

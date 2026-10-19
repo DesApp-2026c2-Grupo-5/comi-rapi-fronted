@@ -5,7 +5,8 @@
  * Contenido: Componente GestionAdministradores con buscador, tabla y un modal
  *            de alta/edición (selector de rol y de sucursal). Carga desde el
  *            backend (roles ADMINISTRADOR y SUPERADMINISTRADOR).
- * Dependencias: react-bootstrap, api/usuarios, api/sucursales, react-icons.
+ * Dependencias: react-bootstrap, api/usuarios, api/sucursales, react-icons,
+ *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <GestionAdministradores /> - Se renderiza en GestionAdministradoresPage.
  */
 
@@ -14,7 +15,6 @@ import {
   Table,
   Button,
   Container,
-  Spinner,
   Alert,
   Badge,
   Form,
@@ -29,6 +29,7 @@ import {
   actualizarUsuarioPanel,
 } from '../../api/usuarios';
 import { obtenerSucursales } from '../../api/sucursales';
+import { SkeletonTabla } from '../comunes/Skeleton';
 
 const inicialesDe = (admin) => {
   const nombre = (admin.nombre || '').trim();
@@ -225,8 +226,9 @@ const GestionAdministradores = () => {
       </Row>
 
       {cargando ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando administradores…</span>
+          <SkeletonTabla filas={5} columnas={4} />
         </div>
       ) : visibles.length === 0 ? (
         <p className="text-center text-muted py-4">
