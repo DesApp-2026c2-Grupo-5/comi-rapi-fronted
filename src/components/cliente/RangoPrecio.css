@@ -1,0 +1,103 @@
+/* ============ Deslizador doble de precio (C1) ============ */
+/* Dos <input type="range"> superpuestos: solo los thumbs reciben clicks.
+   La pista visual (gris + rango naranja) se dibuja por detrás con divs. */
+
+.rango-precio {
+  width: 100%;
+}
+
+.rango-precio-header {
+  min-height: 1.5rem;
+}
+
+.rango-precio-limpiar {
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.rango-precio-limpiar:hover {
+  text-decoration: underline;
+}
+
+.rango-precio-track-container {
+  position: relative;
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+/* Pista gris de fondo (siempre visible, ancho completo). */
+.rango-precio-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  transform: translateY(-50%);
+  background: #e9ecef;
+  border-radius: 3px;
+}
+
+/* Rango naranja entre los dos thumbs. */
+.rango-precio-rango {
+  position: absolute;
+  top: 50%;
+  height: 6px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, #f07f10, #e06a00);
+  border-radius: 3px;
+}
+
+/* Los inputs cubren toda la pista pero solo los thumbs son clickeables. */
+.rango-precio-input {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 0;
+  transform: translateY(-50%);
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  outline: none;
+}
+
+.rango-precio-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f07f10;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.rango-precio-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+.rango-precio-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f07f10;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.rango-precio-input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #f0a10e;
+  outline-offset: 2px;
+}
+
+.rango-precio-input:focus-visible::-moz-range-thumb {
+  outline: 2px solid #f0a10e;
+  outline-offset: 2px;
+}
