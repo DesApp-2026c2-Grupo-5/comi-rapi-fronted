@@ -70,6 +70,7 @@ export const mapearPedido = (p) => {
     fecha: p.fechaHora || p.fecha,
     etaMinutos: p.etaMinutos !== undefined ? p.etaMinutos : null,
     etaCalculadoEn: p.etaCalculadoEn || null,
+    horaEstimadaLlegada: p.horaEstimadaLlegada || null,
     direccion: p.calle
       ? {
           direccion: [p.calle, p.altura].filter(Boolean).join(' '),

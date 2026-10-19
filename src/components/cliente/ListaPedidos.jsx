@@ -5,15 +5,20 @@
  * pedirCancelacion?, pedirRepeticion, mostrarCancelar (default true).
  */
 
-import { Link } from 'react-router-dom';
-import PropTypes from 'prop-types';
-import { Card, Badge, Button } from 'react-bootstrap';
-import { FaEye, FaTimesCircle, FaRedo, FaClock } from 'react-icons/fa';
-import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO, VARIANTE_ESTADO_PEDIDO } from '../../utils/constants';
-import { formatPrice, formatDate } from '../../utils/formatters';
-import { calcularCostoEnvio } from '../../services/envio';
-import IconoEstado from '../comunes/IconoEstado';
-import HistorialStepper from '../comunes/HistorialStepper';
+import { Link } from "react-router-dom";
+import PropTypes from "prop-types";
+import { Card, Badge, Button } from "react-bootstrap";
+import { FaEye, FaTimesCircle, FaRedo, FaClock } from "react-icons/fa";
+import {
+  ESTADOS_PEDIDO,
+  ETIQUETAS_ESTADO_PEDIDO,
+  VARIANTE_ESTADO_PEDIDO,
+} from "../../utils/constants";
+import { formatPrice, formatDate } from "../../utils/formatters";
+import { calcularCostoEnvio } from "../../services/envio";
+import { textoLlegada } from "../../utils/llegada";
+import IconoEstado from "../comunes/IconoEstado";
+import HistorialStepper from "../comunes/HistorialStepper";
 
 const ListaPedidos = ({
   pedidos,
@@ -26,7 +31,8 @@ const ListaPedidos = ({
 }) => (
   <>
     {pedidos.map((pedido) => {
-      const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
+      const estadoLabel =
+        ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
       const costoEnvio = pedido.costoEnvio ?? calcularCostoEnvio(pedido.total);
       const subtotal = pedido.total - costoEnvio;
       const esFinal =
@@ -34,7 +40,7 @@ const ListaPedidos = ({
         pedido.estado === ESTADOS_PEDIDO.CANCELADO;
       const esCancelado = pedido.estado === ESTADOS_PEDIDO.CANCELADO;
       const registroCancelacion = (pedido.historialEstados || []).find(
-        (h) => h.estado === ESTADOS_PEDIDO.CANCELADO
+        (h) => h.estado === ESTADOS_PEDIDO.CANCELADO,
       );
       const esCancelacionPropia =
         Boolean(registroCancelacion?.usuarioId) &&
@@ -43,26 +49,37 @@ const ListaPedidos = ({
         ? formatDate(registroCancelacion.fecha)
         : null;
       return (
-          <Card key={pedido.id} className="mb-3 shadow-sm">
+        <Card key={pedido.id} className="mb-3 shadow-sm">
           <Card.Header className="d-flex justify-content-between align-items-center">
             <strong>Pedido #{pedido.id}</strong>
             <div className="d-flex align-items-center gap-2">
-              {!esFinal && pedido.etaMinutos !== null && pedido.etaMinutos !== undefined && (
-                <Badge bg="info">
-                  <FaClock className="me-1" aria-hidden="true" size={11} />
-                  ~{pedido.etaMinutos} min
-                </Badge>
-              )}
+              {!esFinal &&
+                pedido.etaMinutos !== null &&
+                pedido.etaMinutos !== undefined && (
+                  <Badge bg="info">
+                    <FaClock className="me-1" aria-hidden="true" size={11} />~
+                    {pedido.etaMinutos} min
+                  </Badge>
+                )}
+              {/* A6: badge de llegada solo en en_camino (hora fija,
+                  sin countdown — el texto completo está en el detalle). */}
+              {pedido.estado === ESTADOS_PEDIDO.EN_CAMINO &&
+                pedido.horaEstimadaLlegada &&
+                textoLlegada(pedido.horaEstimadaLlegada) && (
+                  <Badge bg="success">
+                    {textoLlegada(pedido.horaEstimadaLlegada)}
+                  </Badge>
+                )}
               {/* T4: badge de reasignación de sucursal */}
               {(pedido.historialEstados || []).some(
-                (h) => h.observacion && /reasignado/i.test(h.observacion)
+                (h) => h.observacion && /reasignado/i.test(h.observacion),
               ) && (
                 <Badge bg="warning" className="text-dark">
                   Reasignado
                 </Badge>
               )}
               <Badge
-                bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || 'secondary'}
+                bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || "secondary"}
                 className="d-inline-flex align-items-center gap-1"
               >
                 <IconoEstado estado={pedido.estado} size={15} />
@@ -71,43 +88,85 @@ const ListaPedidos = ({
             </div>
           </Card.Header>
           <Card.Body>
-            <p className="mb-1"><strong>Fecha:</strong> {formatDate(pedido.fecha)}</p>
+            <p className="mb-1">
+              <strong>Fecha:</strong> {formatDate(pedido.fecha)}
+            </p>
             <div className="mb-1">
               <strong>Productos:</strong>
               {pedido.productos.map((p, i) => (
                 <div key={i} className="ms-2 small">
-                  <span>{p.nombre} x{p.cantidad}</span>
-                  {p.extras?.length > 0 && <span className="text-muted"> — {p.extras.map((e) => `${e.nombre} (+${formatPrice(e.precio)})`).join(', ')}</span>}
-                  {p.sin?.length > 0 && <span className="text-muted"> — Sin {p.sin.join(', ')}</span>}
-                  {p.acompanamientos?.length > 0 && <span className="text-muted"> — {p.acompanamientos.map((a) => a.nombre).join(', ')}</span>}
-                  {p.condimentos?.length > 0 && <span className="text-muted"> — {p.condimentos.map((c) => c.nombre).join(', ')}</span>}
+                  <span>
+                    {p.nombre} x{p.cantidad}
+                  </span>
+                  {p.extras?.length > 0 && (
+                    <span className="text-muted">
+                      {" "}
+                      —{" "}
+                      {p.extras
+                        .map((e) => `${e.nombre} (+${formatPrice(e.precio)})`)
+                        .join(", ")}
+                    </span>
+                  )}
+                  {p.sin?.length > 0 && (
+                    <span className="text-muted">
+                      {" "}
+                      — Sin {p.sin.join(", ")}
+                    </span>
+                  )}
+                  {p.acompanamientos?.length > 0 && (
+                    <span className="text-muted">
+                      {" "}
+                      — {p.acompanamientos.map((a) => a.nombre).join(", ")}
+                    </span>
+                  )}
+                  {p.condimentos?.length > 0 && (
+                    <span className="text-muted">
+                      {" "}
+                      — {p.condimentos.map((c) => c.nombre).join(", ")}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
-            <p className="mb-1"><strong>Subtotal:</strong> {formatPrice(subtotal)}</p>
             <p className="mb-1">
-              <strong>Envío:</strong>{' '}
+              <strong>Subtotal:</strong> {formatPrice(subtotal)}
+            </p>
+            <p className="mb-1">
+              <strong>Envío:</strong>{" "}
               {costoEnvio === 0 ? (
                 <span className="text-success">Gratis</span>
               ) : (
                 formatPrice(costoEnvio)
               )}
             </p>
-            <p className="mb-2"><strong>Total:</strong> {formatPrice(pedido.total)}</p>
+            <p className="mb-2">
+              <strong>Total:</strong> {formatPrice(pedido.total)}
+            </p>
             {(pedido.promociones || []).length > 0 && (
               <p className="mb-2 small">
-                <strong>Descuento:</strong>{' '}
+                <strong>Descuento:</strong>{" "}
                 <span className="text-success">
-                  −{formatPrice((pedido.promociones || []).reduce((acc, promo) => acc + Number(promo.descuentoAplicado ?? 0), 0))}
-                </span>{' '}
+                  −
+                  {formatPrice(
+                    (pedido.promociones || []).reduce(
+                      (acc, promo) =>
+                        acc + Number(promo.descuentoAplicado ?? 0),
+                      0,
+                    ),
+                  )}
+                </span>{" "}
                 <span className="text-muted">
-                  ({(pedido.promociones || []).map((promo) => promo.nombre || `#${promo.promocionId}`).join(' · ')})
+                  (
+                  {(pedido.promociones || [])
+                    .map((promo) => promo.nombre || `#${promo.promocionId}`)
+                    .join(" · ")}
+                  )
                 </span>
               </p>
             )}
             <p className="mb-2">
-              <strong>Sucursal:</strong>{' '}
-              {pedido.sucursal?.nombre || pedido.sucursal || '-'}
+              <strong>Sucursal:</strong>{" "}
+              {pedido.sucursal?.nombre || pedido.sucursal || "-"}
             </p>
 
             <div className="historial-box">
@@ -115,12 +174,15 @@ const ListaPedidos = ({
               <HistorialStepper pedido={pedido} sinNodoCancelado />
               {esCancelado && (
                 <div className="d-flex align-items-start gap-2 mt-3 panel-crema p-2">
-                  <FaTimesCircle className="text-danger flex-shrink-0 mt-1" aria-hidden="true" />
+                  <FaTimesCircle
+                    className="text-danger flex-shrink-0 mt-1"
+                    aria-hidden="true"
+                  />
                   <span>
                     <strong className="text-danger">
                       {esCancelacionPropia
-                        ? 'Cancelaste este pedido.'
-                        : 'Tu pedido ha sido cancelado.'}
+                        ? "Cancelaste este pedido."
+                        : "Tu pedido ha sido cancelado."}
                     </strong>
                     {fechaCancelacion && (
                       <span className="small text-muted d-block">
@@ -133,7 +195,12 @@ const ListaPedidos = ({
             </div>
 
             <div className="d-flex gap-2 mt-2 flex-wrap">
-              <Button as={Link} to={`/cliente/pedido/${pedido.id}`} variant="outline-secondary" size="sm">
+              <Button
+                as={Link}
+                to={`/cliente/pedido/${pedido.id}`}
+                variant="outline-secondary"
+                size="sm"
+              >
                 <FaEye aria-hidden="true" />
                 Ver detalle
               </Button>
@@ -145,7 +212,7 @@ const ListaPedidos = ({
                   disabled={cancelandoId === pedido.id}
                 >
                   <FaTimesCircle aria-hidden="true" />
-                  {cancelandoId === pedido.id ? 'Cancelando…' : 'Cancelar'}
+                  {cancelandoId === pedido.id ? "Cancelando…" : "Cancelar"}
                 </Button>
               )}
               {esFinal && pedirRepeticion && (
@@ -156,7 +223,7 @@ const ListaPedidos = ({
                   disabled={repitiendoId === pedido.id}
                 >
                   <FaRedo aria-hidden="true" />
-                  {repitiendoId === pedido.id ? 'Agregando…' : 'Repetir'}
+                  {repitiendoId === pedido.id ? "Agregando…" : "Repetir"}
                 </Button>
               )}
             </div>

@@ -15,32 +15,29 @@
  *        onReintentar={fn} onEditar={fn} />
  */
 
-import { Alert, Button } from 'react-bootstrap';
-import {
-  FaExclamationCircle,
-  FaBan,
-  FaStore,
-  FaSyncAlt,
-} from 'react-icons/fa';
+import { Alert, Button } from "react-bootstrap";
+import { FaExclamationCircle, FaBan, FaStore, FaSyncAlt } from "react-icons/fa";
+import MapaSucursales from "./MapaSucursales";
+import "./MapaSucursales.css";
 
 const TITULOS = {
-  datos: 'Revisá los datos de la dirección',
-  'cobertura-zona': 'Todavía no operamos en esa zona',
-  'cobertura-sucursal': 'Sin cobertura por el momento',
-  tecnico: 'Servicio no disponible',
+  datos: "Revisá los datos de la dirección",
+  "cobertura-zona": "Todavía no operamos en esa zona",
+  "cobertura-sucursal": "Sin cobertura por el momento",
+  tecnico: "Servicio no disponible",
 };
 
 const VARIANTES = {
-  datos: 'danger',
-  'cobertura-zona': 'warning',
-  'cobertura-sucursal': 'warning',
-  tecnico: 'secondary',
+  datos: "danger",
+  "cobertura-zona": "warning",
+  "cobertura-sucursal": "warning",
+  tecnico: "secondary",
 };
 
 const ICONOS = {
   datos: FaExclamationCircle,
-  'cobertura-zona': FaBan,
-  'cobertura-sucursal': FaStore,
+  "cobertura-zona": FaBan,
+  "cobertura-sucursal": FaStore,
   tecnico: FaSyncAlt,
 };
 
@@ -56,13 +53,13 @@ const ResultadoDireccion = ({ resultado, resumen, onReintentar, onEditar }) => {
 
   return (
     <Alert
-      variant={VARIANTES[resultado.tipo] || 'danger'}
-      role={resultado.tipo === 'tecnico' ? 'alert' : 'status'}
+      variant={VARIANTES[resultado.tipo] || "danger"}
+      role={resultado.tipo === "tecnico" ? "alert" : "status"}
       className="mb-4 dir-form-resultado"
     >
       <div className="d-flex align-items-center gap-2 mb-1 fw-semibold">
         <Icono aria-hidden="true" />
-        {TITULOS[resultado.tipo] || 'Algo salió mal'}
+        {TITULOS[resultado.tipo] || "Algo salió mal"}
       </div>
 
       {/* Correcciones de campo (validación acumulada). */}
@@ -78,25 +75,50 @@ const ResultadoDireccion = ({ resultado, resumen, onReintentar, onEditar }) => {
       {!resultado.items && resultado.mensaje && <div>{resultado.mensaje}</div>}
 
       {/* Cobertura: distancia de la sucursal activa más cercana, cuando el
-          backend la expone (preview o detalle del 422 del guardado). */}
-      {resultado.tipo === 'cobertura-sucursal' &&
+           backend la expone (preview o detalle del 422 del guardado). */}
+      {resultado.tipo === "cobertura-sucursal" &&
         distanciaMetros !== undefined &&
         distanciaMetros !== null && (
           <div className="small mt-1">
-            La sucursal activa más cercana queda a{' '}
+            La sucursal activa más cercana queda a{" "}
             {(distanciaMetros / 1000).toFixed(1)} km por ruta.
           </div>
         )}
 
+      {/* A5: sin cobertura → mapa con la sucursal MÁS CERCANA (fuera del
+          radio). El mensaje deja claro que no entrega a esta dirección. */}
+      {resultado.tipo === "cobertura-sucursal" &&
+        resultado.detalle &&
+        resultado.detalle.sucursal &&
+        resultado.detalle.sucursal.latitud &&
+        resultado.detalle.sucursal.longitud && (
+          <>
+            <div className="small mt-2">
+              Tu sucursal más cercana es{" "}
+              <strong>{resultado.detalle.sucursal.nombre}</strong>, fuera de
+              cobertura (5 km).
+            </div>
+            <MapaSucursales
+              sucursales={[resultado.detalle.sucursal]}
+              puntoCliente={
+                resultado.detalle.coordenadas &&
+                resultado.detalle.coordenadas.latitud &&
+                resultado.detalle.coordenadas.longitud
+                  ? resultado.detalle.coordenadas
+                  : null
+              }
+              alturaPx={220}
+            />
+          </>
+        )}
+
       {/* Dirección resuelta como referencia (estados de cobertura). */}
-      {resumen && (
-        <div className="small text-muted mt-1">{resumen}</div>
-      )}
+      {resumen && <div className="small text-muted mt-1">{resumen}</div>}
 
       {/* El error técnico/temporal ofrece reintentar (jamás se presenta como
           "dirección inválida"); los de datos se corrigen editando los campos
           y los de cobertura vuelven a la edición. */}
-      {resultado.tipo === 'tecnico' && onReintentar && (
+      {resultado.tipo === "tecnico" && onReintentar && (
         <Button
           variant="outline-secondary"
           size="sm"
@@ -108,7 +130,7 @@ const ResultadoDireccion = ({ resultado, resumen, onReintentar, onEditar }) => {
         </Button>
       )}
 
-      {resultado.tipo.startsWith('cobertura') && onEditar && (
+      {resultado.tipo.startsWith("cobertura") && onEditar && (
         <Button
           variant="outline-secondary"
           size="sm"

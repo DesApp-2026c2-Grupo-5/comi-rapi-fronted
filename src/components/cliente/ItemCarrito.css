@@ -1,15 +1,15 @@
 /**
  * Propósito: Estilos del ítem del carrito, alineados con el diseño de Comi-Rapi.
- * Contenido: Card redondeada con sombra suave, miniatura de imagen, control de
- *            cantidad y botón eliminar circular.
+ * Contenido: Card redondeada con sombra suave, miniatura de imagen, grupo de
+ *            botones de cantidad (B1) y subtotal.
  * Dependencias: ItemCarrito.jsx (se importa al final del mismo).
  * Uso: Importado desde src/components/cliente/ItemCarrito.jsx.
  */
 
 .item-carrito {
-  border: 2px solid var(--color-border-card);
+  border: 2px solid var(--color-border-cream, #ffe9c9);
   border-radius: 16px;
-  background-color: #fff;
+  background-color: var(--color-surface, #fff);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -22,46 +22,102 @@
 }
 
 .item-carrito-nombre {
-  color: var(--color-text);
+  color: var(--color-text, #2b2b2b);
 }
 
 .item-carrito-subtotal {
-  color: var(--color-danger);
+  color: var(--color-danger, #e63946);
   font-size: 1.05rem;
 }
 
-.cantidad-input {
-  width: 80px;
-  border-radius: 10px;
-  border: 2px solid var(--color-border-cream);
-}
-
-.cantidad-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.25);
-}
-
-.item-carrito-eliminar {
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* El desglose pasó de <div> sueltos a <ul>/<li>: el lector de pantalla anuncia
-   "lista de 4 elementos" y la cantidad deulletros extras se escucha, en vez de
+   "lista de 4 elementos" y la cantidad de extras se escucha, en vez de
    cuatro párrafos sueltos indistinguibles. */
 .item-carrito-desglose {
   font-size: 0.82rem;
-  color: #6c757d;
+  color: var(--color-text-muted, #6c757d);
   line-height: 1.5;
   margin-bottom: 0;
   padding-left: 1.1rem;
 }
 
 .item-carrito-desglose strong {
-  color: var(--color-text);
+  color: var(--color-text, #2b2b2b);
+}
+
+/* ============ Grupo de botones de cantidad (B1) ============ */
+/* Reemplaza el input numérico: solo botones. El display central es fijo
+   (no editable), los botones laterales suman/restan/eliminan. */
+
+.cantidad-grupo {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border, #dee2e6);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.cantidad-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 42px;
+  border: none;
+  background: var(--color-surface-warm, #fff4e2);
+  color: var(--color-text-warm, #8a4b00);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.cantidad-btn:hover:not(:disabled) {
+  background: var(--color-primary, #f07f10);
+  color: var(--color-surface, #fff);
+}
+
+.cantidad-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cantidad-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #f07f10);
+  outline-offset: -2px;
+}
+
+.cantidad-btn-izq {
+  border-right: 1px solid var(--color-border, #dee2e6);
+}
+
+.cantidad-btn-der {
+  border-left: 1px solid var(--color-border, #dee2e6);
+}
+
+.cantidad-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-text-strong, #212529);
+  background: var(--color-surface, #fff);
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============ Responsividad ============ */
+/* Abajo de 768px el layout pasa a 2 filas (imagen+nombre / cantidad+subtotal)
+   con xs={3}/xs={9} y xs={6}/xs={6}. La imagen se encoge para caber en la
+   columna de xs={3}. El grupo de cantidad NO necesita shrink: xs={6} da
+   ~168px y el grupo completo mide ~138px. */
+
+@media (max-width: 767.98px) {
+  .item-carrito-imagen {
+    width: 72px;
+    height: 72px;
+  }
 }

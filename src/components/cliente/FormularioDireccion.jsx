@@ -20,22 +20,28 @@
  * provincia y por partido (informativos; el backend decide al guardar).
  */
 
-import { useState, useEffect } from 'react';
-import { Form, Button, Card, Alert, ListGroup, Spinner } from 'react-bootstrap';
-import { FaMapMarkedAlt, FaSave, FaTimes } from 'react-icons/fa';
-import { PROVINCIAS } from '../../utils/territorio';
-import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
-import Autocomplete from '../comunes/Autocomplete';
-import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
-import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
-import ResultadoDireccion from '../comunes/ResultadoDireccion';
-import '../comunes/DireccionFormulario.css';
+import { useState, useEffect, useRef } from "react";
+import { Form, Button, Card, Alert, ListGroup, Spinner } from "react-bootstrap";
+import { FaMapMarkedAlt, FaSave, FaTimes } from "react-icons/fa";
+import { PROVINCIAS } from "../../utils/territorio";
+import { useDireccionTerritorial } from "../../hooks/useDireccionTerritorial";
+import Autocomplete from "../comunes/Autocomplete";
+import OpcionesDireccionAmbigua from "../comunes/OpcionesDireccionAmbigua";
+import ConfirmacionDireccion from "../comunes/ConfirmacionDireccion";
+import ResultadoDireccion from "../comunes/ResultadoDireccion";
+import "../comunes/DireccionFormulario.css";
 // Convención de dev (rediseño UI): el ancho de la tarjeta vive en CSS.
-import './FormularioDireccion.css';
+import "./FormularioDireccion.css";
 
 const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
-  const [alias, setAlias] = useState('');
-  const [referencia, setReferencia] = useState('');
+  const [alias, setAlias] = useState("");
+  const [referencia, setReferencia] = useState("");
+  // A5/fix: el resultado del "Verificar dirección" aparece ARRIBA de los
+  // campos del form. Sin auto-scroll, el usuario (que está abajo, junto al
+  // botón) no lo ve y parece que la app no respondió. Este ref se conecta
+  // al div de resultados; el useEffect (más abajo, tras crear el hook)
+  // desliza la vista suavemente hasta el resultado cuando aparece.
+  const resultadoRef = useRef(null);
 
   const confirmarGuardado = async (datosDireccion) => {
     const datos = {
@@ -49,7 +55,11 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
     }
     // 409 residual (los datos cambiaron entre el preview y el guardado):
     // se trata como ambigüedad y se vuelve al paso de selección.
-    if (resultado && Array.isArray(resultado.opciones) && resultado.opciones.length) {
+    if (
+      resultado &&
+      Array.isArray(resultado.opciones) &&
+      resultado.opciones.length
+    ) {
       direccionApi.mostrarOpcionesExternas(resultado.opciones);
       return;
     }
@@ -59,11 +69,11 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
     const esTecnico =
       resultado && (resultado.status === undefined || resultado.status >= 500);
     direccionApi.mostrarError(
-      (resultado && resultado.error) || 'No se pudo guardar la dirección.',
+      (resultado && resultado.error) || "No se pudo guardar la dirección.",
       {
-        tipo: esTecnico ? 'tecnico' : 'funcional',
+        tipo: esTecnico ? "tecnico" : "funcional",
         detalle: resultado && resultado.detalle,
-      }
+      },
     );
   };
 
@@ -73,11 +83,24 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
     validarCobertura: true,
   });
 
+  // A5/fix: cuando el "Verificar dirección" resuelve (éxito o error), el
+  // resultado se renderiza ARRIBA de los campos. Sin auto-scroll, el usuario
+  // (que está abajo, junto al botón) no lo ve. Este effect desliza la vista
+  // suavemente hasta el resultado cada vez que aparece uno nuevo.
+  useEffect(() => {
+    if (direccionApi?.resultado && resultadoRef.current) {
+      resultadoRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [direccionApi?.resultado]);
+
   // Precargan alias/referencia al entrar en modo edición (los campos
   // territoriales los maneja el hook).
   useEffect(() => {
-    setAlias(direccion?.alias || '');
-    setReferencia(direccion?.referencia || '');
+    setAlias(direccion?.alias || "");
+    setReferencia(direccion?.referencia || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [direccion?.id]);
 
@@ -93,12 +116,13 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             nivel superior). */}
         <h3 className="h5 mb-4 d-flex align-items-center gap-2">
           <FaMapMarkedAlt className="text-danger" aria-hidden="true" />
-          {direccion ? 'Editar dirección' : 'Nueva dirección'}
+          {direccion ? "Editar dirección" : "Nueva dirección"}
         </h3>
         <Form onSubmit={handleSubmit} noValidate>
           {/* Avisos informativos de zona (provincia y, en la iteración 4,
               también partido). El backend sigue decidiendo al guardar. */}
-          {(direccionApi.avisoFueraZona || direccionApi.avisoPartidoFueraZona) && (
+          {(direccionApi.avisoFueraZona ||
+            direccionApi.avisoPartidoFueraZona) && (
             <Alert
               variant="warning"
               role="alert"
@@ -110,11 +134,11 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
 
           {/* Iteración 6: región de resultados con estado unificado — el
               lector de pantalla anuncia los cambios (verificar → resultado). */}
-          <div aria-live="polite">
+          <div aria-live="polite" ref={resultadoRef}>
             <ResultadoDireccion
               resultado={direccionApi.resultado}
               resumen={
-                direccionApi.preview?.estado === 'unica'
+                direccionApi.preview?.estado === "unica"
                   ? direccionApi.preview.resultado.nomenclatura
                   : null
               }
@@ -138,10 +162,10 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
             <Autocomplete
               etiqueta={
                 direccionApi.requierePartido ? (
-                  'Partido *'
+                  "Partido *"
                 ) : (
                   <>
-                    Partido / Comuna{' '}
+                    Partido / Comuna{" "}
                     <span className="text-muted">(opcional)</span>
                   </>
                 )
@@ -256,7 +280,7 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
           </Form.Group>
 
           {/* Paso de selección de coincidencias (componente compartido). */}
-          {direccionApi.preview?.estado === 'ambigua' && (
+          {direccionApi.preview?.estado === "ambigua" && (
             <OpcionesDireccionAmbigua
               opciones={direccionApi.preview.opciones}
               opcionElegida={direccionApi.opcionElegida}
@@ -268,7 +292,7 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
           {/* Confirmación (ficha validada). Solo cuando la cobertura está
               disponible: si está bloqueada, el estado unificado de arriba
               muestra el motivo (zona o sucursal) con la distancia. */}
-          {direccionApi.preview?.estado === 'unica' &&
+          {direccionApi.preview?.estado === "unica" &&
             !direccionApi.bloqueadaPorCobertura && (
               <div className="dir-form-confirmacion">
                 <ConfirmacionDireccion

@@ -51,10 +51,13 @@
   text-decoration: none;
   padding: 0.5rem 1rem !important;
   border-radius: 50px;
-  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease;
 }
 .nav-enlace::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   bottom: 0.28rem;
@@ -157,7 +160,9 @@
   color: #5c4300;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .navbar-comirapi .nav-submenu-enlace:hover {
@@ -268,7 +273,10 @@
   font-size: 0.95rem;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 .navbar-perfil:hover,
 .navbar-perfil:focus-visible {
@@ -315,7 +323,10 @@
   background: transparent;
   font-weight: 700;
   letter-spacing: 0.4px;
-  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease,
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease,
     box-shadow 0.25s ease;
 }
 .btn-logout-comirapi:hover {
@@ -344,7 +355,10 @@
   letter-spacing: 0.4px;
   white-space: nowrap;
   text-decoration: none;
-  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease,
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease,
     box-shadow 0.25s ease;
 }
 .btn-acceso-comirapi:focus-visible,
@@ -459,4 +473,25 @@
   .btn-acceso-texto {
     display: none;
   }
+}
+/* ============ Badge de sucursal del admin (A0) ============ */
+/* Pill informativo del lado derecho: el admin siempre ve a qu� sucursal
+   pertenece. No es un enlace: contextual, como el nombre del usuario. */
+.navbar-sucursal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #fff4e2;
+  border: 1px solid #f0a10e;
+  color: #8a4b00;
+  border-radius: 2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  margin-right: 0.6rem;
+  white-space: nowrap;
+}
+
+.navbar-sucursal-ico {
+  color: #f07f10;
 }

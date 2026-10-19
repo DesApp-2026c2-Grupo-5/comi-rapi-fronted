@@ -5,23 +5,23 @@
  * Uso: Se renderiza en main.jsx como componente raíz.
  */
 
-import React from 'react';
-import { BrowserRouter, useLocation } from 'react-router-dom';
-import { NotificacionProvider } from './context/NotificacionContext';
-import { AuthProvider } from './context/AuthContext';
-import { CarritoProvider } from './context/CarritoContext';
-import { SucursalProvider } from './context/SucursalContext';
-import { PedidoProvider } from './context/PedidoContext';
-import { DireccionProvider } from './context/DireccionContext';
-import { PersonalizacionProvider } from './context/PersonalizacionContext';
-import { ParametrosProvider } from './context/ParametrosContext';
-import AppRoutes from './routes/AppRoutes';
-import Navbar from './components/comunes/Navbar';
-import NavInferior from './components/comunes/NavInferior';
-import Footer from './components/comunes/Footer';
-import BannersNotificaciones from './components/comunes/BannersNotificaciones';
-import useMuestraNavInferior from './hooks/useMuestraNavInferior';
-import { esRutaDeAdmin } from './utils/rutas';
+import { BrowserRouter, useLocation } from "react-router-dom";
+import { NotificacionProvider } from "./context/NotificacionContext";
+import { AuthProvider } from "./context/AuthContext";
+import { CarritoProvider } from "./context/CarritoContext";
+import { SucursalProvider } from "./context/SucursalContext";
+import { PedidoProvider } from "./context/PedidoContext";
+import { DireccionProvider } from "./context/DireccionContext";
+import { PersonalizacionProvider } from "./context/PersonalizacionContext";
+import { ParametrosProvider } from "./context/ParametrosContext";
+import AppRoutes from "./routes/AppRoutes";
+import Navbar from "./components/comunes/Navbar";
+import NavInferior from "./components/comunes/NavInferior";
+import BotonCarrito from "./components/comunes/BotonCarrito";
+import Footer from "./components/comunes/Footer";
+import BannersNotificaciones from "./components/comunes/BannersNotificaciones";
+import useMuestraNavInferior from "./hooks/useMuestraNavInferior";
+import { esRutaDeAdmin } from "./utils/rutas";
 
 /**
  * Shell de la aplicación (navbar, contenido, pie y barra inferior).
@@ -49,7 +49,7 @@ function AppLayout() {
   return (
     <div
       className={`d-flex flex-column min-vh-100 app-shell${
-        conNavInferior ? ' app-shell-con-nav-inferior' : ''
+        conNavInferior ? " app-shell-con-nav-inferior" : ""
       }`}
     >
       <Navbar />
@@ -57,6 +57,7 @@ function AppLayout() {
         <BannersNotificaciones />
         <AppRoutes />
       </main>
+      <BotonCarrito />
       {mostrarFooter && <Footer />}
       <NavInferior />
     </div>
