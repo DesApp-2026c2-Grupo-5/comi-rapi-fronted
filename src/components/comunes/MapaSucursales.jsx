@@ -5,6 +5,8 @@
  *            radio) o sin cobertura (la más cercana con su distancia).
  * Contenido: react-leaflet (MapContainer + TileLayer + Marker + Popup) con
  *            tiles de OpenStreetMap. Auto-centrado y auto-zoom a los markers.
+ *            Todos los markers usan L.divIcon (emoji/pin HTML) para evitar
+ *            el clásico problema de Leaflet + bundlers con los iconos PNG.
  * Dependencias: react-leaflet@4.x, leaflet@1.9.x (instaladas por A5).
  * Uso: <MapaSucursales sucursales={[{id, nombre, latitud, longitud,
  *        distanciaMetros?, destacada?}]} alturaPx={260} />
@@ -16,27 +18,23 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix del clásico problema de Leaflet + bundlers: los iconos default no se
-// resuelven porque el CSS de Leaflet referencia rutas relativas. Se registran
-// explícitamente las URLs que el bundler sí puede resolver.
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
-
-// Icono naranja para la sucursal destacada (la que atiende).
+// Todos los markers son divIcon: cero dependencia de los PNG default de
+// Leaflet (que rompen con Vite). La destacada es más grande y con filtro
+// naranja; el resto, el mismo emoji más pequeño.
 const iconoDestacada = L.divIcon({
   className: "mapa-sucursal-destacada",
-  html: '<span class="mapa-sucursal-pin">🏪</span>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 28],
-  popupAnchor: [0, -28],
+  html: '<span class="mapa-sucursal-pin mapa-sucursal-pin-grande">🏪</span>',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
+const iconoNormal = L.divIcon({
+  className: "mapa-sucursal-normal",
+  html: '<span class="mapa-sucursal-pin">📍</span>',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
 });
 
 /**
@@ -58,12 +56,6 @@ function AjustarALosMarkers({ puntos }) {
   }, [map, puntos]);
   return null;
 }
-
-const distanciaTexto = (metros) => {
-  if (metros === undefined || metros === null) return "";
-  const km = (metros / 1000).toFixed(1);
-  return ` · a ${km} km por ruta`;
-};
 
 const MapaSucursales = ({
   sucursales = [],
@@ -99,15 +91,16 @@ const MapaSucursales = ({
           <Marker
             key={s.id || s.nombre}
             position={[s.latitud, s.longitud]}
-            icon={s.id === destacadaId ? iconoDestacada : undefined}
+            icon={s.id === destacadaId ? iconoDestacada : iconoNormal}
           >
             <Popup>
               <strong>{s.nombre}</strong>
-              {s.distanciaMetros && (
-                <div className="small text-muted">
-                  {distanciaTexto(s.distanciaMetros).replace(" · ", "")}
-                </div>
-              )}
+              {s.distanciaMetros !== undefined &&
+                s.distanciaMetros !== null && (
+                  <div className="small text-muted">
+                    a {(s.distanciaMetros / 1000).toFixed(1)} km por ruta
+                  </div>
+                )}
             </Popup>
           </Marker>
         ))}

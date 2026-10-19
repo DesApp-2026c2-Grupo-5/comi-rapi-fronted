@@ -12,18 +12,26 @@
   font-family: inherit;
 }
 
-/* Pin destacado (la sucursal que atiende): un emoji sobre un punto. */
-.mapa-sucursal-destacada {
+/* Reset de los divIcon (sin fondo ni borde default de Leaflet). */
+.mapa-sucursal-destacada,
+.mapa-sucursal-normal {
   background: transparent;
   border: none;
 }
 
+/* Pin destacado (la sucursal que atiende): emoji más grande con sombra. */
 .mapa-sucursal-pin {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  font-size: 20px;
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+.mapa-sucursal-pin-grande {
+  width: 32px;
+  height: 32px;
+  font-size: 26px;
 }
