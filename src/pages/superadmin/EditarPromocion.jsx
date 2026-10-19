@@ -3,14 +3,15 @@
  * Contenido: Componente EditarPromocion con carga de datos por ID, vínculos
  *            iniciales con productos y FormularioPromocion. Al guardar sincroniza
  *            asignaciones (agrega nuevos, quita removidos).
- * Dependencias: react-bootstrap (Container, Spinner, Alert), react-router-dom,
- *               FormularioPromocion, api/promociones.js.
+ * Dependencias: react-bootstrap (Container, Alert), react-router-dom,
+ *               FormularioPromocion, api/promociones.js,
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: Ruta "/superadmin/promocion/editar/:id" o "/superadmin/promocion/nuevo" → <EditarPromocion />
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Container, Spinner, Alert } from 'react-bootstrap';
+import { Container, Alert } from 'react-bootstrap';
 import FormularioPromocion from '../../components/admin/FormularioPromocion';
 import {
   obtenerPromocionPorId,
@@ -20,6 +21,7 @@ import {
   asignarProducto,
   quitarProducto,
 } from '../../api/promociones';
+import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarPromocion = () => {
   const { id } = useParams();
@@ -94,8 +96,9 @@ const EditarPromocion = () => {
 
   if (cargando) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-5" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando promoción…</span>
+        <SkeletonTarjeta />
       </Container>
     );
   }

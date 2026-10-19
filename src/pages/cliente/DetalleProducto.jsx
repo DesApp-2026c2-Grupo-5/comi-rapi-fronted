@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Badge, Button, Spinner, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Button, Alert } from 'react-bootstrap';
 import { FaCartPlus, FaSlidersH } from 'react-icons/fa';
 import { obtenerProductoPorId, obtenerProductos } from '../../api/productos';
 import { obtenerPorProducto } from '../../api/personalizacion';
@@ -8,6 +8,7 @@ import { obtenerPromociones, obtenerProductosDePromocion } from '../../api/promo
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
 import ProductoCard from '../../components/cliente/ProductoCard';
+import { SkeletonDetalleProducto } from '../../components/comunes/Skeleton';
 import ProductoPersonalizarModal from '../../components/cliente/ProductoPersonalizarModal';
 import './DetalleProducto.css';
 
@@ -105,8 +106,9 @@ const DetalleProducto = () => {
 
   if (cargando) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" variant="danger" />
+      <Container className="py-4" role="status" aria-live="polite">
+        <span className="visually-hidden">Cargando el producto…</span>
+        <SkeletonDetalleProducto />
       </Container>
     );
   }
@@ -208,7 +210,7 @@ const DetalleProducto = () => {
           <div className="fw-bold">
             {promocion.tipo === 'DOS_POR_UNO' ? '2x1: llevás 2 y pagás 1' : `${Math.round(Number(promocion.valor))}% OFF`} <Badge bg="light" text="dark" className="badge-comi ms-1">{promocion.nombre}</Badge>
           </div>
-          <div className="text-muted small">El descuento se aplica solo. En combos no aplica: el combo ya es la promoción.</div>
+          <div className="text-muted small">Aprovechá esta increíble oferta.</div>
         </div>
       )}
 

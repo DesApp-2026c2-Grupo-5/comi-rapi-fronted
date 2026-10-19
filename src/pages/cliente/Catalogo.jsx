@@ -24,7 +24,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
+import { Container, Button, Row, Col, Alert, Form } from 'react-bootstrap';
 import { obtenerProductos } from '../../api/productos';
 import { obtenerCategorias } from '../../api/categorias';
 import {
@@ -35,6 +35,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { rutaActual } from '../../utils/rutas';
 import ProductoCard from '../../components/cliente/ProductoCard';
+import { SkeletonGrillaProductos } from '../../components/comunes/Skeleton';
 import './Catalogo.css';
 
 const Catalogo = () => {
@@ -392,11 +393,9 @@ const Catalogo = () => {
 
       {/* Grid de productos */}
       {cargando ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" aria-hidden="true" />
-          <p className="visually-hidden" role="status">
-            Cargando el catálogo…
-          </p>
+        <div role="status" aria-live="polite">
+          <p className="visually-hidden">Cargando el catálogo…</p>
+          <SkeletonGrillaProductos />
         </div>
       ) : error ? (
         <div className="text-center">
@@ -417,15 +416,38 @@ const Catalogo = () => {
           {/* Heading propio de la grilla: los títulos de producto son <h3>, así que la
               lista necesita su <h2> para no saltear un nivel. */}
           <h2 className="visually-hidden">Productos del catálogo</h2>
-          <Row className="justify-content-center">
-            {productosFiltrados.map((producto) => (
-              <Col key={producto.id} md={4} lg={3} className="mb-4">
-                <ProductoCard
-                  producto={producto}
-                  promocion={promocionesPorProducto.get(producto.id)}
-                />
-              </Col>
-            ))}
+          <Row
+            className={`justify-content-center fila-stagger fila-stagger--catalogo${
+              !idsProductosPromocion && busqueda === '' && precioMin === '' && precioMax === ''
+                ? ' fila-stagger--activa'
+                : ' fila-stagger--activa'
+            }`}
+            key={
+              promocionId
+                ? `promo-${promocionId}-count-${productosFiltrados.length}`
+                : `cat-${categoriaId ?? 'todos'}`
+            }
+          >
+            {productosFiltrados.map((producto, index) => {
+              /* Stagger decorativo: 40ms entre ítems y tope de 300ms para que
+                 la última tarjeta no espere más de lo que tarda en entrar
+                 cualquiera (receta de la skill animate). */
+              const delay = Math.min(30 + index * 40, 300);
+              return (
+                <Col
+                  key={producto.id}
+                  md={4}
+                  lg={3}
+                  className="mb-4 stagger-item"
+                  style={{ animationDelay: `${delay}ms` }}
+                >
+                  <ProductoCard
+                    producto={producto}
+                    promocion={promocionesPorProducto.get(producto.id)}
+                  />
+                </Col>
+              );
+            })}
           </Row>
 
           {productosFiltrados.length === 0 && (

@@ -7,9 +7,9 @@
 
 /* ============ Título ============ */
 .catalogo-titulo {
-  font-weight: 900;
-  letter-spacing: 3px;
-  color: #2b2b2b;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--color-text);
 }
 
 /* ============ Filtros (pills) ============ */
@@ -17,24 +17,50 @@
   border-radius: 50px;
   font-weight: 600;
   padding: 0.5rem 1.4rem;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 140ms var(--ease-out);
+  touch-action: manipulation;
 }
 
-.filtro-pill.filtro-activo {
-  background-color: #ff9f1c;
-  border-color: #ff9f1c;
-  color: #fff;
+.filtro-pill:active {
+  transform: scale(0.985);
 }
 
-.filtro-pill.filtro-inactivo {
-  background-color: #fff;
-  border: 2px solid #f1c27d;
-  color: #2b2b2b;
+.filtro-pill:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.filtro-pill.filtro-inactivo:hover {
-  background-color: #fff5e6;
-  border-color: #ff9f1c;
-  color: #2b2b2b;
+/* Lift sutil solo con puntero preciso: evita hover falso en táctil. */
+@media (hover: hover) and (pointer: fine) {
+  .filtro-pill.filtro-inactivo:hover {
+    background-color: var(--color-cream-light);
+    border-color: var(--color-primary);
+    color: var(--color-text);
+    transform: translateY(-1px);
+  }
+
+  .filtro-pill.filtro-activo:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filtro-pill {
+    transition: none;
+  }
+
+  .filtro-pill:active {
+    transform: none;
+  }
+
+  .filtro-pill.filtro-inactivo:hover,
+  .filtro-pill.filtro-activo:hover {
+    transform: none;
+  }
 }
 
 /* ============ Buscador y filtro de precio ============ */
@@ -45,12 +71,13 @@
 }
 
 .catalogo-busqueda .form-control {
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
   border-radius: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .catalogo-busqueda .form-control:focus {
-  border-color: #ff9f1c;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.25);
 }
 
@@ -65,12 +92,15 @@
   width: 100%;
 }
 
-/* ============ Aviso de categoría vacía ============ */
+/* ============ Aviso de categoría vacía / invitado ============ */
 .cat-aviso {
   background-color: #fff;
-  border: 2px dashed #f1c27d;
+  border: 2px dashed var(--color-border-cream);
   border-radius: 12px;
-  color: #7a5c2e;
+  color: var(--color-text-brown);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: alert-entra 220ms var(--ease-out) 20ms both;
 }
 
 /* Aviso para el visitante sin sesión: mismo lenguaje que el aviso de catálogo
@@ -80,5 +110,72 @@
   background-color: #fff;
   border: 2px solid #ffe0b2;
   border-radius: 12px;
-  color: #7a5c2e;
+  color: var(--color-text-brown);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: alert-entra 220ms var(--ease-out) 20ms both;
+}
+
+@keyframes alert-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-aviso,
+  .catalogo-aviso-invitado {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* ============ Stagger del grid (solo al cambiar categoría/promoción) ============ */
+/* La entrada se activa añadiendo la clase .fila-stagger--activa desde el JSX
+   al Row, con una key por grupo para que reinicie la animación. */
+.fila-stagger--catalogo .stagger-item {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fila-stagger--catalogo.fila-stagger--activa .stagger-item {
+  animation: catalogo-stagger-entra 300ms var(--ease-out) both;
+}
+
+@keyframes catalogo-stagger-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila-stagger--catalogo .stagger-item {
+    opacity: 1;
+    transform: none;
+  }
+
+  .fila-stagger--catalogo.fila-stagger--activa .stagger-item {
+    animation: none;
+  }
+}
+
+/* Aviso para el visitante sin sesión: mismo lenguaje que el aviso de catálogo
+   vacío, pero con borde continuo. Es informativo, no un error ni un paso
+   obligatorio, así que no lleva el fondo de alerta amarillo de Bootstrap. */
+.catalogo-aviso-invitado {
+  background-color: #fff;
+  border: 2px solid #ffe0b2;
+  border-radius: 12px;
+  color: var(--color-text-brown);
 }

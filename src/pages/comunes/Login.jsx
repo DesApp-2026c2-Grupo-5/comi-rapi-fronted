@@ -3,14 +3,14 @@
  * Contenido: Componente Login con formulario controlado, estilo naranja degradado
  *            (cabecera con marca, inputs con ícono y botón pill) y navegación.
  * Dependencias: react-bootstrap (Form, Button, Alert), react-router-dom, useAuth hook,
- *               react-icons/fa (FaHamburger, FaEnvelope, FaLock, FaRightToBracket), Login.css.
+ *               react-icons/fa (FaEnvelope, FaLock, FaRightToBracket), Login.css.
  * Uso: Ruta "/login" → <Login />
  */
 
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
-import { FaHamburger, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { esDestinoSeguro } from '../../utils/rutas';
 import CampoPassword from '../../components/comunes/CampoPassword';
@@ -52,10 +52,10 @@ const Login = () => {
       <div className="auth-card-comirapi">
         <div className="auth-card-header">
           <div className="auth-brand-ico">
-            <FaHamburger aria-hidden="true" />
+            <img src="/imagenes/logo-comirapi.svg" alt="" aria-hidden="true" />
           </div>
           <h1 className="h2">Iniciar Sesión</h1>
-          <p>Accede a tu cuenta de cliente</p>
+          <p>Accede a tu cuenta</p>
         </div>
 
         <div className="auth-card-body">

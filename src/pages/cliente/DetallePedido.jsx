@@ -10,7 +10,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Table, Badge, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Row, Col, Alert } from 'react-bootstrap';
 import { FaArrowLeft, FaRedo, FaClock } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
@@ -22,6 +22,7 @@ import { formatearDireccion } from '../../utils/direccion';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import HistorialStepper from '../../components/comunes/HistorialStepper';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { SkeletonTabla } from '../../components/comunes/Skeleton';
 import { mensajeConfirmarRepetir, mensajeNoRepetible } from '../../utils/avisoRepetir';
 import './DetallePedido.css';
 
@@ -57,9 +58,9 @@ const DetallePedido = () => {
   if (!pedido) {
     if (cargandoPedidos) {
       return (
-        <Container className="py-5 text-center">
-          <Spinner animation="border" variant="danger" role="status" />
-          <p className="text-muted mt-3">Cargando tu pedido…</p>
+        <Container className="py-5" role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando tu pedido…</span>
+          <SkeletonTabla filas={4} columnas={3} />
         </Container>
       );
     }
@@ -176,7 +177,7 @@ const DetallePedido = () => {
                     </tr>
                     {tieneDesglose && (
                       <tr>
-                        <td colSpan={4} className="small text-muted" style={{ background: '#fff8ef' }}>
+                        <td colSpan={4} className="small text-muted bg-crema">
                           {prod.extras?.map((ex) => (
                             <div key={ex.id}>› Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x{ex.cantidad}</div>
                           ))}

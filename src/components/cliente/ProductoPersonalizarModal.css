@@ -1,10 +1,10 @@
-.modal-personalizar-content{ border:2px solid #ffe9c9; border-radius:18px; overflow:hidden; }
+.modal-personalizar-content{ border:2px solid var(--color-border-card); border-radius:18px; overflow:hidden; }
 .personalizar-imagen{ width:220px; height:150px; object-fit:cover; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,.12); }
-.btn-cerrar{ position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:#2b2b2b; font-size:1.4rem; line-height:1; display:flex; align-items:center; justify-content:center; }
-.btn-cerrar:hover{ background:#ffe9c9; }
-.btn-seleccionar{ background:#fff4e2; border:1px solid #f1c27d; color:#b55d00; border-radius:999px; font-weight:700; font-size:.8rem; padding:.3rem 1rem; }
-.btn-seleccionar:hover{ background:#ffe6c2; color:#b55d00; border-color:#ff9f1c; }
-.btn-volver{ width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:#2b2b2b; font-size:1.3rem; }
+.btn-cerrar{ position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:var(--color-text); font-size:1.4rem; line-height:1; display:flex; align-items:center; justify-content:center; }
+.btn-cerrar:hover{ background:var(--color-border-card); }
+.btn-seleccionar{ background:var(--color-cream); border:1px solid var(--color-border-cream); color:var(--color-primary-dark); border-radius:999px; font-weight:700; font-size:.8rem; padding:.3rem 1rem; }
+.btn-seleccionar:hover{ background:var(--color-cream-hover); color:var(--color-primary-dark); border-color:var(--color-primary); }
+.btn-volver{ width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:var(--color-text); font-size:1.3rem; }
 /* Los dos botones circulares (cerrar y volver) suben a 44px: 36px queda corto
    para el dedo en móvil. El foco visible va aparte del hover porque :hover en
    escritorio no distingue mouse de teclado. */
@@ -12,19 +12,19 @@
 .btn-cerrar{ width:44px; height:44px; touch-action:manipulation; display:inline-flex; align-items:center; justify-content:center; }
 .btn-volver:focus-visible,
 .btn-cerrar:focus-visible,
-.btn-seleccionar:focus-visible{ outline:2px solid #ff9f1c; outline-offset:2px; }
+.btn-seleccionar:focus-visible{ outline:2px solid var(--color-primary); outline-offset:2px; }
 
 /* Cumplimenta al botón "volver" para que el título quede centrado. */
 .espaciador-volver{ width:44px; flex:0 0 auto; }
 .fila-grupo{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0e0c0; }
 .fila-grupo:last-child{ border-bottom:none; }
 .badge-grupo{ font-size:.75rem; color:#6c757d; }
-.card-comi-grupo{ border:2px solid #ffe9c9; border-radius:14px; background:#fff; padding:8px 14px; }
+.card-comi-grupo{ border:2px solid var(--color-border-card); border-radius:14px; background:#fff; padding:8px 14px; }
 .fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #f0e0c0; }
 .fila-opcion:last-child{ border-bottom:none; }
 .pill-control{ background:#f1f1f5; border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
 .pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
-.pill-control button:hover{ background:#ff9f1c; color:#fff; }
+.pill-control button:hover{ background:var(--color-primary); color:#fff; }
 .pill-control span{ min-width:18px; text-align:center; font-weight:700; }
 
 /* ============ Contador (Contador.jsx) ============ */
@@ -35,7 +35,7 @@
 .contador .pill-control .contador-boton{
   width:44px; height:44px;
   border-radius:50%; border:none;
-  background:#fff; color:#2b2b2b;
+  background:#fff; color:var(--color-text);
   box-shadow:0 1px 4px rgba(0,0,0,.1);
   font-weight:700; font-size:1.25rem; line-height:1;
   touch-action:manipulation;
@@ -45,11 +45,11 @@
 /* El hover no se dispara en táctil y endesktop el :hoveralone no distingue
    teclado de mouse, así que el foco visible va por aparte. */
 .contador .pill-control .contador-boton:hover:not(:disabled){
-  background:#ff9f1c; color:#fff;
+  background:var(--color-primary); color:#fff;
 }
 
 .contador .pill-control .contador-boton:focus-visible{
-  outline:2px solid #ff9f1c; outline-offset:2px;
+  outline:2px solid var(--color-primary); outline-offset:2px;
 }
 
 /* Botón deshabilitado: el límite se comunica con el estado, en vez de que el
@@ -72,7 +72,7 @@
 
 /* Diálogo simple (producto sin opciones de personalización) */
 .modal-producto-imagen{ object-fit:cover; }
-.modal-precio{ color:#e63946; }
+.modal-precio{ color:var(--color-danger); }
 
 /* Vista principal del diálogo personalizable */
 .personalizar-descripcion{ max-width:320px; }
@@ -84,7 +84,7 @@
 
 /* Botón de agregar: la burbuja con la cantidad de unidades */
 .btn-agregar-cantidad{
-  color:#ff9f1c; border-radius:50%;
+  color:var(--color-primary); border-radius:50%;
   width:22px; height:22px;
   display:inline-flex; align-items:center; justify-content:center;
   font-variant-numeric:tabular-nums;
@@ -94,4 +94,4 @@
    así que un estado "vacío" y uno "con selección" solo se distinguían por el
    tono; ahora el color es una clase y se puede revisar el contraste. */
 .badge-grupo-activo{ color:#198754; }
-.badge-grupo-ambar{ color:#b55d00; }
+.badge-grupo-ambar{ color:var(--color-primary-dark); }

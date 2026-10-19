@@ -1,0 +1,112 @@
+/**
+ * Propósito: Estilos de los placeholders de carga (skeletons) de toda la app.
+ * Contenido: Bloque base con shimmer, tarjetas armadas, tabla y página.
+ * Dependencias: tokens.css (paleta, radios, sombras, movimiento).
+ * Uso: Importado por components/comunes/Skeleton.jsx.
+ *
+ * MOTIVO: los spinners circulares no comunican qué va a aparecer; un skeleton
+ *   muestra la geometría del contenido futuro y reduce la carga percibida.
+ *   El shimmer es movimiento CONSTANTE, así que va con easing `linear`
+ *   (regla de la skill animate) y sobre `transform` (GPU), nunca sobre
+ *   propiedades de layout.
+ */
+
+/* ============ Bloque base ============ */
+.skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background-color: var(--color-cream);
+  border-radius: var(--radius-panel);
+}
+
+/* Capa de brillo que cruza el bloque. translateX es composición en GPU: la
+   pintura del gradiente ocurre una sola vez y el desplazamiento no repinta. */
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Con movimiento reducido se quita el brillo animado y los bloques quedan
+   estáticos en crema: el contenido de carga sigue siendo visible (pocos y
+   suaves, nunca nada) pero sin cíclica. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    transform: none;
+    background: none;
+  }
+}
+
+/* ============ Texto: pila de líneas ============ */
+.skeleton-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* ============ Tarjeta genérica (sucursales, paneles) ============ */
+.skeleton-card {
+  background: var(--color-white);
+  border: 2px solid var(--color-border-card);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.skeleton-card__cuerpo {
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+/* La "foto" de la tarjeta: sin radio porque toca el borde igual que la
+   imagen real de ProductoCard. */
+.skeleton-card__img {
+  border-radius: 0;
+}
+
+/* ============ Detalle de producto: imagen + ficha ============ */
+.skeleton-detalle__img {
+  height: 240px;
+  border-radius: 0;
+}
+
+@media (min-width: 768px) {
+  .skeleton-detalle__img {
+    height: 100%;
+    min-height: 340px;
+  }
+}
+
+/* ============ Tabla (pedidos y paneles admin) ============ */
+.skeleton-tabla__fila {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-border-card);
+}
+
+/* Cada celda ocupa su espacio equitativo dentro de la fila. */
+.skeleton-tabla__fila > .skeleton {
+  flex: 1 1 0;
+}
+
+/* ============ Página genérica (rutas lazy / verificación de sesión) ============ */
+.skeleton-pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}

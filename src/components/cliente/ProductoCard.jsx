@@ -107,7 +107,12 @@ const ProductoCard = ({ producto, rank, promocion }) => {
           </Button>
         </Card.Body>
       </Card>
-      <ProductoPersonalizarModal show={showModal} onHide={() => setShowModal(false)} producto={producto} />
+      <ProductoPersonalizarModal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        producto={producto}
+        promocion={promocion}
+      />
     </>
   );
 };

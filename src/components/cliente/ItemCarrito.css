@@ -7,7 +7,7 @@
  */
 
 .item-carrito {
-  border: 2px solid #ffe9c9;
+  border: 2px solid var(--color-border-card);
   border-radius: 16px;
   background-color: #fff;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
@@ -22,22 +22,22 @@
 }
 
 .item-carrito-nombre {
-  color: #2b2b2b;
+  color: var(--color-text);
 }
 
 .item-carrito-subtotal {
-  color: #e63946;
+  color: var(--color-danger);
   font-size: 1.05rem;
 }
 
 .cantidad-input {
   width: 80px;
   border-radius: 10px;
-  border: 2px solid #f1c27d;
+  border: 2px solid var(--color-border-cream);
 }
 
 .cantidad-input:focus {
-  border-color: #ff9f1c;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.25);
 }
 
@@ -63,5 +63,5 @@
 }
 
 .item-carrito-desglose strong {
-  color: #2b2b2b;
+  color: var(--color-text);
 }

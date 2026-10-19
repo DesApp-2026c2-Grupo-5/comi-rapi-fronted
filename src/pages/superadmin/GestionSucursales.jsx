@@ -2,19 +2,21 @@
  * Propósito: Página de gestión de sucursales para el superadministrador.
  * Contenido: Tabla con todas las sucursales (ID, Nombre, Dirección, Teléfono, Estado, Acciones),
  *            botón "Agregar nueva sucursal" y acciones de Editar/Eliminar con confirmación.
- * Dependencias: react-bootstrap (Container, Table, Button, Spinner), react-router-dom (useNavigate),
- *               context/SucursalContext (useSucursal).
+ * Dependencias: react-bootstrap (Container, Table, Button), react-router-dom (useNavigate),
+ *               context/SucursalContext (useSucursal),
+ *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: Ruta "/superadmin/sucursales" → <GestionSucursales />
  */
 
 import { useEffect, useState } from 'react';
-import { Container, Table, Button, Spinner, Badge } from 'react-bootstrap';
+import { Container, Table, Button, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSucursal } from '../../hooks/useSucursal';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { formatearDireccion } from '../../utils/direccion';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { SkeletonTabla } from '../../components/comunes/Skeleton';
 
 const GestionSucursales = () => {
   const navigate = useNavigate();
@@ -67,8 +69,9 @@ const GestionSucursales = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+        <div role="status" aria-live="polite">
+          <span className="visually-hidden">Cargando sucursales…</span>
+          <SkeletonTabla filas={5} columnas={3} />
         </div>
       ) : (
         <Table striped bordered hover responsive className="tabla-admin shadow-sm">

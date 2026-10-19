@@ -15,7 +15,7 @@
 
 .resumen-item {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #ffe9c9;
+  border-bottom: 1px solid var(--color-border-card);
 }
 
 .resumen-item:last-child {
@@ -53,5 +53,5 @@
 }
 
 .resumen-desglose strong {
-  color: #2b2b2b;
+  color: var(--color-text);
 }

@@ -2,7 +2,7 @@
  * Propósito: Estilos compartidos de los formularios territoriales
  *            (iteración 4): jerarquía de secciones, estados del flujo de
  *            autocompletado/confirmación y espaciados, usando la identidad
- *            visual existente de Comi-Rapi (naranja #ff9f1c, danger para
+ *            visual existente de Comi-Rapi (naranja var(--color-primary), danger para
  *            error, success para confirmación).
  * Dependencias: se importa desde FormularioDireccion.jsx y
  *               FormularioSucursal.jsx (importado después de bootstrap).

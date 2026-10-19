@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { Modal, Button } from 'react-bootstrap';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
@@ -10,7 +11,7 @@ import GrupoOpciones from './GrupoOpciones';
 import Contador from './Contador';
 import './ProductoPersonalizarModal.css';
 
-const ProductoPersonalizarModal = ({ show, onHide, producto }) => {
+const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
   const { agregarAlCarrito } = useCarrito();
   const { parametros } = useParametros();
   const { getConfigParaProducto } = usePersonalizacion();
@@ -139,6 +140,15 @@ const cambiarUnidades = (d) =>
     (config.acompanar?.length || 0) > 0 ||
     (config.condimento?.length || 0) > 0;
 
+  // El combo ya es la promoción: el backend no permite promocionar combos, así
+  // que el aviso de oferta sólo aplica a productos simples con % de descuento.
+  const esCombo =
+    producto.tipo === 'COMBO' ||
+    (Array.isArray(producto.componentes) && producto.componentes.length > 0);
+  const tieneDescuento =
+    promocion && promocion.tipo === 'DESCUENTO_PORCENTUAL' && Number(promocion.valor) > 0 && !esCombo;
+  const descuentoPorcentual = tieneDescuento ? Math.round(Number(promocion.valor)) : 0;
+
   if (!tienePersonalizacion) {
     return (
       // `Modal.Title` es lo que le da nombre accesible al diálogo (react-bootstrap
@@ -157,6 +167,11 @@ const cambiarUnidades = (d) =>
             className="rounded-4 mb-3 modal-producto-imagen"
           />
           <p className="text-muted small">{producto.descripcion}</p>
+          {tieneDescuento && (
+            <div className="small text-muted mb-2">
+              Aprovechá esta oferta: {descuentoPorcentual}% OFF sobre este producto.
+            </div>
+          )}
           <p className="fw-bold modal-precio">{formatPrice(producto.precio)}</p>
           <div className="d-flex justify-content-center align-items-center gap-2">
             <span className="fw-bold small" id="unidades-label">
@@ -227,6 +242,11 @@ const cambiarUnidades = (d) =>
             </div>
 
             <div className="mx-3 mb-3 p-2 card-comi personalize-grupos">
+              {tieneDescuento && (
+                <div className="mb-2 small text-muted">
+                  Aprovechá esta oferta: {descuentoPorcentual}% OFF sobre este producto.
+                </div>
+              )}
               <div className="fila-grupo">
                 <div>
                   <div className="fw-bold small">Extra</div>
@@ -388,3 +408,20 @@ const cambiarUnidades = (d) =>
 };
 
 export default ProductoPersonalizarModal;
+
+ProductoPersonalizarModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  onHide: PropTypes.func.isRequired,
+  producto: PropTypes.object,
+  promocion: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    nombre: PropTypes.string,
+    tipo: PropTypes.string.isRequired,
+    valor: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
+};
+
+ProductoPersonalizarModal.defaultProps = {
+  producto: null,
+  promocion: null,
+};
