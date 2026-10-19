@@ -174,7 +174,10 @@ const ListaPedidos = ({
               <HistorialStepper pedido={pedido} sinNodoCancelado />
               {esCancelado && (
                 <div className="d-flex align-items-start gap-2 mt-3 panel-crema p-2">
-                  <FaTimesCircle className="text-danger flex-shrink-0 mt-1" aria-hidden="true" />
+                  <FaTimesCircle
+                    className="text-danger flex-shrink-0 mt-1"
+                    aria-hidden="true"
+                  />
                   <span>
                     <strong className="text-danger">
                       {esCancelacionPropia

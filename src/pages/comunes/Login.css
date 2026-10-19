@@ -30,7 +30,12 @@
 
 /* ============ Cabecera naranja con marca ============ */
 .auth-card-header {
-  background: linear-gradient(90deg, var(--color-primary-deep), var(--color-primary) 55%, var(--color-primary-soft));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-deep),
+    var(--color-primary) 55%,
+    var(--color-primary-soft)
+  );
   color: #fff;
   text-align: center;
   padding: 2rem 1.5rem 1.6rem;
@@ -90,7 +95,10 @@
   border-color: #f2d4b0;
   background-color: #fffdf9;
   font-weight: 500;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease;
 }
 
 .auth-input-group .form-control:focus {
@@ -126,7 +134,11 @@
 /* ============ Botón submit pill naranja ============ */
 .btn-submit-comirapi {
   border: none;
-  background: linear-gradient(90deg, var(--color-primary-deep), var(--color-primary));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-deep),
+    var(--color-primary)
+  );
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -136,7 +148,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
 }
 
 .btn-submit-comirapi:hover {

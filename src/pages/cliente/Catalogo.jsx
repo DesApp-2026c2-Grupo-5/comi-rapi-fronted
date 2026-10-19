@@ -399,14 +399,17 @@ const Catalogo = () => {
           <h2 className="visually-hidden">Productos del catálogo</h2>
           <Row
             className={`justify-content-center fila-stagger fila-stagger--catalogo${
-              !idsProductosPromocion && busqueda === '' && precioMin === '' && precioMax === ''
-                ? ' fila-stagger--activa'
-                : ' fila-stagger--activa'
+              !idsProductosPromocion &&
+              busqueda === "" &&
+              precioMin === "" &&
+              precioMax === ""
+                ? " fila-stagger--activa"
+                : " fila-stagger--activa"
             }`}
             key={
               promocionId
                 ? `promo-${promocionId}-count-${productosFiltrados.length}`
-                : `cat-${categoriaId ?? 'todos'}`
+                : `cat-${categoriaId ?? "todos"}`
             }
           >
             {productosFiltrados.map((producto, index) => {
