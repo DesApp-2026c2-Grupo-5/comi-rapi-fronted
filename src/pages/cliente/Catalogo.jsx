@@ -25,8 +25,8 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert, Form, Spinner } from 'react-bootstrap';
-import { obtenerProductos } from '../../api/productos';
-import { obtenerCategorias } from '../../api/categorias';
+import { obtenerProductos, obtenerProductoPorId } from '../../api/productos';
+import { obtenerCategorias, obtenerCategoriaPorId } from '../../api/categorias';
 import {
   obtenerPromociones,
   obtenerPromocionPorId,
@@ -34,8 +34,10 @@ import {
 } from '../../api/promociones';
 import { useAuth } from '../../hooks/useAuth';
 import { rutaActual } from '../../utils/rutas';
+import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import './Catalogo.css';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,7 +51,7 @@ const Catalogo = () => {
   const [nombrePromocion, setNombrePromocion] = useState('');
   const [errorPromocion, setErrorPromocion] = useState('');
   const [promocionesPorProducto, setPromocionesPorProducto] = useState(new Map());
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hydrated } = useAuth();
   const location = useLocation();
 
   // Origen para los enlaces de acceso: se vuelve al catálogo con los filtros
@@ -57,50 +59,110 @@ const Catalogo = () => {
   const origen = rutaActual(location);
 
 
+  // Mapa productoId → mejor promoción activa que lo alcanza, para el badge de
+  // las tarjetas. Un producto puede estar en varias promociones: se queda con la
+  // de mayor descuento (2x1 equivale a 50%). Es un derivado del cruce
+  // promoción×productos, así que se rearma solo (sin spinner).
+  const refrescarPromocionesPorProducto = async () => {
+    const resPromociones = await obtenerPromociones();
+    if (!resPromociones.success) return;
+    const descuentoEquivalente = (promo) =>
+      promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor);
+    const productosDePromos = await Promise.all(
+      resPromociones.data.map(async (promo) => {
+        const resProd = await obtenerProductosDePromocion(promo.id);
+        return resProd.success
+          ? resProd.data.map((p) => ({ productoId: p.id, promo }))
+          : [];
+      })
+    );
+    const porProducto = new Map();
+    productosDePromos.flat().forEach(({ productoId, promo }) => {
+      const actual = porProducto.get(productoId);
+      if (!actual || descuentoEquivalente(promo) > descuentoEquivalente(actual)) {
+        porProducto.set(productoId, promo);
+      }
+    });
+    setPromocionesPorProducto(porProducto);
+  };
+
+  const cargarCatalogo = async () => {
+    setCargando(true);
+    setError('');
+    const [resProductos, resCategorias] = await Promise.all([
+      obtenerProductos(),
+      obtenerCategorias(),
+    ]);
+    if (resProductos.success) {
+      setProductos(resProductos.data);
+    } else {
+      setError(resProductos.error || 'No se pudieron cargar los productos.');
+    }
+    if (resCategorias.success) {
+      setCategorias(resCategorias.data);
+    }
+    await refrescarPromocionesPorProducto();
+    setCargando(false);
+  };
+
   useEffect(() => {
-    const cargar = async () => {
-      setCargando(true);
-      setError('');
-      const [resProductos, resCategorias, resPromociones] = await Promise.all([
-        obtenerProductos(),
-        obtenerCategorias(),
-        obtenerPromociones(),
-      ]);
-      if (resProductos.success) {
-        setProductos(resProductos.data);
-      } else {
-        setError(resProductos.error || 'No se pudieron cargar los productos.');
-      }
-      if (resCategorias.success) {
-        setCategorias(resCategorias.data);
-      }
-      // Mapa productoId → mejor promoción activa que lo alcanza, para el badge
-      // de las tarjetas. Un producto puede estar en varias promociones: se
-      // queda con la de mayor descuento (2x1 equivale a 50%).
-      if (resPromociones.success) {
-        const descuentoEquivalente = (promo) =>
-          promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor);
-        const productosDePromos = await Promise.all(
-          resPromociones.data.map(async (promo) => {
-            const resProd = await obtenerProductosDePromocion(promo.id);
-            return resProd.success
-              ? resProd.data.map((p) => ({ productoId: p.id, promo }))
-              : [];
-          })
-        );
-        const porProducto = new Map();
-        productosDePromos.flat().forEach(({ productoId, promo }) => {
-          const actual = porProducto.get(productoId);
-          if (!actual || descuentoEquivalente(promo) > descuentoEquivalente(actual)) {
-            porProducto.set(productoId, promo);
-          }
-        });
-        setPromocionesPorProducto(porProducto);
-      }
-      setCargando(false);
-    };
-    cargar();
+    cargarCatalogo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated) return undefined;
+    const instancia = conectarSocket();
+    // Si se perdió un cambio durante una desconexión, el aviso no llegó:
+    // como el socket es solo un aviso, se resincroniza por REST al reconectar.
+    // La carga inicial la hace el useEffect de arriba, por eso no se pide aquí.
+    const alConectar = () => cargarCatalogo();
+    // catalogo_actualizado sólo avisa {tipo, id, accion}: se relee esa entidad
+    // por REST y se aplica sobre la grilla/pills en memoria, sin recargar toda
+    // la página. Las promociones sí rearman el mapa de badges (es un cruce).
+    const alCat = async (payload) => {
+      if (payload?.tipo === 'producto') {
+        const id = Number(payload.id);
+        if (payload.accion === 'eliminado') {
+          setProductos((prev) => quitarPorId(prev, id));
+          return;
+        }
+        const result = await obtenerProductoPorId(id);
+        if (result.success && result.data && result.data.activo !== false) {
+          setProductos((prev) => fusionarPorId(prev, result.data));
+        } else {
+          setProductos((prev) => quitarPorId(prev, id));
+        }
+        return;
+      }
+      if (payload?.tipo === 'categoria') {
+        const id = Number(payload.id);
+        if (payload.accion === 'eliminado') {
+          setCategorias((prev) => quitarPorId(prev, id));
+          return;
+        }
+        // Para el cliente, `show` da 404 si la categoría quedó inactiva: ese
+        // 404 la saca de las pills.
+        const result = await obtenerCategoriaPorId(id);
+        if (result.success && result.data && result.data.activa !== false) {
+          setCategorias((prev) => fusionarPorId(prev, result.data));
+        } else {
+          setCategorias((prev) => quitarPorId(prev, id));
+        }
+        return;
+      }
+      if (payload?.tipo === 'promocion') {
+        await refrescarPromocionesPorProducto();
+      }
+    };
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, isAuthenticated]);
 
   // Promoción activa: viene del query param (?promocion=<id>) desde la home
   // ("Aprovechar"). Se cargan los productos alcanzados y se filtra la grilla.

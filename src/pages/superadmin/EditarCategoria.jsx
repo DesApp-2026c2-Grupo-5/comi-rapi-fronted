@@ -1,42 +1,64 @@
 /**
  * Propósito: Página para editar o crear una categoría usando Container de Bootstrap.
- * Contenido: Componente EditarCategoria con carga de datos por ID y FormularioCategoria.
+ * Contenido: Componente EditarCategoria con carga de datos por ID, recarga ante
+ *            `catalogo_actualizado` de ESTA categoría y FormularioCategoria.
  * Dependencias: react-bootstrap (Container, Spinner, Alert, Button), react-router-dom,
- *               FormularioCategoria, api/categorias.js.
+ *               FormularioCategoria, api/categorias.js, hooks/useAuth, services/socket.
  * Uso: Ruta "/superadmin/categoria/editar/:id" o "/superadmin/categoria/nuevo" → <EditarCategoria />
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Spinner, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioCategoria from '../../components/admin/FormularioCategoria';
 import { obtenerCategoriaPorId, crearCategoria, editarCategoria } from '../../api/categorias';
+import { useAuth } from '../../hooks/useAuth';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const EditarCategoria = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, hydrated } = useAuth();
   const [categoria, setCategoria] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const cargar = async () => {
-      setCargando(true);
-      setError('');
-      if (id) {
-        const result = await obtenerCategoriaPorId(id);
-        if (result.success) {
-          setCategoria(result.data);
-        } else {
-          setCategoria(null);
-          setError(result.error || 'No se pudo cargar la categoría.');
-        }
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError('');
+    if (id) {
+      const result = await obtenerCategoriaPorId(id);
+      if (result.success) {
+        setCategoria(result.data);
+      } else {
+        setCategoria(null);
+        setError(result.error || 'No se pudo cargar la categoría.');
       }
-      setCargando(false);
-    };
-    cargar();
+    }
+    setCargando(false);
   }, [id]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // Si cambia ESTA categoría (la que se está editando), se recarga para mostrar
+  // los datos vigentes. Eventos de otras entidades se ignoran a propósito:
+  // resetear el formulario por cambios ajenos perdería la edición en curso.
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    const alEvento = (payload) => {
+      if (payload?.tipo !== 'categoria') return;
+      if (Number(payload?.id) !== Number(id)) return;
+      cargar();
+    };
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
+    return () => {
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
+    };
+  }, [hydrated, user, id, cargar]);
 
   const handleGuardar = async (datosCategoria) => {
     setError('');

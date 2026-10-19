@@ -1,8 +1,8 @@
 /**
  * Propósito: Servicio de usuarios (listado de clientes del administrador y
  *            gestión de administradores del superadministrador).
- * Contenido: obtenerClientes, obtenerClientePorId, obtenerAdministradores,
- *            crearUsuarioPanel, actualizarUsuarioPanel.
+ * Contenido: obtenerClientes, obtenerClientePorId, obtenerMasComprados,
+ *            obtenerAdministradores, crearUsuarioPanel, actualizarUsuarioPanel.
  * Dependencias: client.js (apiGet, apiPost, apiPut).
  * Uso: import { obtenerClientes, crearUsuarioPanel } from '../api/usuarios';
  */
@@ -35,6 +35,24 @@ export const obtenerClientes = async (opciones = {}) => {
  */
 export const obtenerClientePorId = async (id) => {
   const result = await apiGet(`/usuarios/${id}`);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Obtiene los productos y categorías que más compró un cliente (ranking de
+ * unidades, con los pedidos cancelados fuera y el límite de filas lo decide el
+ * backend). El alcance por sucursal también lo decide el backend según el rol:
+ * el administrador sólo suma sus pedidos, el superadmin todos.
+ * @param {number|string} id - ID del usuario.
+ * @returns {Promise<{success: boolean,
+ *   data?: {productos: Array, categorias: Array, totalUnidades: number},
+ *   error?: string}>}
+ */
+export const obtenerMasComprados = async (id) => {
+  const result = await apiGet(`/usuarios/${id}/mas-comprados`);
   if (result.success) {
     return { success: true, data: result.data };
   }

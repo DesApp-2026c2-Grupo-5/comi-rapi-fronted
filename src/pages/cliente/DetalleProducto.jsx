@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Badge, Button, Spinner, Alert } from 'react-bootstrap';
 import { FaCartPlus, FaSlidersH } from 'react-icons/fa';
@@ -6,10 +6,12 @@ import { obtenerProductoPorId, obtenerProductos } from '../../api/productos';
 import { obtenerPorProducto } from '../../api/personalizacion';
 import { obtenerPromociones, obtenerProductosDePromocion } from '../../api/promociones';
 import { useCarrito } from '../../hooks/useCarrito';
+import { useAuth } from '../../hooks/useAuth';
 import { formatPrice } from '../../utils/formatters';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import ProductoPersonalizarModal from '../../components/cliente/ProductoPersonalizarModal';
 import './DetalleProducto.css';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 // Reseñas fijas (demo): Calificación es Propuesta 2, excluida por AGENTS.md.
 // Cuando exista la entidad real, reemplazar por GET de reseñas del producto.
@@ -24,6 +26,7 @@ const promedioDemo = RESENAS_DEMO.reduce((acc, r) => acc + r.estrellas, 0) / RES
 const DetalleProducto = () => {
   const { id } = useParams();
   const { agregarAlCarrito } = useCarrito();
+  const { hydrated, isAuthenticated } = useAuth();
   const [producto, setProducto] = useState(null);
   const [personalizacion, setPersonalizacion] = useState([]);
   const [relacionados, setRelacionados] = useState([]);
@@ -33,55 +36,85 @@ const DetalleProducto = () => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const cargar = async () => {
+  // `conIndicador` enciende el spinner y reinicia la cantidad: es para la carga
+  // visible (entrada a la página o cambio de producto). Un refresco silencioso
+  // (conIndicador=false) actualiza el contenido en el lugar, sin spinner ni
+  // resetear la cantidad que el cliente ya eligió.
+  const cargar = useCallback(async (conIndicador = true) => {
+    if (conIndicador) {
       setCargando(true);
       setError('');
       setCantidad(1);
-      const [resProducto, resProductos, resPromos] = await Promise.all([
-        obtenerProductoPorId(id),
-        obtenerProductos(),
-        obtenerPromociones(),
-      ]);
-      if (!resProducto.success) {
+    }
+    const [resProducto, resProductos, resPromos] = await Promise.all([
+      obtenerProductoPorId(id),
+      obtenerProductos(),
+      obtenerPromociones(),
+    ]);
+    if (!resProducto.success) {
+      // En silencio no se pisa la vista buena con un error de red transitorio.
+      if (conIndicador) {
         setError(resProducto.error || 'Producto no encontrado.');
         setCargando(false);
-        return;
       }
-      const prod = resProducto.data;
-      setProducto(prod);
-      // El show ya trae la personalización activa; solo se consulta aparte
-      // si viniera sin ella (compatibilidad).
-      if (Array.isArray(prod.personalizacion)) {
-        setPersonalizacion(prod.personalizacion);
-      } else {
-        const resPers = await obtenerPorProducto(id);
-        if (resPers.success) setPersonalizacion(resPers.data);
-      }
-      if (resProductos.success) {
-        setRelacionados(
-          resProductos.data
-            .filter((p) => p.categoriaId === prod.categoriaId && String(p.id) !== String(prod.id) && p.activo !== false)
-            .slice(0, 3)
-        );
-      }
-      // Mejor promoción activa que alcanza a este producto (misma regla que
-      // el catálogo: mayor descuento; 2x1 equivale a 50%).
-      if (resPromos.success) {
-        const equiv = (promo) => (promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor));
-        const listas = await Promise.all(
-          resPromos.data.map(async (promo) => {
-            const r = await obtenerProductosDePromocion(promo.id);
-            return r.success && r.data.some((p) => String(p.id) === String(prod.id)) ? promo : null;
-          })
-        );
-        const mejor = listas.filter(Boolean).sort((a, b) => equiv(b) - equiv(a))[0];
-        setPromocion(mejor);
-      }
-      setCargando(false);
-    };
-    cargar();
+      return;
+    }
+    const prod = resProducto.data;
+    setError('');
+    setProducto(prod);
+    // El show ya trae la personalización activa; solo se consulta aparte
+    // si viniera sin ella (compatibilidad).
+    if (Array.isArray(prod.personalizacion)) {
+      setPersonalizacion(prod.personalizacion);
+    } else {
+      const resPers = await obtenerPorProducto(id);
+      if (resPers.success) setPersonalizacion(resPers.data);
+    }
+    if (resProductos.success) {
+      setRelacionados(
+        resProductos.data
+          .filter((p) => p.categoriaId === prod.categoriaId && String(p.id) !== String(prod.id) && p.activo !== false)
+          .slice(0, 3)
+      );
+    }
+    // Mejor promoción activa que alcanza a este producto (misma regla que
+    // el catálogo: mayor descuento; 2x1 equivale a 50%).
+    if (resPromos.success) {
+      const equiv = (promo) => (promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor));
+      const listas = await Promise.all(
+        resPromos.data.map(async (promo) => {
+          const r = await obtenerProductosDePromocion(promo.id);
+          return r.success && r.data.some((p) => String(p.id) === String(prod.id)) ? promo : null;
+        })
+      );
+      const mejor = listas.filter(Boolean).sort((a, b) => equiv(b) - equiv(a))[0];
+      setPromocion(mejor);
+    }
+    if (conIndicador) setCargando(false);
   }, [id]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar y al cambiar de producto (id): si se
+    // perdió un cambio durante una desconexión, el aviso no llegó. La carga
+    // inicial la hace el useEffect de arriba, por eso no se pide aquí.
+    const alConectar = () => cargar();
+    // catalogo_actualizado sólo avisa {tipo, id, accion}: se relee el producto
+    // (y sus relacionados/promoción) en silencio, sin spinner y sin tocar la
+    // cantidad elegida.
+    const alCat = () => cargar(false);
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    };
+  }, [hydrated, isAuthenticated, cargar]);
 
   const ingredientes = useMemo(() => {
     if (!producto) return [];

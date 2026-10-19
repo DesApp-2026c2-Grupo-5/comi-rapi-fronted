@@ -15,15 +15,20 @@ import { Table, Button, Container, Spinner, Alert, Badge, Form, Row, Col } from 
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import {
   obtenerPromociones,
+  obtenerPromocionPorId,
   eliminarPromocion,
   editarPromocion,
   obtenerProductosDePromocion,
 } from '../../api/promociones';
+import { fusionarPorId } from '../../utils/catalogoRealtime';
 import { formatDate } from '../../utils/formatters';
 import ConfirmarModal from '../comunes/ConfirmarModal';
+import { useAuth } from '../../hooks/useAuth';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const ListaPromociones = ({ soloLectura = false }) => {
   const navigate = useNavigate();
+  const { user, hydrated } = useAuth();
   const [promociones, setPromociones] = useState([]);
   const [conteoProductos, setConteoProductos] = useState({});
   const [cargando, setCargando] = useState(true);
@@ -57,6 +62,44 @@ const ListaPromociones = ({ soloLectura = false }) => {
   useEffect(() => {
     cargarPromociones();
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
+    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
+    // arriba, por eso no se pide aquí.
+    const alConectar = () => cargarPromociones();
+    // catalogo_actualizado avisa qué promoción cambió (incluido asignar/quitar
+    // un producto, que emite `actualizado`): se relee la promoción y su conteo
+    // de productos, sin recargar la tabla.
+    const alCat = async (payload) => {
+      if (payload?.tipo !== 'promocion') return;
+      const id = Number(payload.id);
+      if (payload.accion === 'eliminado') {
+        setPromociones((prev) =>
+          prev.map((promocion) =>
+            Number(promocion.id) === id ? { ...promocion, activa: false } : promocion
+          )
+        );
+        return;
+      }
+      const result = await obtenerPromocionPorId(id);
+      if (result.success && result.data) {
+        setPromociones((prev) => fusionarPorId(prev, result.data));
+        const res = await obtenerProductosDePromocion(id);
+        if (res.success) {
+          setConteoProductos((prev) => ({ ...prev, [id]: res.data.length }));
+        }
+      }
+    };
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    };
+  }, [hydrated, user]);
 
   const handleEditar = (id) => {
     navigate(`/superadmin/promocion/editar/${id}`);

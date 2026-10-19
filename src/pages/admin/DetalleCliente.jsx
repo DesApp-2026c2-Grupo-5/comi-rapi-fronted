@@ -1,8 +1,9 @@
 /**
  * Propósito: Detalle de un cliente (solo lectura) para el admin y, con
  *            `backRoute="/superadmin/clientes"`, para el SUPERADMINISTRADOR.
- * Contenido: Componente DetalleCliente con datos, direcciones (cada una con
- *            su sucursal asignada por cercanía) y últimos pedidos.
+ * Contenido: Componente DetalleCliente con datos, direcciones, últimos pedidos
+ *            y el ranking de productos y categorías más comprados (barras en
+ *            CSS).
  * Dependencias: react-bootstrap, react-router-dom, api/usuarios.js,
  *               api/direcciones.js, api/pedidos.js, formatters, react-icons.
  * Uso: Ruta "/admin/clientes/:id" → <DetalleCliente />
@@ -13,8 +14,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Container, Card, Spinner, Alert, Badge, Table, Row, Col } from 'react-bootstrap';
-import { FaStore, FaLocationDot } from 'react-icons/fa6';
-import { obtenerClientePorId } from '../../api/usuarios';
+import { FaLocationDot, FaChartLine } from 'react-icons/fa6';
+import { obtenerClientePorId, obtenerMasComprados } from '../../api/usuarios';
 import { obtenerDireccionesDeCliente } from '../../api/direcciones';
 import { obtenerPedidos } from '../../api/pedidos';
 import { formatDate, formatPrice } from '../../utils/formatters';
@@ -31,11 +32,56 @@ const textoDireccion = (d) =>
     .filter(Boolean)
     .join(' ') || '—';
 
+/**
+ * Barra horizontal en CSS puro (sin librería de gráficos). La barra es el
+ * relleno dentro de una pista que ocupa todo el ancho que sobra, así el ancho
+ * en % siempre es proporcional a `unidades / maximo`.
+ */
+const BarraRanking = ({ etiqueta, subetiqueta = '', unidades, maximo }) => (
+  <div className="d-flex align-items-center gap-2 mb-1">
+    <div style={{ width: '9rem' }}>
+      <div className="small text-truncate" title={etiqueta}>{etiqueta}</div>
+      {subetiqueta ? (
+        <div className="text-muted text-truncate" style={{ fontSize: '0.7rem' }}>
+          {subetiqueta}
+        </div>
+      ) : null}
+    </div>
+    <div
+      className="flex-grow-1 rounded"
+      style={{ backgroundColor: '#fff4e2', height: '1rem' }}
+    >
+      <div
+        className="rounded"
+        style={{
+          backgroundColor: '#f1c27d',
+          height: '100%',
+          minWidth: '0.5rem',
+          width: `${Math.round((unidades / maximo) * 100)}%`,
+        }}
+        role="img"
+        aria-label={`${unidades} unidades de ${etiqueta}`}
+      />
+    </div>
+    <span className="small fw-semibold text-nowrap" style={{ width: '4rem', textAlign: 'right' }}>
+      {unidades}
+    </span>
+  </div>
+);
+
+BarraRanking.propTypes = {
+  etiqueta: PropTypes.string.isRequired,
+  subetiqueta: PropTypes.string,
+  unidades: PropTypes.number.isRequired,
+  maximo: PropTypes.number.isRequired,
+};
+
 const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
   const { id } = useParams();
   const [cliente, setCliente] = useState(null);
   const [direcciones, setDirecciones] = useState([]);
   const [ultimos, setUltimos] = useState([]);
+  const [masComprados, setMasComprados] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -43,11 +89,13 @@ const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
     const cargar = async () => {
       setCargando(true);
       setError('');
-      const [resCliente, resDirecciones, resPedidos] = await Promise.all([
-        obtenerClientePorId(id),
-        obtenerDireccionesDeCliente(id),
-        obtenerPedidos(),
-      ]);
+      const [resCliente, resDirecciones, resPedidos, resMasComprados] =
+        await Promise.all([
+          obtenerClientePorId(id),
+          obtenerDireccionesDeCliente(id),
+          obtenerPedidos(),
+          obtenerMasComprados(id),
+        ]);
       if (!resCliente.success) {
         setError(resCliente.error || 'No se pudo cargar el cliente.');
         setCargando(false);
@@ -55,6 +103,11 @@ const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
       }
       setCliente(resCliente.data);
       setDirecciones(resDirecciones.success ? resDirecciones.data : []);
+      // Si el ranking falla se omite la sección entera en vez de confundir un
+      // error de red con "no compró nada": el resto del detalle sigue servido.
+      if (resMasComprados.success) {
+        setMasComprados(resMasComprados.data);
+      }
       if (resPedidos.success) {
         const propios = (resPedidos.data || [])
           .filter((p) => String(p.usuarioId) === String(id))
@@ -152,18 +205,6 @@ const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
                 direcciones.map((d) => (
                   <div key={d.id} className="border rounded p-2 mb-2 small">
                     <FaLocationDot className="me-1" /> {textoDireccion(d)}
-                    <br />
-                    <span className="ms-3">
-                      <FaStore className="me-1 text-muted" />
-                      {d.cobertura?.sucursal ? (
-                        <>
-                          <strong>{d.cobertura.sucursal.nombre}</strong>{' '}
-                          <Badge bg="secondary" pill>a menos de 5 km</Badge>
-                        </>
-                      ) : (
-                        <span className="text-danger">Sin cobertura (a más de 5 km).</span>
-                      )}
-                    </span>
                   </div>
                 ))
               )}
@@ -202,6 +243,54 @@ const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
           </Card>
         </Col>
       </Row>
+
+      {masComprados && (
+        <Card className="shadow-sm mt-3">
+          <Card.Body>
+            <h2 className="h6 fw-bold mb-1">
+              <FaChartLine className="me-1" /> Lo que más pide
+            </h2>
+            <div className="text-muted small mb-3">
+              {masComprados.totalUnidades === 0
+                ? 'Unidades pedidas'
+                : `Unidades pedidas · ${masComprados.totalUnidades} en total`}
+            </div>
+            {masComprados.totalUnidades === 0 ? (
+              <span className="text-muted small">Todavía no compró.</span>
+            ) : (
+              <Row>
+                <Col md={6} className="mb-2">
+                  <div className="text-uppercase text-muted small fw-bold mb-2">
+                    Productos
+                  </div>
+                  {masComprados.productos.map((p) => (
+                    <BarraRanking
+                      key={`producto-${p.productoId}`}
+                      etiqueta={p.nombre}
+                      subetiqueta={p.categoria}
+                      unidades={p.unidades}
+                      maximo={masComprados.productos[0].unidades}
+                    />
+                  ))}
+                </Col>
+                <Col md={6} className="mb-2">
+                  <div className="text-uppercase text-muted small fw-bold mb-2">
+                    Categorías
+                  </div>
+                  {masComprados.categorias.map((c) => (
+                    <BarraRanking
+                      key={`categoria-${c.categoriaId ?? 'sin'}`}
+                      etiqueta={c.nombre}
+                      unidades={c.unidades}
+                      maximo={masComprados.categorias[0].unidades}
+                    />
+                  ))}
+                </Col>
+              </Row>
+            )}
+          </Card.Body>
+        </Card>
+      )}
     </Container>
   );
 };

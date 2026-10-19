@@ -23,6 +23,8 @@ import {
   useEffect,
 } from 'react';
 import { obtenerParametros, actualizarParametros } from '../api/parametros';
+import { conectarSocket, desconectarSocket, EVENTOS_SOCKET } from '../services/socket';
+import { useAuth } from '../hooks/useAuth';
 
 export const ParametrosContext = createContext(null);
 
@@ -64,6 +66,7 @@ export const ParametrosProvider = ({ children }) => {
   const [lista, setLista] = useState([]);
   const [parametros, setParametros] = useState(PARAMETROS_POR_DEFECTO);
   const [loading, setLoading] = useState(false);
+  const { user, hydrated } = useAuth();
 
   /**
    * Recarga el catálogo desde el backend. Si falla, conserva los valores que ya
@@ -104,6 +107,30 @@ export const ParametrosProvider = ({ children }) => {
   useEffect(() => {
     recargar();
   }, [recargar]);
+
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
+    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
+    // arriba, por eso no se pide aquí.
+    const alConectar = () => {
+      recargar();
+    };
+    const alParam = () => {
+      recargar();
+    };
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.PARAMETROS_ACTUALIZADOS, alParam);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.PARAMETROS_ACTUALIZADOS, alParam);
+    };
+  }, [hydrated, user, recargar]);
+
+  useEffect(() => {
+    if (hydrated && !user) desconectarSocket();
+  }, [hydrated, user]);
 
   const value = useMemo(
     () => ({ parametros, lista, loading, recargar, actualizar }),

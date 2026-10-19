@@ -1,11 +1,10 @@
 /**
  * Propósito: Componente principal de la aplicación que configura Router y Contextos.
- * Contenido: Función App que envuelve la app con NotificacionProvider, ParametrosProvider, AuthProvider, CarritoProvider, SucursalProvider y BrowserRouter.
+ * Contenido: Función App que envuelve la app con NotificacionProvider, AuthProvider, ParametrosProvider, CarritoProvider, SucursalProvider y BrowserRouter.
  * Dependencias: react-router-dom, context/AuthContext, context/CarritoContext, context/SucursalContext, context/ParametrosContext, routes/AppRoutes, Navbar, NavInferior, Footer.
  * Uso: Se renderiza en main.jsx como componente raíz.
  */
 
-import React from 'react';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { NotificacionProvider } from './context/NotificacionContext';
 import { AuthProvider } from './context/AuthContext';
@@ -70,8 +69,10 @@ function App() {
   return (
     <BrowserRouter>
       <NotificacionProvider>
-        <ParametrosProvider>
-          <AuthProvider>
+        {/* ParametrosProvider va DESPUÉS de AuthProvider: usa useAuth para
+            recargar parámetros vía WebSocket solo con sesión vigente. */}
+        <AuthProvider>
+          <ParametrosProvider>
             <CarritoProvider>
               <SucursalProvider>
                 <PedidoProvider>
@@ -83,8 +84,8 @@ function App() {
                 </PedidoProvider>
               </SucursalProvider>
             </CarritoProvider>
-          </AuthProvider>
-        </ParametrosProvider>
+          </ParametrosProvider>
+        </AuthProvider>
       </NotificacionProvider>
     </BrowserRouter>
   );

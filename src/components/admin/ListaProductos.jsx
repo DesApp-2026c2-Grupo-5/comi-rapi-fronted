@@ -15,17 +15,19 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Container, Spinner, Alert, Form } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
-import { obtenerProductos, eliminarProducto } from '../../api/productos';
+import { obtenerProductos, obtenerProductoPorId, eliminarProducto } from '../../api/productos';
 import { obtenerStock, actualizarStock, crearStock } from '../../api/stock';
 import { useAuth } from '../../hooks/useAuth';
 import { formatPrice } from '../../utils/formatters';
+import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import ConfirmarModal from '../comunes/ConfirmarModal';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const ListaProductos = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const { notificar } = useNotificaciones();
-  const { user } = useAuth();
+  const { user, hydrated } = useAuth();
   const [productos, setProductos] = useState([]);
   // [soloLectura] Disponibilidad por sucursal: productoId → { disponible, sucursalId }
   const [stock, setStock] = useState({});
@@ -43,16 +45,22 @@ const ListaProductos = ({ soloLectura = false }) => {
     return productos.filter((p) => p.tipo !== 'COMBO');
   }, [productos, filtro]);
 
-  const cargarProductos = async () => {
-    setCargando(true);
-    setError('');
+  // `silencioso` refresca la lista sin encender el spinner: se usa para cambios
+  // del catálogo que afectan a muchas filas a la vez (p. ej. el nombre de una
+  // categoría, que aparece en cada producto).
+  const cargarProductos = async ({ silencioso = false } = {}) => {
+    if (!silencioso) {
+      setCargando(true);
+      setError('');
+    }
     const result = await obtenerProductos();
     if (result.success) {
       setProductos(result.data);
-    } else {
+      setError('');
+    } else if (!silencioso) {
       setError(result.error || 'No se pudieron cargar los productos.');
     }
-    setCargando(false);
+    if (!silencioso) setCargando(false);
   };
 
   // En modo solo lectura al admin también le hace falta la disponibilidad de cada
@@ -76,8 +84,65 @@ const ListaProductos = ({ soloLectura = false }) => {
   useEffect(() => {
     cargarProductos();
     if (soloLectura) cargarStock();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [soloLectura]);
+
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
+    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
+    // arriba, por eso no se pide aquí.
+    const alConectar = () => {
+      cargarProductos();
+      if (soloLectura) cargarStock();
+    };
+    // catalogo_actualizado avisa qué entidad cambió (sin datos): se relee sólo
+    // esa fila y se fusiona, sin recargar toda la tabla. Si la baja lógica la
+    // deja inactiva, sale del listado (el backend sólo devuelve activos).
+    const alCat = async (payload) => {
+      if (payload?.tipo === 'categoria') {
+        // La tabla muestra `producto.categoria`: ante un alta/edición/baja de
+        // categoría se refresca en silencio para que los nombres no queden
+        // viejos, sin spinner ni remontaje.
+        await cargarProductos({ silencioso: true });
+        return;
+      }
+      if (payload?.tipo !== 'producto') return;
+      const id = Number(payload.id);
+      if (payload.accion === 'eliminado') {
+        setProductos((prev) => quitarPorId(prev, id));
+        if (soloLectura) {
+          setStock((prev) => {
+            const copia = { ...prev };
+            delete copia[id];
+            return copia;
+          });
+        }
+        return;
+      }
+      const result = await obtenerProductoPorId(id);
+      if (result.success && result.data && result.data.activo !== false) {
+        setProductos((prev) => fusionarPorId(prev, result.data));
+      } else {
+        setProductos((prev) => quitarPorId(prev, id));
+      }
+    };
+    // stock_actualizado solo va a la room de la sucursal afectada; el filtro
+    // por sucursalId es defensa por si el backend emitiera a más de una room.
+    const alStock = (payload) => {
+      if (!soloLectura) return;
+      if (Number(payload?.sucursalId) !== Number(user.sucursalId)) return;
+      cargarStock();
+    };
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+      instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
+    };
+  }, [hydrated, user, soloLectura]);
 
   const handleEditar = (id) => {
     navigate(`/superadmin/producto/editar/${id}`);

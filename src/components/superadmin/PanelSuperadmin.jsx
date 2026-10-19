@@ -20,12 +20,14 @@ import {
   Spinner,
   Badge,
 } from 'react-bootstrap';
-import { FaChartBar, FaStore, FaBoxOpen, FaClipboardCheck } from 'react-icons/fa';
+import { FaChartBar, FaStore, FaClipboardCheck } from 'react-icons/fa';
 import { obtenerResumen } from '../../api/superadmin';
 import {
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
 } from '../../utils/constants';
+import { useAuth } from '../../hooks/useAuth';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const formatearPesos = (valor) =>
   `$${Number(valor || 0).toLocaleString('es-AR')}`;
@@ -34,21 +36,39 @@ const PanelSuperadmin = () => {
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const { user, hydrated } = useAuth();
+
+  const cargar = async () => {
+    setCargando(true);
+    setError('');
+    const result = await obtenerResumen();
+    if (result.success) {
+      setResumen(result.data);
+    } else {
+      setError(result.error || 'No se pudieron cargar las métricas.');
+    }
+    setCargando(false);
+  };
 
   useEffect(() => {
-    const cargar = async () => {
-      setCargando(true);
-      setError('');
-      const result = await obtenerResumen();
-      if (result.success) {
-        setResumen(result.data);
-      } else {
-        setError(result.error || 'No se pudieron cargar las métricas.');
-      }
-      setCargando(false);
-    };
     cargar();
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
+    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
+    // arriba, por eso no se pide aquí.
+    const alConectar = () => cargar();
+    const alPedido = () => cargar();
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alPedido);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alPedido);
+    };
+  }, [hydrated, user]);
 
   if (cargando) {
     return (
@@ -67,7 +87,6 @@ const PanelSuperadmin = () => {
   const tarjetas = [
     { titulo: 'Pedidos totales', valor: pedidos.total, icono: FaClipboardCheck, variante: 'primary' },
     { titulo: 'Pedidos vendidos', valor: pedidos.vendidos, icono: FaChartBar, variante: 'success' },
-    { titulo: 'Pendientes', valor: pedidos.pendientes, icono: FaBoxOpen, variante: 'warning' },
     { titulo: 'Ingresos', valor: formatearPesos(pedidos.ingresos), icono: FaChartBar, variante: 'success' },
   ];
 

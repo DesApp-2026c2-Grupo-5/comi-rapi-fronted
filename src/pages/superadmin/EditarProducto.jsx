@@ -1,22 +1,26 @@
 /**
  * Propósito: Página para editar o crear un producto usando Container de Bootstrap.
- * Contenido: Componente EditarProducto con carga de datos por ID y FormularioProducto.
+ * Contenido: Componente EditarProducto con carga de datos por ID, recarga ante
+ *            `catalogo_actualizado` de ESTE producto y FormularioProducto.
  * Dependencias: react-bootstrap (Container, Spinner, Alert, Button), react-router-dom,
- *               FormularioProducto, api/productos.js.
+ *               FormularioProducto, api/productos.js, hooks/useAuth, services/socket.
  * Uso: Ruta "/superadmin/producto/editar/:id" o "/superadmin/producto/nuevo" → <EditarProducto />
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Spinner, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
 import { obtenerProductoPorId, crearProducto, editarProducto } from '../../api/productos';
+import { useAuth } from '../../hooks/useAuth';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const EditarProducto = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, hydrated } = useAuth();
   const [producto, setProducto] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -25,23 +29,41 @@ const EditarProducto = () => {
   // admin el campo "tipo" para elegir entre producto y combo.
   const forzarTipo = location.pathname.includes('nuevo-combo') ? 'COMBO' : null;
 
-  useEffect(() => {
-    const cargar = async () => {
-      setCargando(true);
-      setError('');
-      if (id) {
-        const result = await obtenerProductoPorId(id);
-        if (result.success) {
-          setProducto(result.data);
-        } else {
-          setProducto(null);
-          setError(result.error || 'No se pudo cargar el producto.');
-        }
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError('');
+    if (id) {
+      const result = await obtenerProductoPorId(id);
+      if (result.success) {
+        setProducto(result.data);
+      } else {
+        setProducto(null);
+        setError(result.error || 'No se pudo cargar el producto.');
       }
-      setCargando(false);
-    };
-    cargar();
+    }
+    setCargando(false);
   }, [id]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // Si cambia ESTE producto (el que se está editando), se recarga para mostrar
+  // los datos vigentes. Eventos de otras entidades se ignoran a propósito:
+  // resetear el formulario por cambios ajenos perdería la edición en curso.
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    const alEvento = (payload) => {
+      if (payload?.tipo !== 'producto') return;
+      if (Number(payload?.id) !== Number(id)) return;
+      cargar();
+    };
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
+    return () => {
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
+    };
+  }, [hydrated, user, id, cargar]);
 
   const handleGuardar = async (datosProducto) => {
     setError('');

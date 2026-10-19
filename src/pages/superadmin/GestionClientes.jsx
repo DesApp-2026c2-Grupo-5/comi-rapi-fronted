@@ -1,6 +1,7 @@
 /**
- * Propósito: Página de clientes del SUPERADMINISTRADOR: todos los usuarios
- *            registrados (clientes, administradores y superadmin).
+ * Propósito: Página de clientes del SUPERADMINISTRADOR: todos los clientes
+ *            registrados (rol CLIENTE), incluso los que todavía no compraron
+ *            ni tienen pedidos en ninguna sucursal.
  * Contenido: Reutiliza ListaClientes con la prop `todos`.
  * Dependencias: react-bootstrap (Container), ListaClientes.
  * Uso: Ruta "/superadmin/clientes" → <GestionClientesSuperadmin />

@@ -13,11 +13,15 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Container, Spinner, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
-import { obtenerCategorias, eliminarCategoria, editarCategoria } from '../../api/categorias';
+import { obtenerCategorias, obtenerCategoriaPorId, eliminarCategoria, editarCategoria } from '../../api/categorias';
+import { fusionarPorId } from '../../utils/catalogoRealtime';
 import ConfirmarModal from '../comunes/ConfirmarModal';
+import { useAuth } from '../../hooks/useAuth';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const ListaCategorias = ({ soloLectura = false }) => {
   const navigate = useNavigate();
+  const { user, hydrated } = useAuth();
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -41,6 +45,40 @@ const ListaCategorias = ({ soloLectura = false }) => {
   useEffect(() => {
     cargarCategorias();
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
+    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
+    // arriba, por eso no se pide aquí.
+    const alConectar = () => cargarCategorias();
+    // catalogo_actualizado trae {tipo, id, accion}. Sólo interesan las
+    // categorías: se relee esa y se fusiona sin recargar la tabla. La baja es
+    // lógica, así que la fila se queda marcada como inactiva.
+    const alCat = async (payload) => {
+      if (payload?.tipo !== 'categoria') return;
+      const id = Number(payload.id);
+      if (payload.accion === 'eliminado') {
+        setCategorias((prev) =>
+          prev.map((categoria) =>
+            Number(categoria.id) === id ? { ...categoria, activa: false } : categoria
+          )
+        );
+        return;
+      }
+      const result = await obtenerCategoriaPorId(id);
+      if (result.success && result.data) {
+        setCategorias((prev) => fusionarPorId(prev, result.data));
+      }
+    };
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
+    };
+  }, [hydrated, user]);
 
   const handleEditar = (id) => {
     navigate(`/superadmin/categoria/editar/${id}`);

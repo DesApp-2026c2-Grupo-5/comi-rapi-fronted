@@ -40,7 +40,7 @@ export const PedidoProvider = ({ children }) => {
   const [cargandoPedidos, setCargandoPedidos] = useState(false);
   // Se incrementa al confirmar un pago: el Navbar lo usa para animar "Mis Pedidos"
   const [senalPedido, setSenalPedido] = useState(0);
-  const { user, hydrated, isAdmin } = useAuth();
+  const { user, hydrated, isAdmin, isCliente, isSuperadmin } = useAuth();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
   const emailSesion = user?.email;
@@ -85,6 +85,11 @@ export const PedidoProvider = ({ children }) => {
 
   const detectarCambios = useCallback(
     (lista) => {
+      // El superadministrador recibe `pedido_actualizado` de todo el sistema
+      // (está en la room `admins`), pero no opera una sucursal ni es dueño de un
+      // pedido: no se le avisa de transiciones ajenas. Su panel refresca las
+      // métricas con su propio listener, sin mensajes.
+      if (isSuperadmin) return;
       const previos = estadosPreviosRef.current;
       const snapshot = {};
       (lista || []).forEach((pedido) => {
@@ -155,7 +160,7 @@ export const PedidoProvider = ({ children }) => {
       });
       estadosPreviosRef.current = snapshot;
     },
-    [notificar, user, isAdmin, navigate]
+    [notificar, user, isAdmin, isSuperadmin, navigate]
   );
 
   // Las rooms viven en el servidor, así que hay que volver a suscribirse
@@ -192,8 +197,10 @@ export const PedidoProvider = ({ children }) => {
   }, [filtrarPorRol, detectarCambios]);
 
   // Avisos en tiempo real: reemplaza al refresco periódico de 3 s.
-  //   - admin:   recibe pedido_actualizado de su sucursal, sin suscribirse.
-  //   - cliente: recibe pedido_actualizado de los pedidos a los que se suscribió.
+  //   - admin:      recibe pedido_actualizado de su sucursal, sin suscribirse.
+  //   - cliente:    recibe pedido_actualizado de los pedidos a los que se suscribió.
+  //   - superadmin: queda en la room `admins` para que PanelSuperadmin refresque
+  //                 métricas con su propio listener; acá no genera avisos.
   // No hay aviso al crear un pedido: el admin solo lo necesita cuando se
   // confirma, y el cliente ya tiene la respuesta de su propio POST.
   // El evento solo trae el pedidoId: los datos se releen por REST.
@@ -207,7 +214,10 @@ export const PedidoProvider = ({ children }) => {
     // El admin no necesita rooms individuales: el backend lo ingresa solo a
     // `sucursal:{id}` (y a `admins` si es SUPERADMINISTRADOR) al conectar.
     const alConectar = () => {
-      if (!isAdmin) ids.forEach((id) => { suscribirPedido(id); });
+      // Solo el cliente se suscribe a las rooms de sus propios pedidos: el admin
+      // entra a `sucursal:{id}` y el superadmin a `admins` desde el backend al
+      // conectar, así que suscribirlos acá sería redundante.
+      if (isCliente) ids.forEach((id) => { suscribirPedido(id); });
       // Si se perdió un cambio mientras no había conexión, el aviso no llegó.
       // Como el socket es solo un aviso, se resincroniza por REST.
       refrescarPedidos();
@@ -222,7 +232,7 @@ export const PedidoProvider = ({ children }) => {
       instancia.off('connect', alConectar);
       instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alCambiarPedido);
     };
-  }, [hydrated, emailSesion, idsPedidos, isAdmin, refrescarPedidos]);
+  }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos]);
 
   // Al cerrar sesión se cierra el canal: con otra cookie, el backend rechazaría
   // el handshake de todas formas, y dejarlo abierto sería una conexión muerta.
@@ -333,8 +343,9 @@ export const PedidoProvider = ({ children }) => {
       confirmarPedido,
       cambiarEstado,
       obtenerPedidosPendientes,
+      refrescarPedidos,
     }),
-    [pedidos, pedidoActual, cargandoPedidos, senalPedido, crearPedido, confirmarPedido, cambiarEstado, obtenerPedidosPendientes]
+    [pedidos, pedidoActual, cargandoPedidos, senalPedido, crearPedido, confirmarPedido, cambiarEstado, obtenerPedidosPendientes, refrescarPedidos]
   );
 
   return <PedidoContext.Provider value={value}>{children}</PedidoContext.Provider>;

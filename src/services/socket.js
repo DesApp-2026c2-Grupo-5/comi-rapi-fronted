@@ -18,10 +18,18 @@
  * `suscribirPedido`. El backend verifica la autorización: pedir la room de un
  * pedido ajeno falla.
  *
- * Solo hay un evento de servidor, `pedido_actualizado`. No existe aviso al
- * crear un pedido: todo pedido nace `pendiente` y el panel de administración no
- * muestra los pendientes, así que el admin se entera recién al confirmarse el
- * pago. Para el cliente, su propio POST ya le devolvió el pedido.
+ * Eventos de servidor (espejo de lib/realtime/eventos.js):
+ *   - pedido_actualizado: un pedido cambió de estado/reasignación. El evento
+ *     solo trae el pedidoId; los datos se leen por REST.
+ *   - catalogo_actualizado: un producto/categoría/promoción fue creado,
+ *     editado o eliminado (broadcast a todos los conectados).
+ *   - parametros_actualizados: un parámetro del sistema cambió (broadcast).
+ *   - stock_actualizado: cambió el stock de una sucursal. Solo se emite a la
+ *     room de esa sucursal, así que llega únicamente a su administrador.
+ * No existe aviso al crear un pedido: todo pedido nace `pendiente` y el panel
+ * de administración no muestra los pendientes, así que el admin se entera
+ * recién al confirmarse el pago. Para el cliente, su propio POST ya le devolvió
+ * el pedido.
  */
 
 import { io } from 'socket.io-client';
@@ -38,6 +46,9 @@ export const EVENTOS_SOCKET = {
   SUSCRIBIR_PEDIDO: 'suscribir_pedido',
   DESUSCRIBIR_PEDIDO: 'desuscribir_pedido',
   PEDIDO_ACTUALIZADO: 'pedido_actualizado',
+  CATALOGO_ACTUALIZADO: 'catalogo_actualizado',
+  PARAMETROS_ACTUALIZADOS: 'parametros_actualizados',
+  STOCK_ACTUALIZADO: 'stock_actualizado',
 };
 
 /**

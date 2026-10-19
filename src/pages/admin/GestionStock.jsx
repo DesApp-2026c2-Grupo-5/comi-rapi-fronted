@@ -27,16 +27,18 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import {
   obtenerStock,
+  obtenerStockDeProducto,
   crearStock,
   actualizarStock,
   eliminarStock,
 } from '../../api/stock';
 import { obtenerProductos } from '../../api/productos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const GestionStock = () => {
   const { notificar } = useNotificaciones();
-  const { user } = useAuth();
+  const { user, hydrated } = useAuth();
   // La sucursal del admin: única y fija. El backend además acota el stock a
   // ella, así que no hay nada que elegir en la pantalla.
   const sucursalId = user?.sucursalId ? String(user.sucursalId) : '';
@@ -77,6 +79,56 @@ const GestionStock = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productoId]);
 
+  useEffect(() => {
+    if (!hydrated || !user) return undefined;
+    const instancia = conectarSocket();
+    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
+    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
+    // arriba, por eso no se pide aquí.
+    const alConectar = () => cargar();
+    // Una compra avisa qué filas de esta sucursal cambiaron. Se releen sólo esas
+    // filas y se fusionan en la tabla, en vez de refrescar todo: el admin ve el
+    // número cambiar sin que la pantalla recargue. El evento sólo va a la room de
+    // la sucursal afectada; el filtro por sucursalId es defensa por si el backend
+    // emitiera a más de una room.
+    const alStock = async (payload) => {
+      if (Number(payload?.sucursalId) !== Number(user.sucursalId)) return;
+      if (!Array.isArray(payload?.productoIds)) {
+        await cargar();
+        return;
+      }
+      // Con un filtro activo la tabla sólo muestra ese producto: si el cambio no
+      // es suyo, no hay nada visible que actualizar.
+      const ids = payload.productoIds
+        .map(Number)
+        .filter((id) => id && (!productoId || String(id) === String(productoId)));
+      if (ids.length === 0) return;
+      const resultados = await Promise.all(
+        ids.map((id) => obtenerStockDeProducto(user.sucursalId, id))
+      );
+      const filas = resultados
+        .filter((r) => r.success && r.data)
+        .map((r) => r.data);
+      if (filas.length === 0) return;
+      setStocks((prev) => {
+        const porClave = new Map(
+          prev.map((f) => [`${f.sucursalId}-${f.productoId}`, f])
+        );
+        filas.forEach((f) => porClave.set(`${f.sucursalId}-${f.productoId}`, f));
+        return [...porClave.values()];
+      });
+    };
+    instancia.on('connect', alConectar);
+    instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
+    return () => {
+      instancia.off('connect', alConectar);
+      instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
+    };
+    // `productoId` va en las deps: el handler cierra sobre el filtro vigente.
+    // Sin él, un evento fusionaría filas con el filtro viejo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, user, productoId]);
+
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
   // stock de la sucursal: con un producto filtrado, `stocks` trae una sola fila y
@@ -110,13 +162,26 @@ const GestionStock = () => {
     setGuardando(false);
   };
 
-  // Guarda la cantidad o la disponibilidad editada en la fila.
+  // Guarda la cantidad o la disponibilidad editada en la fila. El PUT devuelve
+  // la fila ya serializada por el backend (la autoridad): se aplica directo
+  // sobre el estado, como los parámetros, en vez de recargar toda la tabla con
+  // su spinner. La tabla no parpadea y el foco no se pierde.
   const guardarFila = async (fila, cambios) => {
     setGuardando(true);
     const resultado = await actualizarStock(fila.sucursalId, fila.productoId, cambios);
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
-      await cargar();
+      if (resultado.data) {
+        const actualizada = resultado.data;
+        setStocks((prev) =>
+          prev.map((f) =>
+            Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+            Number(f.productoId) === Number(actualizada.productoId)
+              ? actualizada
+              : f
+          )
+        );
+      }
     } else {
       notificar(resultado.error || 'No se pudo actualizar.', 'danger');
     }
