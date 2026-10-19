@@ -2,11 +2,13 @@
  * Propósito: Botón flotante de acceso rápido al carrito (B1).
  *            Círculo naranja fijo (abajo-derecha, sobre la barra inferior)
  *            con el contador de items siempre visible mientras navegás el
- *            catálogo. Solo aparece para clientes autenticados con items.
+ *            catálogo. El catálogo es público: el carrito funciona sin
+ *            sesión (la cuenta se pide recién al confirmar), así que el
+ *            botón aparece para cualquier visitante con items.
  * Contenido: Botón con badge (FaShoppingCart + totalItems del contexto).
- *            Se oculta en /carrito (ya estás ahí) y si no hay items.
- * Dependencias: react-bootstrap (Badge, Button), react-icons/fa (FaShoppingCart),
- *               react-router-dom (useNavigate, useLocation), useCarrito, useAuth.
+ *            Se oculta en el carrito (ya estás ahí) y si no hay items.
+ * Dependencias: react-bootstrap (Badge), react-icons/fa (FaShoppingCart),
+ *               react-router-dom (useNavigate, useLocation), useCarrito.
  * Uso: Se monta en el shell de App.jsx, al lado del Navbar.
  */
 
@@ -14,19 +16,18 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Badge } from "react-bootstrap";
 import { FaShoppingCart } from "react-icons/fa";
 import { useCarrito } from "../../hooks/useCarrito";
-import { useAuth } from "../../hooks/useAuth";
 import "./BotonCarrito.css";
 
 const BotonCarrito = () => {
   const { totalItems } = useCarrito();
-  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // Solo para clientes autenticados, con items, y fuera del carrito.
-  const esCliente = user?.rol === "CLIENTE";
+  // El catálogo es público: el carrito funciona sin sesión (la cuenta se
+  // pide recién al confirmar). El botón aparece siempre que haya items,
+  // esté el visitante logueado o no, y desaparece en la página del carrito.
   const enCarrito = pathname.startsWith("/cliente/carrito");
-  if (!isAuthenticated || !esCliente || enCarrito || totalItems === 0) {
+  if (enCarrito || totalItems === 0) {
     return null;
   }
 
