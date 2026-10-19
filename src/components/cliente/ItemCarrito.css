@@ -132,3 +132,20 @@
   position: relative;
   z-index: 1;
 }
+
+/* ============ Responsividad del grupo de cantidad ============ */
+/* En tablets angostas (sm: 576-767px) el grupo de ~138px desborda la
+   columna de Bootstrap. Se encogen los botones y el display para que
+   quepa sin pisar el subtotal de al lado. */
+
+@media (max-width: 767.98px) {
+  .cantidad-btn {
+    width: 32px;
+    height: 38px;
+  }
+
+  .cantidad-display {
+    min-width: 42px;
+    font-size: 1rem;
+  }
+}

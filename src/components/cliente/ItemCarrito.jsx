@@ -48,7 +48,7 @@ const ItemCarrito = ({ item }) => {
     <Card className="item-carrito">
       <Card.Body className="p-3">
         <Row className="align-items-center g-3">
-          <Col xs={12} sm={3}>
+          <Col xs={12} sm={2}>
             {/* alt vacío: el nombre del producto está en la columna de al lado y
                 se lee igual, así que la foto no necesita duplicarlo. */}
             <img
@@ -97,7 +97,7 @@ const ItemCarrito = ({ item }) => {
               </ul>
             )}
           </Col>
-          <Col xs={6} sm={2}>
+          <Col xs={6} sm={3}>
             {/* B1: grupo de botones en vez de input manual. Trash si es la
                 última unidad, "-" si hay más de una; "+" siempre (disabled
                 en el máximo). Sin entrada de texto: solo botones. */}
