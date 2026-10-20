@@ -218,13 +218,6 @@ const GestionStock = () => {
         </Button>
       </div>
 
-      <p className="text-muted">
-        El stock es por producto terminado: una fila es la sucursal + producto.
-        Si un producto no tiene fila en la sucursal, ahí no se puede pedir. En
-        los combos la cantidad no se edita: sale de la stock de los componentes,
-        así que se ajusta sola.
-      </p>
-
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       <Tabs
@@ -302,15 +295,18 @@ const GestionStock = () => {
                       </td>
                       <td data-label="Cantidad" className="stock-cantidad">
                         {esCombo ? (
-                          <>
-                            {/* En un combo el número no se toca: el backend lo
-                                deriva de la receta. Se muestra junto a la receta
-                                para que se entienda de dónde sale. */}
-                            <span className="fs-5">{fila.cantidad}</span>
-                            <Form.Text className="d-block small text-muted mt-1">
-                              se arma con el stock de sus componentes
-                            </Form.Text>
-                          </>
+                          // En un combo el número no se toca: el backend lo deriva
+                          // de la receta, así que no hay input editable. Se muestra
+                          // como texto plano con el mismo estilo que los inputs de
+                          // las demás filas (plaintext + size sm comparten tipografía
+                          // y alturas) para que la columna se lea uniforme.
+                          <Form.Control
+                            plaintext
+                            readOnly
+                            size="sm"
+                            value={fila.cantidad}
+                            aria-label="Cantidad del combo (calculada con el stock de sus componentes)"
+                          />
                         ) : (
                           <Form.Control
                             type="number"
@@ -383,13 +379,6 @@ const GestionStock = () => {
             </>
           }
         >
-          <p className="text-muted">
-            Productos del catálogo que todavía no están en el stock de tu sucursal
-            (por ejemplo, los que crea el superadministrador). Elegí uno y agregalo
-            con el botón; después le cargás la cantidad desde{' '}
-            <strong>Stock de mi sucursal</strong>.
-          </p>
-
           {productosDisponibles.length === 0 ? (
             <Alert variant="info" role="alert" className="text-center">
               No hay productos nuevos para agregar: todos los del catálogo ya están
