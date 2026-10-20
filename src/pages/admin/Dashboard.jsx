@@ -1,18 +1,17 @@
 /**
- * Propósito: Página de dashboard del admin que renderiza PanelAdmin.
- * Contenido: Componente Dashboard con Container de Bootstrap.
- * Dependencias: react-bootstrap (Container), PanelAdmin.
+ * Propósito: Página de dashboard del admin con los reportes de su sucursal.
+ * Contenido: Componente Dashboard con Container de Bootstrap y ReporteNegocio.
+ * Dependencias: react-bootstrap (Container), components/reportes/ReporteNegocio.
  * Uso: Ruta "/admin/dashboard" → <Dashboard />
  */
 
-import React from 'react';
 import { Container } from 'react-bootstrap';
-import PanelAdmin from '../../components/admin/PanelAdmin';
+import ReporteNegocio from '../../components/reportes/ReporteNegocio';
 
 const Dashboard = () => {
   return (
     <Container fluid className="py-4">
-      <PanelAdmin />
+      <ReporteNegocio />
     </Container>
   );
 };

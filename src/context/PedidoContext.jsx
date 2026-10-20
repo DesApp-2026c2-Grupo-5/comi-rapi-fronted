@@ -199,7 +199,7 @@ export const PedidoProvider = ({ children }) => {
   // Avisos en tiempo real: reemplaza al refresco periódico de 3 s.
   //   - admin:      recibe pedido_actualizado de su sucursal, sin suscribirse.
   //   - cliente:    recibe pedido_actualizado de los pedidos a los que se suscribió.
-  //   - superadmin: queda en la room `admins` para que PanelSuperadmin refresque
+  //   - superadmin: queda en la room `admins` para que ReporteNegocio refresque
   //                 métricas con su propio listener; acá no genera avisos.
   // No hay aviso al crear un pedido: el admin solo lo necesita cuando se
   // confirma, y el cliente ya tiene la respuesta de su propio POST.

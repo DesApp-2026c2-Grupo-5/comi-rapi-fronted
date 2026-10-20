@@ -1,0 +1,325 @@
+/*
+ * Estilos de la pantalla de reportes.
+ *
+ * Los gráficos son propios: SVG para la serie de facturación y CSS para las
+ * barras y el donut. Se usan las variables de tokens.css para que el panel
+ * siga la identidad visual de la app.
+ */
+
+.reporte-filtro-etiqueta {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.reporte-kpi {
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, var(--color-white), var(--color-cream-soft));
+}
+
+.reporte-kpi-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.reporte-kpi-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-cream);
+  color: var(--color-primary-dark);
+  flex: 0 0 auto;
+}
+
+.reporte-kpi-titulo {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.reporte-kpi-valor {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.reporte-variacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.reporte-grafico {
+  margin: 0;
+}
+
+.reporte-grafico-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.reporte-grafico-grilla {
+  stroke: var(--color-border-card);
+  stroke-width: 1;
+}
+
+.reporte-grafico-eje {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.reporte-grafico-area {
+  fill: rgba(255, 159, 28, 0.16);
+}
+
+.reporte-grafico-linea {
+  stroke: var(--color-primary-deep);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reporte-grafico-punto {
+  fill: var(--color-white);
+  stroke: var(--color-primary-deep);
+  stroke-width: 2;
+}
+
+.reporte-grafico-punto-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.reporte-grafico-punto-hit:hover + .reporte-grafico-punto {
+  fill: var(--color-primary-deep);
+}
+
+.reporte-grafico-pie {
+  margin: 0.5rem 0 0;
+}
+
+.reporte-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  min-height: 190px;
+  height: 190px;
+}
+
+.reporte-barra-item {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+
+.reporte-barra-pista {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  width: 100%;
+  min-height: 0;
+}
+
+.reporte-barra {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, var(--color-primary-soft), var(--color-primary-deep));
+  transition: background-color 0.2s var(--ease-out);
+}
+
+.reporte-barra:hover {
+  background: var(--color-primary-active);
+}
+
+.reporte-barra-vacia {
+  background: var(--color-cream-hover);
+}
+
+.reporte-barra-etiqueta {
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.reporte-donut-contenedor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.reporte-donut {
+  position: relative;
+  flex: 0 0 auto;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+}
+
+.reporte-donut-centro {
+  position: absolute;
+  inset: 24%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-white);
+  box-shadow: 0 0 0 1px var(--color-border-card);
+  font-family: var(--font-display);
+}
+
+.reporte-donut-centro strong {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.reporte-leyenda {
+  flex: 1 1 170px;
+  min-width: 0;
+}
+
+.reporte-leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.reporte-leyenda-color {
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.reporte-leyenda-nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.reporte-leyenda-valor {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.reporte-comparativa {
+  flex: 1 1 auto;
+  min-width: 70px;
+  height: 0.6rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-cream-hover);
+}
+
+.reporte-comparativa-relleno {
+  height: 100%;
+  border-radius: var(--radius-pill);
+}
+
+.reporte-buscador {
+  position: relative;
+}
+
+.reporte-buscador > svg {
+  position: absolute;
+  top: 50%;
+  left: 0.85rem;
+  z-index: 2;
+  color: var(--color-text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.reporte-buscador .form-control {
+  padding-left: 2.35rem;
+}
+
+.reporte-subtitulo {
+  margin-bottom: 0.65rem;
+  color: var(--color-text);
+}
+
+.reporte-orden {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+.reporte-orden:hover,
+.reporte-orden:focus-visible {
+  text-decoration: underline;
+}
+
+.reporte-orden.activo {
+  color: var(--color-cream-active);
+}
+
+.reporte-mini-dato {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  height: 100%;
+  padding: 0.75rem 0.5rem;
+  border-radius: var(--radius-panel);
+  background: var(--color-cream-soft);
+}
+
+.reporte-mini-valor {
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 575.98px) {
+  .reporte-barras {
+    min-height: 150px;
+    height: 150px;
+    gap: 0.2rem;
+  }
+
+  .reporte-barra-etiqueta {
+    font-size: 0.55rem;
+  }
+
+  .reporte-donut {
+    width: 130px;
+    height: 130px;
+  }
+
+  .reporte-donut-centro strong {
+    font-size: 1.3rem;
+  }
+}

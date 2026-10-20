@@ -37,6 +37,7 @@ const TITULOS_GRUPO = {
   pedido: 'Pedidos',
   promociones: 'Promociones',
   catalogo: 'Catálogo',
+  stock: 'Stock',
 };
 
 // Orden de aparición de los grupos en el formulario.
@@ -47,6 +48,7 @@ const ORDEN_GRUPOS = [
   'pedido',
   'promociones',
   'catalogo',
+  'stock',
 ];
 
 /** Ordena los grupos según ORDEN_GRUPOS y deja los desconocidos al final. */

@@ -1,18 +1,17 @@
 /**
- * Propósito: Página del panel de superadministración que renderiza el resumen
- *            global de métricas.
- * Contenido: Componente PanelSuperadmin con Container de Bootstrap.
- * Dependencias: react-bootstrap (Container), components/superadmin/PanelSuperadmin.
- * Uso: Ruta "/superadmin/panel" → <PanelSuperadmin />
+ * Propósito: Página del panel de superadministración con los reportes globales.
+ * Contenido: Componente PanelSuperadminPage con Container y ReporteNegocio.
+ * Dependencias: react-bootstrap (Container), components/reportes/ReporteNegocio.
+ * Uso: Ruta "/superadmin/panel" → <PanelSuperadminPage />
  */
 
 import { Container } from 'react-bootstrap';
-import PanelSuperadmin from '../../components/superadmin/PanelSuperadmin';
+import ReporteNegocio from '../../components/reportes/ReporteNegocio';
 
 const PanelSuperadminPage = () => {
   return (
     <Container fluid className="py-4">
-      <PanelSuperadmin />
+      <ReporteNegocio />
     </Container>
   );
 };

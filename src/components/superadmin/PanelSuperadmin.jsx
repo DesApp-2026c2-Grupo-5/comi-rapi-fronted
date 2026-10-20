@@ -88,7 +88,7 @@ const PanelSuperadmin = () => {
 
   const tarjetas = [
     { titulo: 'Pedidos totales', valor: pedidos.total, icono: FaClipboardCheck, variante: 'primary' },
-    { titulo: 'Pedidos vendidos', valor: pedidos.vendidos, icono: FaChartBar, variante: 'success' },
+    { titulo: 'Pedidos entregados', valor: pedidos.vendidos, icono: FaChartBar, variante: 'success' },
     { titulo: 'Ingresos', valor: formatearPesos(pedidos.ingresos), icono: FaChartBar, variante: 'success' },
   ];
 
@@ -193,7 +193,7 @@ const PanelSuperadmin = () => {
 
       <Card className="shadow-sm mt-3">
         <Card.Header as="h2" className="h5 bg-white">
-          Pedidos vendidos · últimos 30 días
+          Pedidos entregados · últimos 30 días
         </Card.Header>
         <Card.Body>
           {porDia.length === 0 ? (
@@ -206,9 +206,10 @@ const PanelSuperadmin = () => {
                     {fila.dia}
                   </span>
                   <div
-                    className="flex-grow-1 rounded"
+                    className="rounded"
                     style={{
                       backgroundColor: '#f1c27d',
+                      flexShrink: 0,
                       height: '1rem',
                       minWidth: '0.5rem',
                       width: `${Math.round((fila.cantidad / maximoDia) * 100)}%`,

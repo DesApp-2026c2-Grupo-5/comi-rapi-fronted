@@ -95,6 +95,9 @@ const AdminGestionProductos = lazy(() => import('../pages/admin/GestionProductos
 const AdminGestionCategorias = lazy(() => import('../pages/admin/GestionCategorias'));
 const AdminGestionPromociones = lazy(() => import('../pages/admin/GestionPromociones'));
 
+// Reportes: pantalla compartida por admin y superadmin
+const Reportes = lazy(() => import('../pages/reportes/Reportes'));
+
 // Páginas superadmin
 const PanelSuperadmin = lazy(() => import('../pages/superadmin/PanelSuperadmin'));
 const GestionAdministradores = lazy(() => import('../pages/superadmin/GestionAdministradores'));
@@ -178,6 +181,7 @@ const AppRoutes = () => {
             <Route path="/admin/productos" element={<AdminGestionProductos />} />
             <Route path="/admin/categorias" element={<AdminGestionCategorias />} />
             <Route path="/admin/promociones" element={<AdminGestionPromociones />} />
+            <Route path="/admin/reportes" element={<Reportes />} />
           </Route>
 
           {/* Rutas protegidas de superadministrador: panel global (métricas
@@ -187,6 +191,7 @@ const AppRoutes = () => {
               administra este rol y no cada sucursal. */}
           <Route element={<ProtectedRoute requiredRole="SUPERADMINISTRADOR" />}>
             <Route path="/superadmin/panel" element={<PanelSuperadmin />} />
+            <Route path="/superadmin/reportes" element={<Reportes />} />
             <Route path="/superadmin/administradores" element={<GestionAdministradores />} />
             <Route path="/superadmin/clientes" element={<GestionClientesSuperadmin />} />
             <Route path="/superadmin/clientes/:id" element={<DetalleClienteSuperadmin />} />
