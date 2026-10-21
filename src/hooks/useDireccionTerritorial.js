@@ -28,6 +28,7 @@ import {
   obtenerLocalidades,
   buscarCalles,
   obtenerZonas,
+  obtenerTerritorioOperativo,
   previsualizarDireccion,
 } from '../api/geo';
 import { PROVINCIAS } from '../utils/territorio';
@@ -54,6 +55,12 @@ export const useDireccionTerritorial = ({
   inicial = null,
   onConfirmado,
   validarCobertura = false,
+  // F3: cuando es true, las sugerencias territoriales (provincias y
+  // partidos/comunas) se limitan a las sucursales ACTIVAS del negocio
+  // (GET /api/geo/territorio-operativo) en vez de usar la lista completa.
+  // Lo usa el formulario de direcciones del CLIENTE; el de sucursales lo
+  // deja en false para poder abrir zonas nuevas.
+  filtrarPorSucursales = false,
 } = {}) => {
   // ---- Campos territoriales ------------------------------------------------
   const [calle, setCalle] = useState('');
@@ -81,6 +88,40 @@ export const useDireccionTerritorial = ({
   // ---- Aviso de cobertura por provincia -------------------------------------
   const [zonas, setZonas] = useState([]);
   const [avisoFueraZona, setAvisoFueraZona] = useState(false);
+
+  // ---- Territorio operativo (F3: sugerencias por sucursales activas) -------
+  // provinciasOperativas: nombres de provincias con sucursal activa;
+  // departamentosOperativos: { provincia: [partidos/comunas con sucursal] }.
+  const [provinciasOperativas, setProvinciasOperativas] = useState(null);
+  const [departamentosOperativos, setDepartamentosOperativos] = useState({});
+  useEffect(() => {
+    if (!filtrarPorSucursales) return undefined;
+    let cancelado = false;
+    (async () => {
+      const result = await obtenerTerritorioOperativo();
+      if (!cancelado && result.success) {
+        setProvinciasOperativas(result.data.provincias || []);
+        setDepartamentosOperativos(
+          result.data.departamentosPorProvincia || {}
+        );
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [filtrarPorSucursales]);
+
+  // Opciones del select de provincia: con filtro, solo las operativas (más
+  // las precargadas en modo edición que ya no estén: no se ofrece elegir de
+  // nuevo una provincia sin sucursales, pero se muestra cuál quedó seteada).
+  const provinciasOpts =
+    filtrarPorSucursales && provinciasOperativas
+      ? provinciasOperativas
+      : PROVINCIAS;
+  const territorioVacio =
+    filtrarPorSucursales &&
+    provinciasOperativas !== null &&
+    provinciasOperativas.length === 0;
 
   // ---- Resolución (preview) de la dirección --------------------------------
   // preview: { estado: 'unica'|'ambigua', resultado?, opciones?, cobertura? } | null
@@ -194,6 +235,18 @@ export const useDireccionTerritorial = ({
       setDepartamentosOpts([]);
       return undefined;
     }
+    // F3: con filtro por sucursales, los partidos/comunas sugeridos son
+    // solo los que tienen sucursal activa (misma fuente que la cobertura),
+    // sin consultar Georef. Fallback al proxy cuando la provincia no está
+    // en el mapa derivado (p. ej. una dirección precargada en una zona que
+    // quedó sin sucursales).
+    const derivados = filtrarPorSucursales
+      ? departamentosOperativos[provincia]
+      : null;
+    if (derivados) {
+      setDepartamentosOpts(derivados.map((nombre) => ({ nombre })));
+      return undefined;
+    }
     let cancelado = false;
     (async () => {
       setCargandoCatalogo(true);
@@ -206,7 +259,7 @@ export const useDireccionTerritorial = ({
     return () => {
       cancelado = true;
     };
-  }, [provincia]);
+  }, [provincia, filtrarPorSucursales, departamentosOperativos]);
 
   // ---- Cascada: localidades del partido/comuna -------------------------------
   useEffect(() => {
@@ -343,7 +396,7 @@ export const useDireccionTerritorial = ({
     }
     if (!String(provincia ?? '').trim()) {
       nuevos.push('La provincia es obligatoria.');
-    } else if (!PROVINCIAS.includes(provincia)) {
+    } else if (!provinciasOpts.includes(provincia)) {
       nuevos.push('Seleccioná una provincia de la lista.');
     }
     if (requierePartido && !String(departamento ?? '').trim()) {
@@ -560,6 +613,9 @@ export const useDireccionTerritorial = ({
     localidadesOpts,
     cargandoCatalogo,
     requierePartido,
+    // F3: opciones de provincia (estáticas o derivadas de sucursales activas)
+    provinciasOpts,
+    territorioVacio,
     // autocomplete
     sugerencias,
     errorSugerencias,

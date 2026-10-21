@@ -6,7 +6,8 @@
  *            Datos complementarios (alias, referencia).
  * Dependencias: hooks/useDireccionTerritorial (lógica única),
  *            Autocomplete / OpcionesDireccionAmbigua / ConfirmacionDireccion
- *            (presentacionales compartidos), utils/territorio (provincias).
+ *            (presentacionales compartidos). Las provincias y partidos
+ *            sugeridos salen del backend (sucursales activas, F3).
  * Uso: <FormularioDireccion direccion={direccion} onGuardar={handler} onCancelar={handler} />
  *      - Si 'direccion' es null/undefined, se comporta en modo creación.
  *      - onGuardar DEBE devolver el resultado del backend:
@@ -23,7 +24,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Form, Button, Card, Alert, ListGroup, Spinner } from "react-bootstrap";
 import { FaMapMarkedAlt, FaSave, FaTimes } from "react-icons/fa";
-import { PROVINCIAS } from "../../utils/territorio";
 import { useDireccionTerritorial } from "../../hooks/useDireccionTerritorial";
 import Autocomplete from "../comunes/Autocomplete";
 import OpcionesDireccionAmbigua from "../comunes/OpcionesDireccionAmbigua";
@@ -81,6 +81,10 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
     inicial: direccion,
     onConfirmado: confirmarGuardado,
     validarCobertura: true,
+    // F3: las sugerencias territoriales se limitan a las provincias y
+    // partidos/comunas con sucursales ACTIVAS. La cobertura real (radio por
+    // ruta) la sigue validando el preview y el alta.
+    filtrarPorSucursales: true,
   });
 
   // A5/fix: cuando el "Verificar dirección" resuelve (éxito o error), el
@@ -150,12 +154,21 @@ const FormularioDireccion = ({ direccion, onGuardar, onCancelar }) => {
           {/* ===== Ubicación: de lo más general a lo más específico ===== */}
           <div className="dir-form-seccion">Ubicación</div>
 
+          {/* F3: solo se sugieren provincias con sucursales activas; sin
+              ninguna, no hay dónde entregar por ahora. */}
+          {direccionApi.territorioVacio && (
+            <Alert variant="info" role="alert" className="mb-3">
+              Por el momento no hay sucursales activas para tomar delivery:
+              probá de nuevo más tarde.
+            </Alert>
+          )}
           <Autocomplete
             etiqueta="Provincia *"
             value={direccionApi.provincia}
-            opciones={PROVINCIAS}
+            opciones={direccionApi.provinciasOpts}
             onChange={direccionApi.actualizarProvincia}
             placeholder="Escribí para buscar tu provincia…"
+            ayudaOpcional="Solo ofrecemos zonas con sucursales activas."
           />
 
           {direccionApi.provincia && (

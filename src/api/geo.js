@@ -77,6 +77,21 @@ export const obtenerZonas = async () => {
 };
 
 /**
+ * Territorio operativo: provincias y partidos/comunas donde hay sucursales
+ * ACTIVAS geolocalizadas (GET /api/geo/territorio-operativo). Alimenta las
+ * sugerencias del formulario de direcciones del cliente: no se ofrecen
+ * provincias/partidos sin sucursal que pueda atender. Es solo una sugerencia:
+ * la cobertura real (radio por ruta) la sigue validando el preview y el alta.
+ * @returns {Promise<{success: boolean, data?: { provincias: string[], departamentosPorProvincia: object }, error?: string}>}
+ */
+export const obtenerTerritorioOperativo = async () => {
+  const result = await apiGet('/geo/territorio-operativo');
+  return result.success
+    ? { success: true, data: result.data }
+    : { success: false, error: result.error };
+};
+
+/**
  * Preview de dirección: geocodifica sin persistir. Devuelve el estado de la
  * resolución para que el formulario confirme la dirección (y resuelva la
  * ambigüedad) ANTES de guardar.
