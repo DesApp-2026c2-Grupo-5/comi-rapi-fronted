@@ -231,9 +231,9 @@ const GestionStock = () => {
           nada que operar: se pide elegir una antes de mostrar la tabla. */}
       {!sucursalId ? (
         <Alert variant="warning">
-          Elegí una sucursal para operar desde la barra superior (el selector
-          de <strong>sucursal de contexto</strong>) para ver y gestionar su
-          stock.
+          Elegí una sucursal para operar desde la barra de navegación (el
+          selector de <strong>sucursal de contexto</strong>) para ver y gestionar
+          su stock.
         </Alert>
       ) : (
         <>

@@ -203,9 +203,9 @@ const PedidosPendientes = () => {
       )}
       {isSuperadmin && !sucursalOperativaId && (
         <Alert variant="warning" className="mb-4">
-          Elegí una sucursal para operar desde la barra superior
-          (el selector de <strong>sucursal de contexto</strong>) para ver y
-          gestionar sus pedidos.
+          Elegí una sucursal para operar desde la barra de navegación (el
+          selector de <strong>sucursal de contexto</strong>) para ver y gestionar
+          sus pedidos.
         </Alert>
       )}
 

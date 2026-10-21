@@ -280,6 +280,74 @@
   flex-shrink: 0;
 }
 
+/* ============ Hoja "Sucursal" (superadmin) ============ */
+/* Dos secciones (elegir contexto / operar) en vez de una lista única: los
+   títulos marcan el corte y las listas no reparten el alto completo. */
+.nav-hoja-seccion-titulo {
+  margin: 0.4rem 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8a6a2f;
+}
+
+.nav-hoja-lista-compacta {
+  height: auto;
+  gap: 0.4rem;
+}
+
+/* Botón de sucursal: el mismo look del enlace de hoja, en <button>. */
+.nav-hoja-boton {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-hoja-boton .nav-hoja-texto {
+  flex: 1 1 auto;
+}
+
+.nav-hoja-check {
+  margin-left: auto;
+  color: inherit;
+}
+
+.nav-hoja-vacio {
+  padding: 0.6rem 1rem;
+  color: #8a6a2f;
+  font-size: 0.95rem;
+}
+
+/* Salir del contexto: acción de baja, discreta al pie de la hoja. */
+.nav-hoja-salir {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #a63d3d;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.nav-hoja-salir:hover {
+  background-color: #f6dcdc;
+}
+
+/* Bootstrap pone `outline: 0` al enfocar con teclado. */
+.nav-hoja-salir:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 /* ============ Corte de pantalla ============ */
 /* Desde `lg` la barra superior ya muestra todos los enlaces desplegados, así que
    la inferior sobra y estorba. `lg` es el mismo punto en que Bootstrap pliega el
