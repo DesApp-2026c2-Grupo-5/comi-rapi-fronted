@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Container, Table, Button, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt, FaBoxes, FaPlusCircle } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import {
   obtenerStock,
@@ -41,9 +42,12 @@ import { SkeletonTabla } from '../../components/comunes/Skeleton';
 const GestionStock = () => {
   const { notificar } = useNotificaciones();
   const { user, hydrated } = useAuth();
-  // La sucursal del admin: única y fija. El backend además acota el stock a
-  // ella, así que no hay nada que elegir en la pantalla.
-  const sucursalId = user?.sucursalId ? String(user.sucursalId) : '';
+  // La sucursal operativa de la sesión: la asignada del admin o el contexto
+  // elegido del superadmin. El backend además acota el stock a ella, así que
+  // no hay nada que elegir en la pantalla. Sin sucursal operativa (superadmin
+  // sin contexto) no se carga nada: el aviso pide elegir una sucursal.
+  const { sucursalOperativa, sucursalOperativaId } = useSucursalOperativa();
+  const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
   const [stocks, setStocks] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -60,6 +64,9 @@ const GestionStock = () => {
   // El filtro va al backend: `GET /api/stock` ya acepta productoId; el
   // `sucursalId` no se envía porque el backend usa la sucursal de la sesión.
   const cargar = async () => {
+    // Sin sucursal operativa (superadmin sin contexto) no hay nada que
+    // cargar: el backend respondería 403 y la pantalla muestra el aviso.
+    if (!sucursalId) return;
     setCargando(true);
     setError('');
     try {
@@ -79,7 +86,7 @@ const GestionStock = () => {
   useEffect(() => {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productoId]);
+  }, [productoId, sucursalId]);
 
   useEffect(() => {
     if (!hydrated || !user) return undefined;
@@ -94,7 +101,7 @@ const GestionStock = () => {
     // la sucursal afectada; el filtro por sucursalId es defensa por si el backend
     // emitiera a más de una room.
     const alStock = async (payload) => {
-      if (Number(payload?.sucursalId) !== Number(user.sucursalId)) return;
+      if (Number(payload?.sucursalId) !== Number(sucursalId)) return;
       if (!Array.isArray(payload?.productoIds)) {
         await cargar();
         return;
@@ -106,7 +113,7 @@ const GestionStock = () => {
         .filter((id) => id && (!productoId || String(id) === String(productoId)));
       if (ids.length === 0) return;
       const resultados = await Promise.all(
-        ids.map((id) => obtenerStockDeProducto(user.sucursalId, id))
+        ids.map((id) => obtenerStockDeProducto(sucursalId, id))
       );
       const filas = resultados
         .filter((r) => r.success && r.data)
@@ -127,9 +134,11 @@ const GestionStock = () => {
       instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
     };
     // `productoId` va en las deps: el handler cierra sobre el filtro vigente.
-    // Sin él, un evento fusionaría filas con el filtro viejo.
+    // Sin él, un evento fusionaría filas con el filtro viejo. `sucursalId`
+    // también: al cambiar el contexto del superadmin, el filtro de defensa y
+    // las refencias de las filas tienen que apuntar a la sucursal nueva.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, user, productoId]);
+  }, [hydrated, user, productoId, sucursalId]);
 
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
@@ -212,11 +221,29 @@ const GestionStock = () => {
     <Container fluid className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 className="h2 mb-0">Stock por sucursal</h1>
-        <Button variant="outline-primary" onClick={cargar} disabled={cargando}>
+        <Button variant="outline-primary" onClick={cargar} disabled={cargando || !sucursalId}>
           <FaBoxes className="me-1" aria-hidden="true" />
           Recargar
         </Button>
       </div>
+
+      {/* Sin sucursal operativa (superadmin sin contexto elegido) no hay
+          nada que operar: se pide elegir una antes de mostrar la tabla. */}
+      {!sucursalId ? (
+        <Alert variant="warning">
+          Elegí una sucursal para operar desde la barra de navegación (el
+          selector de <strong>sucursal de contexto</strong>) para ver y gestionar
+          su stock.
+        </Alert>
+      ) : (
+        <>
+      {/* La sucursal del contexto, a la vista: en pantalla chica el selector
+          del navbar está oculto y esta página opera sobre esa sucursal. */}
+      {sucursalOperativa && (
+        <p className="text-muted">
+          Operando la sucursal: <strong>{sucursalOperativa.nombre}</strong>.
+        </p>
+      )}
 
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
@@ -436,6 +463,8 @@ const GestionStock = () => {
         onConfirmar={confirmarEliminar}
         onCancelar={() => setStockAEliminar(null)}
       />
+        </>
+      )}
     </Container>
   );
 };

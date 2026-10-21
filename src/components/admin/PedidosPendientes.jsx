@@ -14,12 +14,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Card, Badge, Button, Container, Modal, Form, Spinner } from 'react-bootstrap';
+import { Card, Badge, Button, Container, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import { FaTimesCircle, FaArrowRight, FaTimes, FaStore } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
-import { useSucursal } from '../../hooks/useSucursal';
+import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { reasignarSucursal } from '../../api/pedidos';
+import {
+  reasignarSucursal,
+  obtenerSucursalesCandidatas,
+} from '../../api/pedidos';
 import { puedeTransicionar, obtenerEstadosSiguientes } from '../../services/estadosPedido';
 import {
   ESTADOS_PEDIDO,
@@ -57,7 +60,14 @@ const ACCIONES_SIGUIENTE = {
 const PedidosPendientes = () => {
   const { pedidos, cambiarEstado, refrescarPedidos } = usePedidos();
   const { notificar } = useNotificaciones();
-  const { sucursales, cargarSucursales } = useSucursal();
+  // La reasignación manual es exclusiva del SUPERADMINISTRADOR operando una
+  // sucursal (contexto elegido en el Navbar): el admin de sucursal ya no
+  // reasigna. Sin contexto, el superadmin ve el aviso y la lista queda vacía.
+  const {
+    sucursalOperativa,
+    sucursalOperativaId,
+    isSuperadmin,
+  } = useSucursalOperativa();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Filtro de estado activo (desde la URL ?estado=..., que el dashboard setea al
@@ -65,14 +75,43 @@ const PedidosPendientes = () => {
   const estadoFiltro = searchParams.get('estado');
   // Evita doble clic mientras un cambio de estado está en curso
   const [cambiando, setCambiando] = useState(false);
-  // T4: reasignación manual de sucursal
+  // Reasignación manual (superadmin con contexto): candidatas con cobertura+stock
   const [pedidoAReasignar, setPedidoAReasignar] = useState(null);
+  const [candidatas, setCandidatas] = useState([]);
+  const [cargandoCandidatas, setCargandoCandidatas] = useState(false);
   const [sucursalDestino, setSucursalDestino] = useState('');
   const [reasignando, setReasignando] = useState(false);
 
+  // Al abrir el modal se piden las candidatas al backend: sucursales activas
+  // en cobertura de la dirección del pedido y con stock suficiente. El PATCH
+  // re-valida todo; esta lista es solo para el selector.
   useEffect(() => {
-    cargarSucursales();
-  }, [cargarSucursales]);
+    if (!pedidoAReasignar) return undefined;
+    let vivo = true;
+    (async () => {
+      setCargandoCandidatas(true);
+      const result = await obtenerSucursalesCandidatas(pedidoAReasignar.id);
+      if (vivo) {
+        if (result.success) {
+          setCandidatas(result.data);
+        } else {
+          setCandidatas([]);
+          notificar(result.error || 'No se pudieron obtener las sucursales.', 'danger');
+        }
+        setCargandoCandidatas(false);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [pedidoAReasignar, notificar]);
+
+  const puedeReasignar = isSuperadmin && Boolean(sucursalOperativaId);
+
+  const abrirReasignacion = (pedido) => {
+    setPedidoAReasignar(pedido);
+    setSucursalDestino('');
+  };
 
   const handleReasignar = async () => {
     if (!pedidoAReasignar || !sucursalDestino) return;
@@ -154,7 +193,21 @@ const PedidosPendientes = () => {
 
   return (
     <Container>
-      <h1 className="h2 mb-4">Gestión de Pedidos</h1>
+      <h1 className="h2 mb-2">Gestión de Pedidos</h1>
+      {/* El superadmin opera la sucursal que eligió: se le recuerda el
+          contexto (y sin contexto no hay lista: hay que elegir una primero). */}
+      {isSuperadmin && sucursalOperativa && (
+        <p className="text-muted mb-3">
+          Operando la sucursal: <strong>{sucursalOperativa.nombre}</strong>
+        </p>
+      )}
+      {isSuperadmin && !sucursalOperativaId && (
+        <Alert variant="warning" className="mb-4">
+          Elegí una sucursal para operar desde la barra de navegación (el
+          selector de <strong>sucursal de contexto</strong>) para ver y gestionar
+          sus pedidos.
+        </Alert>
+      )}
 
       {/* Filtro rápido por estado */}
       <div className="filtro-estado-bar d-flex flex-wrap gap-2 mb-4">
@@ -270,16 +323,16 @@ const PedidosPendientes = () => {
                           Cancelar pedido
                         </Button>
                       )}
-                      {/* T4: reasignación manual de sucursal (solo en estados tempranos) */}
-                      {[ESTADOS_PEDIDO.CONFIRMADO, ESTADOS_PEDIDO.EN_PREPARACION].includes(pedido.estado) && (
+                      {/* Reasignación manual: exclusiva del SUPERADMINISTRADOR
+                          con contexto, en estados tempranos. El admin de la
+                          sucursal ya no reasigna (el backend lo rechaza con
+                          403). */}
+                      {puedeReasignar && [ESTADOS_PEDIDO.CONFIRMADO, ESTADOS_PEDIDO.EN_PREPARACION].includes(pedido.estado) && (
                         <Button
                           size="lg"
                           variant="outline-warning"
                           className="ms-2"
-                          onClick={() => {
-                            setPedidoAReasignar(pedido);
-                            setSucursalDestino('');
-                          }}
+                          onClick={() => abrirReasignacion(pedido)}
                         >
                           <FaStore className="me-2" aria-hidden="true" />
                           Reasignar sucursal
@@ -294,7 +347,8 @@ const PedidosPendientes = () => {
         })
       )}
 
-      {/* T4: modal de reasignación de sucursal */}
+      {/* Modal de reasignación (solo superadmin con contexto). Las candidatas
+          salen del backend: sucursales en cobertura con stock suficiente. */}
       <Modal show={Boolean(pedidoAReasignar)} onHide={() => setPedidoAReasignar(null)} centered>
         <Modal.Header closeButton>
           <Modal.Title>
@@ -304,26 +358,38 @@ const PedidosPendientes = () => {
         <Modal.Body>
           <p className="text-muted">
             El stock se transfiere automáticamente y el tiempo estimado se
-            recalcula. El pedido debe estar en estado confirmado o en
-            preparación.
+            recalcula. Solo se ofrecen sucursales con cobertura de la
+            dirección del cliente y stock suficiente; el backend re-valida
+            todo al confirmar.
           </p>
-          <Form.Group>
-            <Form.Label>Sucursal destino</Form.Label>
-            <Form.Select
-              value={sucursalDestino}
-              onChange={(e) => setSucursalDestino(e.target.value)}
-              disabled={reasignando}
-            >
-              <option value="">Seleccioná una sucursal…</option>
-              {sucursales
-                .filter((s) => s.activa !== false && s.id !== pedidoAReasignar?.sucursal?.id)
-                .map((s) => (
+          {cargandoCandidatas ? (
+            <div className="text-center py-3">
+              <Spinner animation="border" role="status" aria-label="Buscando sucursales" />
+              <p className="text-muted mt-2 mb-0">
+                Buscando sucursales con cobertura y stock…
+              </p>
+            </div>
+          ) : candidatas.length === 0 ? (
+            <Alert variant="info" className="mb-0">
+              No hay otras sucursales con cobertura y stock para este pedido.
+            </Alert>
+          ) : (
+            <Form.Group>
+              <Form.Label>Sucursal destino</Form.Label>
+              <Form.Select
+                value={sucursalDestino}
+                onChange={(e) => setSucursalDestino(e.target.value)}
+                disabled={reasignando}
+              >
+                <option value="">Seleccioná una sucursal…</option>
+                {candidatas.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.nombre}
+                    {s.nombre} ({(s.distanciaMetros / 1000).toFixed(1)} km)
                   </option>
                 ))}
-            </Form.Select>
-          </Form.Group>
+              </Form.Select>
+            </Form.Group>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setPedidoAReasignar(null)} disabled={reasignando}>
@@ -332,7 +398,7 @@ const PedidosPendientes = () => {
           <Button
             variant="primary"
             onClick={handleReasignar}
-            disabled={!sucursalDestino || reasignando}
+            disabled={!sucursalDestino || reasignando || cargandoCandidatas || candidatas.length === 0}
           >
             {reasignando ? (
               <>

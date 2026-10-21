@@ -42,8 +42,12 @@ import {
   FaStore,
   FaCog,
   FaBriefcase,
+  FaCheck,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useSucursal } from '../../hooks/useSucursal';
+import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { ROLES } from '../../utils/constants';
 import { esRutaDeAlguna } from '../../utils/rutas';
 import useIndicadoresNav from '../../hooks/useIndicadoresNav';
@@ -127,6 +131,28 @@ const enlacesAdmin = [
 const enlacesSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
   {
+    /* Hoja "Sucursal": en pantalla chica el menú superior (con el selector de
+       contexto y los destinos operativos) queda oculto por el colapsable.
+       Desde acá el superadmin elige la sucursal que opera y entra a sus
+       pedidos/stock, sin depender de la barra superior. */
+    etiqueta: 'Sucursal',
+    icono: FaStore,
+    hoja: 'sucursal',
+    hojaTitulo: 'Operar una sucursal',
+    hijos: [
+      {
+        to: '/admin/pedidos',
+        etiqueta: 'Pedidos de la sucursal',
+        icono: FaReceipt,
+      },
+      {
+        to: '/admin/stock',
+        etiqueta: 'Stock de la sucursal',
+        icono: FaBoxes,
+      },
+    ],
+  },
+  {
     to: '/superadmin/administradores',
     etiqueta: 'Administradores',
     icono: FaUserTie,
@@ -197,9 +223,16 @@ const NavInferior = () => {
   const visible = useMuestraNavInferior();
   const { user } = useAuth();
   const { pathname } = useLocation();
+  // Hoja "Sucursal" (solo la usa el superadmin): lista de sucursales activas
+  // y contexto operativo. Va con los demás hooks, antes del retorno temprano.
+  const { notificar } = useNotificaciones();
+  const { sucursales } = useSucursal();
+  const { sucursalOperativa, sucursalOperativaId, elegirSucursal, limpiarSucursal } =
+    useSucursalOperativa();
+  const sucursalesActivas = (sucursales || []).filter((s) => s.activa !== false);
   // La hoja de Catálogo del admin (móvil) se abre y cierra con su propio estado;
   // al navegar a un hijo se cierra sola. Guarda el nombre de la hoja abierta
-  // ('catalogo' | 'negocio') o null, para poder tener más de una.
+  // ('catalogo' | 'negocio' | 'sucursal') o null, para poder tener más de una.
   const [hojaAbierta, setHojaAbierta] = useState(null);
 
   const {
@@ -271,6 +304,28 @@ const NavInferior = () => {
   // La hoja que se muestra: la abierta o, si ninguna lo está, ninguna.
   const hojaVisible = hojas.find((enlace) => enlace.hoja === hojaAbierta);
 
+  // Hoja "Sucursal": elegir contexto y salir de él. El backend valida la
+  // sucursal (activa); con el cambio de contexto el contexto/socket se rearman.
+  const elegirYCerrar = async (sucursal) => {
+    const result = await elegirSucursal(sucursal.id);
+    if (result.success) {
+      notificar(`Ahora operás la sucursal ${sucursal.nombre}.`, 'info');
+      setHojaAbierta(null);
+    } else {
+      notificar(result.error || 'No se pudo elegir la sucursal.', 'danger');
+    }
+  };
+
+  const dejarDeOperar = async () => {
+    const result = await limpiarSucursal();
+    if (result.success) {
+      notificar('Dejaste de operar la sucursal.', 'info');
+      setHojaAbierta(null);
+    } else {
+      notificar(result.error || 'No se pudo salir del contexto.', 'danger');
+    }
+  };
+
   return (
     <>
       {/* Nombre propio: en móvil conviven esta barra y la superior, y dos <nav>
@@ -340,23 +395,99 @@ const NavInferior = () => {
             </Offcanvas.Title>
           </Offcanvas.Header>
           <Offcanvas.Body>
-            <ul className="nav-hoja-lista">
-              {hojaVisible.hijos.map((hijo) => (
-                <li key={hijo.to}>
-                  <NavLink
-                    to={hijo.to}
-                    end
-                    onClick={() => setHojaAbierta(null)}
-                    className={`nav-hoja-enlace${
-                      esRutaDeAlguna([hijo], pathname) ? ' activo' : ''
-                    }`}
-                  >
-                    <hijo.icono className="nav-hoja-ico" aria-hidden="true" />
-                    {hijo.etiqueta}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
+            {hojaVisible.hoja === 'sucursal' ? (
+              <>
+                {/* Elegir (o cambiar) la sucursal de contexto. La marca de
+                    la activa usa aria-current para lectores de pantalla. */}
+                <p className="nav-hoja-seccion-titulo">
+                  {sucursalOperativa
+                    ? `Estás operando la sucursal ${sucursalOperativa.nombre}. Elegí otra, operá o salí del contexto:`
+                    : 'Elegí una sucursal para operar sus pedidos y su stock:'}
+                </p>
+                <ul className="nav-hoja-lista nav-hoja-lista-compacta">
+                  {sucursalesActivas.map((sucursal) => {
+                    const esLaActiva =
+                      sucursalOperativaId &&
+                      Number(sucursal.id) === Number(sucursalOperativaId);
+                    return (
+                      <li key={sucursal.id}>
+                        <button
+                          type="button"
+                          onClick={() => elegirYCerrar(sucursal)}
+                          aria-current={esLaActiva ? 'true' : undefined}
+                          className={`nav-hoja-enlace nav-hoja-boton${
+                            esLaActiva ? ' activo' : ''
+                          }`}
+                        >
+                          <FaStore className="nav-hoja-ico" aria-hidden="true" />
+                          <span className="nav-hoja-texto">{sucursal.nombre}</span>
+                          {esLaActiva && (
+                            <FaCheck className="nav-hoja-check" aria-hidden="true" />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {sucursalesActivas.length === 0 && (
+                    <li className="nav-hoja-vacio">
+                      No hay sucursales activas para operar.
+                    </li>
+                  )}
+                </ul>
+
+                {/* Con contexto elegido, los destinos operativos de esa
+                    sucursal (rutas compartidas con el admin). */}
+                {sucursalOperativa && (
+                  <>
+                    <p className="nav-hoja-seccion-titulo">
+                      Operar {sucursalOperativa.nombre}
+                    </p>
+                    <ul className="nav-hoja-lista nav-hoja-lista-compacta">
+                      {hojaVisible.hijos.map((hijo) => (
+                        <li key={hijo.to}>
+                          <NavLink
+                            to={hijo.to}
+                            end
+                            onClick={() => setHojaAbierta(null)}
+                            className={`nav-hoja-enlace${
+                              esRutaDeAlguna([hijo], pathname) ? ' activo' : ''
+                            }`}
+                          >
+                            <hijo.icono className="nav-hoja-ico" aria-hidden="true" />
+                            {hijo.etiqueta}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      className="nav-hoja-salir"
+                      onClick={dejarDeOperar}
+                    >
+                      Dejar de operar esta sucursal
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <ul className="nav-hoja-lista">
+                {hojaVisible.hijos.map((hijo) => (
+                  <li key={hijo.to}>
+                    <NavLink
+                      to={hijo.to}
+                      end
+                      onClick={() => setHojaAbierta(null)}
+                      className={`nav-hoja-enlace${
+                        esRutaDeAlguna([hijo], pathname) ? ' activo' : ''
+                      }`}
+                    >
+                      <hijo.icono className="nav-hoja-ico" aria-hidden="true" />
+                      {hijo.etiqueta}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Offcanvas.Body>
         </Offcanvas>
       )}

@@ -19,6 +19,7 @@ import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { obtenerProductos, obtenerProductoPorId, eliminarProducto } from '../../api/productos';
 import { obtenerStock, actualizarStock, crearStock } from '../../api/stock';
 import { useAuth } from '../../hooks/useAuth';
+import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { formatPrice } from '../../utils/formatters';
 import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
@@ -30,6 +31,9 @@ const ListaProductos = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const { notificar } = useNotificaciones();
   const { user, hydrated } = useAuth();
+  // Sucursal operativa de la sesión (asignada del admin o contexto del
+  // superadmin): define sobre qué local se lee/escribe la disponibilidad.
+  const { sucursalOperativaId } = useSucursalOperativa();
   const [productos, setProductos] = useState([]);
   // [soloLectura] Disponibilidad por sucursal: productoId → { disponible, sucursalId }
   const [stock, setStock] = useState({});
@@ -131,9 +135,11 @@ const ListaProductos = ({ soloLectura = false }) => {
     };
     // stock_actualizado solo va a la room de la sucursal afectada; el filtro
     // por sucursalId es defensa por si el backend emitiera a más de una room.
+    // Se compara contra la sucursal OPERATIVA (asignada del admin o contexto
+    // del superadmin), no contra `user.sucursalId`.
     const alStock = (payload) => {
       if (!soloLectura) return;
-      if (Number(payload?.sucursalId) !== Number(user.sucursalId)) return;
+      if (Number(payload?.sucursalId) !== Number(sucursalOperativaId)) return;
       cargarStock();
     };
     instancia.on('connect', alConectar);
@@ -144,7 +150,7 @@ const ListaProductos = ({ soloLectura = false }) => {
       instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
       instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
     };
-  }, [hydrated, user, soloLectura]);
+  }, [hydrated, user, soloLectura, sucursalOperativaId]);
 
   const handleEditar = (id) => {
     navigate(`/superadmin/producto/editar/${id}`);
@@ -194,12 +200,12 @@ const ListaProductos = ({ soloLectura = false }) => {
         resultado.success ? 'success' : 'danger'
       );
     } else {
-      if (!user?.sucursalId) {
-        notificar('No tenés sucursal asignada.', 'warning');
+      if (!sucursalOperativaId) {
+        notificar('No hay sucursal operativa: elegila desde la barra superior.', 'warning');
         setGuardando(false);
         return;
       }
-      const resultado = await crearStock(user.sucursalId, producto.id);
+      const resultado = await crearStock(sucursalOperativaId, producto.id);
       notificar(
         resultado.success
           ? `"${producto.nombre}" agregado al catálogo de tu sucursal. Cargá la cantidad desde Stock.`

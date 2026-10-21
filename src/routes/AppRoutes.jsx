@@ -166,16 +166,30 @@ const AppRoutes = () => {
             <Route path="/cliente/perfil" element={<Perfil />} />
           </Route>
 
+          {/* Rutas operativas de sucursal: pedidos y stock las comparten el
+              ADMINISTRADOR (su sucursal asignada) y el SUPERADMINISTRADOR
+              (la de su contexto, elegida en el Navbar). Sin contexto, las
+              pantallas muestran el aviso y el backend responde 403 al
+              operar. El resto de las rutas del admin (dashboard, clientes,
+              catálogo en solo lectura, reportes) sigue siendo exclusivo del
+              rol ADMINISTRADOR. */}
+          <Route
+            element={
+              <ProtectedRoute requiredRole={['ADMINISTRADOR', 'SUPERADMINISTRADOR']} />
+            }
+          >
+            <Route path="/admin/pedidos" element={<GestionPedidos />} />
+            <Route path="/admin/stock" element={<GestionStock />} />
+          </Route>
+
           {/* Rutas protegidas de administrador: operación de su sucursal
-              (pedidos, stock y clientes) y el catálogo en modo SOLO LECTURA. El
+              (clientes) y el catálogo en modo SOLO LECTURA. El
               CRUD del catálogo —productos, categorías, promociones, personalización
               e imágenes— lo hace el SUPERADMINISTRADOR; el admin ve los listados de
               productos, categorías y promociones y, en Productos, activa/desactiva
               la disponibilidad de cada ítem en su sucursal. */}
           <Route element={<ProtectedRoute requiredRole="ADMINISTRADOR" />}>
             <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/pedidos" element={<GestionPedidos />} />
-            <Route path="/admin/stock" element={<GestionStock />} />
             <Route path="/admin/clientes" element={<GestionClientes />} />
             <Route path="/admin/clientes/:id" element={<DetalleCliente />} />
             <Route path="/admin/productos" element={<AdminGestionProductos />} />
