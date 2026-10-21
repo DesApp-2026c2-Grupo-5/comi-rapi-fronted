@@ -526,22 +526,27 @@ const Navbar = () => {
                 sucursal habilita su operación (pedidos y stock de esa
                 sucursal, con las mismas reglas que su administrador) sin
                 perder los permisos globales. La lista solo ofrece activas y
-                el backend valida la elección. */}
+                el backend valida la elección. Mismo estilo que el badge de
+                sucursal del admin (píldora crema): el `variant="warning"`
+                de Bootstrap se perdía sobre el naranja de la barra. */}
             {isSuperadmin && (
               <Dropdown align="end" className="navbar-contexto-sucursal">
                 <Dropdown.Toggle
-                  variant={sucursalOperativa ? 'warning' : 'outline-warning'}
-                  size="sm"
-                  className="d-inline-flex align-items-center gap-1"
+                  as="button"
+                  type="button"
+                  variant=""
+                  className={`navbar-sucursal navbar-sucursal-selector${
+                    sucursalOperativa ? '' : ' navbar-sucursal-vacio'
+                  }`}
                   aria-label="Elegir sucursal para operar"
                 >
-                  <FaStore aria-hidden="true" />
+                  <FaStore className="navbar-sucursal-ico" aria-hidden="true" />
                   <span className="navbar-sucursal-nombre">
                     {sucursalOperativa
                       ? `Operando: ${sucursalOperativa.nombre}`
                       : 'Elegir sucursal'}
                   </span>
-                  <FaChevronDown size="0.6em" aria-hidden="true" />
+                  <FaChevronDown className="navbar-sucursal-caret" size="0.6em" aria-hidden="true" />
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   {sucursalesActivas.map((s) => (

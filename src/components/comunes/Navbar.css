@@ -495,3 +495,46 @@
 .navbar-sucursal-ico {
   color: #f07f10;
 }
+
+/* ============ Selector de sucursal de contexto (superadmin) ============ */
+/* La píldora crema del badge de sucursal, en versión BOTÓN: mismo look que
+   su vecino "Sucursal: X" del admin. Se declara compuesto
+   (.navbar-comirapi .navbar-sucursal-selector) para ganarle al `.btn` de
+   Bootstrap, que con variant="warning" era naranja sobre naranja y quedaba
+   invisible sobre la barra. */
+.navbar-comirapi .navbar-sucursal-selector {
+  background: #fff4e2;
+  border: 1px solid #f0a10e;
+  color: #8a4b00;
+  cursor: pointer;
+  transition:
+    background-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.navbar-comirapi .navbar-sucursal-selector:hover,
+.navbar-comirapi .navbar-sucursal-selector.show {
+  background: #ffe9c4;
+}
+
+.navbar-comirapi .navbar-sucursal-selector:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 1px;
+}
+
+/* Sin contexto: crema más tenue y borde punteado — invita a la acción sin
+   competir con los datos. */
+.navbar-comirapi .navbar-sucursal-vacio {
+  background: #fff9ee;
+  border-style: dashed;
+}
+
+/* El caret es el FaChevronDown del toggle: el ::after de Bootstrap se apaga
+   para no sumar dos flechas. */
+.navbar-comirapi .navbar-sucursal-selector.dropdown-toggle::after {
+  display: none;
+}
+
+.navbar-sucursal-caret {
+  color: #8a4b00;
+}
