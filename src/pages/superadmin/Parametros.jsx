@@ -14,8 +14,7 @@ const Parametros = () => {
       <h1 className="h3 mb-1">Parámetros</h1>
       <p className="text-muted mb-4">
         Reglas de negocio que valen para toda la aplicación: envío, cobertura,
-        límites del carrito y de pedidos, y promociones. Los valores los aplica
-        el backend.
+        límites del carrito y de pedidos, y promociones.
       </p>
       <FormularioParametros />
     </Container>

@@ -132,13 +132,6 @@ const ListaCategorias = ({ soloLectura = false }) => {
         )}
       </div>
 
-      {soloLectura && (
-        <Alert variant="info" role="alert" className="mb-3">
-          Listado de solo lectura: el CRUD de categorías lo hace el
-          SUPERADMINISTRADOR.
-        </Alert>
-      )}
-
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
 
       {cargando ? (

@@ -229,15 +229,6 @@ const ListaProductos = ({ soloLectura = false }) => {
         )}
       </div>
 
-      {soloLectura && (
-        <Alert variant="info" role="alert" className="mb-3">
-          Listado de solo lectura: crear, editar y eliminar el catálogo lo hace el
-          SUPERADMINISTRADOR. El interruptor activa/desactiva la disponibilidad de
-          cada producto en tu sucursal. Si un producto no está en ella, al activarlo
-          se agrega (la cantidad se carga desde Stock).
-        </Alert>
-      )}
-
       <div className="d-flex align-items-center gap-2 mb-3 flex-wrap">
         <Form.Check
           type="radio"
