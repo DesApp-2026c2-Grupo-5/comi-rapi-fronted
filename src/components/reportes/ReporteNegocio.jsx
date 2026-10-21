@@ -21,6 +21,7 @@
 /* eslint-disable react/prop-types */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import {
   Alert,
   Badge,
@@ -274,6 +275,15 @@ const ReporteNegocio = () => {
     clave: 'facturacion',
     dir: 'desc',
   });
+
+  // El contador cambia al elegir/limpiar la sucursal de contexto del
+  // superadmin: el dashboard vuelve a la vista general para que el filtro
+  // manual no quede pegado a la sucursal que se estaba operando al "volver
+  // al rol" sin salir de esta pantalla.
+  const { versionSocket } = useSucursalOperativa();
+  useEffect(() => {
+    setSucursalId('');
+  }, [versionSocket]);
 
   const cargar = useCallback(
     async (silencioso = false) => {
