@@ -1,12 +1,15 @@
 /**
  * Propósito: Formulario del superadministrador para editar los parámetros de
  *            negocio (envío, cobertura, carrito, pedidos y promociones).
- * Contenido: Componente FormularioParametros que agrupa el catálogo por `grupo`,
- *            permite editar cada valor y guarda el lote completo con
- *            useParametros().actualizar (PUT /superadmin/parametros).
+ * Contenido: Componente FormularioParametros que agrupa el catálogo por `grupo`
+ *            (con ícono y tarjeta propia), lo muestra en una grilla responsiva
+ *            de dos columnas en pantallas grandes, permite editar cada valor y
+ *            guarda el lote completo con useParametros().actualizar
+ *            (PUT /superadmin/parametros). Paleta y formas: styles/tokens.css.
  * Dependencias: react-bootstrap (Card, Form, Button, Alert, Row, Col,
- *               Badge), react-icons (FaSave, FaUndoAlt), useParametros,
- *               useNotificaciones, components/comunes/Skeleton (SkeletonTarjeta).
+ *               Badge), react-icons/fa (FaSave, FaUndoAlt e íconos por
+ *               grupo), useParametros, useNotificaciones,
+ *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: <FormularioParametros />
  *
  * El backend es la autoridad: acá solo se valida en espejo (tipo/rango) para
@@ -24,7 +27,17 @@ import {
   Col,
   Badge,
 } from 'react-bootstrap';
-import { FaSave, FaUndoAlt } from 'react-icons/fa';
+import {
+  FaSave,
+  FaUndoAlt,
+  FaShippingFast,
+  FaMapMarkedAlt,
+  FaShoppingCart,
+  FaClipboardList,
+  FaTags,
+  FaBookOpen,
+  FaBoxes,
+} from 'react-icons/fa';
 import { useParametros } from '../../hooks/useParametros';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { SkeletonTarjeta } from '../comunes/Skeleton';
@@ -38,6 +51,17 @@ const TITULOS_GRUPO = {
   promociones: 'Promociones',
   catalogo: 'Catálogo',
   stock: 'Stock',
+};
+
+// Ícono decorativo por grupo (solo presentación).
+const ICONOS_GRUPO = {
+  envio: FaShippingFast,
+  cobertura: FaMapMarkedAlt,
+  carrito: FaShoppingCart,
+  pedido: FaClipboardList,
+  promociones: FaTags,
+  catalogo: FaBookOpen,
+  stock: FaBoxes,
 };
 
 // Orden de aparición de los grupos en el formulario.
@@ -164,77 +188,102 @@ const FormularioParametros = () => {
 
   return (
     <Form onSubmit={handleSubmit} noValidate>
-      {grupos.map((grupo) => (
-        <Card key={grupo.grupo} className="shadow-sm parametros-card mb-4">
-          <Card.Body>
-            <Card.Title as="h5" className="parametros-grupo-titulo mb-3">
-              {grupo.titulo}
-            </Card.Title>
-            {grupo.parametros.map((parametro) => (
-              <Form.Group
-                key={parametro.clave}
-                className="mb-4"
-                controlId={`parametro-${parametro.clave}`}
-              >
-                <Form.Label className="mb-1">
-                  {parametro.descripcion}
-                  {parametro.unidad ? (
-                    <Badge bg="secondary" className="ms-2 parametros-unidad">
-                      {parametro.unidad}
-                    </Badge>
-                  ) : null}
-                </Form.Label>
-                <Row className="g-2 align-items-center">
-                  <Col className="flex-grow-1">
-                    <Form.Control
-                      type="number"
-                      name={parametro.clave}
-                      min={parametro.minimo}
-                      max={parametro.maximo}
-                      step={parametro.tipo === 'entero' ? 1 : 'any'}
-                      inputMode={
-                        parametro.tipo === 'entero' ? 'numeric' : 'decimal'
-                      }
-                      value={valores[parametro.clave] ?? ''}
-                      onChange={(e) =>
-                        setValores((prev) => ({
-                          ...prev,
-                          [parametro.clave]: e.target.value,
-                        }))
-                      }
-                    />
-                  </Col>
-                  <Col xs="auto">
-                    <Button
-                      type="button"
-                      variant="outline-secondary"
-                      title={`Volver al valor por defecto (${parametro.valorPorDefecto})`}
-                      onClick={() =>
-                        setValores((prev) => ({
-                          ...prev,
-                          [parametro.clave]: String(parametro.valorPorDefecto),
-                        }))
-                      }
+      {grupos.map((grupo, indiceGrupo) => {
+        const IconoGrupo = ICONOS_GRUPO[grupo.grupo];
+        return (
+          <Card
+            key={grupo.grupo}
+            className="shadow-sm parametros-card mb-4"
+            style={{ '--parametros-orden': indiceGrupo }}
+          >
+            <Card.Header
+              as="h2"
+              className="h5 bg-white parametros-grupo-header"
+            >
+              {IconoGrupo ? (
+                <span className="parametros-grupo-icono" aria-hidden="true">
+                  <IconoGrupo />
+                </span>
+              ) : null}
+              <span className="parametros-grupo-titulo">{grupo.titulo}</span>
+              <Badge bg={null} className="parametros-grupo-cantidad">
+                {grupo.parametros.length === 1
+                  ? '1 parámetro'
+                  : `${grupo.parametros.length} parámetros`}
+              </Badge>
+            </Card.Header>
+            <Card.Body>
+              <Row xs={1} lg={2} className="g-4">
+                {grupo.parametros.map((parametro) => (
+                  <Col key={parametro.clave}>
+                    <Form.Group
+                      controlId={`parametro-${parametro.clave}`}
+                      className="parametros-item"
                     >
-                      <FaUndoAlt aria-hidden="true" />
-                      <span className="visually-hidden">
-                        Restablecer {parametro.clave}
-                      </span>
-                    </Button>
+                      <Form.Label className="parametros-item-label">
+                        {parametro.descripcion}
+                        {parametro.unidad ? (
+                          <Badge bg={null} className="ms-2 parametros-unidad">
+                            {parametro.unidad}
+                          </Badge>
+                        ) : null}
+                      </Form.Label>
+                      <div className="parametros-item-control">
+                        <Form.Control
+                          type="number"
+                          name={parametro.clave}
+                          min={parametro.minimo}
+                          max={parametro.maximo}
+                          step={parametro.tipo === 'entero' ? 1 : 'any'}
+                          inputMode={
+                            parametro.tipo === 'entero' ? 'numeric' : 'decimal'
+                          }
+                          value={valores[parametro.clave] ?? ''}
+                          onChange={(e) =>
+                            setValores((prev) => ({
+                              ...prev,
+                              [parametro.clave]: e.target.value,
+                            }))
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="outline-secondary"
+                          className="parametros-item-reset"
+                          title={`Volver al valor por defecto (${parametro.valorPorDefecto})`}
+                          onClick={() =>
+                            setValores((prev) => ({
+                              ...prev,
+                              [parametro.clave]: String(parametro.valorPorDefecto),
+                            }))
+                          }
+                        >
+                          <FaUndoAlt aria-hidden="true" />
+                          <span className="visually-hidden">
+                            Restablecer {parametro.clave}
+                          </span>
+                        </Button>
+                      </div>
+                    </Form.Group>
                   </Col>
-                </Row>
-                <Form.Text className="text-muted">
-                  Clave: {parametro.clave} · por defecto {parametro.valorPorDefecto}
-                </Form.Text>
-              </Form.Group>
-            ))}
-          </Card.Body>
-        </Card>
-      ))}
-      <Button variant="primary" type="submit" disabled={guardando}>
-        <FaSave className="me-1" aria-hidden="true" />
-        {guardando ? 'Guardando…' : 'Guardar parámetros'}
-      </Button>
+                ))}
+              </Row>
+            </Card.Body>
+          </Card>
+        );
+      })}
+      <div className="parametros-pie">
+        <Button
+          variant="primary"
+          type="submit"
+          size="lg"
+          disabled={guardando}
+          className="parametros-guardar"
+        >
+          <FaSave className="me-2" aria-hidden="true" />
+          {guardando ? 'Guardando…' : 'Guardar parámetros'}
+        </Button>
+      </div>
     </Form>
   );
 };

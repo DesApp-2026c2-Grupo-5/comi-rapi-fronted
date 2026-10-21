@@ -364,7 +364,6 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
               </Table>
               <div className="small text-muted">
                 <Badge bg="warning" text="dark">Extra</Badge> cobra · <Badge bg="secondary">Personalizar</Badge> no cobra · <Badge bg="success">Acompaña</Badge> cobra (selector de producto) · <Badge bg="light" text="dark" className="border">Condimento</Badge> no cobra
-                {!soloLectura && <span className="d-block mt-1">Mín y Máx se editan en la misma fila: cambiá el valor y presioná Enter (o salí del campo).</span>}
               </div>
             </>
           )}

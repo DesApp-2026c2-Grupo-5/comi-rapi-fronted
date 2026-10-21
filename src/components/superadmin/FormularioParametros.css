@@ -1,20 +1,164 @@
-/* Estilos del formulario de parámetros del superadministrador. */
+/* Estilos del formulario de parámetros del superadministrador.
+   Patrón visual: ReporteNegocio.css (tarjeta con borde crema y fondo
+   degradado blanco→crema, ícono en círculo crema, encabezado blanco),
+   con variables de styles/tokens.css. Las animaciones usan solo
+   transform/opacity, la curva --ease-out del sistema y respetan
+   prefers-reduced-motion. */
 
 .parametros-card {
-  border: none;
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, var(--color-white), var(--color-cream-soft));
+  animation: parametros-entrada 0.25s var(--ease-out) both;
+  /* Retraso escalonado por grupo (40ms entre tarjetas). */
+  animation-delay: calc(var(--parametros-orden, 0) * 40ms);
+}
+
+@keyframes parametros-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parametros-card {
+    animation: none;
+  }
+}
+
+/* Encabezado del grupo (Card.Header blanco, como en reportes). */
+
+.parametros-grupo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--color-border-card);
+}
+
+.parametros-grupo-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-cream);
+  color: var(--color-primary-dark);
+  flex: 0 0 auto;
 }
 
 .parametros-grupo-titulo {
-  color: #b23a00;
-  border-bottom: 1px solid #f0d9c8;
-  padding-bottom: 0.5rem;
+  color: var(--color-text);
 }
 
-.parametros-unidad {
-  font-weight: 400;
+/* Badge de contador de grupo: mismo tratamiento que el de unidad (fondo
+   oscuro del token + letras blancas). */
+.parametros-grupo-cantidad {
+  margin-left: auto;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-text) !important;
+  color: var(--color-white) !important;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* Ítem de parámetro. */
+
+.parametros-item-label {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.parametros-item-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.parametros-item-control .form-control {
+  max-width: 320px;
+  border-color: var(--color-border-strong);
+  background: var(--color-white);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .parametros-item-control .form-control:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+/* Anillo de foco: --color-primary con alfa (mismo rgb del focus ring que
+   comirapi.css aplica a los botones). */
+.parametros-item-control .form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.3);
+}
+
+.parametros-item-reset {
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.12s var(--ease-out);
+}
+
+.parametros-item-reset:active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parametros-item-reset:active {
+    transform: none;
+  }
+}
+
+/* Badge de unidad: fondo oscuro del token + letras blancas, para que las
+   unidades ($, km, min) se lean sobre cualquier fondo de la tarjeta. */
+.badge.parametros-unidad {
+  background-color: var(--color-text) !important;
+  color: var(--color-white) !important;
+  font-weight: 500;
   vertical-align: middle;
 }
 
-.parametros-card input[type='number'] {
-  max-width: 320px;
+/* Pie de guardado: queda a la vista al final del formulario largo. */
+
+.parametros-pie {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 0 0.25rem;
+  background: linear-gradient(to top, var(--color-white) 65%, rgba(255, 255, 255, 0));
+}
+
+.parametros-guardar {
+  border-radius: var(--radius-panel);
+  font-weight: 600;
+  box-shadow: var(--shadow-cta);
+  transition: transform 0.12s var(--ease-out), box-shadow 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .parametros-guardar:hover {
+    box-shadow: var(--shadow-cta-hover);
+    transform: translateY(-1px);
+  }
+}
+
+.parametros-guardar:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parametros-guardar:hover,
+  .parametros-guardar:active {
+    transform: none;
+  }
 }
