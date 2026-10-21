@@ -29,7 +29,7 @@ import { desconectarSocket } from '../services/socket';
 export const SucursalOperativaContext = createContext(null);
 
 export const SucursalOperativaProvider = ({ children }) => {
-  const { user, isAdmin, isSuperadmin, refrescarUsuario } = useAuth();
+  const { user, refrescarUsuario } = useAuth();
   // Se incrementa en cada cambio de contexto: los efectos que dependen de él
   // (listeners del socket en PedidoContext) rearman sobre la conexión nueva.
   const [versionSocket, setVersionSocket] = useState(0);
@@ -94,7 +94,7 @@ export const useSucursalOperativaContext = () => {
   if (!contexto) {
     throw new Error('useSucursalOperativa requiere SucursalOperativaProvider');
   }
-  const { sucursalOperativa, sucursalOperativaId } = contexto;
+  const { sucursalOperativaId } = contexto;
   // ¿La sesión puede operar pedidos/stock de una sucursal en particular?
   // - ADMIN: siempre (su asignada).
   // - SUPERADMIN: solo con contexto elegido.
