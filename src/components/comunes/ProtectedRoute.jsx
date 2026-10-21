@@ -31,8 +31,9 @@ const destinoPorRol = (user) => {
  * Si el usuario no está autenticado, redirige a /login guardando en
  * `state.from` la pantalla de origen, para que al entrar vuelva justo ahí en
  * vez de dejarlo en el inicio.
- * Opcionalmente puede requerir un rol específico.
- * @param {string} [requiredRole] - Rol requerido (opcional). Si se pasa, verifica que el usuario tenga ese rol.
+ * Opcionalmente puede requerir un rol (string) o varios (array): si el rol
+ * del usuario no está en la lista, se redirige a su panel.
+ * @param {string|string[]} [requiredRole] - Rol o roles requeridos (opcional).
  * @param {React.ReactNode} [children] - Componentes hijos (modo wrapper).
  */
 const ProtectedRoute = ({ requiredRole, children }) => {
@@ -56,9 +57,15 @@ const ProtectedRoute = ({ requiredRole, children }) => {
     );
   }
 
-  // Si se requiere un rol específico y el usuario no lo tiene, redirigir al inicio correspondiente
-  if (requiredRole && user?.rol !== requiredRole) {
-    return <Navigate to={destinoPorRol(user)} replace />;
+  // Si se requieren roles y el usuario no tiene ninguno, redirigir al inicio
+  // correspondiente. El superadmin entra a las rutas operativas del admin
+  // (pedidos/stock) por estar en la lista; el aislamiento fino por contexto
+  // lo resuelve el backend (403) y las pantallas (aviso sin contexto).
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!roles.includes(user?.rol)) {
+      return <Navigate to={destinoPorRol(user)} replace />;
+    }
   }
 
   // Si hay children (modo wrapper), renderizar children; si no, renderizar Outlet (modo rutas anidadas)
@@ -116,7 +123,10 @@ export { ProtectedRoute as default, PublicOnlyRoute, RutaCompra, destinoPorRol }
    components. `children` y `requiredRole` son opcionales de verdad: el
    componente cae en `<Outlet />` cuando no vienen. */
 ProtectedRoute.propTypes = {
-  requiredRole: PropTypes.oneOf(Object.values(ROLES)),
+  requiredRole: PropTypes.oneOfType([
+    PropTypes.oneOf(Object.values(ROLES)),
+    PropTypes.arrayOf(PropTypes.oneOf(Object.values(ROLES))),
+  ]),
   children: PropTypes.node,
 };
 

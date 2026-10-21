@@ -256,7 +256,9 @@ export const confirmarPedido = async (id, medioPago) => {
 };
 
 /**
- * T4: reasigna un pedido a otra sucursal (solo ADMIN).
+ * Reasigna un pedido a otra sucursal (exclusivo del SUPERADMINISTRADOR con
+ * contexto de sucursal; el pedido debe pertenecer a la sucursal del contexto
+ * y el destino debe tener cobertura y stock, validado por el backend).
  * @param {number} id - ID del pedido.
  * @param {number} sucursalId - ID de la sucursal destino.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
@@ -272,5 +274,25 @@ export const reasignarSucursal = async (id, sucursalId) => {
     return { success: true, data: mapearPedido(data) };
   } catch (error) {
     return { success: false, error: error?.message || 'No se pudo reasignar el pedido' };
+  }
+};
+
+/**
+ * Candidatas de reasignación de un pedido (solo SUPERADMINISTRADOR con
+ * contexto): sucursales activas dentro de la cobertura de la dirección del
+ * pedido y con stock suficiente, sin la sucursal actual. Es la lista del
+ * selector del panel; el PATCH re-valida todo en el backend.
+ * @param {number} id - ID del pedido.
+ * @returns {Promise<{success: boolean, data?: Array<{id, nombre, distanciaMetros}>, error?: string}>}
+ */
+export const obtenerSucursalesCandidatas = async (id) => {
+  try {
+    const data = await requestJson(`/pedidos/${id}/sucursales-candidatas`);
+    return { success: true, data: Array.isArray(data) ? data : [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'No se pudieron obtener las sucursales candidatas',
+    };
   }
 };

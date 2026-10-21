@@ -38,6 +38,8 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import useIndicadoresNav from '../../hooks/useIndicadoresNav';
 import { useSucursal } from '../../hooks/useSucursal';
+import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
+import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { ROLES } from '../../utils/constants';
 import { esRutaDeAlguna, rutaActual } from '../../utils/rutas';
 import { nombreCompleto } from '../../utils/formatters';
@@ -193,10 +195,15 @@ const menuSuperadmin = [
 
 const Navbar = () => {
   const { user, logout, isAuthenticated, hydrated } = useAuth();
-  // La sucursal del admin (badge "Sucursal: X") sale del SucursalContext, que
-  // ya carga todas las sucursales al montar la app: el Navbar está dentro del
-  // provider (App.jsx) y solo hace el match por id con el user.
+  const { notificar } = useNotificaciones();
+  // La lista de sucursales (para el selector del superadmin) sale del
+  // SucursalContext, que ya carga todas al montar la app.
   const { sucursales } = useSucursal();
+  // La sucursal OPERATIVA de la sesión (asignada del admin o contexto del
+  // superadmin) sale de /auth/me: es la que se muestra y la que se puede
+  // cambiar cuando el rol es SUPERADMINISTRADOR.
+  const { sucursalOperativa, elegirSucursal, limpiarSucursal } =
+    useSucursalOperativa();
   // Los contadores de badge y sus pulsos viven en un hook aparte porque la barra
   // inferior muestra los mismos números: si cada componente los calculara por su
   // cuenta, dejarían de coincidir en algún momento.
@@ -234,22 +241,59 @@ const Navbar = () => {
     : isSuperadmin
       ? '/superadmin/panel'
       : '/cliente/inicio';
+  // Con contexto elegido, el superadmin también opera los pedidos y el stock
+  // de esa sucursal (rutas compartidas con el admin; el backend acota por el
+  // contexto). Sin contexto, su menú queda solo con lo global.
+  const menuSuperadminOperativo = sucursalOperativa
+    ? [
+        menuSuperadmin[0],
+        {
+          to: '/admin/pedidos',
+          etiqueta: 'Pedidos (sucursal)',
+          icono: FaReceipt,
+        },
+        {
+          to: '/admin/stock',
+          etiqueta: 'Stock (sucursal)',
+          icono: FaBoxes,
+        },
+        ...menuSuperadmin.slice(1),
+      ]
+    : menuSuperadmin;
   const menu = isAdmin
     ? menuAdmin
     : isSuperadmin
-      ? menuSuperadmin
+      ? menuSuperadminOperativo
       : isCliente
         ? enlacesCliente
         : enlacesInvitado;
   const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
-  // A0: el admin siempre ve a qué sucursal pertenece (feedback del profesor).
-  // Superadmin y cliente no: la sucursal es información del panel de admin.
-  // Un admin sin sucursal asignada (no debería existir) ve "Sin sucursal".
+  // La sucursal operativa sale de /auth/me (uniforme para admin y superadmin):
+  // el admin ve su sucursal asignada; un admin sin sucursal asignada (no
+  // debería existir) ve "Sin sucursal".
   const sucursalAdmin = isAdmin
-    ? (sucursales.find(
-        (s) => Number(s.id) === Number(user?.sucursalId)
-      ) || {}).nombre || 'Sin sucursal'
+    ? sucursalOperativa?.nombre || 'Sin sucursal'
     : null;
+
+  const sucursalesActivas = (sucursales || []).filter((s) => s.activa !== false);
+
+  const handleElegirContexto = async (sucursal) => {
+    const result = await elegirSucursal(sucursal.id);
+    if (result.success) {
+      notificar(`Ahora operás la sucursal ${sucursal.nombre}.`, 'info');
+    } else {
+      notificar(result.error || 'No se pudo elegir la sucursal.', 'danger');
+    }
+  };
+
+  const handleLimpiarContexto = async () => {
+    const result = await limpiarSucursal();
+    if (result.success) {
+      notificar('Dejaste de operar la sucursal.', 'info');
+    } else {
+      notificar(result.error || 'No se pudo salir del contexto.', 'danger');
+    }
+  };
 
   /* Pantalla de origen para los botones de acceso: al entrar se vuelve a donde
      estaba el visitante, y si llegó al login desde el carrito vuelve al carrito
@@ -477,6 +521,54 @@ const Navbar = () => {
                 <FaStore className="navbar-sucursal-ico" aria-hidden="true" />
                 <span className="navbar-sucursal-nombre">{sucursalAdmin}</span>
               </span>
+            )}
+            {/* Selector de sucursal de contexto (solo superadmin): elegir una
+                sucursal habilita su operación (pedidos y stock de esa
+                sucursal, con las mismas reglas que su administrador) sin
+                perder los permisos globales. La lista solo ofrece activas y
+                el backend valida la elección. */}
+            {isSuperadmin && (
+              <Dropdown align="end" className="navbar-contexto-sucursal">
+                <Dropdown.Toggle
+                  variant={sucursalOperativa ? 'warning' : 'outline-warning'}
+                  size="sm"
+                  className="d-inline-flex align-items-center gap-1"
+                  aria-label="Elegir sucursal para operar"
+                >
+                  <FaStore aria-hidden="true" />
+                  <span className="navbar-sucursal-nombre">
+                    {sucursalOperativa
+                      ? `Operando: ${sucursalOperativa.nombre}`
+                      : 'Elegir sucursal'}
+                  </span>
+                  <FaChevronDown size="0.6em" aria-hidden="true" />
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {sucursalesActivas.map((s) => (
+                    <Dropdown.Item
+                      key={s.id}
+                      active={
+                        sucursalOperativa &&
+                        Number(s.id) === Number(sucursalOperativa.id)
+                      }
+                      onClick={() => handleElegirContexto(s)}
+                    >
+                      {s.nombre}
+                    </Dropdown.Item>
+                  ))}
+                  {sucursalesActivas.length === 0 && (
+                    <Dropdown.Item disabled>No hay sucursales activas</Dropdown.Item>
+                  )}
+                  {sucursalOperativa && (
+                    <>
+                      <Dropdown.Divider />
+                      <Dropdown.Item onClick={handleLimpiarContexto}>
+                        Dejar de operar esta sucursal
+                      </Dropdown.Item>
+                    </>
+                  )}
+                </Dropdown.Menu>
+              </Dropdown>
             )}
             {!isAuthenticated ? (
               /* El invitado llega acá desde el colapsable. Se le ofrece entrar y,

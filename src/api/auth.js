@@ -5,7 +5,7 @@
  * Uso: import { loginCliente, registroCliente } from '../api/auth';
  */
 
-import { apiGet, apiPost } from './client';
+import { apiDelete, apiGet, apiPost } from './client';
 import { ROLES } from '../utils/constants';
 
 /**
@@ -93,6 +93,34 @@ export const registroCliente = async (datos) => {
 export const logout = async () => {
   const result = await apiPost('/auth/logout', {});
   return { success: result.success };
+};
+
+/**
+ * Elige la sucursal de contexto operativa del SUPERADMINISTRADOR
+ * (POST /api/auth/sucursal-contexto). El backend valida que exista y esté
+ * activa y la guarda en la sesión; /auth/me la expone como `sucursalOperativa`.
+ * @param {number|string} sucursalId
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const elegirSucursalContexto = async (sucursalId) => {
+  const result = await apiPost('/auth/sucursal-contexto', { sucursalId });
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};
+
+/**
+ * Limpia la sucursal de contexto del SUPERADMINISTRADOR
+ * (DELETE /api/auth/sucursal-contexto).
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const limpiarSucursalContexto = async () => {
+  const result = await apiDelete('/auth/sucursal-contexto');
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
 };
 
 /**

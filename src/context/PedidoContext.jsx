@@ -15,6 +15,7 @@ import React, { createContext, useState, useCallback, useMemo, useEffect, useRef
 import { useNavigate } from 'react-router-dom';
 import { ESTADOS_PEDIDO } from '../utils/constants';
 import { useAuth } from '../hooks/useAuth';
+import { useSucursalOperativa } from '../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../hooks/useNotificaciones';
 import * as pedidosApi from '../api/pedidos';
 import {
@@ -41,18 +42,32 @@ export const PedidoProvider = ({ children }) => {
   // Se incrementa al confirmar un pago: el Navbar lo usa para animar "Mis Pedidos"
   const [senalPedido, setSenalPedido] = useState(0);
   const { user, hydrated, isAdmin, isCliente, isSuperadmin } = useAuth();
+  const { sucursalOperativaId, versionSocket } = useSucursalOperativa();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
   const emailSesion = user?.email;
 
-  // El admin solo ve pedidos CONFIRMADO y posteriores; los PENDIENTE (sin pagar)
-  // no le interesan y quedan fuera de su lista, del badge y del polling.
+  // El panel operativo no muestra pedidos PENDIENTE (sin pagar). El admin ve
+  // los de su sucursal (el backend ya los scopea); el superadmin recibe la
+  // lista GLOBAL de /api/pedidos, así que se la acota acá a la sucursal de su
+  // contexto: sin contexto, la lista queda vacía y la pantalla muestra el
+  // aviso de elegir sucursal.
   const filtrarPorRol = useCallback(
     (lista) => {
-      if (!isAdmin) return lista;
-      return (lista || []).filter((p) => p.estado !== ESTADOS_PEDIDO.PENDIENTE);
+      if (isAdmin) {
+        return (lista || []).filter((p) => p.estado !== ESTADOS_PEDIDO.PENDIENTE);
+      }
+      if (isSuperadmin) {
+        if (!sucursalOperativaId) return [];
+        return (lista || []).filter(
+          (p) =>
+            p.estado !== ESTADOS_PEDIDO.PENDIENTE &&
+            Number(p.sucursal?.id ?? p.sucursalId) === Number(sucursalOperativaId)
+        );
+      }
+      return lista;
     },
-    [isAdmin]
+    [isAdmin, isSuperadmin, sucursalOperativaId]
   );
 
   // Carga inicial y ante cambios de sesión: el backend scopea por su propia
@@ -85,11 +100,12 @@ export const PedidoProvider = ({ children }) => {
 
   const detectarCambios = useCallback(
     (lista) => {
-      // El superadministrador recibe `pedido_actualizado` de todo el sistema
-      // (está en la room `admins`), pero no opera una sucursal ni es dueño de un
-      // pedido: no se le avisa de transiciones ajenas. Su panel refresca las
-      // métricas con su propio listener, sin mensajes.
-      if (isSuperadmin) return;
+      // El superadministrador SIN contexto no opera una sucursal ni es dueño de
+      // un pedido: no se le avisa de transiciones ajenas (su panel refresca las
+      // métricas con su propio listener). CON contexto opera esa sucursal y
+      // recibe los mismos avisos que su administrador.
+      const esOperativo = isAdmin || (isSuperadmin && Boolean(sucursalOperativaId));
+      if (!esOperativo && !isCliente) return;
       const previos = estadosPreviosRef.current;
       const snapshot = {};
       (lista || []).forEach((pedido) => {
@@ -103,7 +119,7 @@ export const PedidoProvider = ({ children }) => {
           previo &&
           previo !== ESTADOS_PEDIDO.EN_CAMINO
         ) {
-          if (isAdmin) {
+          if (esOperativo) {
             notificar(`El pedido #${pedido.id} está en camino.`, 'info');
           } else {
             notificar(`Tu pedido #${pedido.id} está en camino.`, 'info');
@@ -118,7 +134,7 @@ export const PedidoProvider = ({ children }) => {
           previo &&
           previo !== ESTADOS_PEDIDO.ENTREGADO
         ) {
-          if (isAdmin) {
+          if (esOperativo) {
             notificar(`El pedido #${pedido.id} fue entregado.`, 'success');
           } else {
             notificar(`Tu pedido #${pedido.id} fue entregado.`, 'success');
@@ -140,7 +156,7 @@ export const PedidoProvider = ({ children }) => {
             Boolean(registroCancelacion?.usuarioId) &&
             registroCancelacion.usuarioId === user?.id;
           if (esCancelacionPropia) return; // la hizo este usuario: no se auto-avisa
-          if (isAdmin) {
+          if (esOperativo) {
             // Si el pedido seguía en PENDIENTE no se informa: no estaba pagado y
             // cancelarlo no requiere atención del admin. Solo avisa a partir de
             // CONFIRMADO, que es cuando el pedido ya quedó registrado.
@@ -160,7 +176,7 @@ export const PedidoProvider = ({ children }) => {
       });
       estadosPreviosRef.current = snapshot;
     },
-    [notificar, user, isAdmin, isSuperadmin, navigate]
+    [notificar, user, isAdmin, isCliente, isSuperadmin, sucursalOperativaId, navigate]
   );
 
   // Las rooms viven en el servidor, así que hay que volver a suscribirse
@@ -199,8 +215,12 @@ export const PedidoProvider = ({ children }) => {
   // Avisos en tiempo real: reemplaza al refresco periódico de 3 s.
   //   - admin:      recibe pedido_actualizado de su sucursal, sin suscribirse.
   //   - cliente:    recibe pedido_actualizado de los pedidos a los que se suscribió.
-  //   - superadmin: queda en la room `admins` para que ReporteNegocio refresque
-  //                 métricas con su propio listener; acá no genera avisos.
+  //   - superadmin: queda en la room `admins` (ReporteNegocio refresca métricas
+  //                 con su propio listener); con contexto entra además a la
+  //                 room de esa sucursal al conectar.
+  // `versionSocket` cambia cuando el superadmin elige/limpia su contexto: la
+  // conexión se reabre para que el handshake entre a la room de la sucursal
+  // nueva y este efecto rearme los listeners sobre la instancia nueva.
   // No hay aviso al crear un pedido: el admin solo lo necesita cuando se
   // confirma, y el cliente ya tiene la respuesta de su propio POST.
   // El evento solo trae el pedidoId: los datos se releen por REST.
@@ -232,7 +252,7 @@ export const PedidoProvider = ({ children }) => {
       instancia.off('connect', alConectar);
       instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alCambiarPedido);
     };
-  }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos]);
+  }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos, versionSocket]);
 
   // Al cerrar sesión se cierra el canal: con otra cookie, el backend rechazaría
   // el handshake de todas formas, y dejarlo abierto sería una conexión muerta.

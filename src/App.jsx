@@ -10,6 +10,7 @@ import { NotificacionProvider } from './context/NotificacionContext';
 import { AuthProvider } from './context/AuthContext';
 import { CarritoProvider } from './context/CarritoContext';
 import { SucursalProvider } from './context/SucursalContext';
+import { SucursalOperativaProvider } from './context/SucursalOperativaContext';
 import { PedidoProvider } from './context/PedidoContext';
 import { DireccionProvider } from './context/DireccionContext';
 import { PersonalizacionProvider } from './context/PersonalizacionContext';
@@ -75,17 +76,23 @@ function App() {
             recargar parámetros vía WebSocket solo con sesión vigente. */}
         <AuthProvider>
           <ParametrosProvider>
-            <CarritoProvider>
-              <SucursalProvider>
-                <PedidoProvider>
-                  <DireccionProvider>
-                    <PersonalizacionProvider>
-                      <AppLayout />
-                    </PersonalizacionProvider>
-                  </DireccionProvider>
-                </PedidoProvider>
-              </SucursalProvider>
-            </CarritoProvider>
+            {/* SucursalOperativaProvider: usa useAuth (sucursalOperativa de
+                /auth/me) y lo consumen PedidoContext, Navbar y las pantallas
+                operativas. Va antes de PedidoProvider, que rearma sus
+                listeners del socket cuando cambia el contexto. */}
+            <SucursalOperativaProvider>
+              <CarritoProvider>
+                <SucursalProvider>
+                  <PedidoProvider>
+                    <DireccionProvider>
+                      <PersonalizacionProvider>
+                        <AppLayout />
+                      </PersonalizacionProvider>
+                    </DireccionProvider>
+                  </PedidoProvider>
+                </SucursalProvider>
+              </CarritoProvider>
+            </SucursalOperativaProvider>
           </ParametrosProvider>
         </AuthProvider>
       </NotificacionProvider>
