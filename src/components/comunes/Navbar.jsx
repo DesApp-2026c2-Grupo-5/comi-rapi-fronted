@@ -132,11 +132,6 @@ const menuAdmin = [
 const menuSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
   {
-    to: '/superadmin/administradores',
-    etiqueta: 'Administradores',
-    icono: FaUserTie,
-  },
-  {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
     grupo: 'catalogo',
@@ -188,6 +183,12 @@ const menuSuperadmin = [
         etiqueta: 'Clientes',
         icono: FaUsers,
         prefijo: '/superadmin/clientes',
+      },
+      {
+        to: '/superadmin/administradores',
+        etiqueta: 'Administradores',
+        icono: FaUserTie,
+        prefijo: '/superadmin/administradores',
       },
     ],
   },
@@ -295,6 +296,9 @@ const Navbar = () => {
     }
   };
 
+  /* Botón del superadmin para elegir sucursal de contexto. Se declara una sola
+     vez y se reutiliza tanto en la fila superior (visible en móvil/responsive)
+     como en el menú colapsable (escritorio), sin duplicar el markup. */
   /* Pantalla de origen para los botones de acceso: al entrar se vuelve a donde
      estaba el visitante, y si llegó al login desde el carrito vuelve al carrito
      con lo que había elegido. */
@@ -522,31 +526,37 @@ const Navbar = () => {
                 <span className="navbar-sucursal-nombre">{sucursalAdmin}</span>
               </span>
             )}
-            {/* Selector de sucursal de contexto (solo superadmin): elegir una
-                sucursal habilita su operación (pedidos y stock de esa
-                sucursal, con las mismas reglas que su administrador) sin
-                perder los permisos globales. La lista solo ofrece activas y
-                el backend valida la elección. Mismo estilo que el badge de
-                sucursal del admin (píldora crema): el `variant="warning"`
-                de Bootstrap se perdía sobre el naranja de la barra. */}
-            {isSuperadmin && (
+            {/* Botón del superadmin: su ícono es también el selector de sucursal
+                de contexto. Al hacer clic se abre el desplegable para elegir
+                otra sucursal o dejar de operar la actual. Va solo con ícono
+                (sin el texto "Operando: X") para que, al cambiar de sucursal,
+                el nombre de usuario y el botón de cerrar sesión no se salgan
+                de la pantalla. */}
+            {isSuperadmin ? (
               <Dropdown align="end" className="navbar-contexto-sucursal">
                 <Dropdown.Toggle
                   as="button"
                   type="button"
                   variant=""
-                  className={`navbar-sucursal navbar-sucursal-selector${
-                    sucursalOperativa ? '' : ' navbar-sucursal-vacio'
+                  className={`btn-superadmin-contexto${
+                    sucursalOperativa ? ' btn-superadmin-contexto-activo' : ''
                   }`}
-                  aria-label="Elegir sucursal para operar"
-                >
-                  <FaStore className="navbar-sucursal-ico" aria-hidden="true" />
-                  <span className="navbar-sucursal-nombre">
-                    {sucursalOperativa
+                  aria-label={
+                    sucursalOperativa
+                      ? `Operando en ${sucursalOperativa.nombre}. Elegí otra sucursal`
+                      : 'Elegir sucursal para operar'
+                  }
+                  title={
+                    sucursalOperativa
                       ? `Operando: ${sucursalOperativa.nombre}`
-                      : 'Elegir sucursal'}
-                  </span>
-                  <FaChevronDown className="navbar-sucursal-caret" size="0.6em" aria-hidden="true" />
+                      : 'Elegir sucursal para operar'
+                  }
+                >
+                  <FaUserTie className="navbar-user-ico" aria-hidden="true" />
+                  <span className="btn-superadmin-texto">Superadmin</span>
+                  {sucursalOperativa && (
+                    <span className="btn-superadmin-dot" aria-hidden="true" />
+                  )}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   {sucursalesActivas.map((s) => (
@@ -574,7 +584,7 @@ const Navbar = () => {
                   )}
                 </Dropdown.Menu>
               </Dropdown>
-            )}
+            ) : null}
             {!isAuthenticated ? (
               /* El invitado llega acá desde el colapsable. Se le ofrece entrar y,
                  si no tiene cuenta, crearla: es el mismo par de acciones que la
@@ -611,7 +621,7 @@ const Navbar = () => {
                 />
                 <span className="navbar-perfil-nombre">{nombreUsuario}</span>
               </NavLink>
-            ) : (
+            ) : isSuperadmin ? null : (
               <span className="navbar-user-nombre">
                 <FaUserCircle className="navbar-user-ico" aria-hidden="true" />
                 {user?.nombre}

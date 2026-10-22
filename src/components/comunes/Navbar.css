@@ -316,25 +316,37 @@
   font-size: 1.3rem;
 }
 
+/* Cerrar sesión rediseñado: pill suave sobre la barra, texto crema claro.
+   Al pasar el mouse se llena de blanco con texto de marca y elevación. */
 .btn-logout-comirapi {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   border-radius: 50px;
-  border: 2px solid #fff;
-  color: #fff;
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #ffe6c2;
+  background: rgba(255, 255, 255, 0.12);
   font-weight: 700;
   letter-spacing: 0.4px;
+  padding: 0.22rem 0.85rem;
   transition:
     color 0.25s ease,
     background-color 0.25s ease,
+    border-color 0.25s ease,
     transform 0.25s ease,
     box-shadow 0.25s ease;
 }
-.btn-logout-comirapi:hover {
+.btn-logout-comirapi:hover,
+.btn-logout-comirapi:focus-visible {
   background: #fff;
   color: var(--color-primary-dark) !important;
   border-color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+.btn-logout-comirapi:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 /* Acceso del invitado: "Iniciar sesión" y "Regístrate" ocupan el lugar del
@@ -496,45 +508,75 @@
   color: #f07f10;
 }
 
-/* ============ Selector de sucursal de contexto (superadmin) ============ */
-/* La píldora crema del badge de sucursal, en versión BOTÓN: mismo look que
-   su vecino "Sucursal: X" del admin. Se declara compuesto
-   (.navbar-comirapi .navbar-sucursal-selector) para ganarle al `.btn` de
-   Bootstrap, que con variant="warning" era naranja sobre naranja y quedaba
-   invisible sobre la barra. */
-.navbar-comirapi .navbar-sucursal-selector {
+/* ============ Botón del superadmin (selector de sucursal) ============ */
+/* El botón del superadmin lleva el ícono y el texto fijo "Superadmin". Al
+   hacer clic se abre el desplegable para elegir otra sucursal o dejar de
+   operar. El texto es fijo (no "Operando: X") para que el ancho no cambie
+   al cambiar de sucursal y el nombre de usuario y el cierre de sesión no se
+   salgan de la pantalla. Se declara compuesto para ganarle al `.btn` de
+   Bootstrap. */
+.navbar-comirapi .btn-superadmin-contexto {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   background: #fff4e2;
   border: 1px solid #f0a10e;
   color: #8a4b00;
+  border-radius: 2rem;
   cursor: pointer;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
   transition:
     background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
     transform 0.25s ease;
 }
 
-.navbar-comirapi .navbar-sucursal-selector:hover,
-.navbar-comirapi .navbar-sucursal-selector.show {
-  background: #ffe9c4;
+.navbar-comirapi .btn-superadmin-contexto:hover,
+.navbar-comirapi .btn-superadmin-contexto.show {
+  background: #ffe6c2;
+  border-color: #d47f00;
+  color: #b55d00;
+  transform: translateY(-1px);
 }
 
-.navbar-comirapi .navbar-sucursal-selector:focus-visible {
+.navbar-comirapi .btn-superadmin-contexto.btn-superadmin-contexto-activo {
+  background: #fff3d4;
+  border-color: #d47f00;
+  color: #b55d00;
+  box-shadow: 0 0 0 2px rgba(212, 127, 0, 0.15);
+}
+
+.navbar-comirapi .btn-superadmin-contexto:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.65);
   outline-offset: 1px;
 }
 
-/* Sin contexto: crema más tenue y borde punteado — invita a la acción sin
-   competir con los datos. */
-.navbar-comirapi .navbar-sucursal-vacio {
-  background: #fff9ee;
-  border-style: dashed;
+/* Texto fijo del botón del superadmin. */
+.btn-superadmin-texto {
+  display: inline-flex;
+  align-items: center;
 }
 
-/* El caret es el FaChevronDown del toggle: el ::after de Bootstrap se apaga
-   para no sumar dos flechas. */
-.navbar-comirapi .navbar-sucursal-selector.dropdown-toggle::after {
+/* Punto verde que indica que hay un contexto de sucursal activo. Va al final
+   del botón, en el flujo, para no solaparse con el texto. */
+.btn-superadmin-dot {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  background: var(--color-success);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Apagar el ::after de Bootstrap en el toggle para no sumar dos flechas. */
+.navbar-comirapi .btn-superadmin-contexto.dropdown-toggle::after {
   display: none;
 }
 
-.navbar-sucursal-caret {
-  color: #8a4b00;
-}
+

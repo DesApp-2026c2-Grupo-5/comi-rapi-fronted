@@ -14,7 +14,7 @@
  *                                                           el admin no lo muestra)
  */
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 import PropTypes from "prop-types";
 import {
   FaClock,
@@ -32,6 +32,7 @@ import {
   ETIQUETAS_ESTADO_PEDIDO,
 } from "../../utils/constants";
 import { formatDateTime } from "../../utils/formatters";
+import { formatHoraLlegada } from "../../utils/llegada";
 import "./HistorialStepper.css";
 
 // Icono grande por estado (react-icons)
@@ -49,24 +50,6 @@ const ICONO_ESTADO = {
 const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter(
   (e) => e !== ESTADOS_PEDIDO.CANCELADO,
 );
-
-// Minutos acumulados desde la creación del pedido (minuto 0).
-// El nodo actual tickea en vivo; al cambiar de estado (WebSocket → refetch)
-// se congela con su fecha real y empieza a tickear el siguiente.
-const INTERVALO_TICK_MS = 30 * 1000;
-
-function minutosEntre(desdeIso, hastaMs) {
-  const desde = new Date(desdeIso).getTime();
-  if (Number.isNaN(desde)) return null;
-  return Math.max(0, Math.floor((hastaMs - desde) / 60000));
-}
-
-function formatearMinutos(minutos) {
-  if (minutos < 60) return `+${minutos} min`;
-  const horas = Math.floor(minutos / 60);
-  const resto = String(minutos % 60).padStart(2, "0");
-  return `+${horas} h ${resto} min`;
-}
 
 const HistorialStepper = ({
   pedido,
@@ -90,20 +73,6 @@ const HistorialStepper = ({
       .find((h) => flujoEstados.includes(h.estado));
     alcanzado = ultimoEnFlujo ? flujoEstados.indexOf(ultimoEnFlujo.estado) : -1;
   }
-  const pedidoFinalizado =
-    pedido.estado === ESTADOS_PEDIDO.ENTREGADO || esCancelado;
-
-  // Ticker local: solo el nodo actual avanza en vivo; el resto usa su fecha
-  // congelada del historial. Se detiene en pedidos finalizados.
-  const [ahora, setAhora] = useState(() => Date.now());
-  useEffect(() => {
-    if (pedidoFinalizado) return undefined;
-    const intervalo = setInterval(
-      () => setAhora(Date.now()),
-      INTERVALO_TICK_MS,
-    );
-    return () => clearInterval(intervalo);
-  }, [pedidoFinalizado, pedido.id]);
 
   const fechaCrudaDe = (estado) => {
     const registro = (pedido.historialEstados || []).find(
@@ -112,16 +81,12 @@ const HistorialStepper = ({
     return registro ? registro.fecha : null;
   };
 
-  // Minutos acumulados desde la creación para un nodo alcanzado. El nodo
-  // actual usa el reloj en vivo; los anteriores, su fecha congelada.
-  const minutosDe = (estado, esNodoActual) => {
-    if (!pedido.fecha) return null;
-    if (esNodoActual && !pedidoFinalizado) {
-      return minutosEntre(pedido.fecha, ahora);
-    }
+  // Hora a la que se alcanzó cada nodo. El nodo actual también usa su fecha
+  // congelada del historial (se actualiza al refetch por WebSocket).
+  const horaDe = (estado) => {
     const fechaNodo = fechaCrudaDe(estado);
     if (!fechaNodo) return null;
-    return minutosEntre(pedido.fecha, new Date(fechaNodo).getTime());
+    return formatHoraLlegada(fechaNodo);
   };
 
   // Próximo estado principal (el primer siguiente que pertenece al flujo)
@@ -157,21 +122,15 @@ const HistorialStepper = ({
     return partes.join(", ");
   };
 
-  // Minutos visibles bajo cada nodo alcanzado (los futuros no muestran nada).
-  // Solo se muestran en el panel ADMIN (con onCambiar): el cliente ve el
-  // stepper limpio, sin el "+X min" que le resultaba ruido.
-  const contenidoMinutos = (estado, idx) => {
-    if (!onCambiar) return null;
+  // Hora visible bajo cada nodo alcanzado (los futuros no muestran nada).
+  // Se muestra tanto en admin como en cliente.
+  const contenidoHora = (estado, idx) => {
     if (idx > alcanzado) return null;
-    const esNodoActual = !esCancelado && idx === alcanzado;
-    const minutos = minutosDe(estado, esNodoActual);
-    if (minutos === null) return null;
+    const hora = horaDe(estado);
+    if (!hora) return null;
     return (
-      <span
-        className="estado-step-minutos"
-        aria-label={`${formatearMinutos(minutos)} desde el pedido`}
-      >
-        {formatearMinutos(minutos)}
+      <span className="estado-step-hora" aria-label={`a las ${hora}`}>
+        {hora}
       </span>
     );
   };
@@ -194,7 +153,7 @@ const HistorialStepper = ({
         {fechaDe(estado) && (
           <span className="visually-hidden">{`, ${fechaDe(estado)}`}</span>
         )}
-        {contenidoMinutos(estado, idx)}
+        {contenidoHora(estado, idx)}
       </>
     );
 
@@ -271,13 +230,13 @@ const HistorialStepper = ({
                   </span>
                 )}
                 {(() => {
-                  const minutos = minutosDe(ESTADOS_PEDIDO.CANCELADO, false);
-                  return minutos !== null ? (
+                  const hora = horaDe(ESTADOS_PEDIDO.CANCELADO);
+                  return hora !== null ? (
                     <span
-                      className="estado-step-minutos"
-                      aria-label={`${formatearMinutos(minutos)} desde el pedido`}
+                      className="estado-step-hora"
+                      aria-label={`a las ${hora}`}
                     >
-                      {formatearMinutos(minutos)}
+                      {hora}
                     </span>
                   ) : null;
                 })()}

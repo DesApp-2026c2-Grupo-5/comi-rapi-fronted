@@ -119,20 +119,20 @@
   color: #dc3545;
 }
 
-/* Minutos acumulados desde la creación, bajo cada estado alcanzado */
-.estado-step-minutos {
+ /* Hora de cada cambio de estado, bajo cada estado alcanzado */
+.estado-step-hora {
   font-size: 0.62rem;
   font-weight: 800;
   line-height: 1.1;
   color: #6c757d;
 }
-.estado-step.completado .estado-step-minutos {
+.estado-step.completado .estado-step-hora {
   color: #198754;
 }
-.estado-step.actual .estado-step-minutos {
+.estado-step.actual .estado-step-hora {
   color: #c07000;
 }
-.estado-step.cancelado .estado-step-minutos {
+.estado-step.cancelado .estado-step-hora {
   color: #dc3545;
 }
 

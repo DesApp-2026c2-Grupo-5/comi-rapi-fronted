@@ -124,10 +124,10 @@ const enlacesAdmin = [
 ];
 
 /* El superadministrador comparte el andamiaje de la barra inferior: panel,
-   administradores, hoja de Catálogo (el CRUD completo) y hoja de Negocio
-   (parámetros, sucursales y clientes). Así, en el móvil navega igual que el
-   admin, con los destinos al alcance del pulgar y sin depender del menú
-   hamburguesa. */
+   hoja de Catálogo (el CRUD completo) y hoja de Negocio
+   (parámetros, sucursales, clientes y administradores). Así, en el móvil
+   navega igual que el admin, con los destinos al alcance del pulgar y sin
+   depender del menú hamburguesa. */
 const enlacesSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
   {
@@ -151,11 +151,6 @@ const enlacesSuperadmin = [
         icono: FaBoxes,
       },
     ],
-  },
-  {
-    to: '/superadmin/administradores',
-    etiqueta: 'Administradores',
-    icono: FaUserTie,
   },
   {
     etiqueta: 'Catálogo',
@@ -211,6 +206,12 @@ const enlacesSuperadmin = [
         etiqueta: 'Clientes',
         icono: FaUsers,
         prefijo: '/superadmin/clientes',
+      },
+      {
+        to: '/superadmin/administradores',
+        etiqueta: 'Administradores',
+        icono: FaUserTie,
+        prefijo: '/superadmin/administradores',
       },
     ],
   },

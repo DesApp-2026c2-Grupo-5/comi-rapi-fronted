@@ -16,7 +16,7 @@ import {
 } from "../../utils/constants";
 import { formatPrice, formatDate } from "../../utils/formatters";
 import { calcularCostoEnvio } from "../../services/envio";
-import { textoLlegada } from "../../utils/llegada";
+import BadgeLlegada from "./BadgeLlegada";
 import IconoEstado from "../comunes/IconoEstado";
 import HistorialStepper from "../comunes/HistorialStepper";
 
@@ -50,9 +50,13 @@ const ListaPedidos = ({
         : null;
       return (
         <Card key={pedido.id} className="mb-3 shadow-sm">
-          <Card.Header className="d-flex justify-content-between align-items-center">
+          {/* El header lleva título + badges. En móvil (< sm) los badges van
+              debajo del "Pedido #X" para que quede uniforme entre todas las
+              tarjetas. En escritorio, el título va a la izquierda y los
+              badges se empujan al extremo derecho. */}
+          <Card.Header className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-start gap-2 gap-sm-4">
             <strong>Pedido #{pedido.id}</strong>
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2 flex-wrap ms-sm-auto">
               {!esFinal &&
                 pedido.etaMinutos !== null &&
                 pedido.etaMinutos !== undefined && (
@@ -64,11 +68,8 @@ const ListaPedidos = ({
               {/* A6: badge de llegada solo en en_camino (hora fija,
                   sin countdown — el texto completo está en el detalle). */}
               {pedido.estado === ESTADOS_PEDIDO.EN_CAMINO &&
-                pedido.horaEstimadaLlegada &&
-                textoLlegada(pedido.horaEstimadaLlegada) && (
-                  <Badge bg="success">
-                    {textoLlegada(pedido.horaEstimadaLlegada)}
-                  </Badge>
+                pedido.horaEstimadaLlegada && (
+                  <BadgeLlegada hora={pedido.horaEstimadaLlegada} />
                 )}
               {/* T4: badge de reasignación de sucursal */}
               {(pedido.historialEstados || []).some(

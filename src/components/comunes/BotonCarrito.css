@@ -49,3 +49,11 @@
   padding: 0.3rem 0.45rem;
   border: 2px solid #fff;
 }
+
+/* En móviles (< sm) el botón flotante quita espacio útil y estorba sobre la
+   barra inferior de navegación: se oculta en la versión responsive. */
+@media (max-width: 767.98px) {
+  .boton-carrito-flotante {
+    display: none !important;
+  }
+}
