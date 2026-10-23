@@ -1,34 +1,78 @@
-import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  createContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
+import PropTypes from 'prop-types';
 import {
   obtenerElementos,
   crearElemento,
   actualizarElemento,
   eliminarElemento,
 } from '../api/personalizacion';
-import { personalizacionPorCategoria } from '../services/personalizacionConfig';
+import {
+  obtenerPlantillas,
+  crearPlantilla,
+  actualizarPlantilla as actualizarPlantillaApi,
+  eliminarPlantilla as eliminarPlantillaApi,
+} from '../api/personalizacionCategorias';
 
+// El contexto y el provider conviven en el mismo archivo por cohesión.
+// eslint-disable-next-line react-refresh/only-export-components
 export const PersonalizacionContext = createContext(null);
 
-// Normaliza el catálogo de fallback por categoría (usa strings para
-// personalizar/condimento y objetos sin rango) al shape uniforme que consume
-// el modal: { id, nombre, precio, productoReferenciaId, minimo, maximo }.
-const normalizarItemFallback = (item, tipo) => {
-  if (tipo === 'personalizar' || tipo === 'condimento') {
-    const nombre = typeof item === 'string' ? item : item.nombre;
-    return { id: nombre, nombre, minimo: 0, maximo: 1 };
-  }
-  return { ...item, minimo: item.minimo ?? 0, maximo: item.maximo ?? 1 };
+const CONFIG_VACIA = {
+  extra: [],
+  personalizar: [],
+  acompanar: [],
+  condimento: [],
 };
+
+// Da al modal del cliente la forma uniforme que espera:
+// { id, nombre, precio, productoReferenciaId, minimo, maximo }.
+const normalizarPlantilla = (plantilla) => ({
+  id: String(plantilla.id),
+  nombre: plantilla.nombre,
+  precio:
+    plantilla.precio !== null && plantilla.precio !== undefined
+      ? Number(plantilla.precio)
+      : undefined,
+  productoReferenciaId: plantilla.productoReferenciaId,
+  minimo: plantilla.minimo ?? 0,
+  maximo: plantilla.maximo ?? 1,
+});
 
 export const PersonalizacionProvider = ({ children }) => {
   const [elementos, setElementos] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [plantillas, setPlantillas] = useState([]);
+  // Arranca en true porque el provider siempre dispara `cargar` al montar. Así
+  // las pantallas de edición no muestran un falso "no encontrado" antes de que
+  // termine la primera carga.
+  const [loading, setLoading] = useState(true);
 
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await obtenerElementos();
-      if (res.success) setElementos(res.data);
+      // allSettled: si falla el endpoint de plantillas (por ejemplo en una base
+      // todavía sin migrar), la personalización por producto sigue funcionando.
+      const [resElementos, resPlantillas] = await Promise.allSettled([
+        obtenerElementos(),
+        obtenerPlantillas(),
+      ]);
+      if (
+        resElementos.status === 'fulfilled' &&
+        resElementos.value.success
+      ) {
+        setElementos(resElementos.value.data);
+      }
+      if (
+        resPlantillas.status === 'fulfilled' &&
+        resPlantillas.value.success
+      ) {
+        setPlantillas(resPlantillas.value.data);
+      }
     } finally {
       setLoading(false);
     }
@@ -46,54 +90,121 @@ export const PersonalizacionProvider = ({ children }) => {
 
   const actualizar = useCallback(async (id, datos) => {
     const res = await actualizarElemento(id, datos);
-    if (res.success) setElementos((prev) => prev.map((e) => (String(e.id) === String(id) ? res.data : e)));
+    if (res.success)
+      setElementos((prev) =>
+        prev.map((e) => (String(e.id) === String(id) ? res.data : e))
+      );
     return res;
   }, []);
 
   const eliminar = useCallback(async (id) => {
     const res = await eliminarElemento(id);
-    if (res.success) setElementos((prev) => prev.filter((e) => String(e.id) !== String(id)));
+    if (res.success)
+      setElementos((prev) =>
+        prev.filter((e) => String(e.id) !== String(id))
+      );
+    return res;
+  }, []);
+
+  const agregarPlantilla = useCallback(async (datos) => {
+    const res = await crearPlantilla(datos);
+    if (res.success) setPlantillas((prev) => [...prev, res.data]);
+    return res;
+  }, []);
+
+  const actualizarPlantilla = useCallback(async (id, datos) => {
+    const res = await actualizarPlantillaApi(id, datos);
+    if (res.success)
+      setPlantillas((prev) =>
+        prev.map((e) => (String(e.id) === String(id) ? res.data : e))
+      );
+    return res;
+  }, []);
+
+  const eliminarPlantilla = useCallback(async (id) => {
+    const res = await eliminarPlantillaApi(id);
+    if (res.success)
+      setPlantillas((prev) =>
+        prev.filter((e) => String(e.id) !== String(id))
+      );
     return res;
   }, []);
 
   const getPorProducto = useCallback(
-    (productoId) => elementos.filter((e) => String(e.productoId) === String(productoId) && e.activo),
+    (productoId) =>
+      elementos.filter(
+        (e) =>
+          String(e.productoId) === String(productoId) && e.activo
+      ),
     [elementos]
   );
 
   const getPorProductoYTipo = useCallback(
-    (productoId, tipo) => elementos.filter((e) => String(e.productoId) === String(productoId) && e.tipo === tipo && e.activo),
+    (productoId, tipo) =>
+      elementos.filter(
+        (e) =>
+          String(e.productoId) === String(productoId) &&
+          e.tipo === tipo &&
+          e.activo
+      ),
     [elementos]
   );
 
-  // Adaptador para el modal cliente: devuelve shape {extra, personalizar, acompanar, condimento} por productoId
-  // Per-tipo fallback: si para un tipo no hay ningún elemento creado para el producto, se usa el de la categoría (compat)
-  // Si hay al menos uno creado (aunque todos inactivos), se respeta solo los activos (puede quedar vacío)
+  const getPlantillasDeCategoria = useCallback(
+    (categoriaId) =>
+      plantillas.filter(
+        (p) => String(p.categoriaId) === String(categoriaId)
+      ),
+    [plantillas]
+  );
+
+  // Plantillas activas agrupadas por categoría, ya con el shape del modal.
+  const plantillasPorCategoria = useMemo(() => {
+    const mapa = {};
+    plantillas.forEach((p) => {
+      if (!p.activo) return;
+      const clave = String(p.categoriaId);
+      if (!mapa[clave]) {
+        mapa[clave] = {
+          extra: [],
+          personalizar: [],
+          acompanar: [],
+          condimento: [],
+        };
+      }
+      if (!mapa[clave][p.tipo]) return;
+      mapa[clave][p.tipo].push(normalizarPlantilla(p));
+    });
+    return mapa;
+  }, [plantillas]);
+
+  // Adaptador para el modal cliente. El fallback es por tipo: si el producto no
+  // tiene ningún elemento de un tipo, usa las plantillas activas de su
+  // categoría (antes vivían hardcodeadas en personalizacionConfig.js). Si tiene
+  // elementos de ese tipo, respeta sólo lo configurado para el producto.
   const getConfigParaProducto = useCallback(
     (producto) => {
-      const vacio = { extra: [], personalizar: [], acompanar: [], condimento: [] };
-      if (!producto) return vacio;
-      const todosPorProducto = elementos.filter((e) => String(e.productoId) === String(producto.id));
+      if (!producto) return CONFIG_VACIA;
+      const todosPorProducto = elementos.filter(
+        (e) => String(e.productoId) === String(producto.id)
+      );
       const activos = todosPorProducto.filter((e) => e.activo);
-      const cfgCategoria = personalizacionPorCategoria[producto.categoria] || vacio;
+      const cfgCategoria = producto.categoriaId
+        ? plantillasPorCategoria[String(producto.categoriaId)] ||
+          CONFIG_VACIA
+        : CONFIG_VACIA;
 
-      // Fallback normalizado al shape uniforme (todos los tipos con id/nombre/minimo/maximo).
-      const fallback = {
-        extra: (cfgCategoria.extra || []).map((i) => normalizarItemFallback(i, 'extra')),
-        personalizar: (cfgCategoria.personalizar || []).map((i) => normalizarItemFallback(i, 'personalizar')),
-        acompanar: (cfgCategoria.acompanar || []).map((i) => normalizarItemFallback(i, 'acompanar')),
-        condimento: (cfgCategoria.condimento || []).map((i) => normalizarItemFallback(i, 'condimento')),
-      };
+      if (todosPorProducto.length === 0) return cfgCategoria;
 
-      if (todosPorProducto.length === 0) return fallback;
-
-      const porTipo = (tipo) => todosPorProducto.filter((e) => e.tipo === tipo);
-      const activosPorTipo = (tipo) => activos.filter((e) => e.tipo === tipo);
+      const porTipo = (tipo) =>
+        todosPorProducto.filter((e) => e.tipo === tipo);
+      const activosPorTipo = (tipo) =>
+        activos.filter((e) => e.tipo === tipo);
 
       return {
         extra:
           porTipo('extra').length === 0
-            ? fallback.extra
+            ? cfgCategoria.extra
             : activosPorTipo('extra').map((e) => ({
                 id: String(e.id),
                 nombre: e.nombre,
@@ -103,7 +214,7 @@ export const PersonalizacionProvider = ({ children }) => {
               })),
         personalizar:
           porTipo('personalizar').length === 0
-            ? fallback.personalizar
+            ? cfgCategoria.personalizar
             : activosPorTipo('personalizar').map((e) => ({
                 id: String(e.id),
                 nombre: e.nombre,
@@ -112,7 +223,7 @@ export const PersonalizacionProvider = ({ children }) => {
               })),
         acompanar:
           porTipo('acompanar').length === 0
-            ? fallback.acompanar
+            ? cfgCategoria.acompanar
             : activosPorTipo('acompanar').map((e) => ({
                 id: String(e.id),
                 nombre: e.nombre,
@@ -123,7 +234,7 @@ export const PersonalizacionProvider = ({ children }) => {
               })),
         condimento:
           porTipo('condimento').length === 0
-            ? fallback.condimento
+            ? cfgCategoria.condimento
             : activosPorTipo('condimento').map((e) => ({
                 id: String(e.id),
                 nombre: e.nombre,
@@ -132,23 +243,53 @@ export const PersonalizacionProvider = ({ children }) => {
               })),
       };
     },
-    [elementos]
+    [elementos, plantillasPorCategoria]
   );
 
   const value = useMemo(
     () => ({
       elementos,
+      plantillas,
       loading,
       cargar,
       agregar,
       actualizar,
       eliminar,
+      agregarPlantilla,
+      actualizarPlantilla,
+      eliminarPlantilla,
       getPorProducto,
       getPorProductoYTipo,
+      getPlantillasDeCategoria,
       getConfigParaProducto,
     }),
-    [elementos, loading, cargar, agregar, actualizar, eliminar, getPorProducto, getPorProductoYTipo, getConfigParaProducto]
+    [
+      elementos,
+      plantillas,
+      loading,
+      cargar,
+      agregar,
+      actualizar,
+      eliminar,
+      agregarPlantilla,
+      actualizarPlantilla,
+      eliminarPlantilla,
+      getPorProducto,
+      getPorProductoYTipo,
+      getPlantillasDeCategoria,
+      getConfigParaProducto,
+    ]
   );
 
-  return <PersonalizacionContext.Provider value={value}>{children}</PersonalizacionContext.Provider>;
+  return (
+    <PersonalizacionContext.Provider value={value}>
+      {children}
+    </PersonalizacionContext.Provider>
+  );
 };
+
+PersonalizacionProvider.propTypes = {
+  children: PropTypes.node,
+};
+
+export default PersonalizacionProvider;

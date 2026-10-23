@@ -4,8 +4,8 @@ import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioPersonalizacion from '../../components/admin/FormularioPersonalizacion';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
+import { obtenerProductos } from '../../api/productos';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
-import { productosMock } from '../../services/seedData';
 
 const EditarPersonalizacion = () => {
   const { id } = useParams();
@@ -15,6 +15,9 @@ const EditarPersonalizacion = () => {
   const [elemento, setElemento] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  // Catálogo real del backend para elegir producto y producto de referencia.
+  const [productos, setProductos] = useState([]);
+  const [cargandoProductos, setCargandoProductos] = useState(true);
 
   const productoPreseleccionado = searchParams.get('productoId');
   const tipoPreseleccionado = searchParams.get('tipo');
@@ -29,6 +32,27 @@ const EditarPersonalizacion = () => {
       setCargando(false);
     }
   }, [id, elementos]);
+
+  // Productos activos del backend: así el formulario ofrece también los que se
+  // crearon después y no sólo los de los datos semilla.
+  useEffect(() => {
+    let vigente = true;
+    const cargarProductos = async () => {
+      setCargandoProductos(true);
+      const res = await obtenerProductos();
+      if (!vigente) return;
+      if (res.success) {
+        setProductos(res.data || []);
+      } else {
+        setError(res.error || 'No se pudieron cargar los productos.');
+      }
+      setCargandoProductos(false);
+    };
+    cargarProductos();
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   const handleGuardar = async (datos) => {
     // si viene tipo por query y no se eligió, usarlo
@@ -51,7 +75,7 @@ const EditarPersonalizacion = () => {
     }
   };
 
-  if (cargando || loading) {
+  if (cargando || loading || cargandoProductos) {
     return (
       <Container className="py-5" role="status" aria-live="polite">
         <span className="visually-hidden">Cargando elemento de personalización…</span>
@@ -91,7 +115,7 @@ const EditarPersonalizacion = () => {
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <FormularioPersonalizacion
         elemento={elementoInicial}
-        productos={productosMock}
+        productos={productos}
         productoPreseleccionado={productoPreseleccionado}
         onGuardar={handleGuardar}
       />

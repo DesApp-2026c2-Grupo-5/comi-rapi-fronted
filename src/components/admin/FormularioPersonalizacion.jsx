@@ -4,14 +4,29 @@ import { Form, Button, Card, InputGroup } from 'react-bootstrap';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
-import { validatePersonalizacionElemento } from '../../utils/validators';
-import { productosMock } from '../../services/seedData';
+import { validatePersonalizacionElemento, validatePlantillaCategoria } from '../../utils/validators';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import './FormularioAdmin.css';
 
-const FormularioPersonalizacion = ({ elemento, productos = productosMock, productoPreseleccionado, onGuardar }) => {
+const FormularioPersonalizacion = ({
+  elemento,
+  productos = [],
+  productoPreseleccionado,
+  categoriaId,
+  categoriaNombre,
+  volverA,
+  onGuardar,
+}) => {
   const navigate = useNavigate();
   const { notificar } = useNotificaciones();
+
+  // Modo plantilla por categoría: en vez de un producto concreto, el elemento
+  // pertenece a una categoría y se copia a los productos nuevos.
+  const categoriaEfectiva =
+    categoriaId !== undefined && categoriaId !== null
+      ? categoriaId
+      : elemento?.categoriaId ?? '';
+  const esModoCategoria = Boolean(categoriaEfectiva);
 
   const [productoId, setProductoId] = useState(elemento?.productoId ? String(elemento.productoId) : productoPreseleccionado ? String(productoPreseleccionado) : '');
   const [tipo, setTipo] = useState(elemento?.tipo || '');
@@ -49,8 +64,11 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
   }, [elemento, productoPreseleccionado]);
 
   const productosDisponiblesParaReferencia = useMemo(
-    () => productos.filter((p) => String(p.id) !== String(productoId)),
-    [productos, productoId]
+    () =>
+      productos.filter(
+        (p) => esModoCategoria || String(p.id) !== String(productoId)
+      ),
+    [productos, productoId, esModoCategoria]
   );
 
   const handleTipoChange = (e) => {
@@ -84,7 +102,9 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
     e.preventDefault();
 
     const datosBase = {
-      productoId: productoId ? Number(productoId) : null,
+      ...(esModoCategoria
+        ? { categoriaId: Number(categoriaEfectiva) }
+        : { productoId: productoId ? Number(productoId) : null }),
       tipo,
       activo,
       minimo: Number(minimo),
@@ -104,7 +124,9 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
       datos.productoReferenciaId = null;
     }
 
-    const errores = validatePersonalizacionElemento({ ...datos, productos });
+    const errores = esModoCategoria
+      ? validatePlantillaCategoria({ ...datos, productos })
+      : validatePersonalizacionElemento({ ...datos, productos });
     if (Object.keys(errores).length > 0) {
       notificar(Object.values(errores).join(' '), 'warning');
       return;
@@ -114,6 +136,15 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
   };
 
   const handleCancelar = () => {
+    if (volverA) {
+      navigate(volverA);
+      return;
+    }
+    if (esModoCategoria) {
+      const query = categoriaEfectiva ? `?categoriaId=${categoriaEfectiva}` : '';
+      navigate(`/superadmin/personalizacion/categorias${query}`);
+      return;
+    }
     if (productoId) navigate(`/superadmin/personalizacion?productoId=${productoId}`);
     else navigate('/superadmin/personalizacion');
   };
@@ -125,17 +156,34 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
     <Card className="shadow-sm formulario-admin-card formulario-admin-card-personalizacion">
       <Card.Body>
         <Form onSubmit={handleSubmit} noValidate>
-          <Form.Group className="mb-3" controlId="personalizacion-producto">
-            <Form.Label>Producto *</Form.Label>
-            <Form.Select name="productoId" value={productoId} onChange={(e) => setProductoId(e.target.value)}>
-              <option value="">— Elegí producto —</option>
-              {productos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre} — {p.categoria} — ${p.precio}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
+          {esModoCategoria ? (
+            <Form.Group className="mb-3" controlId="personalizacion-categoria">
+              <Form.Label>Categoría *</Form.Label>
+              <Form.Control
+                plaintext
+                readOnly
+                value={
+                  categoriaNombre || `Categoría #${categoriaEfectiva}`
+                }
+              />
+              <Form.Text className="text-muted">
+                La plantilla se copia automáticamente a los productos nuevos
+                de esta categoría.
+              </Form.Text>
+            </Form.Group>
+          ) : (
+            <Form.Group className="mb-3" controlId="personalizacion-producto">
+              <Form.Label>Producto *</Form.Label>
+              <Form.Select name="productoId" value={productoId} onChange={(e) => setProductoId(e.target.value)}>
+                <option value="">— Elegí producto —</option>
+                {productos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre} — {p.categoria} — ${p.precio}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          )}
 
           <Form.Group className="mb-3" controlId="personalizacion-tipo">
             <Form.Label>Categoría / Tipo *</Form.Label>
@@ -170,8 +218,8 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
                 name="productoReferenciaId"
                 value={productoReferenciaId}
                 onChange={handleReferenciaChange}
-                disabled={!productoId}
-                aria-describedby={!productoId ? 'personalizacion-referencia-ayuda' : 'personalizacion-referencia-nota'}
+                disabled={!esModoCategoria && !productoId}
+                aria-describedby={!esModoCategoria && !productoId ? 'personalizacion-referencia-ayuda' : 'personalizacion-referencia-nota'}
               >
                 <option value="">— Elegí producto para ofrecer —</option>
                 {productosDisponiblesParaReferencia.map((p) => (
@@ -180,15 +228,17 @@ const FormularioPersonalizacion = ({ elemento, productos = productosMock, produc
                   </option>
                 ))}
               </Form.Select>
-              {!productoId && (
+              {!esModoCategoria && !productoId && (
                 /* role="alert": es un error de validación, no una nota informativa. */
                 <Form.Text id="personalizacion-referencia-ayuda" role="alert" className="text-danger">
                   Elegí primero el producto.
                 </Form.Text>
               )}
-              {productoId && (
+              {(esModoCategoria || productoId) && (
                 <Form.Text id="personalizacion-referencia-nota" className="text-muted">
-                  Se excluye el producto que estás personalizando. Precio precargado editable.
+                  {esModoCategoria
+                    ? 'Se ofrecerá en todos los productos nuevos de la categoría. Precio precargado editable.'
+                    : 'Se excluye el producto que estás personalizando. Precio precargado editable.'}
                 </Form.Text>
               )}
             </Form.Group>
@@ -280,6 +330,9 @@ FormularioPersonalizacion.propTypes = {
   elemento: PropTypes.object,
   productos: PropTypes.arrayOf(PropTypes.object),
   productoPreseleccionado: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  categoriaId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  categoriaNombre: PropTypes.string,
+  volverA: PropTypes.string,
   onGuardar: PropTypes.func,
 };
 

@@ -1,91 +1,58 @@
 import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Container, Table, Button, Badge, Form } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
+import { Container, Button, Badge, Form } from 'react-bootstrap';
+import { FaPlus } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { productosMock } from '../../services/seedData';
+import { obtenerProductos } from '../../api/productos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import TablaPersonalizacion from '../../components/admin/TablaPersonalizacion';
+import SubnavPersonalizacion from '../../components/admin/SubnavPersonalizacion';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
 import { formatPrice } from '../../utils/formatters';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 
-/**
- * Celda de cantidad editable en línea (mínimo o máximo) de la tabla de
- * personalización.
- *
- * Muestra un input numérico que persiste al perder el foco o al presionar
- * Enter, y revierte con Escape. La validación de rango y el guardado real los
- * maneja el padre vía `onGuardar`, que resuelve `true` si el cambio se guardó.
- */
-const CeldaCantidadInline = ({ valor, min, etiqueta, onGuardar, disabled }) => {
-  const [texto, setTexto] = useState(String(valor ?? ''));
-  const [guardando, setGuardando] = useState(false);
-
-  useEffect(() => {
-    setTexto(String(valor ?? ''));
-  }, [valor]);
-
-  const confirmar = async () => {
-    if (disabled || guardando) return;
-    const limpio = texto.trim();
-    if (limpio === String(valor ?? '')) return;
-    const numero = Number(limpio);
-    if (!Number.isInteger(numero) || numero < min) {
-      setTexto(String(valor ?? ''));
-      return;
-    }
-    setGuardando(true);
-    const ok = await onGuardar(numero);
-    setGuardando(false);
-    if (!ok) setTexto(String(valor ?? ''));
-  };
-
-  const manejarTecla = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      e.currentTarget.blur();
-    } else if (e.key === 'Escape') {
-      setTexto(String(valor ?? ''));
-      e.currentTarget.blur();
-    }
-  };
-
-  return (
-    <Form.Control
-      type="number"
-      size="sm"
-      className="text-center mx-auto"
-      style={{ maxWidth: 80 }}
-      value={texto}
-      min={min}
-      step="1"
-      inputMode="numeric"
-      disabled={disabled || guardando}
-      aria-label={etiqueta}
-      title="Editable: cambiá el valor y presioná Enter o salí del campo"
-      onChange={(e) => setTexto(e.target.value)}
-      onBlur={confirmar}
-      onKeyDown={manejarTecla}
-    />
-  );
-};
-
-CeldaCantidadInline.propTypes = {
-  valor: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  min: PropTypes.number,
-  etiqueta: PropTypes.string,
-  onGuardar: PropTypes.func.isRequired,
-  disabled: PropTypes.bool,
-};
-
 const GestionPersonalizacion = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { elementos, loading, actualizar, eliminar } = usePersonalizacion();
+  const { elementos, loading, cargar, actualizar, eliminar } = usePersonalizacion();
   const { notificar } = useNotificaciones();
   const [filtroTipo, setFiltroTipo] = useState('todos');
+
+  // Refrescar al entrar: si se acaba de crear un producto, el backend copió las
+  // plantillas de su categoría a PersonalizacionElementos y el contexto cargado
+  // al inicio de la app puede estar desactualizado.
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // Catálogo real del backend. Antes se usaba `productosMock`, por lo que los
+  // productos dados de alta desde /superadmin/productos no aparecían acá y no
+  // se les podía asignar personalización.
+  const [productos, setProductos] = useState([]);
+  const [cargandoProductos, setCargandoProductos] = useState(true);
+  const [errorProductos, setErrorProductos] = useState('');
+
+  useEffect(() => {
+    let vigente = true;
+    const cargarProductos = async () => {
+      setCargandoProductos(true);
+      const res = await obtenerProductos();
+      if (!vigente) return;
+      if (res.success) {
+        setProductos(res.data || []);
+        setErrorProductos('');
+      } else {
+        setErrorProductos(res.error || 'No se pudieron cargar los productos.');
+      }
+      setCargandoProductos(false);
+    };
+    cargarProductos();
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   const productoIdParam = searchParams.get('productoId') || '';
   const [productoSeleccionado, setProductoSeleccionado] = useState(productoIdParam);
@@ -178,7 +145,7 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
     };
   }, [elementos, productoSeleccionado]);
 
-  const productoActual = productosMock.find((p) => String(p.id) === String(productoSeleccionado));
+  const productoActual = productos.find((p) => String(p.id) === String(productoSeleccionado));
 
   return (
     <Container fluid className="py-4">
@@ -191,6 +158,8 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
         )}
       </div>
 
+      <SubnavPersonalizacion />
+
       {soloLectura && (
         <div className="alert alert-info" role="alert">
           Vista de solo lectura: el CRUD de personalización lo hace el
@@ -202,14 +171,25 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
         <div className="row g-3 align-items-end">
           <div className="col-md-6">
             <Form.Label className="fw-bold small">Producto *</Form.Label>
-            <Form.Select value={productoSeleccionado} onChange={handleProductoChange}>
-              <option value="">— Elegí un producto —</option>
-              {productosMock.map((p) => (
+            <Form.Select
+              value={productoSeleccionado}
+              onChange={handleProductoChange}
+              disabled={cargandoProductos}
+            >
+              <option value="">
+                {cargandoProductos ? 'Cargando productos…' : '— Elegí un producto —'}
+              </option>
+              {productos.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nombre} — {p.categoria} — {formatPrice(p.precio)}
                 </option>
               ))}
             </Form.Select>
+            {errorProductos && (
+              <Form.Text className="text-danger" role="alert">
+                {errorProductos}
+              </Form.Text>
+            )}
           </div>
           <div className="col-md-6 small text-muted">
             {productoActual ? (
@@ -250,7 +230,11 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
       {!productoSeleccionado && (
         <div className="text-center py-5" style={{ border: '2px dashed #f1c27d', borderRadius: '14px', background: '#fff8ef' }}>
           <div className="fw-bold">Seleccioná un producto</div>
-          <div className="small text-muted">Ej: Hamburguesa Clásica tiene Bacon $2.700, Pizza Muzzarella tiene Muzzarella extra $1.800.</div>
+          <div className="small text-muted">
+            {!cargandoProductos && productos.length === 0
+              ? 'No hay productos activos. Creá uno en Gestión de Productos para asignarle extras y acompañamientos.'
+              : 'Ej: Hamburguesa Clásica tiene Bacon $2.700, Pizza Muzzarella tiene Muzzarella extra $1.800.'}
+          </div>
         </div>
       )}
 
@@ -262,110 +246,19 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
               <SkeletonTabla filas={5} columnas={3} />
             </div>
           ) : (
-            <>
-              <Table striped bordered hover responsive className="shadow-sm">
-                <thead className="table-dark">
-                  <tr>
-                    <th style={{ width: 70 }}>ID</th>
-                    <th>Nombre / Producto</th>
-                    <th style={{ width: 130 }}>Tipo</th>
-                    <th style={{ width: 120 }}>Precio</th>
-                    <th style={{ width: 80 }} className="text-center">Mínimo</th>
-                    <th style={{ width: 80 }} className="text-center">Máximo</th>
-                    <th style={{ width: 100 }}>Estado</th>
-                    {!soloLectura && <th style={{ width: 180 }}>Acciones</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {elementosFiltrados.length === 0 && (
-                    <tr>
-                      <td colSpan={soloLectura ? 7 : 8} className="text-center">
-                        {counts.total === 0 ? 'No hay elementos para este producto. Agregá el primero.' : 'No hay elementos de este tipo para el producto seleccionado.'}
-                      </td>
-                    </tr>
-                  )}
-                  {elementosFiltrados.map((el) => {
-                    const refProd = el.productoReferenciaId ? productosMock.find((p) => p.id === el.productoReferenciaId) : null;
-                    return (
-                      <tr key={el.id}>
-                        <td>#{el.id}</td>
-                        <td>
-                          {el.tipo === 'acompanar' ? (
-                            refProd ? (
-                              <>
-                                → <strong>{refProd.nombre}</strong> <Badge bg="light" text="dark" className="border">{refProd.categoria}</Badge>
-                              </>
-                            ) : (
-                              <span className="text-danger">⚠️ Producto eliminado (id:{el.productoReferenciaId})</span>
-                            )
-                          ) : el.tipo === 'personalizar' ? (
-                            <>
-                              Sin <strong>{el.nombre}</strong> <span className="text-muted" style={{ fontSize: '.78rem' }}>(no descuenta)</span>
-                            </>
-                          ) : el.tipo === 'condimento' ? (
-                            <>
-                              {el.nombre} <span className="text-muted" style={{ fontSize: '.78rem' }}>(sin costo)</span>
-                            </>
-                          ) : (
-                            <>
-                              Extra: <strong>{el.nombre}</strong>
-                            </>
-                          )}
-                        </td>
-                        <td>
-                          <Badge bg={el.tipo === 'extra' ? 'warning' : el.tipo === 'acompanar' ? 'success' : el.tipo === 'personalizar' ? 'secondary' : 'light'} text={el.tipo === 'extra' ? 'dark' : el.tipo === 'condimento' ? 'dark' : undefined} className={el.tipo === 'condimento' ? 'border' : ''}>
-                            {el.tipo === 'extra' ? 'Extra' : el.tipo === 'personalizar' ? 'Personalizar' : el.tipo === 'acompanar' ? 'Acompaña' : 'Condimento'}
-                          </Badge>
-                        </td>
-                        <td className={el.tipo === 'extra' || el.tipo === 'acompanar' ? 'fw-bold' : 'text-muted'} style={el.tipo === 'extra' || el.tipo === 'acompanar' ? { color: '#e63946' } : {}}>
-                          {el.tipo === 'extra' || el.tipo === 'acompanar' ? formatPrice(el.precio) : '—'}
-                        </td>
-                        <td className="text-center">
-                          {soloLectura ? (
-                            el.minimo ?? 0
-                          ) : (
-                            <CeldaCantidadInline
-                              valor={el.minimo ?? 0}
-                              min={0}
-                              etiqueta={`Mínimo de ${etiquetaDe(el)}`}
-                              onGuardar={(v) => guardarCantidad(el, 'minimo', v)}
-                            />
-                          )}
-                        </td>
-                        <td className="text-center">
-                          {soloLectura ? (
-                            el.maximo ?? 1
-                          ) : (
-                            <CeldaCantidadInline
-                              valor={el.maximo ?? 1}
-                              min={1}
-                              etiqueta={`Máximo de ${etiquetaDe(el)}`}
-                              onGuardar={(v) => guardarCantidad(el, 'maximo', v)}
-                            />
-                          )}
-                        </td>
-                        <td>
-                          <Badge bg={el.activo ? 'success' : 'secondary'}>{el.activo ? 'Activo' : 'Inactivo'}</Badge>
-                        </td>
-                        {!soloLectura && (
-                          <td className="text-nowrap">
-                            <Button variant="secondary" size="sm" className="me-2" onClick={() => handleEditar(el.id)}>
-                              <FaEdit className="me-1" aria-hidden="true" /> Editar
-                            </Button>
-                            <Button variant="danger" size="sm" onClick={() => handleEliminar(el)}>
-                              <FaTrashAlt className="me-1" aria-hidden="true" /> Eliminar
-                            </Button>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-              <div className="small text-muted">
-                <Badge bg="warning" text="dark">Extra</Badge> cobra · <Badge bg="secondary">Personalizar</Badge> no cobra · <Badge bg="success">Acompaña</Badge> cobra (selector de producto) · <Badge bg="light" text="dark" className="border">Condimento</Badge> no cobra
-              </div>
-            </>
+            <TablaPersonalizacion
+              elementos={elementosFiltrados}
+              productos={productos}
+              soloLectura={soloLectura}
+              mensajeVacio={
+                counts.total === 0
+                  ? 'No hay elementos para este producto. Agregá el primero.'
+                  : 'No hay elementos de este tipo para el producto seleccionado.'
+              }
+              onEditar={handleEditar}
+              onEliminar={handleEliminar}
+              onGuardarCantidad={guardarCantidad}
+            />
           )}
         </>
       )}
@@ -377,7 +270,7 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
           elementoAEliminar
             ? (() => {
                 const el = elementoAEliminar;
-                const prod = productosMock.find((p) => p.id === el.productoId);
+                const prod = productos.find((p) => String(p.id) === String(el.productoId));
                 return `¿Eliminar "${etiquetaDe(el)}" de "${prod?.nombre || 'producto #' + el.productoId}"? Tipo: ${el.tipo === 'acompanar' ? 'Acompaña' : el.tipo === 'personalizar' ? 'Personalizar' : el.tipo === 'condimento' ? 'Condimento' : 'Extra'} — ID #${el.id}`;
               })()
             : ''

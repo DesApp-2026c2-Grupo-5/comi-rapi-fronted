@@ -43,12 +43,21 @@ export const validateProducto = (producto) => {
   return errores;
 };
 
-export const validatePersonalizacionElemento = ({ productoId, tipo, nombre, precio, productoReferenciaId, minimo, maximo, productos }) => {
+const TIPOS_PERSONALIZACION = ['extra', 'personalizar', 'acompanar', 'condimento'];
+
+// Reglas comunes al elemento de un producto y a la plantilla de una categoría.
+const validarReglasElemento = ({
+  tipo,
+  nombre,
+  precio,
+  productoReferenciaId,
+  minimo,
+  maximo,
+  productos,
+  productoId,
+}) => {
   const errores = {};
-  if (!productoId) errores.productoId = 'El producto es obligatorio';
-  else if (productos && !productos.find((p) => String(p.id) === String(productoId))) errores.productoId = 'Producto no encontrado';
-  const tiposValidos = ['extra', 'personalizar', 'acompanar', 'condimento'];
-  if (!tipo || !tiposValidos.includes(tipo)) errores.tipo = 'Tipo inválido';
+  if (!tipo || !TIPOS_PERSONALIZACION.includes(tipo)) errores.tipo = 'Tipo inválido';
 
   // Rango de cantidad por elemento (mínimo 0, máximo 1 por defecto).
   const min = minimo === undefined || minimo === '' ? 0 : Number(minimo);
@@ -59,7 +68,7 @@ export const validatePersonalizacionElemento = ({ productoId, tipo, nombre, prec
 
   if (tipo === 'acompanar') {
     if (!productoReferenciaId) errores.productoReferenciaId = 'El producto a ofrecer es obligatorio';
-    else if (String(productoReferenciaId) === String(productoId)) errores.productoReferenciaId = 'No podés ofrecer el mismo producto';
+    else if (productoId && String(productoReferenciaId) === String(productoId)) errores.productoReferenciaId = 'No podés ofrecer el mismo producto';
     else if (productos && !productos.find((p) => String(p.id) === String(productoReferenciaId))) errores.productoReferenciaId = 'Producto referenciado no encontrado';
     if (precio == null || precio === '' || Number(precio) < 0) errores.precio = 'El precio debe ser >= 0';
   } else if (tipo === 'extra') {
@@ -69,4 +78,17 @@ export const validatePersonalizacionElemento = ({ productoId, tipo, nombre, prec
     if (!nombre || nombre.trim().length < 2) errores.nombre = 'Nombre requerido (2+ caracteres)';
   }
   return errores;
+};
+
+export const validatePersonalizacionElemento = ({ productoId, ...resto }) => {
+  const errores = {};
+  if (!productoId) errores.productoId = 'El producto es obligatorio';
+  else if (resto.productos && !resto.productos.find((p) => String(p.id) === String(productoId))) errores.productoId = 'Producto no encontrado';
+  return { ...errores, ...validarReglasElemento({ ...resto, productoId }) };
+};
+
+export const validatePlantillaCategoria = ({ categoriaId, ...resto }) => {
+  const errores = {};
+  if (!categoriaId) errores.categoriaId = 'La categoría es obligatoria';
+  return { ...errores, ...validarReglasElemento(resto) };
 };
