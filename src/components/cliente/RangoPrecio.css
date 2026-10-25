@@ -93,11 +93,11 @@
 }
 
 .rango-precio-input:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid #f0a10e;
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .rango-precio-input:focus-visible::-moz-range-thumb {
-  outline: 2px solid #f0a10e;
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }

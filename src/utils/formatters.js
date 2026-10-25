@@ -1,7 +1,7 @@
 /**
  * Propósito: Funciones de formateo de precios, fechas y otros datos para presentación.
- * Contenido: formatPrice, formatDate, formatDateTime, formatDateOnly, calcularEdad,
- *            obtenerIniciales, nombreCompleto.
+ * Contenido: formatPrice, formatDate, formatDateTime, formatDateOnly,
+ *            formatFechaRelativa, calcularEdad, obtenerIniciales, nombreCompleto.
  * Dependencias: Ninguna.
  * Uso: import { formatPrice, formatDate } from '../utils/formatters';
  */
@@ -30,6 +30,9 @@ const FECHA_HORA = new Intl.DateTimeFormat(LOCALE, {
   minute: '2-digit',
   hour12: false,
 });
+
+/* `numeric: 'auto'` produce "ayer" / "hace 2 días" en vez de "hace 1 día". */
+const RELATIVO = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 
 /**
  * Formatea un precio numérico a formato de moneda argentina.
@@ -60,6 +63,35 @@ export const formatDate = (fecha) => {
  */
 export const formatDateTime = (fecha) => {
   return FECHA_HORA.format(new Date(fecha));
+};
+
+/**
+ * Formatea una fecha como tiempo relativo ("hace 5 minutos", "ayer").
+ *
+ * A partir de los 30 días cae a la fecha absoluta: "hace 3 meses" no aporta
+ * nada en una reseña y se pierde el dato concreto.
+ *
+ * @param {string|Date} fecha - Fecha a formatear.
+ * @returns {string} Texto relativo, o cadena vacía si la fecha no es válida.
+ */
+export const formatFechaRelativa = (fecha) => {
+  if (!fecha) return '';
+  const valor = new Date(fecha);
+  if (Number.isNaN(valor.getTime())) return '';
+
+  const segundos = Math.round((valor.getTime() - Date.now()) / 1000);
+  if (Math.abs(segundos) < 60) return 'recién';
+
+  const minutos = Math.round(segundos / 60);
+  if (Math.abs(minutos) < 60) return RELATIVO.format(minutos, 'minute');
+
+  const horas = Math.round(minutos / 60);
+  if (Math.abs(horas) < 24) return RELATIVO.format(horas, 'hour');
+
+  const dias = Math.round(horas / 24);
+  if (Math.abs(dias) < 30) return RELATIVO.format(dias, 'day');
+
+  return formatDate(valor);
 };
 
 /**

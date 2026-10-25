@@ -8,7 +8,7 @@
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Card, Badge, Button } from "react-bootstrap";
-import { FaEye, FaTimesCircle, FaRedo, FaClock } from "react-icons/fa";
+import { FaEye, FaTimesCircle, FaRedo, FaClock, FaStar } from "react-icons/fa";
 import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
@@ -205,6 +205,17 @@ const ListaPedidos = ({
                 <FaEye aria-hidden="true" />
                 Ver detalle
               </Button>
+              {pedido.estado === ESTADOS_PEDIDO.ENTREGADO && (
+                <Button
+                  as={Link}
+                  to={`/cliente/pedido/${pedido.id}`}
+                  variant="outline-primary"
+                  size="sm"
+                >
+                  <FaStar aria-hidden="true" />
+                  Calificar
+                </Button>
+              )}
               {mostrarCancelar && !esFinal && pedirCancelacion && (
                 <Button
                   variant="outline-danger"

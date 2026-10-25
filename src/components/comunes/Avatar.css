@@ -26,5 +26,5 @@
 .avatar-comirapi-inicial {
   background: linear-gradient(135deg, var(--color-primary-deep), var(--color-primary-soft));
   border-color: #fff;
-  color: #fff;
+  color: var(--color-on-primary);
 }

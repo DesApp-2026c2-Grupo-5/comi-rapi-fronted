@@ -21,7 +21,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
   font-weight: 900;
   letter-spacing: 1px;
   text-decoration: none;
@@ -45,7 +45,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
   font-weight: 600;
   letter-spacing: 0.3px;
   text-decoration: none;
@@ -68,7 +68,7 @@
      recalcular el layout del enlace en cada frame. */
   transform: translateX(-50%) scaleX(0);
   transform-origin: center;
-  background: #fff;
+  background: var(--color-on-primary);
   border-radius: 2px;
   transition: transform 0.25s ease;
 }
@@ -88,7 +88,7 @@
 /* Bootstrap 5 pone `outline: 0` en `.nav-link:focus-visible`, así que sin esta
    regla el foco por teclado en el menú es invisible. */
 .nav-enlace:focus-visible {
-  outline: 3px solid #fff;
+  outline: 3px solid var(--color-on-primary);
   outline-offset: -2px;
 }
 .nav-enlace.activo {
@@ -184,7 +184,7 @@
 
 /* Bootstrap pone `outline: 0` en los ítems del desplegable al tabular. */
 .navbar-comirapi .nav-submenu-enlace:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: -2px;
 }
 
@@ -202,7 +202,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background-color: var(--color-danger);
+  background-color: var(--color-danger-fill);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 800;
@@ -268,7 +268,7 @@
   padding: 0.25rem 0.75rem 0.25rem 0.25rem;
   border-radius: 50px;
   border: 1px solid transparent;
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
@@ -281,12 +281,12 @@
 .navbar-perfil:hover,
 .navbar-perfil:focus-visible {
   background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.6);
-  color: #fff;
+  border-color: rgba(58, 36, 16, 0.35);
+  color: var(--color-on-primary);
   transform: translateY(-1px);
 }
 .navbar-perfil:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--color-on-primary);
   outline-offset: 2px;
 }
 /* Página activa: fondo blanco con el naranja oscuro de la marca */
@@ -308,7 +308,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -316,16 +316,16 @@
   font-size: 1.3rem;
 }
 
-/* Cerrar sesión rediseñado: pill suave sobre la barra, texto crema claro.
+/* Cerrar sesión rediseñado: pill suave sobre la barra, tinta de marca.
    Al pasar el mouse se llena de blanco con texto de marca y elevación. */
 .btn-logout-comirapi {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   border-radius: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  color: #ffe6c2;
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(58, 36, 16, 0.32);
+  color: var(--color-on-primary);
+  background: rgba(255, 255, 255, 0.18);
   font-weight: 700;
   letter-spacing: 0.4px;
   padding: 0.22rem 0.85rem;
@@ -345,7 +345,7 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
 .btn-logout-comirapi:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--color-on-primary);
   outline-offset: 2px;
 }
 
@@ -361,7 +361,7 @@
   gap: 0.4rem;
   padding: 0.25rem 0.9rem;
   border-radius: 50px;
-  border: 2px solid #fff;
+  border: 2px solid rgba(58, 36, 16, 0.32);
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 0.4px;
@@ -375,7 +375,7 @@
 }
 .btn-acceso-comirapi:focus-visible,
 .btn-acceso-secundario:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--color-on-primary);
   outline-offset: 2px;
 }
 
@@ -385,9 +385,9 @@
 }
 .btn-acceso-comirapi:hover,
 .btn-acceso-comirapi:focus-visible {
-  color: #fff !important;
-  background: transparent;
-  border-color: #fff;
+  color: var(--color-on-primary) !important;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(58, 36, 16, 0.32);
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
@@ -395,7 +395,7 @@
 /* El secundario es el mismo contorno del cierre de sesión: menos peso visual
    para la alternativa. */
 .btn-acceso-secundario {
-  color: #fff;
+  color: var(--color-on-primary);
   background: transparent;
 }
 .btn-acceso-secundario:hover,

@@ -47,7 +47,7 @@
   transform: translateY(0) scale(0.97);
 }
 .btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 /* Con movimiento reducido los botones no se desplazan ni escalan: solo cambian
@@ -64,13 +64,15 @@
 .producto-boton,
 .carrito-boton-vacio,
 .filtro-pill.filtro-activo {
-  --bs-btn-color: #fff;
+  /* Tinta espresso, no blanco: el blanco sobre el naranja de marca daba
+     2.05:1. Ver --color-on-primary en tokens.css. */
+  --bs-btn-color: var(--color-on-primary);
   --bs-btn-bg: var(--color-primary);
   --bs-btn-border-color: var(--color-primary);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-primary);
   --bs-btn-hover-bg: var(--color-primary-hover);
   --bs-btn-hover-border-color: var(--color-primary-hover);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-primary);
   --bs-btn-active-bg: var(--color-primary-active);
   --bs-btn-active-border-color: var(--color-primary-active);
   --bs-btn-disabled-bg: var(--color-primary);
@@ -101,16 +103,16 @@
 .resumen-boton,
 .btn-historial-avanzar {
   --bs-btn-color: #fff;
-  --bs-btn-bg: var(--color-success);
-  --bs-btn-border-color: var(--color-success);
+  --bs-btn-bg: var(--color-success-fill);
+  --bs-btn-border-color: var(--color-success-fill);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: var(--color-success-hover);
-  --bs-btn-hover-border-color: var(--color-success-hover);
+  --bs-btn-hover-bg: var(--color-success-fill-hover);
+  --bs-btn-hover-border-color: var(--color-success-fill-hover);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: var(--color-success-active);
-  --bs-btn-active-border-color: var(--color-success-active);
-  --bs-btn-disabled-bg: var(--color-success);
-  --bs-btn-disabled-border-color: var(--color-success);
+  --bs-btn-active-bg: var(--color-success-fill-hover);
+  --bs-btn-active-border-color: var(--color-success-fill-hover);
+  --bs-btn-disabled-bg: var(--color-success-fill);
+  --bs-btn-disabled-border-color: var(--color-success-fill);
   --bs-btn-focus-shadow-rgb: 34, 197, 94;
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
 }
@@ -123,16 +125,16 @@
 /* ============ Danger: rojo (destructivo) ============ */
 .btn-danger {
   --bs-btn-color: #fff;
-  --bs-btn-bg: var(--color-danger);
-  --bs-btn-border-color: var(--color-danger);
+  --bs-btn-bg: var(--color-danger-fill);
+  --bs-btn-border-color: var(--color-danger-fill);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: var(--color-danger-hover);
-  --bs-btn-hover-border-color: var(--color-danger-hover);
+  --bs-btn-hover-bg: var(--color-danger-fill-hover);
+  --bs-btn-hover-border-color: var(--color-danger-fill-hover);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: var(--color-danger-active);
-  --bs-btn-active-border-color: var(--color-danger-active);
-  --bs-btn-disabled-bg: var(--color-danger);
-  --bs-btn-disabled-border-color: var(--color-danger);
+  --bs-btn-active-bg: var(--color-danger-fill-hover);
+  --bs-btn-active-border-color: var(--color-danger-fill-hover);
+  --bs-btn-disabled-bg: var(--color-danger-fill);
+  --bs-btn-disabled-border-color: var(--color-danger-fill);
   --bs-btn-focus-shadow-rgb: 230, 57, 70;
   box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
 }
@@ -180,11 +182,11 @@
   --bs-btn-color: var(--color-danger-hover);
   --bs-btn-border-color: var(--color-danger);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: var(--color-danger);
-  --bs-btn-hover-border-color: var(--color-danger);
+  --bs-btn-hover-bg: var(--color-danger-fill);
+  --bs-btn-hover-border-color: var(--color-danger-fill);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: var(--color-danger-active);
-  --bs-btn-active-border-color: var(--color-danger-active);
+  --bs-btn-active-bg: var(--color-danger-fill-hover);
+  --bs-btn-active-border-color: var(--color-danger-fill-hover);
   --bs-btn-focus-shadow-rgb: 230, 57, 70;
 }
 
@@ -192,11 +194,11 @@
   --bs-btn-color: var(--color-success-hover);
   --bs-btn-border-color: var(--color-success);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: var(--color-success);
-  --bs-btn-hover-border-color: var(--color-success);
+  --bs-btn-hover-bg: var(--color-success-fill);
+  --bs-btn-hover-border-color: var(--color-success-fill);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: var(--color-success-active);
-  --bs-btn-active-border-color: var(--color-success-active);
+  --bs-btn-active-bg: var(--color-success-fill-hover);
+  --bs-btn-active-border-color: var(--color-success-fill-hover);
   --bs-btn-focus-shadow-rgb: 34, 197, 94;
 }
 
@@ -252,10 +254,48 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
+/* Cifra y rótulo de las tarjetas de resumen.
+   El número va en el tono semántico profundo y no en el vivo de Bootstrap:
+   `text-warning` (#ffc107) sobre blanco da 1.9:1, ilegible incluso como texto
+   grande. Los tres tonos elegidos pasan 4.5:1 sobre la tarjeta. */
+.panel-admin-valor {
+  font-size: clamp(2.25rem, 5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0;
+  /* Cifras de ancho fijo: el número no baila cuando el socket actualiza el
+     conteo en vivo. */
+  font-variant-numeric: tabular-nums;
+}
+.panel-admin-valor-warning {
+  color: var(--color-primary-dark);
+}
+.panel-admin-valor-success {
+  color: var(--color-success-fill);
+}
+.panel-admin-valor-danger {
+  color: var(--color-danger-fill);
+}
+
+/* Rótulo de la tarjeta: chico, cálido y sin competir con la cifra. */
+.panel-admin-rotulo {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.25rem;
+}
+
+/* Densidad: las tarjetas de estado son angostas (seis por fila en escritorio),
+   así que el padding de Bootstrap les come el aire que necesita el número. */
+.panel-admin-estado .card-body {
+  padding: 1rem 0.75rem;
+}
+
 /* Bootstrap pone `outline: 0` en los enlaces de tarjeta, así que el anillo
    hay que devolverlo a mano o el enlace se vuelve invisible al tabular. */
 .panel-admin-estado:focus-visible {
-  outline: 3px solid var(--color-primary);
+  outline: 3px solid var(--color-focus);
   outline-offset: 4px;
 }
 
@@ -521,11 +561,51 @@ p {
   overscroll-behavior: contain;
 }
 
+/* ============ Superficies del navegador ============ */
+/* Lo que no dibujamos también lleva el diseño: cursor de texto, barra de
+   scroll, controles nativos y subrayados. Sin esto quedan con el azul y el gris
+   del sistema, que no pertenecen a ninguna paleta. */
+
+/* Checkboxes, radios y cualquier control nativo (promociones, listas de
+   productos, direcciones) se pintan con el marrón de marca. */
+html {
+  accent-color: var(--color-primary-dark);
+  /* Firefox y Chromium 121+: pulgar naranja suave sobre pista transparente. */
+  scrollbar-color: var(--color-primary-soft) transparent;
+}
+
+/* El cursor de inserción es el detalle que más se repite al escribir. */
+body {
+  caret-color: var(--color-primary-dark);
+}
+
+/* Fallback para Safari y Chromium viejos, que ignoran `scrollbar-color`.
+   El borde transparente + `content-box` adelgaza el pulgar y lo redondea. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-soft);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+/* Los enlaces subrayados respiran: sin offset el subrayado toca las
+   descendentes (g, p, y) y el texto se lee apretado. */
+a {
+  text-underline-offset: 0.18em;
+}
+
 /* Selección de texto con la paleta de marca: detalle de identidad que se ve
    cada vez que alguien selecciona contenido (copiar un precio, un nombre). */
 ::selection {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 /* ============ Movimiento reducido ============ */

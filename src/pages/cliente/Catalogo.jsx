@@ -291,6 +291,17 @@ const Catalogo = () => {
     setSearchParams(next, { replace: true });
   };
 
+  // Salida del estado vacío: borra todos los filtros de la URL sin tocar la
+  // ruta. Sin esto el aviso dejaba al usuario en un callejón: tenía que
+  // descubrir solo que los filtros estaban en las pills de arriba.
+  const limpiarFiltros = () => {
+    const next = new URLSearchParams(searchParams);
+    ["categoria", "busqueda", "precioMin", "precioMax", "promocion"].forEach(
+      (clave) => next.delete(clave),
+    );
+    setSearchParams(next, { replace: true });
+  };
+
   return (
     <Container className="py-5">
       {/* Título */}
@@ -484,10 +495,17 @@ const Catalogo = () => {
           </Row>
 
           {productosFiltrados.length === 0 && (
-            <div className="text-center">
-              <Alert variant="light" className="cat-aviso d-inline-block">
+            <div className="cat-vacio text-center">
+              <p className="cat-vacio-texto">
                 No hay productos que coincidan con los filtros.
-              </Alert>
+              </p>
+              <Button
+                variant="primary"
+                className="cat-vacio-boton"
+                onClick={limpiarFiltros}
+              >
+                Limpiar filtros
+              </Button>
             </div>
           )}
         </>

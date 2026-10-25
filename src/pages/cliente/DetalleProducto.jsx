@@ -5,29 +5,29 @@ import { FaCartPlus, FaSlidersH } from 'react-icons/fa';
 import { obtenerProductoPorId, obtenerProductos } from '../../api/productos';
 import { obtenerPorProducto } from '../../api/personalizacion';
 import { obtenerPromociones, obtenerProductosDePromocion } from '../../api/promociones';
+import {
+  eliminarResena,
+  obtenerMisResenas,
+  obtenerProductosElegiblesParaResenar,
+  obtenerResenasDeProducto,
+} from '../../api/resenas';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useAuth } from '../../hooks/useAuth';
 import { formatPrice } from '../../utils/formatters';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import { SkeletonDetalleProducto } from '../../components/comunes/Skeleton';
 import ProductoPersonalizarModal from '../../components/cliente/ProductoPersonalizarModal';
+import Estrellas from '../../components/cliente/Estrellas';
+import ListaResenas from '../../components/cliente/ListaResenas';
+import ResenaModal from '../../components/cliente/ResenaModal';
+import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import './DetalleProducto.css';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
-
-// Reseñas fijas (demo): Calificación es Propuesta 2, excluida por AGENTS.md.
-// Cuando exista la entidad real, reemplazar por GET de reseñas del producto.
-const RESENAS_DEMO = [
-  { nombre: 'María G.', fecha: 'hace 2 días', estrellas: 5, texto: 'La mejor hamburguesa del barrio, el pan es increíble.' },
-  { nombre: 'Juan P.', fecha: 'hace 1 semana', estrellas: 4, texto: 'Riquísima, llegó caliente. Le sacaría un poco de sal.' },
-  { nombre: 'Lucía F.', fecha: 'hace 2 semanas', estrellas: 5, texto: 'El cheddar fundido es un 10. Vuelvo seguro.' },
-];
-
-const promedioDemo = RESENAS_DEMO.reduce((acc, r) => acc + r.estrellas, 0) / RESENAS_DEMO.length;
 
 const DetalleProducto = () => {
   const { id } = useParams();
   const { agregarAlCarrito } = useCarrito();
-  const { hydrated, isAuthenticated } = useAuth();
+  const { hydrated, isAuthenticated, isCliente } = useAuth();
   const [producto, setProducto] = useState(null);
   const [personalizacion, setPersonalizacion] = useState([]);
   const [relacionados, setRelacionados] = useState([]);
@@ -36,6 +36,20 @@ const DetalleProducto = () => {
   const [showModal, setShowModal] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+
+  // Reseñas: listado público paginado, resumen, la reseña propia (si existe) y
+  // si este cliente puede escribir una (compró y recibió el producto).
+  const [resenas, setResenas] = useState(null);
+  const [cargandoResenas, setCargandoResenas] = useState(true);
+  const [cargandoMasResenas, setCargandoMasResenas] = useState(false);
+  const [miResena, setMiResena] = useState(null);
+  const [puedeResenar, setPuedeResenar] = useState(false);
+  const [modalResena, setModalResena] = useState(false);
+  const [resenaAEditar, setResenaAEditar] = useState(null);
+  const [resenaABorrar, setResenaABorrar] = useState(null);
+  const [borrandoResena, setBorrandoResena] = useState(false);
+  const [mensajeResenas, setMensajeResenas] = useState('');
+  const [errorResenas, setErrorResenas] = useState('');
 
   // `conIndicador` enciende el spinner y reinicia la cantidad: es para la carga
   // visible (entrada a la página o cambio de producto). Un refresco silencioso
@@ -94,9 +108,69 @@ const DetalleProducto = () => {
     if (conIndicador) setCargando(false);
   }, [id]);
 
+  const cargarResenas = useCallback(async () => {
+    setCargandoResenas(true);
+    setMensajeResenas('');
+    setErrorResenas('');
+    // Al cambiar de producto no se muestran las reseñas del anterior mientras
+    // llega la respuesta.
+    setResenas(null);
+    const res = await obtenerResenasDeProducto(id, { pagina: 1, limite: 10 });
+    if (res.success) setResenas(res.data);
+    setCargandoResenas(false);
+  }, [id]);
+
+  const cargarMasResenas = useCallback(async () => {
+    if (!resenas || resenas.pagina >= resenas.paginas) return;
+    setCargandoMasResenas(true);
+    const res = await obtenerResenasDeProducto(id, {
+      pagina: resenas.pagina + 1,
+      limite: resenas.limite,
+    });
+    if (res.success) {
+      setResenas((prev) => ({
+        ...res.data,
+        items: [...(prev?.items || []), ...res.data.items],
+      }));
+    }
+    setCargandoMasResenas(false);
+  }, [id, resenas]);
+
+  // Elegibilidad y reseña propia: solo para CLIENTE con sesión. El backend es
+  // el que manda (403 si no compró), esto solo decide qué botones mostrar.
+  const cargarElegibilidad = useCallback(async () => {
+    if (!hydrated || !isAuthenticated || !isCliente) {
+      setPuedeResenar(false);
+      setMiResena(null);
+      return;
+    }
+    const [resElegibles, resMias] = await Promise.all([
+      obtenerProductosElegiblesParaResenar(),
+      obtenerMisResenas(),
+    ]);
+    if (resElegibles.success) {
+      setPuedeResenar(
+        resElegibles.data.some((p) => String(p.productoId) === String(id))
+      );
+    }
+    if (resMias.success) {
+      setMiResena(
+        resMias.data.find((r) => String(r.productoId) === String(id)) || null
+      );
+    }
+  }, [hydrated, isAuthenticated, isCliente, id]);
+
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  useEffect(() => {
+    cargarResenas();
+  }, [cargarResenas]);
+
+  useEffect(() => {
+    cargarElegibilidad();
+  }, [cargarElegibilidad]);
 
   useEffect(() => {
     if (!hydrated || !isAuthenticated) return undefined;
@@ -131,6 +205,32 @@ const DetalleProducto = () => {
     () => (personalizacion || []).filter((e) => e.tipo === 'acompanar' && e.activo !== false),
     [personalizacion]
   );
+
+  const alGuardarResena = async () => {
+    const editando = Boolean(resenaAEditar);
+    setModalResena(false);
+    setResenaAEditar(null);
+    setErrorResenas('');
+    setMensajeResenas(
+      editando ? 'Tu reseña se actualizó.' : 'Tu reseña se publicó.'
+    );
+    await Promise.all([cargarResenas(), cargarElegibilidad()]);
+  };
+
+  const confirmarBorradoResena = async () => {
+    if (!resenaABorrar) return;
+    setBorrandoResena(true);
+    setErrorResenas('');
+    const res = await eliminarResena(resenaABorrar.id);
+    setBorrandoResena(false);
+    setResenaABorrar(null);
+    if (!res.success) {
+      setErrorResenas(res.error || 'No se pudo eliminar la reseña.');
+      return;
+    }
+    setMensajeResenas('Tu reseña se eliminó.');
+    await Promise.all([cargarResenas(), cargarElegibilidad()]);
+  };
 
   const precioConDescuento =
     promocion && promocion.tipo === 'DESCUENTO_PORCENTUAL'
@@ -175,10 +275,21 @@ const DetalleProducto = () => {
             <Card.Body className="p-4 d-flex flex-column h-100">
               {producto.categoria && <Badge bg="light" text="dark" className="badge-comi align-self-start mb-2">{producto.categoria}</Badge>}
               <Card.Title as="h1">{producto.nombre}</Card.Title>
-              <div className="mb-2">
-                <span className="estrellas">★★★★☆</span>{' '}
-                <strong>{promedioDemo.toFixed(1)}</strong>{' '}
-                <span className="text-muted small">({RESENAS_DEMO.length} reseñas)</span>
+              <div className="mb-2 d-flex align-items-center gap-2 flex-wrap">
+                {resenas && resenas.cantidad > 0 ? (
+                  <>
+                    <Estrellas valor={resenas.promedio} tamano={16} />
+                    <strong>{Number(resenas.promedio).toFixed(1)}</strong>
+                    <span className="text-muted small">
+                      ({resenas.cantidad}{' '}
+                      {resenas.cantidad === 1 ? 'reseña' : 'reseñas'})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted small">
+                    Todavía no hay reseñas de este producto.
+                  </span>
+                )}
               </div>
               <Card.Text className="text-muted flex-grow-1">{producto.descripcion}</Card.Text>
               <div className="mb-3">
@@ -218,7 +329,11 @@ const DetalleProducto = () => {
             ) : (
               <p className="text-muted small mb-0">La composición está descrita arriba.</p>
             )}
-            <p className="text-muted small mt-3 mb-0">¿Sacás o agregás algo? Personalizalo a tu gusto.</p>
+            {ingredientes.length > 0 && (
+              <p className="text-muted small mt-3 mb-0">
+                ¿Sacás o agregás algo? Personalizalo a tu gusto.
+              </p>
+            )}
           </Card>
         </Col>
         <Col md={5}>
@@ -248,16 +363,43 @@ const DetalleProducto = () => {
       )}
 
       <Card className="card-comi p-4 mb-4">
-        <span className="detalle-etiqueta">Reseñas de clientes <Badge bg="secondary" className="ms-1">demo</Badge></span>
-        {RESENAS_DEMO.map((r) => (
-          <div key={r.nombre} className="resena">
-            <div>
-              <span className="estrellas">{'★'.repeat(r.estrellas)}{'☆'.repeat(5 - r.estrellas)}</span>{' '}
-              <strong>{r.nombre}</strong> <small className="text-muted">· {r.fecha}</small>
-            </div>
-            <div>{r.texto}</div>
-          </div>
-        ))}
+        {mensajeResenas && (
+          <Alert
+            variant="success"
+            dismissible
+            onClose={() => setMensajeResenas('')}
+            className="py-2"
+          >
+            {mensajeResenas}
+          </Alert>
+        )}
+        {errorResenas && (
+          <Alert
+            variant="danger"
+            dismissible
+            onClose={() => setErrorResenas('')}
+            className="py-2"
+          >
+            {errorResenas}
+          </Alert>
+        )}
+        <ListaResenas
+          datos={resenas}
+          cargando={cargandoResenas}
+          miResena={miResena}
+          puedeResenar={puedeResenar}
+          onEscribir={() => {
+            setResenaAEditar(null);
+            setModalResena(true);
+          }}
+          onEditar={(resena) => {
+            setResenaAEditar(resena);
+            setModalResena(true);
+          }}
+          onEliminar={(resena) => setResenaABorrar(resena)}
+          onVerMas={cargarMasResenas}
+          cargandoMas={cargandoMasResenas}
+        />
       </Card>
 
       {relacionados.length > 0 && (
@@ -274,6 +416,27 @@ const DetalleProducto = () => {
       )}
 
       <ProductoPersonalizarModal show={showModal} onHide={() => setShowModal(false)} producto={producto} />
+
+      <ResenaModal
+        mostrar={modalResena}
+        producto={producto}
+        resena={resenaAEditar}
+        onGuardada={alGuardarResena}
+        onCerrar={() => {
+          setModalResena(false);
+          setResenaAEditar(null);
+        }}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(resenaABorrar)}
+        titulo="Eliminar reseña"
+        mensaje="¿Querés eliminar tu reseña? Esta acción no se puede deshacer."
+        textoConfirmar="Sí, eliminar"
+        cargando={borrandoResena}
+        onConfirmar={confirmarBorradoResena}
+        onCancelar={() => setResenaABorrar(null)}
+      />
     </Container>
   );
 };

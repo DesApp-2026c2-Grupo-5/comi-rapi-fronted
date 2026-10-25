@@ -163,6 +163,10 @@ export const PersonalizacionProvider = ({ children }) => {
     const mapa = {};
     plantillas.forEach((p) => {
       if (!p.activo) return;
+      // Los ingredientes (`personalizar`) son propios de cada producto y se
+      // cargan desde su formulario: las plantillas de categoría ya no se usan
+      // como fallback para ese tipo.
+      if (p.tipo === 'personalizar') return;
       const clave = String(p.categoriaId);
       if (!mapa[clave]) {
         mapa[clave] = {
@@ -182,6 +186,8 @@ export const PersonalizacionProvider = ({ children }) => {
   // tiene ningún elemento de un tipo, usa las plantillas activas de su
   // categoría (antes vivían hardcodeadas en personalizacionConfig.js). Si tiene
   // elementos de ese tipo, respeta sólo lo configurado para el producto.
+  // Excepción: `personalizar` (ingredientes) no tiene fallback; son datos
+  // propios del producto y se cargan en su formulario.
   const getConfigParaProducto = useCallback(
     (producto) => {
       if (!producto) return CONFIG_VACIA;
@@ -214,7 +220,7 @@ export const PersonalizacionProvider = ({ children }) => {
               })),
         personalizar:
           porTipo('personalizar').length === 0
-            ? cfgCategoria.personalizar
+            ? []
             : activosPorTipo('personalizar').map((e) => ({
                 id: String(e.id),
                 nombre: e.nombre,

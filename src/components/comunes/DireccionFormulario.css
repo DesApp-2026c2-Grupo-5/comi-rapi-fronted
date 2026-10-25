@@ -106,13 +106,13 @@
   font-size: 1rem;
 }
 .dir-form-resultado.alert-warning {
-  border-left: 4px solid #ffc107;
+  border-color: #ffc107;
 }
 .dir-form-resultado.alert-danger {
-  border-left: 4px solid #dc3545;
+  border-color: #dc3545;
 }
 .dir-form-resultado.alert-secondary {
-  border-left: 4px solid #6c757d;
+  border-color: #6c757d;
 }
 /* En pantallas angostas la ficha apila etiqueta y valor. */
 @media (max-width: 30rem) {

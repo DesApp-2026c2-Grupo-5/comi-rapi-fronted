@@ -10,19 +10,22 @@
 /* ============ 1. HERO ============ */
 .inicio-hero {
   background-color: var(--color-primary);
-  color: #fff;
+  /* Tinta espresso, no blanco: blanco sobre este naranja daba 2.05:1. */
+  color: var(--color-on-primary);
   padding: 3rem 0 2.5rem;
   overflow: hidden;
 }
 
-/* Título grande blanco (COMI / RAPI) */
+/* Título grande del hero (COMI / RAPI) */
 .inicio-hero-titulo {
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 900;
   font-size: clamp(3rem, 8vw, 5.5rem);
   letter-spacing: 1px;
   line-height: 1;
-  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  /* Sombra clara: con tinta oscura, la sombra negra anterior ensuciaba las
+     letras en vez de separarlas del fondo. */
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.22);
 }
 
 /* Columna central del hero (contiene la hamburguesa que se arma al entrar) */
@@ -241,16 +244,30 @@
   color: var(--color-primary-dark);
 }
 
-/* ============ 2. Categorías ============ */
+/* ============ 2. Títulos de sección ============ */
+/* Las tres secciones de contenido comparten un título en caja alta y baja, con
+   un paso de escala real sobre el cuerpo del texto. Antes las cuatro secciones
+   iban en mayúsculas, con el mismo peso y el mismo tracking: la página no tenía
+   escalones y todo se leía con el mismo volumen. */
 .seccion-titulo {
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
   color: var(--color-text);
   text-align: center;
 }
 
-.seccion-titulo.text-white {
-  color: #fff;
+/* La sección de envío es la de conversión: es la única que conserva el grito,
+   con un paso de tamaño por encima y el aire del tracking en mayúsculas.
+   Va en blanco junto con su párrafo (pedido explícito para ese bloque), así que
+   es la única superficie de la app que queda por debajo de AA. El botón que
+   sigue sí tiene contraste pleno, que es el elemento accionable. */
+.seccion-titulo-envio {
+  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-white);
 }
 
 .categoria-enlace {
@@ -259,12 +276,12 @@
 }
 
 .categoria-enlace:hover {
-  color: var(--color-danger);
+  color: var(--color-primary-dark);
 }
 
 /* Anillo de foco para navegación por teclado: solo contorno, sin movimiento. */
 .categoria-enlace:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: 3px;
   border-radius: 12px;
 }
@@ -310,10 +327,14 @@
 /* ============ 4. Envío a domicilio ============ */
 .envio-section {
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .envio-subtitulo {
+  /* Pedido explícito: este párrafo conserva el blanco anterior a la pasada de
+     contraste. Sobre --color-primary queda en 2.05:1, por debajo de AA; es una
+     decisión de diseño, no un descuido. */
+  color: var(--color-white);
   font-size: 1.1rem;
   opacity: 0.95;
   max-width: 560px;
@@ -336,6 +357,23 @@
 .envio-boton:hover {
   background-color: var(--color-cream);
   color: var(--color-primary-dark);
+}
+
+/* ============ Error de carga ============ */
+/* Mismo lenguaje que el resto de los avisos: superficie crema, borde de marca y
+   texto oscuro del sistema (nunca gris sobre color). */
+.inicio-error {
+  background-color: var(--color-cream-soft);
+  border: 1px solid var(--color-border-cream);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.25rem;
+  text-align: center;
+}
+
+.inicio-error-texto {
+  color: var(--color-text);
+  font-weight: 600;
+  margin: 0;
 }
 
 /* ============ Responsive ============ */

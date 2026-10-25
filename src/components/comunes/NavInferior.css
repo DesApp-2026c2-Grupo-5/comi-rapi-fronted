@@ -271,7 +271,7 @@
 
 /* Bootstrap pone `outline: 0` en los enlaces al tabular. */
 .nav-hoja-enlace:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: -2px;
 }
 
@@ -344,7 +344,7 @@
 
 /* Bootstrap pone `outline: 0` al enfocar con teclado. */
 .nav-hoja-salir:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: -2px;
 }
 

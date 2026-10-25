@@ -20,9 +20,27 @@
   --color-primary: #ff9f1c;
   --color-primary-hover: #e88900;
   --color-primary-active: #d47f00;
-  --color-primary-dark: #b55d00; /* texto naranja sobre crema */
+  /* Texto naranja sobre crema o blanco. #b55d00 daba 4.0:1 sobre crema (bajo
+     el mínimo AA de 4.5:1); este tono da 4.9:1 sobre crema y 5.3:1 sobre
+     blanco, y se usa también como relleno con texto blanco encima. */
+  --color-primary-dark: #a85400;
   --color-primary-deep: #f07f10; /* inicio del degradado de navbar */
   --color-primary-soft: #ffb347; /* fin del degradado de navbar */
+
+  /* Tinta sobre superficies de marca (naranja).
+     Blanco sobre --color-primary daba 2.05:1, y sobre el extremo claro del
+     degradado de la navbar, 1.78:1: ilegible con sol o vista baja. El espresso
+     conserva el naranja vibrante como color de marca y deja el texto en 7.1:1
+     (8.2:1 sobre --color-primary-soft, 5.4:1 sobre --color-primary-deep). */
+  --color-on-primary: #3a2410;
+
+  /* Anillo de foco del teclado.
+     El naranja de marca sobre blanco o crema da ~2:1, por debajo del mínimo de
+     3:1 que pide WCAG para un indicador de foco (1.4.11 / 2.4.11): el anillo
+     existía pero no se veía. Este tono da 5.3:1 sobre blanco y 4.9:1 sobre
+     crema. Las superficies oscuras no lo usan: la navbar lleva
+     --color-on-primary y la barra inferior blanca, declarados en su hoja. */
+  --color-focus: #a85400;
 
   /* Crema (superficies suaves, botones neutros) */
   --color-cream: #fff4e2;
@@ -49,6 +67,15 @@
   --color-danger: #e63946;
   --color-danger-hover: #d12737;
   --color-danger-active: #b51e2d;
+
+  /* Relleno de botones de estado.
+     Los tonos "vivos" no llegan a 4.5:1 con texto blanco (verde 2.3:1, rojo
+     3.9:1). El relleno usa el tono profundo y el blanco queda para la etiqueta;
+     los tokens de arriba siguen mandando en texto, bordes y badges. */
+  --color-success-fill: #15803d;
+  --color-success-fill-hover: #116a32;
+  --color-danger-fill: #b51e2d;
+  --color-danger-fill-hover: #9a1826;
 
   /* Externos */
   --color-mp: #009ee3; /* Mercado Pago */

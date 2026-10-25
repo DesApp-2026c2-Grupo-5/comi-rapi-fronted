@@ -16,7 +16,7 @@
   border: none;
   border-radius: 50%;
   background: linear-gradient(135deg, #f07f10 0%, #e06a00 100%);
-  color: #fff;
+  color: var(--color-on-primary);
   font-size: 1.4rem;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(240, 127, 16, 0.4);

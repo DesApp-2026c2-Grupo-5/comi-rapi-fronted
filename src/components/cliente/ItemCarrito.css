@@ -83,7 +83,7 @@
 }
 
 .cantidad-btn:focus-visible {
-  outline: 2px solid var(--color-primary, #f07f10);
+  outline: 2px solid var(--color-focus);
   outline-offset: -2px;
 }
 

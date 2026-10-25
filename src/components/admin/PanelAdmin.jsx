@@ -9,7 +9,6 @@
  * Uso: <PanelAdmin /> - Se renderiza en Dashboard.
  */
 
-import React from 'react';
 import { Container, Row, Col, Card, Badge, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { usePedidos } from '../../hooks/usePedidos';
@@ -75,12 +74,12 @@ const PanelAdmin = () => {
                 ya hace (Enter, Espacio, foco, menú contextual, abrir en pestaña
                 nueva) y deja el destino invisible para el lector de pantalla.
                 Ahora son enlaces reales con la apariencia de tarjeta. */}
-            <Card as={Link} to={tarjeta.destino} className="text-center shadow-sm h-100 panel-admin-estado">
+            <Card as={Link} to={tarjeta.destino} className="text-center h-100 panel-admin-estado">
               <Card.Body>
-                <Card.Title as="h2" className="h6 text-muted">
+                <Card.Title as="h2" className="panel-admin-rotulo">
                   {tarjeta.titulo}
                 </Card.Title>
-                <Card.Text className={`display-6 fw-bold text-${tarjeta.variante}`}>
+                <Card.Text className={`panel-admin-valor panel-admin-valor-${tarjeta.variante}`}>
                   {tarjeta.valor}
                 </Card.Text>
               </Card.Body>
@@ -109,13 +108,13 @@ const PanelAdmin = () => {
                 <Card
                   as={Link}
                   to={`/admin/pedidos?estado=${estado}`}
-                  className="panel-admin-estado shadow-sm h-100"
+                  className="panel-admin-estado h-100"
                 >
                   <Card.Body className="text-center d-flex flex-column align-items-center justify-content-center">
-                    <span className="display-6 fw-bold">{cantidad}</span>
+                    <span className="panel-admin-valor">{cantidad}</span>
                     <Badge
                       bg={VARIANTE_ESTADO_PEDIDO[estado] || 'secondary'}
-                      className="mt-1 text-uppercase"
+                      className="mt-2 text-uppercase"
                     >
                       {ETIQUETAS_ESTADO_PEDIDO[estado] || estado}
                     </Badge>

@@ -29,6 +29,21 @@ const CATEGORIA_COMBOS = 'combos';
 const esCategoriaCombos = (categoria) =>
   String(categoria?.nombre).trim().toLowerCase() === CATEGORIA_COMBOS;
 
+// "Pan, carne, queso" → ['Pan', 'carne', 'queso']. Se aceptan comas y saltos de
+// línea, se descartan vacíos y se quitan repetidos sin distinguir mayúsculas.
+const parsearIngredientes = (texto) => {
+  const nombres = String(texto || '')
+    .split(/[,\n]/)
+    .map((nombre) => nombre.trim())
+    .filter(Boolean);
+  return nombres.filter(
+    (nombre, indice) =>
+      nombres.findIndex(
+        (otro) => otro.toLowerCase() === nombre.toLowerCase()
+      ) === indice
+  );
+};
+
 const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
@@ -37,6 +52,10 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   const [categoriaId, setCategoriaId] = useState('');
   const [imagen, setImagen] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  // Ingredientes propios del producto (opcional). Se guardan como elementos de
+  // personalización `personalizar`: el detalle los lista y el cliente puede
+  // pedir que se los quiten. No se heredan de la categoría.
+  const [ingredientes, setIngredientes] = useState('');
   const [categorias, setCategorias] = useState([]);
   const [cargandoCategorias, setCargandoCategorias] = useState(true);
   // Receta del combo: [{ productoId, cantidad }]
@@ -86,6 +105,15 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
       setCategoriaId(producto.categoriaId ?? '');
       setImagen(producto.imagen || '');
       setDescripcion(producto.descripcion || '');
+      // Los ingredientes viven como elementos `personalizar` del producto.
+      setIngredientes(
+        Array.isArray(producto.personalizacion)
+          ? producto.personalizacion
+              .filter((e) => e.tipo === 'personalizar')
+              .map((e) => e.nombre)
+              .join(', ')
+          : ''
+      );
       // El backend devuelve la receta en `componentes` (productoId + cantidad).
       setComponentes(
         Array.isArray(producto.componentes)
@@ -135,6 +163,12 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
       imagen:
         imagen.trim() || 'https://via.placeholder.com/300x200?text=Producto',
     };
+
+    // Viaja siempre, incluso vacío: el backend distingue "sin ingredientes" de
+    // "no tocar" y así no vuelven a aparecer los genéricos de la categoría.
+    if (!esCombo) {
+      datosProducto.ingredientes = parsearIngredientes(ingredientes);
+    }
 
     if (esCombo) {
       const receta = componentes
@@ -212,6 +246,27 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
                   <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                 ))}
               </Form.Select>
+            </Form.Group>
+          )}
+
+          {/* Ingredientes: opcional y propio de cada producto. Se muestran en el
+              detalle y el cliente puede pedir que se los quiten. Un combo no los
+              lleva: sus ingredientes son los productos de la receta. */}
+          {!esCombo && (
+            <Form.Group className="mb-3" controlId="producto-ingredientes">
+              <Form.Label>Ingredientes</Form.Label>
+              <Form.Control
+                as="textarea"
+                name="ingredientes"
+                rows={2}
+                value={ingredientes}
+                onChange={(e) => setIngredientes(e.target.value)}
+                placeholder="Ej: Pan, carne, queso cheddar, lechuga"
+              />
+              <Form.Text className="text-muted">
+                Opcional. Separá cada ingrediente con una coma. Si lo dejás
+                vacío, el producto no muestra ingredientes.
+              </Form.Text>
             </Form.Group>
           )}
 

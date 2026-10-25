@@ -19,13 +19,13 @@
 }
 
 .historial-acciones-ayuda {
-  color: #8a8680;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   font-weight: 600;
 }
 
 .btn-historial-avanzar {
-  background: linear-gradient(90deg, #16a34a, #22c55e);
+  background: linear-gradient(90deg, var(--color-success-fill-hover), var(--color-success-fill));
   border: none;
   border-radius: 50px;
   font-weight: 800;
@@ -87,15 +87,15 @@
 }
 
 .filtro-estado-pill.filtro-estado-activo {
-  background-color: #ff9f1c;
-  border-color: #ff9f1c;
-  color: #fff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .filtro-estado-pill.filtro-estado-activo:hover {
-  background-color: #e88900;
-  border-color: #e88900;
-  color: #fff;
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--color-on-primary);
 }
 
 /* ============ Resaltado de la card al llegar desde un banner de cancelación ============ */

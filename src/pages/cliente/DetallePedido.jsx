@@ -19,12 +19,15 @@ import {
   Row,
   Col,
   Alert,
-  Spinner,
 } from "react-bootstrap";
-import { FaArrowLeft, FaRedo, FaShippingFast } from "react-icons/fa";
+import { FaArrowLeft, FaRedo, FaShippingFast, FaStar, FaPen } from "react-icons/fa";
 import { usePedidos } from "../../hooks/usePedidos";
 import { useRepetirPedido } from "../../hooks/useRepetirPedido";
 import { useParametros } from "../../hooks/useParametros";
+import {
+  obtenerMisResenas,
+  obtenerProductosElegiblesParaResenar,
+} from "../../api/resenas";
 import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
@@ -36,6 +39,7 @@ import { formatearDireccion } from "../../utils/direccion";
 import IconoEstado from "../../components/comunes/IconoEstado";
 import HistorialStepper from "../../components/comunes/HistorialStepper";
 import ConfirmarModal from "../../components/comunes/ConfirmarModal";
+import ResenaModal from "../../components/cliente/ResenaModal";
 import { SkeletonTabla } from "../../components/comunes/Skeleton";
 import {
   mensajeConfirmarRepetir,
@@ -75,6 +79,36 @@ const DetallePedido = () => {
     }
     estadoAnterior.current = pedido.estado;
   }, [pedido]);
+
+  // Reseñas: solo se consultan si el pedido está entregado. `elegibles` son los
+  // productos de ESTE pedido que el cliente todavía no reseñó; `misResenas`
+  // permite ofrecer "Editar" en los que ya tienen reseña.
+  const [elegibles, setElegibles] = useState([]);
+  const [misResenas, setMisResenas] = useState([]);
+  const [productoAResenar, setProductoAResenar] = useState(null);
+  const esEntregado = pedido?.estado === ESTADOS_PEDIDO.ENTREGADO;
+  const pedidoId = pedido?.id;
+
+  useEffect(() => {
+    if (!esEntregado || !pedidoId) {
+      setElegibles([]);
+      setMisResenas([]);
+      return undefined;
+    }
+    let vivo = true;
+    (async () => {
+      const [resElegibles, resMias] = await Promise.all([
+        obtenerProductosElegiblesParaResenar(pedidoId),
+        obtenerMisResenas(),
+      ]);
+      if (!vivo) return;
+      if (resElegibles.success) setElegibles(resElegibles.data);
+      if (resMias.success) setMisResenas(resMias.data);
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [esEntregado, pedidoId]);
 
   // A6: badge estático de llegada (la hora es fija, no necesita countdown).
   // Va ANTES de cualquier early return: los hooks deben correr siempre.
@@ -122,6 +156,24 @@ const DetallePedido = () => {
   const reasignado = (pedido.historialEstados || []).some(
     (h) => h.observacion && /reasignado/i.test(h.observacion),
   );
+
+  // Reseñas por ítem: la propia (para editar) y si está habilitado (para
+  // calificar). El backend vuelve a validar la compra entregada.
+  const miResenaDe = (productoId) =>
+    misResenas.find((r) => String(r.productoId) === String(productoId));
+
+  const esElegible = (productoId) =>
+    elegibles.some((p) => String(p.productoId) === String(productoId));
+
+  const alGuardarResena = async () => {
+    setProductoAResenar(null);
+    const [resElegibles, resMias] = await Promise.all([
+      obtenerProductosElegiblesParaResenar(pedido.id),
+      obtenerMisResenas(),
+    ]);
+    if (resElegibles.success) setElegibles(resElegibles.data);
+    if (resMias.success) setMisResenas(resMias.data);
+  };
 
   return (
     <Container className="py-5">
@@ -206,6 +258,7 @@ const DetallePedido = () => {
                 <th>Cantidad</th>
                 <th>Precio</th>
                 <th>Subtotal</th>
+                {esEntregado && <th>Reseña</th>}
               </tr>
             </thead>
             <tbody>
@@ -222,10 +275,51 @@ const DetallePedido = () => {
                       <td>{prod.cantidad}</td>
                       <td>{formatPrice(prod.precio)}</td>
                       <td>{formatPrice(prod.precio * prod.cantidad)}</td>
+                      {esEntregado && (
+                        <td>
+                          {prod.productoId ? (
+                            miResenaDe(prod.productoId) ? (
+                              <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() =>
+                                  setProductoAResenar({
+                                    id: prod.productoId,
+                                    nombre: prod.nombre,
+                                    resena: miResenaDe(prod.productoId),
+                                  })
+                                }
+                              >
+                                <FaPen className="me-1" aria-hidden="true" />
+                                Editar
+                              </Button>
+                            ) : esElegible(prod.productoId) ? (
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() =>
+                                  setProductoAResenar({
+                                    id: prod.productoId,
+                                    nombre: prod.nombre,
+                                    resena: null,
+                                  })
+                                }
+                              >
+                                <FaStar className="me-1" aria-hidden="true" />
+                                Calificar
+                              </Button>
+                            ) : (
+                              <span className="text-muted small">—</span>
+                            )
+                          ) : (
+                            <span className="text-muted small">—</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                     {tieneDesglose && (
                       <tr>
-                        <td colSpan={4} className="small text-muted bg-crema">
+                        <td colSpan={esEntregado ? 5 : 4} className="small text-muted bg-crema">
                           {prod.extras?.map((ex) => (
                             <div key={ex.id}>
                               › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
@@ -339,6 +433,14 @@ const DetallePedido = () => {
         titulo="No se puede repetir"
         mensaje={mensajeNoRepetible(noRepetible)}
         onCancelar={cerrarAviso}
+      />
+
+      <ResenaModal
+        mostrar={Boolean(productoAResenar)}
+        producto={productoAResenar}
+        resena={productoAResenar?.resena || null}
+        onGuardada={alGuardarResena}
+        onCerrar={() => setProductoAResenar(null)}
       />
     </Container>
   );

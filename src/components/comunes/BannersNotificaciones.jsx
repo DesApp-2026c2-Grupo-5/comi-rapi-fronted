@@ -41,11 +41,7 @@ const BannersNotificaciones = () => {
         const Icono = config.icono;
         const cerrar = () => quitar(banner.id);
         return (
-          <div
-            key={banner.id}
-            className="batch-notificacion"
-            style={{ borderLeftColor: config.color }}
-          >
+          <div key={banner.id} className="batch-notificacion">
             <Icono
               className="batch-notificacion-icono"
               style={{ color: config.color }}

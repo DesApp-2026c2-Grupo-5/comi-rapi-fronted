@@ -35,6 +35,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import PromocionCard from '../../components/cliente/PromocionCard';
+import {
+  SkeletonCategorias,
+  SkeletonTarjeta,
+} from '../../components/comunes/Skeleton';
 import './Inicio.css';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
@@ -70,6 +74,12 @@ const Inicio = () => {
   const [categorias, setCategorias] = useState([]);
   const [masVendidos, setMasVendidos] = useState([]);
   const [promociones, setPromociones] = useState([]);
+  // La portada es la primera pantalla que ve el cliente: mientras los tres
+  // pedidos están en vuelo se muestran esqueletos con la geometría real (no un
+  // hueco bajo el título), y si alguno falla se ofrece reintentar en lugar de
+  // dejar secciones vacías sin explicación.
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
   const { hydrated, isAuthenticated } = useAuth();
 
   // Se muestran los más vendidos del día, no una lista fija: el backend los
@@ -88,13 +98,25 @@ const Inicio = () => {
   };
 
   const cargar = async () => {
-    const [resCategorias] = await Promise.all([
-      obtenerCategorias(),
-      refrescarMasVendidos(),
-      refrescarPromociones(),
-    ]);
-    if (resCategorias.success) {
-      setCategorias(resCategorias.data.map(aCategoriaVista));
+    setError(null);
+    try {
+      const [resCategorias] = await Promise.all([
+        obtenerCategorias(),
+        refrescarMasVendidos(),
+        refrescarPromociones(),
+      ]);
+      if (resCategorias.success) {
+        setCategorias(resCategorias.data.map(aCategoriaVista));
+      } else {
+        setError(resCategorias.error || 'No pudimos cargar la portada.');
+      }
+    } catch {
+      // fetch rechaza cuando no hay red o el backend no responde. Sin este
+      // catch la promesa quedaba rechazada y la portada se veía vacía, sin
+      // forma de saber que algo había fallado.
+      setError('No pudimos cargar la portada.');
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -250,63 +272,123 @@ const Inicio = () => {
         </Container>
       </section>
 
-      {/* ===================== 2. CATEGORÍAS ===================== */}
-      <section className="py-5">
-        <Container>
-          <h2 className="seccion-titulo mb-4">NUESTRAS CATEGORÍAS</h2>
-          <Row className="justify-content-center">
-            {categorias.map((cat) => (
-              <Col key={cat.id} xs={6} md={4} lg={2} className="mb-4 text-center">
-                <Link
-                  to={`/cliente/catalogo?categoria=${cat.id}`}
-                  className="categoria-enlace"
-                >
-                  <div className="categoria-circulo">
-                    {/* width/height reserves el espacio y evita el salto de layout
-                        al cargar; lazy porque recién se ven si el usuario baja. */}
-                    <img
-                      src={cat.imagen}
-                      alt={cat.nombre}
-                      width={150}
-                      height={150}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div className="categoria-nombre">{cat.nombre}</div>
-                </Link>
-              </Col>
-            ))}
-          </Row>
+      {/* Error de carga: se muestra lo que sí llegó, pero se avisa que faltan
+          secciones y se da una salida (reintentar) en vez de dejarlas mudas. */}
+      {error && !cargando && (
+        <Container className="pt-4">
+          <div className="inicio-error" role="alert">
+            <p className="inicio-error-texto mb-2">{error}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setCargando(true);
+                cargar();
+              }}
+            >
+              Reintentar
+            </Button>
+          </div>
         </Container>
-      </section>
+      )}
+
+      {/* ===================== 2. CATEGORÍAS ===================== */}
+      {/* Sin datos no se muestra el título: un encabezado con un hueco debajo
+          se lee como un error de la app. Mientras carga, el esqueleto conserva
+          la geometría para que no salte el layout. */}
+      {(cargando || categorias.length > 0) && (
+        <section className="py-5">
+          <Container>
+            <h2 className="seccion-titulo mb-4">Nuestras categorías</h2>
+            {cargando ? (
+              <div role="status">
+                <span className="visually-hidden">Cargando categorías…</span>
+                <SkeletonCategorias />
+              </div>
+            ) : (
+              <Row className="justify-content-center">
+                {categorias.map((cat) => (
+                  <Col key={cat.id} xs={6} md={4} lg={2} className="mb-4 text-center">
+                    <Link
+                      to={`/cliente/catalogo?categoria=${cat.id}`}
+                      className="categoria-enlace"
+                    >
+                      <div className="categoria-circulo">
+                        {/* width/height reserves el espacio y evita el salto de layout
+                            al cargar; lazy porque recién se ven si el usuario baja. */}
+                        <img
+                          src={cat.imagen}
+                          alt={cat.nombre}
+                          width={150}
+                          height={150}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div className="categoria-nombre">{cat.nombre}</div>
+                    </Link>
+                  </Col>
+                ))}
+              </Row>
+            )}
+          </Container>
+        </section>
+      )}
 
       {/* ============ 3. MÁS VENDIDOS HOY ============ */}
-      <section className="pb-5">
-        <Container>
-          <h2 className="seccion-titulo mb-4">MÁS VENDIDOS HOY</h2>
-          <Row className="justify-content-center">
-            {masVendidos.map((producto, index) => (
-              <Col key={producto.id} md={4} className="mb-4">
-                <ProductoCard producto={producto} rank={index + 1} />
-              </Col>
-            ))}
-          </Row>
-        </Container>
-      </section>
-
-      {/* ============ 4. PROMOCIONES DEL DÍA ============ */}
-      {promociones.length > 0 && (
+      {(cargando || masVendidos.length > 0) && (
         <section className="pb-5">
           <Container>
-            <h2 className="seccion-titulo mb-4">PROMOCIONES DEL DÍA</h2>
-            <Row className="justify-content-center">
-              {promociones.map((promocion) => (
-                <Col key={promocion.id} md={4} className="mb-4">
-                  <PromocionCard promocion={promocion} />
-                </Col>
-              ))}
-            </Row>
+            <h2 className="seccion-titulo mb-4">Más vendidos hoy</h2>
+            {cargando ? (
+              <div role="status">
+                <span className="visually-hidden">Cargando los más vendidos…</span>
+                <Row className="justify-content-center">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Col key={i} md={4} className="mb-4">
+                      <SkeletonTarjeta conFoto />
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            ) : (
+              <Row className="justify-content-center">
+                {masVendidos.map((producto, index) => (
+                  <Col key={producto.id} md={4} className="mb-4">
+                    <ProductoCard producto={producto} rank={index + 1} />
+                  </Col>
+                ))}
+              </Row>
+            )}
+          </Container>
+        </section>
+      )}
+
+      {/* ============ 4. PROMOCIONES DEL DÍA ============ */}
+      {(cargando || promociones.length > 0) && (
+        <section className="pb-5">
+          <Container>
+            <h2 className="seccion-titulo mb-4">Promociones del día</h2>
+            {cargando ? (
+              <div role="status">
+                <span className="visually-hidden">Cargando promociones…</span>
+                <Row className="justify-content-center">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Col key={i} md={4} className="mb-4">
+                      <SkeletonTarjeta conFoto />
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            ) : (
+              <Row className="justify-content-center">
+                {promociones.map((promocion) => (
+                  <Col key={promocion.id} md={4} className="mb-4">
+                    <PromocionCard promocion={promocion} />
+                  </Col>
+                ))}
+              </Row>
+            )}
           </Container>
         </section>
       )}
@@ -314,7 +396,9 @@ const Inicio = () => {
       {/* ===================== 5. ENVÍO A DOMICILIO ===================== */}
       <section className="envio-section py-5">
         <Container className="text-center">
-          <h2 className="seccion-titulo text-white mb-3">ENVÍO A DOMICILIO RÁPIDO</h2>
+          <h2 className="seccion-titulo seccion-titulo-envio mb-3">
+            Envío a domicilio rápido
+          </h2>
           <p className="envio-subtitulo mb-4">
             Pedí desde la app y recibí tu comida caliente, en tiempo récord y con seguimiento en vivo.
           </p>

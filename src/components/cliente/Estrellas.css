@@ -1,0 +1,48 @@
+/**
+ * Propósito: Estilos de las estrellas de reseña (solo lectura e interactivas).
+ * Dependencias: components/cliente/Estrellas.jsx.
+ */
+
+.estrellas-comi {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.estrellas-comi-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.estrellas-comi-botones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.estrellas-comi-botones button {
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  line-height: 1;
+  color: #c9c2b6;
+  border-radius: 6px;
+}
+
+.estrellas-comi-botones button.activa {
+  color: var(--color-primary);
+}
+
+.estrellas-comi-botones button:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+.estrellas-comi-valor {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #6c6257);
+}

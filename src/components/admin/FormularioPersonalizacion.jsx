@@ -196,6 +196,14 @@ const FormularioPersonalizacion = ({
             </Form.Select>
           </Form.Group>
 
+          {esModoCategoria &&
+            tipo === TIPO_PERSONALIZACION.PERSONALIZAR && (
+              <Form.Text className="text-muted d-block mb-3">
+                Los ingredientes ya no se heredan por categoría: cargalos en el
+                campo &quot;Ingredientes&quot; del formulario de cada producto.
+              </Form.Text>
+            )}
+
           {!esAcompanar && (
             <Form.Group className="mb-3" controlId="personalizacion-nombre">
               <Form.Label>Nombre *</Form.Label>

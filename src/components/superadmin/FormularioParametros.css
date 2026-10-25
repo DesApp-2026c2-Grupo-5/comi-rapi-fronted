@@ -95,11 +95,11 @@
   }
 }
 
-/* Anillo de foco: --color-primary con alfa (mismo rgb del focus ring que
-   comirapi.css aplica a los botones). */
+/* Anillo de foco: --color-focus con alfa (el mismo tono del anillo que
+   comirapi.css aplica a botones y enlaces). */
 .parametros-item-control .form-control:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.3);
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 0.2rem rgba(168, 84, 0, 0.2);
 }
 
 .parametros-item-reset {

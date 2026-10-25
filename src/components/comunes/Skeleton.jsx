@@ -83,6 +83,28 @@ export const SkeletonGrillaProductos = ({ cantidad = 8 }) => (
 );
 
 /**
+ * Categorías de la portada: círculo + rótulo, con las mismas columnas que la
+ * grilla real (xs=6, md=4, lg=2) para que no salte el layout al llegar los datos.
+ */
+export const SkeletonCategorias = ({ cantidad = 6 }) => (
+  <Row className="justify-content-center" aria-hidden="true">
+    {Array.from({ length: cantidad }).map((_, i) => (
+      <Col key={i} xs={6} md={4} lg={2} className="mb-4 text-center">
+        <Skeleton
+          ancho="130px"
+          alto="130px"
+          radio="50%"
+          clase="mx-auto"
+        />
+        <div className="mt-3 d-flex justify-content-center">
+          <Skeleton ancho="70%" alto="0.9rem" />
+        </div>
+      </Col>
+    ))}
+  </Row>
+);
+
+/**
  * Detalle de producto: imagen a la izquierda y ficha a la derecha en
  * escritorio (md=5 / md=7), apilado en móvil — la misma forma responsive
  * del layout real.

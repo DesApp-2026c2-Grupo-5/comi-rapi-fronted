@@ -36,7 +36,7 @@
     var(--color-primary) 55%,
     var(--color-primary-soft)
   );
-  color: #fff;
+  color: var(--color-on-primary);
   text-align: center;
   padding: 2rem 1.5rem 1.6rem;
 }
@@ -139,7 +139,7 @@
     var(--color-primary-deep),
     var(--color-primary)
   );
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 700;
   letter-spacing: 0.5px;
   border-radius: 50px;
@@ -156,7 +156,7 @@
 
 .btn-submit-comirapi:hover {
   background: linear-gradient(90deg, #e06d05, var(--color-primary));
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
   transform: translateY(-2px);
   box-shadow: 0 8px 18px rgba(240, 127, 16, 0.4);
 }
@@ -175,7 +175,7 @@
 }
 
 .auth-enlace:hover {
-  color: var(--color-primary-deep);
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }
 

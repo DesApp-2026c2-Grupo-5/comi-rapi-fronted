@@ -30,7 +30,7 @@
 }
 
 .filtro-pill:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -77,8 +77,8 @@
 }
 
 .catalogo-busqueda .form-control:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.25);
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 0.2rem rgba(168, 84, 0, 0.2);
 }
 
 /* Grupos de precio: cada uno envuelve input + feedback para que el mensaje
@@ -114,6 +114,31 @@
   opacity: 0;
   transform: translateY(8px);
   animation: alert-entra 220ms var(--ease-out) 20ms both;
+}
+
+/* ============ Estado vacío con salida ============ */
+/* Un aviso sin acción deja al usuario en un callejón: tiene que descubrir solo
+   que los filtros están en las pills de arriba. La tarjeta agrupa el mensaje y
+   la salida, en el mismo lenguaje que el resto de los avisos. */
+.cat-vacio {
+  max-width: 420px;
+  margin: 2rem auto 0;
+  padding: 2rem 1.5rem;
+  background-color: var(--color-white);
+  border: 2px dashed var(--color-border-cream);
+  border-radius: 16px;
+}
+
+.cat-vacio-texto {
+  color: var(--color-text-brown);
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.cat-vacio-boton {
+  border-radius: 50px;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
 }
 
 @keyframes alert-entra {

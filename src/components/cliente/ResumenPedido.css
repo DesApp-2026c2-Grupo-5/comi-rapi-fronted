@@ -15,7 +15,7 @@
 
 .resumen-titulo {
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 800;
   border: none;
   margin-bottom: 0;
@@ -43,7 +43,7 @@
 }
 
 .resumen-boton:hover {
-  background-color: var(--color-success-hover);
+  background-color: var(--color-success-fill-hover);
 }
 
 /* Separador del detalle de ítems; los estilos de los ítems viven en

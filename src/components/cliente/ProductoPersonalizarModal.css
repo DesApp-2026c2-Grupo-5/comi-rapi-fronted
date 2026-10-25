@@ -12,7 +12,7 @@
 .btn-cerrar{ width:44px; height:44px; touch-action:manipulation; display:inline-flex; align-items:center; justify-content:center; }
 .btn-volver:focus-visible,
 .btn-cerrar:focus-visible,
-.btn-seleccionar:focus-visible{ outline:2px solid var(--color-primary); outline-offset:2px; }
+.btn-seleccionar:focus-visible{ outline: 2px solid var(--color-focus); outline-offset:2px; }
 
 /* Cumplimenta al botón "volver" para que el título quede centrado. */
 .espaciador-volver{ width:44px; flex:0 0 auto; }
@@ -24,7 +24,7 @@
 .fila-opcion:last-child{ border-bottom:none; }
 .pill-control{ background:#f1f1f5; border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
 .pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
-.pill-control button:hover{ background:var(--color-primary); color:#fff; }
+.pill-control button:hover{ background:var(--color-primary); color:var(--color-on-primary); }
 .pill-control span{ min-width:18px; text-align:center; font-weight:700; }
 
 /* ============ Contador (Contador.jsx) ============ */
@@ -45,11 +45,11 @@
 /* El hover no se dispara en táctil y endesktop el :hoveralone no distingue
    teclado de mouse, así que el foco visible va por aparte. */
 .contador .pill-control .contador-boton:hover:not(:disabled){
-  background:var(--color-primary); color:#fff;
+  background:var(--color-primary); color:var(--color-on-primary);
 }
 
 .contador .pill-control .contador-boton:focus-visible{
-  outline:2px solid var(--color-primary); outline-offset:2px;
+  outline: 2px solid var(--color-focus); outline-offset:2px;
 }
 
 /* Botón deshabilitado: el límite se comunica con el estado, en vez de que el
