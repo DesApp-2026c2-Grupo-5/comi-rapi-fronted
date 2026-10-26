@@ -6,33 +6,6 @@
  * Uso: Importado desde src/pages/cliente/DetallePedido.jsx.
  */
 
-/* ============ Botón "Volver a Mis Pedidos" ============ */
-.boton-volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--color-text);
-  font-weight: 600;
-  background-color: #fff;
-  border: 2px solid var(--color-border-cream);
-  border-radius: 50px;
-  padding: 0.5rem 1.15rem;
-  text-decoration: none;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-}
-
-.boton-volver:hover {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-on-primary);
-  text-decoration: none;
-}
-
-.boton-volver-arrow {
-  font-weight: 900;
-}
-
 /* ============ Card principal ============ */
 .detalle-card {
   border: none;

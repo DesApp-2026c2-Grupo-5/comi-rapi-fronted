@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Badge, Button, Alert } from 'react-bootstrap';
-import { FaCartPlus, FaSlidersH } from 'react-icons/fa';
+import { FaCartPlus, FaSlidersH, FaTag, FaTruck } from 'react-icons/fa';
 import { obtenerProductoPorId, obtenerProductos } from '../../api/productos';
 import { obtenerPorProducto } from '../../api/personalizacion';
 import { obtenerPromociones, obtenerProductosDePromocion } from '../../api/promociones';
@@ -12,8 +12,10 @@ import {
   obtenerResenasDeProducto,
 } from '../../api/resenas';
 import { useCarrito } from '../../hooks/useCarrito';
+import { useParametros } from '../../hooks/useParametros';
 import { useAuth } from '../../hooks/useAuth';
 import { formatPrice } from '../../utils/formatters';
+import { calcularCostoEnvio } from '../../services/envio';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import { SkeletonDetalleProducto } from '../../components/comunes/Skeleton';
 import ProductoPersonalizarModal from '../../components/cliente/ProductoPersonalizarModal';
@@ -24,13 +26,24 @@ import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import './DetalleProducto.css';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
+// En la ficha se ven sólo las primeras reseñas: el resto vive en la página
+// completa de opiniones (/producto/:id/resenas).
+const RESENAS_EN_DETALLE = 4;
+
 const DetalleProducto = () => {
   const { id } = useParams();
-  const { agregarAlCarrito } = useCarrito();
+  const {
+    agregarAlCarrito,
+    total: totalCarrito,
+    items: itemsCarrito,
+  } = useCarrito();
+  const { parametros } = useParametros();
   const { hydrated, isAuthenticated, isCliente } = useAuth();
   const [producto, setProducto] = useState(null);
   const [personalizacion, setPersonalizacion] = useState([]);
-  const [relacionados, setRelacionados] = useState([]);
+  // Catálogo completo: de acá salen los relacionados y los combos que incluyen
+  // este producto. Se guarda entero para no pedirlo dos veces.
+  const [catalogo, setCatalogo] = useState([]);
   const [promocion, setPromocion] = useState(undefined);
   const [cantidad, setCantidad] = useState(1);
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +54,6 @@ const DetalleProducto = () => {
   // si este cliente puede escribir una (compró y recibió el producto).
   const [resenas, setResenas] = useState(null);
   const [cargandoResenas, setCargandoResenas] = useState(true);
-  const [cargandoMasResenas, setCargandoMasResenas] = useState(false);
   const [miResena, setMiResena] = useState(null);
   const [puedeResenar, setPuedeResenar] = useState(false);
   const [modalResena, setModalResena] = useState(false);
@@ -85,13 +97,7 @@ const DetalleProducto = () => {
       const resPers = await obtenerPorProducto(id);
       if (resPers.success) setPersonalizacion(resPers.data);
     }
-    if (resProductos.success) {
-      setRelacionados(
-        resProductos.data
-          .filter((p) => p.categoriaId === prod.categoriaId && String(p.id) !== String(prod.id) && p.activo !== false)
-          .slice(0, 3)
-      );
-    }
+    if (resProductos.success) setCatalogo(resProductos.data);
     // Mejor promoción activa que alcanza a este producto (misma regla que
     // el catálogo: mayor descuento; 2x1 equivale a 50%).
     if (resPromos.success) {
@@ -115,26 +121,13 @@ const DetalleProducto = () => {
     // Al cambiar de producto no se muestran las reseñas del anterior mientras
     // llega la respuesta.
     setResenas(null);
-    const res = await obtenerResenasDeProducto(id, { pagina: 1, limite: 10 });
+    const res = await obtenerResenasDeProducto(id, {
+      pagina: 1,
+      limite: RESENAS_EN_DETALLE,
+    });
     if (res.success) setResenas(res.data);
     setCargandoResenas(false);
   }, [id]);
-
-  const cargarMasResenas = useCallback(async () => {
-    if (!resenas || resenas.pagina >= resenas.paginas) return;
-    setCargandoMasResenas(true);
-    const res = await obtenerResenasDeProducto(id, {
-      pagina: resenas.pagina + 1,
-      limite: resenas.limite,
-    });
-    if (res.success) {
-      setResenas((prev) => ({
-        ...res.data,
-        items: [...(prev?.items || []), ...res.data.items],
-      }));
-    }
-    setCargandoMasResenas(false);
-  }, [id, resenas]);
 
   // Elegibilidad y reseña propia: solo para CLIENTE con sesión. El backend es
   // el que manda (403 si no compró), esto solo decide qué botones mostrar.
@@ -201,9 +194,68 @@ const DetalleProducto = () => {
       .map((e) => e.nombre);
   }, [producto, personalizacion]);
 
-  const acompanamientos = useMemo(
-    () => (personalizacion || []).filter((e) => e.tipo === 'acompanar' && e.activo !== false),
-    [personalizacion]
+  // Mismo criterio de siempre: productos de la misma categoría, sin el actual.
+  const relacionados = useMemo(
+    () =>
+      catalogo
+        .filter(
+          (p) =>
+            p.categoriaId === producto?.categoriaId &&
+            String(p.id) !== String(id) &&
+            p.activo !== false
+        )
+        .slice(0, 3),
+    [catalogo, producto, id]
+  );
+
+  // Combos cuya receta incluye este producto. El índice ya devuelve los
+  // componentes de cada combo, así que no hace falta otra llamada.
+  const combosQueLoIncluyen = useMemo(
+    () =>
+      catalogo.filter(
+        (p) =>
+          p.tipo === 'COMBO' &&
+          (p.componentes || []).some(
+            (c) => String(c.productoId) === String(id)
+          )
+      ),
+    [catalogo, id]
+  );
+
+  // Precio que realmente paga por el producto (con la promo porcentual ya
+  // aplicada, igual que en el carrito). Se usa para saber si este producto
+  // solo alcanza el envío gratis.
+  const precioConDescuento =
+    promocion && promocion.tipo === 'DESCUENTO_PORCENTUAL'
+      ? Number(producto?.precio) * (1 - Number(promocion.valor) / 100)
+      : null;
+  const precioFinalProducto =
+    precioConDescuento ?? Number(producto?.precio ?? 0);
+
+  // "Tu pedido": un solo estado de envío. Manda el carrito cuando tiene algo;
+  // si está vacío, se responde por este producto solo.
+  const envioGratisDesde = Number(parametros.montoMinimoEnvioGratis ?? 0);
+  const envioDelProducto = calcularCostoEnvio(precioFinalProducto, parametros);
+  const envioDelCarrito = calcularCostoEnvio(totalCarrito, parametros);
+  const hayCarrito = itemsCarrito.length > 0;
+  const envioMostrado = hayCarrito ? envioDelCarrito : envioDelProducto;
+  const faltaParaEnvioGratis = Math.max(
+    0,
+    envioGratisDesde - (hayCarrito ? totalCarrito : precioFinalProducto)
+  );
+  const progresoEnvio =
+    envioGratisDesde > 0
+      ? Math.min(100, Math.round((totalCarrito / envioGratisDesde) * 100))
+      : 100;
+
+  // Unidades de este producto ya en el carrito: con el 2x1 sirve para saber si
+  // está a mitad de camino.
+  const unidadesEnCarrito = useMemo(
+    () =>
+      itemsCarrito
+        .filter((item) => String(item.producto?.id) === String(id))
+        .reduce((total, item) => total + item.cantidad, 0),
+    [itemsCarrito, id]
   );
 
   const alGuardarResena = async () => {
@@ -231,11 +283,6 @@ const DetalleProducto = () => {
     setMensajeResenas('Tu reseña se eliminó.');
     await Promise.all([cargarResenas(), cargarElegibilidad()]);
   };
-
-  const precioConDescuento =
-    promocion && promocion.tipo === 'DESCUENTO_PORCENTUAL'
-      ? Number(producto?.precio) * (1 - Number(promocion.valor) / 100)
-      : null;
 
   if (cargando) {
     return (
@@ -338,29 +385,75 @@ const DetalleProducto = () => {
         </Col>
         <Col md={5}>
           <Card className="card-comi p-4 h-100">
-            <span className="detalle-etiqueta">Con qué acompañar</span>
-            {acompanamientos.length > 0 ? (
-              acompanamientos.map((a) => (
-                <div key={a.id} className="acomp-item">
-                  <span>{a.nombre} <small className="text-muted">+{formatPrice(a.precio)}</small></span>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted small mb-0">Este producto no tiene acompañamientos sugeridos.</p>
+            <span className="detalle-etiqueta">Tu pedido</span>
+
+            <div className="tu-pedido-bloque">
+              <div className="tu-pedido-fila">
+                <span className="tu-pedido-titulo">
+                  <FaTruck aria-hidden="true" /> Envío
+                </span>
+                <strong
+                  className={
+                    envioMostrado === 0
+                      ? 'tu-pedido-valor tu-pedido-valor--gratis'
+                      : 'tu-pedido-valor'
+                  }
+                >
+                  {envioMostrado === 0 ? 'Gratis' : formatPrice(envioMostrado)}
+                </strong>
+              </div>
+
+              {envioMostrado > 0 && envioGratisDesde > 0 && (
+                <p className="tu-pedido-linea mb-0">
+                  Gratis desde {formatPrice(envioGratisDesde)}.
+                </p>
+              )}
+
+              {envioMostrado > 0 && hayCarrito && (
+                <>
+                  <div
+                    className="envio-barra"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={envioGratisDesde}
+                    aria-valuenow={Math.min(totalCarrito, envioGratisDesde)}
+                    aria-label={`Progreso hacia el envío gratis: ${progresoEnvio}%`}
+                  >
+                    <span
+                      className="envio-barra-fill"
+                      style={{ width: `${progresoEnvio}%` }}
+                    />
+                  </div>
+                  <p className="tu-pedido-linea mb-0">
+                    Te faltan {formatPrice(faltaParaEnvioGratis)} para el envío
+                    gratis.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {promocion && (
+              <div className="tu-pedido-promo">
+                <span className="tu-pedido-titulo">
+                  <FaTag aria-hidden="true" /> Promoción
+                </span>
+                <p className="tu-pedido-texto mb-1">
+                  {promocion.tipo === 'DOS_POR_UNO'
+                    ? '2x1 en este producto'
+                    : `${Math.round(Number(promocion.valor))}% de descuento`}
+                </p>
+                <p className="tu-pedido-linea mb-0">
+                  {promocion.tipo === 'DOS_POR_UNO'
+                    ? unidadesEnCarrito === 1
+                      ? 'Ya tenés 1 unidad en el carrito: sumá otra y pagás una.'
+                      : 'Llevá 2 unidades y pagás 1.'
+                    : 'Se aplica en el carrito sobre este producto.'}
+                </p>
+              </div>
             )}
           </Card>
         </Col>
       </Row>
-
-      {promocion && (
-        <div className="promo-box mb-4">
-          <span className="detalle-etiqueta">Promoción</span>
-          <div className="fw-bold">
-            {promocion.tipo === 'DOS_POR_UNO' ? '2x1: llevás 2 y pagás 1' : `${Math.round(Number(promocion.valor))}% OFF`} <Badge bg="light" text="dark" className="badge-comi ms-1">{promocion.nombre}</Badge>
-          </div>
-          <div className="text-muted small">Aprovechá esta increíble oferta.</div>
-        </div>
-      )}
 
       <Card className="card-comi p-4 mb-4">
         {mensajeResenas && (
@@ -397,10 +490,22 @@ const DetalleProducto = () => {
             setModalResena(true);
           }}
           onEliminar={(resena) => setResenaABorrar(resena)}
-          onVerMas={cargarMasResenas}
-          cargandoMas={cargandoMasResenas}
+          verTodasHref={`/producto/${id}/resenas`}
         />
       </Card>
+
+      {combosQueLoIncluyen.length > 0 && (
+        <>
+          <h3 className="fw-bold mb-3">Combos que lo incluyen</h3>
+          <Row className="g-3 mb-4">
+            {combosQueLoIncluyen.map((combo) => (
+              <Col key={combo.id} xs={6} md={4}>
+                <ProductoCard producto={combo} />
+              </Col>
+            ))}
+          </Row>
+        </>
+      )}
 
       {relacionados.length > 0 && (
         <>

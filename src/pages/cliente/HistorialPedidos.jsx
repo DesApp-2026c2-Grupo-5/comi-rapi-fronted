@@ -65,7 +65,7 @@ const HistorialPedidos = () => {
 
   return (
     <Container className="py-4">
-      <Link to="/cliente/mis-pedidos" className="boton-volver mb-3 d-inline-block">
+      <Link to="/cliente/mis-pedidos" className="boton-volver mb-3">
         <span className="boton-volver-arrow" aria-hidden="true">←</span>
         {' '}Volver a Mis Pedidos
       </Link>

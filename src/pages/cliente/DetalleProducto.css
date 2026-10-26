@@ -68,22 +68,78 @@
   font-size: 0.9rem;
 }
 
-.detalle-producto .acomp-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.detalle-producto .tu-pedido-bloque {
   background: var(--color-cream-soft);
   border: 2px solid var(--color-border-card);
   border-radius: 14px;
-  padding: 0.6rem 0.9rem;
-  margin-bottom: 0.5rem;
+  padding: 0.75rem 0.9rem;
 }
 
-.detalle-producto .promo-box {
+.detalle-producto .tu-pedido-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-primary-dark);
+  margin-bottom: 0.35rem;
+}
+
+.detalle-producto .tu-pedido-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.detalle-producto .tu-pedido-fila .tu-pedido-titulo {
+  margin-bottom: 0;
+}
+
+.detalle-producto .tu-pedido-valor {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+.detalle-producto .tu-pedido-valor--gratis {
+  color: var(--color-success-fill);
+}
+
+.detalle-producto .tu-pedido-texto {
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.detalle-producto .tu-pedido-linea {
+  font-size: 0.78rem;
+  color: #6c757d;
+}
+
+.detalle-producto .envio-barra {
+  height: 8px;
+  border-radius: 50px;
+  background: #fff;
+  border: 1px solid var(--color-border-card);
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.detalle-producto .envio-barra-fill {
+  display: block;
+  height: 100%;
+  border-radius: 50px;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.detalle-producto .tu-pedido-promo {
+  margin-top: 0.75rem;
   background: var(--color-cream-light);
   border: 2px solid var(--color-border-card);
   border-radius: 14px;
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 0.9rem;
 }
 
 .detalle-producto .resena {
@@ -142,17 +198,4 @@
 
 .detalle-producto .producto-boton:hover {
   background-color: var(--color-primary-hover);
-}
-
-.detalle-producto .boton-volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--color-text);
-  font-weight: 600;
-  background: #fff;
-  border: 2px solid var(--color-border-cream);
-  border-radius: 50px;
-  padding: 0.5rem 1.15rem;
-  text-decoration: none;
 }

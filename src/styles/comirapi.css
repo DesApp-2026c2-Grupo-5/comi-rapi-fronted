@@ -608,6 +608,38 @@ a {
   color: var(--color-on-primary);
 }
 
+/* ============ Enlace-botón "Volver" ============ */
+/* Pill compartida por las páginas internas (detalle de pedido, historial,
+   opiniones). Vivía en DetallePedido.css y el historial no la cargaba, así que
+   el enlace se veía como texto subrayado. */
+.boton-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 600;
+  background-color: #fff;
+  border: 2px solid var(--color-border-cream);
+  border-radius: 50px;
+  padding: 0.5rem 1.15rem;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.boton-volver:hover,
+.boton-volver:focus-visible {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+  text-decoration: none;
+}
+
+.boton-volver-arrow {
+  font-weight: 900;
+}
+
 /* ============ Movimiento reducido ============ */
 /* `prefers-reduced-motion` desactiva transiciones y animaciones en TODO el
    proyecto sin repetir el media query en cada hoja: las duraciones quedan en 0

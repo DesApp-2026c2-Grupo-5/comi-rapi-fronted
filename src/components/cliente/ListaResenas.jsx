@@ -9,8 +9,9 @@
  */
 
 import PropTypes from 'prop-types';
-import { Button, Spinner } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { FaPen, FaStar, FaTrashAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import Estrellas from './Estrellas';
 import { formatFechaRelativa } from '../../utils/formatters';
 import './ListaResenas.css';
@@ -83,8 +84,7 @@ const ListaResenas = ({
   onEscribir,
   onEditar,
   onEliminar,
-  onVerMas,
-  cargandoMas,
+  verTodasHref,
 }) => {
   if (cargando && !datos) {
     return (
@@ -104,8 +104,6 @@ const ListaResenas = ({
 
   const promedio = Number(datos?.promedio) || 0;
   const cantidad = Number(datos?.cantidad) || 0;
-  const pagina = Number(datos?.pagina) || 1;
-  const paginas = Number(datos?.paginas) || 0;
   const items = (datos?.items || []).filter(
     (resena) => !miResena || resena.id !== miResena.id
   );
@@ -159,48 +157,19 @@ const ListaResenas = ({
         <ItemResena key={resena.id} resena={resena} />
       ))}
 
-      {!miResena && cantidad === 0 && (
-        <p className="lista-resenas-vacia text-muted mb-0">
-          Si ya compraste y recibiste este producto, podés ser la primera
-          persona en contarlo.
-        </p>
-      )}
-
       {!miResena && cantidad > 0 && items.length === 0 && (
         <p className="text-muted mb-0">No hay más reseñas para mostrar.</p>
       )}
 
-      {pagina < paginas && (
+      {verTodasHref && cantidad > items.length + (miResena ? 1 : 0) && (
         <div className="text-center mt-3">
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            className="rounded-pill px-3"
-            onClick={onVerMas}
-            disabled={cargandoMas}
+          <Link
+            to={verTodasHref}
+            className="btn btn-outline-secondary btn-sm rounded-pill px-3"
           >
-            {cargandoMas ? (
-              <>
-                <Spinner
-                  animation="border"
-                  size="sm"
-                  className="me-2"
-                  aria-hidden="true"
-                />
-                Cargando…
-              </>
-            ) : (
-              'Ver más reseñas'
-            )}
-          </Button>
+            Ver más opiniones
+          </Link>
         </div>
-      )}
-
-      {!puedeResenar && !miResena && (
-        <p className="lista-resenas-nota text-muted small mb-0">
-          Solo los clientes que compraron y recibieron este producto pueden
-          reseñarlo.
-        </p>
       )}
     </div>
   );
@@ -227,8 +196,7 @@ ListaResenas.propTypes = {
   onEscribir: PropTypes.func,
   onEditar: PropTypes.func,
   onEliminar: PropTypes.func,
-  onVerMas: PropTypes.func,
-  cargandoMas: PropTypes.bool,
+  verTodasHref: PropTypes.string,
 };
 
 export default ListaResenas;

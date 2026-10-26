@@ -54,6 +54,9 @@ const GestionStock = () => {
   const [productoId, setProductoId] = useState('');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  // Avance del alta masiva (0 de N) mientras recorre los faltantes. Null cuando
+  // no hay un alta masiva en curso.
+  const [progreso, setProgreso] = useState(null);
   const [error, setError] = useState('');
   // Fila esperando confirmación de borrado
   const [stockAEliminar, setStockAEliminar] = useState(null);
@@ -171,6 +174,44 @@ const GestionStock = () => {
       notificar(resultado.error || 'No se pudo agregar.', 'danger');
     }
     setGuardando(false);
+  };
+
+  // Alta masiva de los faltantes. El backend da de alta un producto por request,
+  // así que se recorre la lista de a uno y se informa el avance. Si alguno falla
+  // se deja la pestaña abierta con lo que quedó, para reintentar sin tener que
+  // agregar a mano los que ya entraron.
+  const agregarTodos = async () => {
+    if (!sucursalId || productosDisponibles.length === 0) return;
+    const total = productosDisponibles.length;
+    setGuardando(true);
+    setProgreso({ hechos: 0, total });
+    let agregados = 0;
+    const errores = [];
+    for (const producto of productosDisponibles) {
+      const resultado = await crearStock(sucursalId, producto.id);
+      if (resultado.success) agregados += 1;
+      else errores.push(producto.nombre);
+      setProgreso({ hechos: agregados + errores.length, total });
+    }
+    setProgreso(null);
+    setGuardando(false);
+    await cargar();
+    if (errores.length === 0) {
+      notificar(
+        agregados === 1
+          ? 'Producto agregado a la sucursal.'
+          : `${agregados} productos agregados a la sucursal.`,
+        'success'
+      );
+      setPestana('stock');
+      return;
+    }
+    notificar(
+      `Se agregaron ${agregados} de ${total}. No se pudieron agregar: ${errores.join(
+        ', '
+      )}.`,
+      'danger'
+    );
   };
 
   // Guarda la cantidad o la disponibilidad editada en la fila. El PUT devuelve
@@ -406,6 +447,31 @@ const GestionStock = () => {
             </>
           }
         >
+          {/* Alta masiva: un solo click agrega todo lo que falta en la sucursal.
+              Sólo aparece si hay faltantes, que es cuando la pestaña tiene
+              sentido. */}
+          {productosDisponibles.length > 0 && (
+            <div className="d-flex justify-content-end mb-3">
+              <Button
+                variant="primary"
+                onClick={agregarTodos}
+                disabled={guardando}
+              >
+                <FaPlus className="me-1" aria-hidden="true" />
+                {progreso
+                  ? `Agregando… (${progreso.hechos}/${progreso.total})`
+                  : `Agregar todos (${productosDisponibles.length})`}
+              </Button>
+            </div>
+          )}
+          {/* El avance se anuncia solo: el botón cambia de texto, pero el foco
+              puede estar en otro lado de la página. */}
+          <span className="visually-hidden" role="status" aria-live="polite">
+            {progreso
+              ? `Agregando ${progreso.hechos} de ${progreso.total} productos.`
+              : ''}
+          </span>
+
           {productosDisponibles.length === 0 ? (
             <Alert variant="info" role="alert" className="text-center">
               No hay productos nuevos para agregar: todos los del catálogo ya están

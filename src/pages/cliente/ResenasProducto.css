@@ -1,0 +1,33 @@
+/**
+ * Propósito: Estilos de la página con todas las opiniones de un producto.
+ * Dependencias: pages/cliente/ResenasProducto.jsx, styles/tokens.css.
+ */
+
+.opiniones-producto .opiniones-producto-cargando {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
+  color: var(--color-primary);
+}
+
+.opiniones-producto .opiniones-producto-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.opiniones-producto .opiniones-producto-img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-border-card);
+}
+
+@media (max-width: 575.98px) {
+  .opiniones-producto .opiniones-producto-img {
+    width: 64px;
+    height: 64px;
+  }
+}
