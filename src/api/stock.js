@@ -1,7 +1,8 @@
 /**
  * Propósito: Servicio de stock por sucursal para el administrador.
  * Contenido: obtenerStock, obtenerStockDeProducto, crearStock, actualizarStock,
- *            eliminarStock, obtenerDisponibilidad, obtenerMaximosDeCombos.
+ *            eliminarStock, obtenerDisponibilidad, obtenerMaximosDeCombos,
+ *            obtenerStockInsumos, actualizarStockInsumo.
  * Dependencias: client.js (apiGet/apiPost/apiPut/apiDelete).
  * Uso: import { obtenerStock, actualizarStock } from '../api/stock';
  *
@@ -95,3 +96,29 @@ export const obtenerMaximosDeCombos = async (componentes) =>
         .filter((c) => Number.isInteger(c.productoId) && c.productoId > 0 && c.cantidad > 0),
     })
   );
+
+/**
+ * Lista el stock de extras y condimentos de la sucursal operativa de la sesión.
+ * El backend crea las filas que falten para que el admin siempre vea el
+ * catálogo completo.
+ * @param {{tipo?: 'extra'|'condimento'}} [filtros]
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ */
+export const obtenerStockInsumos = async (filtros = {}) => {
+  const params = new URLSearchParams();
+  if (filtros.tipo) params.append('tipo', filtros.tipo);
+  const query = params.toString();
+  return envolver(
+    await apiGet(`/stock/insumos${query ? `?${query}` : ''}`)
+  );
+};
+
+/**
+ * Ajusta cantidad y/o disponibilidad de un insumo en la sucursal operativa.
+ * El `sucursalId` no viaja: sale de la sesión.
+ * @param {number|string} insumoId
+ * @param {{cantidad?: number, disponible?: boolean}} cambios
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const actualizarStockInsumo = async (insumoId, cambios) =>
+  envolver(await apiPut(`/stock/insumos/${insumoId}`, cambios));

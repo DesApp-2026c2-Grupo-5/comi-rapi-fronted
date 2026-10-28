@@ -22,6 +22,7 @@ import {
   FaReceipt,
   FaTachometerAlt,
   FaBoxes,
+  FaBoxOpen,
   FaStore,
   FaSlidersH,
   FaTags,
@@ -152,6 +153,11 @@ const menuSuperadmin = [
         to: '/superadmin/personalizacion',
         etiqueta: 'Personalización',
         icono: FaSlidersH,
+      },
+      {
+        to: '/superadmin/insumos',
+        etiqueta: 'Insumos',
+        icono: FaBoxOpen,
       },
       {
         to: '/superadmin/promociones',

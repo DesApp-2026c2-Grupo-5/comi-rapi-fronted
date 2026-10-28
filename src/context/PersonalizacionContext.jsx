@@ -31,7 +31,8 @@ const CONFIG_VACIA = {
 };
 
 // Da al modal del cliente la forma uniforme que espera:
-// { id, nombre, precio, productoReferenciaId, minimo, maximo }.
+// { id, nombre, precio, productoReferenciaId, minimo, maximo, insumoId,
+//   stockTotal, agotado }.
 const normalizarPlantilla = (plantilla) => ({
   id: String(plantilla.id),
   nombre: plantilla.nombre,
@@ -42,6 +43,9 @@ const normalizarPlantilla = (plantilla) => ({
   productoReferenciaId: plantilla.productoReferenciaId,
   minimo: plantilla.minimo ?? 0,
   maximo: plantilla.maximo ?? 1,
+  insumoId: plantilla.insumoId ?? null,
+  stockTotal: plantilla.stockTotal ?? null,
+  agotado: Boolean(plantilla.agotado),
 });
 
 export const PersonalizacionProvider = ({ children }) => {
@@ -217,6 +221,9 @@ export const PersonalizacionProvider = ({ children }) => {
                 precio: e.precio,
                 minimo: e.minimo ?? 0,
                 maximo: e.maximo ?? 1,
+                insumoId: e.insumoId ?? null,
+                stockTotal: e.stockTotal ?? null,
+                agotado: Boolean(e.agotado),
               })),
         personalizar:
           porTipo('personalizar').length === 0
@@ -246,6 +253,9 @@ export const PersonalizacionProvider = ({ children }) => {
                 nombre: e.nombre,
                 minimo: e.minimo ?? 0,
                 maximo: e.maximo ?? 1,
+                insumoId: e.insumoId ?? null,
+                stockTotal: e.stockTotal ?? null,
+                agotado: Boolean(e.agotado),
               })),
       };
     },

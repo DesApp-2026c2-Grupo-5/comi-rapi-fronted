@@ -113,6 +113,7 @@ const GestionCategorias = lazy(() => import('../pages/superadmin/GestionCategori
 const EditarCategoria = lazy(() => import('../pages/superadmin/EditarCategoria'));
 const GestionPersonalizacion = lazy(() => import('../pages/superadmin/GestionPersonalizacion'));
 const EditarPersonalizacion = lazy(() => import('../pages/superadmin/EditarPersonalizacion'));
+const GestionInsumos = lazy(() => import('../pages/superadmin/GestionInsumos'));
 const GestionPersonalizacionCategorias = lazy(() => import('../pages/superadmin/GestionPersonalizacionCategorias'));
 const EditarPlantillaCategoria = lazy(() => import('../pages/superadmin/EditarPlantillaCategoria'));
 const GestionPromociones = lazy(() => import('../pages/superadmin/GestionPromociones'));
@@ -230,6 +231,7 @@ const AppRoutes = () => {
             <Route path="/superadmin/personalizacion/categorias" element={<GestionPersonalizacionCategorias />} />
             <Route path="/superadmin/personalizacion/categorias/nuevo" element={<EditarPlantillaCategoria />} />
             <Route path="/superadmin/personalizacion/categorias/editar/:id" element={<EditarPlantillaCategoria />} />
+            <Route path="/superadmin/insumos" element={<GestionInsumos />} />
             <Route path="/superadmin/promociones" element={<GestionPromociones />} />
             <Route path="/superadmin/promocion/nuevo" element={<EditarPromocion />} />
             <Route path="/superadmin/promocion/editar/:id" element={<EditarPromocion />} />

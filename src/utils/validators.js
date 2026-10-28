@@ -50,6 +50,7 @@ const validarReglasElemento = ({
   tipo,
   nombre,
   precio,
+  insumoId,
   productoReferenciaId,
   minimo,
   maximo,
@@ -72,9 +73,13 @@ const validarReglasElemento = ({
     else if (productos && !productos.find((p) => String(p.id) === String(productoReferenciaId))) errores.productoReferenciaId = 'Producto referenciado no encontrado';
     if (precio == null || precio === '' || Number(precio) < 0) errores.precio = 'El precio debe ser >= 0';
   } else if (tipo === 'extra') {
+    if (!insumoId) errores.insumoId = 'Elegí un insumo para el extra';
     if (!nombre || nombre.trim().length < 2) errores.nombre = 'Nombre requerido (2+ caracteres)';
     if (precio == null || precio === '' || Number(precio) <= 0) errores.precio = 'Precio requerido > 0 para Extra';
   } else if (tipo === 'personalizar' || tipo === 'condimento') {
+    if (tipo === 'condimento' && !insumoId) {
+      errores.insumoId = 'Elegí un insumo para el condimento';
+    }
     if (!nombre || nombre.trim().length < 2) errores.nombre = 'Nombre requerido (2+ caracteres)';
   }
   return errores;

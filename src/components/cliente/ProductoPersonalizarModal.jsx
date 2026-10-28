@@ -82,8 +82,13 @@ const cambiarUnidades = (d) =>
   const condLista = useMemo(
     () =>
       (config.condimento || [])
-        .filter((op) => (condCant[op.nombre] || 0) > 0)
-        .map((op) => ({ nombre: op.nombre, cantidad: condCant[op.nombre] })),
+        .filter((op) => (condCant[op.id] || 0) > 0)
+        .map((op) => ({
+          id: op.id,
+          insumoId: op.insumoId ?? null,
+          nombre: op.nombre,
+          cantidad: condCant[op.id],
+        })),
     [config.condimento, condCant]
   );
 
@@ -103,14 +108,34 @@ const cambiarUnidades = (d) =>
   const sinCount = sinLista.length;
   const condCount = Object.values(condCant).reduce((a, b) => a + b, 0);
 
+  // Si un elemento con mínimo obligatorio quedó sin stock en todas las
+  // sucursales, no hay forma de cumplir la regla: se avisa y no se puede
+  // agregar al carrito.
+  const obligatoriosAgotados = [
+    ...(config.extra || []),
+    ...(config.condimento || []),
+  ].filter((op) => op.agotado && (op.minimo || 0) > 0);
+  const hayObligatorioAgotado = obligatoriosAgotados.length > 0;
+
   const handleAgregar = () => {
+    if (hayObligatorioAgotado) {
+      const nombres = obligatoriosAgotados.map((op) => `"${op.nombre}"`).join(', ');
+      notificar(
+        `No se puede agregar: ${nombres} ${
+          obligatoriosAgotados.length === 1 ? 'está agotado' : 'están agotados'
+        } y es obligatorio.`,
+        'warning'
+      );
+      return;
+    }
+
     // El mínimo de cada elemento es obligatorio: si alguno pide (por ejemplo)
     // al menos 2, no se puede agregar con menos.
     const incumplidos = [
       ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0 })),
       ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0 })),
       ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0 })),
-      ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.nombre] || 0 })),
+      ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.id] || 0 })),
     ].filter(({ op, valor }) => valor < (op.minimo || 0));
 
     if (incumplidos.length > 0) {
@@ -279,10 +304,7 @@ const cambiarUnidades = (d) =>
                   <div className="fw-bold small">Condimentos adicionales</div>
                   <div className="badge-grupo">
                     {condCount
-                      ? Object.entries(condCant)
-                          .filter(([, v]) => v)
-                          .map(([k, v]) => `${k} x${v}`)
-                          .join(', ')
+                      ? condLista.map((c) => `${c.nombre} x${c.cantidad}`).join(', ')
                       : '—'}
                   </div>
                 </div>
@@ -302,9 +324,17 @@ const cambiarUnidades = (d) =>
             </div>
 
             <div className="p-3 pt-0">
+              {hayObligatorioAgotado && (
+                <div className="alert alert-warning small mb-2" role="alert">
+                  No se puede agregar: {obligatoriosAgotados.map((op) => `"${op.nombre}"`).join(', ')}{' '}
+                  {obligatoriosAgotados.length === 1 ? 'está agotado' : 'están agotados'} y
+                  es obligatorio.
+                </div>
+              )}
               <Button
                 className="btn-primary w-100 py-3 fw-bold d-flex justify-content-between align-items-center btn-agregar"
                 onClick={handleAgregar}
+                disabled={hayObligatorioAgotado}
               >
                 <span className="badge bg-white btn-agregar-cantidad">{unidades}</span>
                 <span>Agregar a mi pedido</span>
@@ -385,20 +415,13 @@ const cambiarUnidades = (d) =>
             <p className="fw-bold small">
               Elegí los condimentos adicionales que quieras; sin costo.
             </p>
-            <div className="card-comi-grupo">
-              {config.condimento.map((op) => (
-                <div key={op.id || op.nombre} className="fila-opcion">
-                  <span className="small">{op.nombre}</span>
-                  <Contador
-                    etiqueta={op.nombre}
-                    valor={condCant[op.nombre] || 0}
-                    min={op.minimo ?? 0}
-                    max={op.maximo ?? 1}
-                    onCambiar={(d) => cambiar('condimento', op.nombre, d, op.minimo ?? 0, op.maximo ?? 1)}
-                  />
-                </div>
-              ))}
-            </div>
+            <GrupoOpciones
+              opciones={config.condimento}
+              valores={condCant}
+              onCambiar={(k, d, min, max) =>
+                cambiar('condimento', k, d, min, max)
+              }
+            />
             <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}

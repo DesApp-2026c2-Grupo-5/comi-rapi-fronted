@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 import { validatePersonalizacionElemento, validatePlantillaCategoria } from '../../utils/validators';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { obtenerInsumos } from '../../api/insumos';
 import './FormularioAdmin.css';
 
 const FormularioPersonalizacion = ({
@@ -31,17 +32,33 @@ const FormularioPersonalizacion = ({
   const [productoId, setProductoId] = useState(elemento?.productoId ? String(elemento.productoId) : productoPreseleccionado ? String(productoPreseleccionado) : '');
   const [tipo, setTipo] = useState(elemento?.tipo || '');
   const [nombre, setNombre] = useState(elemento?.nombre || '');
+  const [insumoId, setInsumoId] = useState(elemento?.insumoId ? String(elemento.insumoId) : '');
+  const [insumos, setInsumos] = useState([]);
   const [precio, setPrecio] = useState(elemento?.precio ?? '');
   const [productoReferenciaId, setProductoReferenciaId] = useState(elemento?.productoReferenciaId ? String(elemento.productoReferenciaId) : '');
   const [minimo, setMinimo] = useState(elemento?.minimo ?? 0);
   const [maximo, setMaximo] = useState(elemento?.maximo ?? 1);
   const [activo, setActivo] = useState(elemento?.activo ?? true);
 
+  // El catálogo de insumos se carga una sola vez. El superadmin recibe todos
+  // (también los dados de baja) para poder conservar el vínculo de un elemento
+  // existente aunque su insumo ya no se ofrezca.
+  useEffect(() => {
+    let vigente = true;
+    obtenerInsumos().then((resultado) => {
+      if (vigente && resultado.success) setInsumos(resultado.data || []);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (elemento && elemento.productoId) {
       setProductoId(String(elemento.productoId));
       setTipo(elemento.tipo || '');
       setNombre(elemento.nombre || '');
+      setInsumoId(elemento.insumoId ? String(elemento.insumoId) : '');
       setPrecio(elemento.precio ?? '');
       setProductoReferenciaId(elemento.productoReferenciaId ? String(elemento.productoReferenciaId) : '');
       setMinimo(elemento.minimo ?? 0);
@@ -52,6 +69,7 @@ const FormularioPersonalizacion = ({
       // tipo viene dado; el producto se toma de la URL.
       setTipo(elemento.tipo || '');
       if (elemento.nombre) setNombre(elemento.nombre);
+      if (elemento.insumoId) setInsumoId(String(elemento.insumoId));
       if (elemento.precio !== undefined) setPrecio(elemento.precio);
       if (elemento.productoReferenciaId) setProductoReferenciaId(String(elemento.productoReferenciaId));
       if (elemento.minimo !== undefined) setMinimo(elemento.minimo);
@@ -71,6 +89,22 @@ const FormularioPersonalizacion = ({
     [productos, productoId, esModoCategoria]
   );
 
+  // Para extra/condimento el nombre ya no se escribe a mano: sale del catálogo
+  // de insumos. Se muestran los activos y, si el elemento ya estaba vinculado,
+  // también su insumo aunque esté dado de baja (para no perder el vínculo).
+  const esExtraOCondimento =
+    tipo === TIPO_PERSONALIZACION.EXTRA ||
+    tipo === TIPO_PERSONALIZACION.CONDIMENTO;
+  const insumosDisponibles = useMemo(
+    () =>
+      insumos.filter(
+        (insumo) =>
+          insumo.tipo === tipo &&
+          (insumo.activo || String(insumo.id) === String(insumoId))
+      ),
+    [insumos, tipo, insumoId]
+  );
+
   const handleTipoChange = (e) => {
     const nuevo = e.target.value;
     setTipo(nuevo);
@@ -84,6 +118,25 @@ const FormularioPersonalizacion = ({
     if (nuevo === 'extra') {
       setProductoReferenciaId('');
     }
+    // El insumo depende del tipo: al cambiarlo hay que elegir uno nuevo.
+    if (
+      nuevo !== TIPO_PERSONALIZACION.EXTRA &&
+      nuevo !== TIPO_PERSONALIZACION.CONDIMENTO
+    ) {
+      setInsumoId('');
+    } else if (nuevo !== tipo) {
+      setInsumoId('');
+    }
+  };
+
+  const handleInsumoChange = (e) => {
+    const valor = e.target.value;
+    setInsumoId(valor);
+    const insumo = insumos.find((i) => String(i.id) === String(valor));
+    if (!insumo) return;
+    setNombre(insumo.nombre);
+    // El insumo define el precio base; el elemento puede pisarlo después.
+    setPrecio(insumo.tipo === 'extra' ? insumo.precio ?? '' : '');
   };
 
   const handleReferenciaChange = (e) => {
@@ -118,10 +171,18 @@ const FormularioPersonalizacion = ({
       datos.productoReferenciaId = productoReferenciaId ? Number(productoReferenciaId) : null;
       datos.precio = precio !== '' ? Number(precio) : null;
       datos.nombre = refProd ? refProd.nombre : nombre.trim();
+      datos.insumoId = null;
+    } else if (esExtraOCondimento) {
+      const insumo = insumos.find((i) => String(i.id) === String(insumoId));
+      datos.insumoId = insumoId ? Number(insumoId) : null;
+      datos.nombre = insumo ? insumo.nombre : nombre.trim();
+      datos.precio = tipo === 'extra' ? (precio !== '' ? Number(precio) : null) : null;
+      datos.productoReferenciaId = null;
     } else {
       datos.nombre = nombre.trim();
       datos.precio = tipo === 'extra' ? (precio !== '' ? Number(precio) : null) : null;
       datos.productoReferenciaId = null;
+      datos.insumoId = null;
     }
 
     const errores = esModoCategoria
@@ -204,7 +265,35 @@ const FormularioPersonalizacion = ({
               </Form.Text>
             )}
 
-          {!esAcompanar && (
+          {!esAcompanar && esExtraOCondimento && (
+            <Form.Group className="mb-3" controlId="personalizacion-insumo">
+              <Form.Label>Insumo *</Form.Label>
+              <Form.Select
+                name="insumoId"
+                value={insumoId}
+                onChange={handleInsumoChange}
+                required
+              >
+                <option value="">— Elegí un insumo —</option>
+                {insumosDisponibles.map((insumo) => (
+                  <option key={insumo.id} value={insumo.id}>
+                    {insumo.nombre}
+                    {insumo.activo ? '' : ' (dado de baja)'}
+                    {tipo === TIPO_PERSONALIZACION.EXTRA && insumo.precio !== null
+                      ? ` — $${insumo.precio}`
+                      : ''}
+                  </option>
+                ))}
+              </Form.Select>
+              <Form.Text className="text-muted">
+                {insumosDisponibles.length === 0
+                  ? 'No hay insumos de este tipo. Creá uno en Catálogo → Insumos.'
+                  : 'El insumo define el nombre y el precio base; el precio se puede pisar abajo.'}
+              </Form.Text>
+            </Form.Group>
+          )}
+
+          {!esAcompanar && !esExtraOCondimento && (
             <Form.Group className="mb-3" controlId="personalizacion-nombre">
               <Form.Label>Nombre *</Form.Label>
               <Form.Control
@@ -212,7 +301,7 @@ const FormularioPersonalizacion = ({
                 name="nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder={tipo === 'personalizar' ? 'Ej: Queso Cheddar en fetas' : tipo === 'condimento' ? 'Ej: Sobre de Ketchup' : 'Ej: Bacon'}
+                placeholder={tipo === 'personalizar' ? 'Ej: Queso Cheddar en fetas' : 'Ej: Bacon'}
                 required
               />
               {tipo === 'personalizar' && <Form.Text className="text-muted">Se mostrará como &quot;Sin {nombre || 'X'}&quot;</Form.Text>}

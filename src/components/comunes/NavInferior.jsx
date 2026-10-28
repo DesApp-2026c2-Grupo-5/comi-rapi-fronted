@@ -33,6 +33,7 @@ import {
   FaReceipt,
   FaTachometerAlt,
   FaBoxes,
+  FaBoxOpen,
   FaTags,
   FaPercent,
   FaHamburger,
@@ -174,6 +175,11 @@ const enlacesSuperadmin = [
         to: '/superadmin/personalizacion',
         etiqueta: 'Personalización',
         icono: FaSlidersH,
+      },
+      {
+        to: '/superadmin/insumos',
+        etiqueta: 'Insumos',
+        icono: FaBoxOpen,
       },
       {
         to: '/superadmin/promociones',

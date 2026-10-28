@@ -1,10 +1,9 @@
 /**
  * Propósito: Pantalla de stock de la sucursal del administrador.
- * Contenido: Dos pestañas: "Stock de mi sucursal" (filtros por producto y
- *            estado, tabla producto×cantidad con edición en el lugar y aviso de
- *            los productos que necesitan reposición; en los combos muestra
- *            cuántos se pueden armar con el stock actual) y "Por agregar" (alta
- *            al catálogo de la sucursal de los productos que todavía no están
+ * Contenido: Dos pestañas: "Stock de mi sucursal" (filtros por tipo de ítem,
+ *            producto y estado; tabla ítem×cantidad con edición en el lugar y
+ *            aviso de lo que necesita reposición) y "Por agregar" (alta al
+ *            catálogo de la sucursal de los productos que todavía no están
  *            cargados, p. ej. los que crea el superadministrador).
  * Dependencias: react-bootstrap, react-icons, api/stock.js, api/productos.js,
  *               hooks/useAuth, hooks/useParametros, utils/estadoStock,
@@ -20,10 +19,15 @@
  * stock de sus componentes, así que el backend la calcula y esta pantalla la
  * muestra. Un combo aparece en el catálogo de la sucursal y se puede apagar,
  * pero su número se arma solo con la receta.
+ *
+ * Los extras y condimentos tienen stock propio (InsumoStock). Comparten la
+ * tabla con los productos para que el admin vea todo lo que vende, pero se
+ * distinguen con el filtro principal y el badge de tipo. Su cantidad sí se
+ * edita: no tienen receta.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { Container, Table, Button, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Container, Table, Button, ButtonGroup, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt, FaBoxes, FaPlusCircle } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
@@ -32,8 +36,10 @@ import { useParametros } from '../../hooks/useParametros';
 import {
   obtenerStock,
   obtenerStockDeProducto,
+  obtenerStockInsumos,
   crearStock,
   actualizarStock,
+  actualizarStockInsumo,
   eliminarStock,
 } from '../../api/stock';
 import { obtenerProductos } from '../../api/productos';
@@ -60,10 +66,22 @@ const CLASE_FILA = {
 };
 
 const MENSAJE_VACIO = {
-  [ESTADOS_STOCK.SIN_STOCK]: 'No hay productos sin stock en esta sucursal.',
-  [ESTADOS_STOCK.BAJO_STOCK]: 'No hay productos con bajo stock en esta sucursal.',
+  [ESTADOS_STOCK.SIN_STOCK]: 'No hay ítems sin stock en esta sucursal.',
+  [ESTADOS_STOCK.BAJO_STOCK]: 'No hay ítems con bajo stock en esta sucursal.',
   [ESTADOS_STOCK.NO_DISPONIBLE]:
-    'No hay productos no disponibles en esta sucursal.',
+    'No hay ítems no disponibles en esta sucursal.',
+};
+
+const FILTROS_PRINCIPALES = [
+  { clave: 'todos', etiqueta: 'Todos' },
+  { clave: 'productos', etiqueta: 'Productos' },
+  { clave: 'combos', etiqueta: 'Combos' },
+  { clave: 'insumos', etiqueta: 'Insumos' },
+];
+
+const ETIQUETA_TIPO_INSUMO = {
+  extra: 'extra',
+  condimento: 'condimento',
 };
 
 const GestionStock = () => {
@@ -81,6 +99,7 @@ const GestionStock = () => {
   const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
   const [stocks, setStocks] = useState([]);
+  const [stocksInsumos, setStocksInsumos] = useState([]);
   const [productos, setProductos] = useState([]);
   const [productoId, setProductoId] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -91,15 +110,23 @@ const GestionStock = () => {
   const [error, setError] = useState('');
   // Fila esperando confirmación de borrado
   const [stockAEliminar, setStockAEliminar] = useState(null);
+  // Fila de insumo esperando confirmación para dejar de ofrecerse en la sucursal.
+  const [insumoAQuitar, setInsumoAQuitar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
   // Pestaña activa: "stock" (el stock de la sucursal) o "nuevos" (por agregar).
   const [pestana, setPestana] = useState('stock');
   // Filtro por estado de la tabla de stock. Es local: las filas ya están en
   // memoria y no hace falta pedirle otra cosa al backend.
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
+  // Filtro principal: todos, productos simples, combos o insumos. Los insumos
+  // tienen además su sub-filtro por tipo (extras/condimentos).
+  const [filtroPrincipal, setFiltroPrincipal] = useState('todos');
+  const [filtroTipoInsumo, setFiltroTipoInsumo] = useState('todos');
 
-  // El filtro va al backend: `GET /api/stock` ya acepta productoId; el
-  // `sucursalId` no se envía porque el backend usa la sucursal de la sesión.
+  // El filtro de producto va al backend: `GET /api/stock` ya acepta productoId;
+  // el `sucursalId` no se envía porque el backend usa la sucursal de la sesión.
+  // Los insumos se piden siempre: su listado es chico y así el filtro principal
+  // no depende de una segunda carga.
   const cargar = async () => {
     // Sin sucursal operativa (superadmin sin contexto) no hay nada que
     // cargar: el backend respondería 403 y la pantalla muestra el aviso.
@@ -108,13 +135,20 @@ const GestionStock = () => {
     setError('');
     try {
       const filtros = productoId ? { productoId } : {};
-      const [resultadoStock, resultadoProductos] = await Promise.all([
-        obtenerStock(filtros),
-        obtenerProductos(),
-      ]);
+      const [resultadoStock, resultadoProductos, resultadoInsumos] =
+        await Promise.all([
+          obtenerStock(filtros),
+          obtenerProductos(),
+          obtenerStockInsumos(),
+        ]);
       if (resultadoStock.success) setStocks(resultadoStock.data || []);
       else setError(resultadoStock.error || 'No se pudo cargar el stock.');
       if (resultadoProductos.success) setProductos(resultadoProductos.data || []);
+      if (resultadoInsumos.success) {
+        setStocksInsumos(resultadoInsumos.data || []);
+      } else if (!resultadoStock.success) {
+        setError(resultadoInsumos.error || 'No se pudo cargar el stock de insumos.');
+      }
     } finally {
       setCargando(false);
     }
@@ -139,8 +173,25 @@ const GestionStock = () => {
     // emitiera a más de una room.
     const alStock = async (payload) => {
       if (Number(payload?.sucursalId) !== Number(sucursalId)) return;
-      if (!Array.isArray(payload?.productoIds)) {
-        await cargar();
+
+      const tieneInsumos = Array.isArray(payload?.insumoIds);
+      const tieneProductos = Array.isArray(payload?.productoIds);
+
+      // Los insumos no tienen endpoint individual de stock: se relee el listado
+      // completo (es corto) y se reemplaza. El evento llega tanto por compras
+      // como por ediciones del admin en otra pestaña.
+      if (tieneInsumos) {
+        const resultadoInsumos = await obtenerStockInsumos();
+        if (resultadoInsumos.success) {
+          setStocksInsumos(resultadoInsumos.data || []);
+        }
+      }
+
+      if (!tieneProductos) {
+        // Un evento sólo de insumos ya quedó resuelto arriba. Recargar todo acá
+        // haría parpadear la tabla y perdería el foco. Sólo se recarga si el
+        // payload no traía ningún id (aviso genérico).
+        if (!tieneInsumos) await cargar();
         return;
       }
       // Con un filtro activo la tabla sólo muestra ese producto: si el cambio no
@@ -189,16 +240,34 @@ const GestionStock = () => {
     return productos.filter((p) => !enEstaSucursal.has(Number(p.id)));
   }, [productos, stocks]);
 
-  // El estado se deriva de la fila y no se guarda en `stocks`: así la tabla se
-  // actualiza sola cuando el admin edita una cantidad o cuando llega un cambio
-  // por WebSocket.
-  const stocksConEstado = useMemo(
-    () =>
-      stocks.map((fila) => ({
+  // El estado se deriva de la fila y no se guarda en el estado base: así la
+  // tabla se actualiza sola cuando el admin edita una cantidad o cuando llega
+  // un cambio por WebSocket. `clase` distingue productos de insumos en la misma
+  // tabla.
+  const filasConEstado = useMemo(
+    () => [
+      ...stocks.map((fila) => ({
         ...fila,
+        clase: 'producto',
         estado: estadoDeStock(fila, umbral),
       })),
-    [stocks, umbral]
+      ...stocksInsumos.map((fila) => ({
+        ...fila,
+        clase: 'insumo',
+        estado: estadoDeStock(fila, umbral),
+      })),
+    ],
+    [stocks, stocksInsumos, umbral]
+  );
+
+  const conteos = useMemo(
+    () => ({
+      todos: filasConEstado.length,
+      productos: stocks.filter((f) => f.tipo !== 'COMBO').length,
+      combos: stocks.filter((f) => f.tipo === 'COMBO').length,
+      insumos: stocksInsumos.length,
+    }),
+    [filasConEstado.length, stocks, stocksInsumos.length]
   );
 
   const resumen = useMemo(() => {
@@ -209,7 +278,7 @@ const GestionStock = () => {
       enStock: 0,
       total: 0,
     };
-    stocksConEstado.forEach(({ estado }) => {
+    filasConEstado.forEach(({ estado }) => {
       if (estado === ESTADOS_STOCK.SIN_STOCK) conteo.sinStock += 1;
       else if (estado === ESTADOS_STOCK.BAJO_STOCK) conteo.bajoStock += 1;
       else if (estado === ESTADOS_STOCK.NO_DISPONIBLE) conteo.noDisponible += 1;
@@ -217,17 +286,52 @@ const GestionStock = () => {
       conteo.total += 1;
     });
     return { ...conteo, faltantes: conteo.sinStock + conteo.bajoStock };
-  }, [stocksConEstado]);
+  }, [filasConEstado]);
 
-  // `stocks` queda intacto para que "Por agregar" y la fusión por WebSocket
-  // sigan viendo todas las filas de la sucursal.
-  const stocksVisibles = useMemo(
-    () =>
-      estadoFiltro === 'todos'
-        ? stocksConEstado
-        : stocksConEstado.filter((fila) => fila.estado === estadoFiltro),
-    [stocksConEstado, estadoFiltro]
-  );
+  // Filtro principal (todos/productos/combos/insumos) y, dentro de insumos, el
+  // sub-filtro por tipo. El filtro de estado se aplica al final sobre lo visible.
+  const filasVisibles = useMemo(() => {
+    const porPrincipal = filasConEstado.filter((fila) => {
+      if (filtroPrincipal === 'productos') {
+        return fila.clase === 'producto' && fila.tipo !== 'COMBO';
+      }
+      if (filtroPrincipal === 'combos') {
+        return fila.clase === 'producto' && fila.tipo === 'COMBO';
+      }
+      if (filtroPrincipal === 'insumos') {
+        return (
+          fila.clase === 'insumo' &&
+          (filtroTipoInsumo === 'todos' || fila.tipo === filtroTipoInsumo)
+        );
+      }
+      return true;
+    });
+    return estadoFiltro === 'todos'
+      ? porPrincipal
+      : porPrincipal.filter((fila) => fila.estado === estadoFiltro);
+  }, [filasConEstado, filtroPrincipal, filtroTipoInsumo, estadoFiltro]);
+
+  // Si el filtro por estado queda vacío porque se resolvió el último ítem (por
+  // ejemplo, se cargó stock del único producto sin stock), volvemos a "Todos"
+  // para no dejar al admin en una pantalla vacía. Sólo se dispara cuando el
+  // filtro no cambió y la cantidad visible pasó de tener ítems a cero: si el
+  // filtro se elige cuando ya estaba vacío, se respeta y se muestra el mensaje.
+  const cantidadVisible = filasVisibles.length;
+  const cantidadVisiblePrevia = useRef(cantidadVisible);
+  const estadoFiltroPrevio = useRef(estadoFiltro);
+  useEffect(() => {
+    const cambioDeFiltro = estadoFiltroPrevio.current !== estadoFiltro;
+    if (
+      !cambioDeFiltro &&
+      estadoFiltro !== 'todos' &&
+      cantidadVisiblePrevia.current > 0 &&
+      cantidadVisible === 0
+    ) {
+      setEstadoFiltro('todos');
+    }
+    estadoFiltroPrevio.current = estadoFiltro;
+    cantidadVisiblePrevia.current = cantidadVisible;
+  }, [cantidadVisible, estadoFiltro]);
 
   const [productoNuevo, setProductoNuevo] = useState('');
 
@@ -294,19 +398,33 @@ const GestionStock = () => {
   // su spinner. La tabla no parpadea y el foco no se pierde.
   const guardarFila = async (fila, cambios) => {
     setGuardando(true);
-    const resultado = await actualizarStock(fila.sucursalId, fila.productoId, cambios);
+    const esInsumo = fila.clase === 'insumo';
+    const resultado = esInsumo
+      ? await actualizarStockInsumo(fila.insumoId, cambios)
+      : await actualizarStock(fila.sucursalId, fila.productoId, cambios);
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
       if (resultado.data) {
         const actualizada = resultado.data;
-        setStocks((prev) =>
-          prev.map((f) =>
-            Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-            Number(f.productoId) === Number(actualizada.productoId)
-              ? actualizada
-              : f
-          )
-        );
+        if (esInsumo) {
+          setStocksInsumos((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.insumoId) === Number(actualizada.insumoId)
+                ? actualizada
+                : f
+            )
+          );
+        } else {
+          setStocks((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.productoId) === Number(actualizada.productoId)
+                ? actualizada
+                : f
+            )
+          );
+        }
       }
     } else {
       notificar(resultado.error || 'No se pudo actualizar.', 'danger');
@@ -330,6 +448,40 @@ const GestionStock = () => {
     setStockAEliminar(null);
     setConfirmando(false);
     await cargar();
+  };
+
+  // "Quitar" un insumo no borra la fila: InsumoStocks se recrea al listar. Se
+  // deja de ofrecer en la sucursal y la cantidad vuelve a 0, reutilizando el
+  // mismo PUT que usa la edición en línea. El insumo sigue en el catálogo
+  // corporativo y se puede reactivar con el switch "Disponible".
+  const confirmarQuitarInsumo = async () => {
+    if (!insumoAQuitar) return;
+    setConfirmando(true);
+    const resultado = await actualizarStockInsumo(insumoAQuitar.insumoId, {
+      cantidad: 0,
+      disponible: false,
+    });
+    setConfirmando(false);
+    if (resultado.success) {
+      notificar(
+        `"${insumoAQuitar.insumo}" sacado de la sucursal.`,
+        'success'
+      );
+      if (resultado.data) {
+        const actualizada = resultado.data;
+        setStocksInsumos((prev) =>
+          prev.map((f) =>
+            Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+            Number(f.insumoId) === Number(actualizada.insumoId)
+              ? actualizada
+              : f
+          )
+        );
+      }
+    } else {
+      notificar(resultado.error || 'No se pudo quitar el insumo.', 'danger');
+    }
+    setInsumoAQuitar(null);
   };
 
   return (
@@ -384,12 +536,53 @@ const GestionStock = () => {
           }
         >
           <div className="d-flex gap-2 align-items-start flex-wrap mb-3">
+            <Form.Group className="filtro-stock" controlId="stock-filtro-principal">
+              <Form.Label className="small mb-1">Mostrar</Form.Label>
+              <div>
+                <ButtonGroup size="sm" aria-label="Filtrar por tipo de ítem">
+                  {FILTROS_PRINCIPALES.map(({ clave, etiqueta }) => (
+                    <Button
+                      key={clave}
+                      variant={
+                        filtroPrincipal === clave ? 'primary' : 'outline-primary'
+                      }
+                      aria-pressed={filtroPrincipal === clave}
+                      onClick={() => {
+                        setFiltroPrincipal(clave);
+                        if (clave !== 'insumos') setFiltroTipoInsumo('todos');
+                      }}
+                    >
+                      {etiqueta}
+                      {conteos[clave] !== undefined ? ` (${conteos[clave]})` : ''}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+              </div>
+            </Form.Group>
+            {filtroPrincipal === 'insumos' && (
+              <Form.Group
+                className="filtro-stock"
+                controlId="stock-filtro-tipo-insumo"
+              >
+                <Form.Label className="small mb-1">Tipo de insumo</Form.Label>
+                <Form.Select
+                  name="tipoInsumo"
+                  value={filtroTipoInsumo}
+                  onChange={(e) => setFiltroTipoInsumo(e.target.value)}
+                >
+                  <option value="todos">Todos</option>
+                  <option value="extra">Extras</option>
+                  <option value="condimento">Condimentos</option>
+                </Form.Select>
+              </Form.Group>
+            )}
             <Form.Group className="filtro-stock" controlId="stock-filtro-producto">
               <Form.Label className="small mb-1">Producto</Form.Label>
               <Form.Select
                 name="productoId"
                 value={productoId}
                 onChange={(e) => setProductoId(e.target.value)}
+                disabled={filtroPrincipal === 'insumos'}
               >
                 <option value="">Todos los productos</option>
                 {productos.map((p) => (
@@ -435,8 +628,8 @@ const GestionStock = () => {
               <span>
                 <strong>{resumen.sinStock}</strong>{' '}
                 {resumen.sinStock === 1
-                  ? 'producto sin stock.'
-                  : 'productos sin stock.'}{' '}
+                  ? 'ítem sin stock.'
+                  : 'ítems sin stock.'}{' '}
                 {resumen.sinStock === 1 ? 'Necesita' : 'Necesitan'} reposición.
               </span>
               <Button
@@ -458,8 +651,8 @@ const GestionStock = () => {
               <span>
                 <strong>{resumen.bajoStock}</strong>{' '}
                 {resumen.bajoStock === 1
-                  ? 'producto con bajo stock'
-                  : 'productos con bajo stock'}{' '}
+                  ? 'ítem con bajo stock'
+                  : 'ítems con bajo stock'}{' '}
                 ({umbral} {umbral === 1 ? 'unidad' : 'unidades'} o menos).
                 Conviene reponer.
               </span>
@@ -484,7 +677,7 @@ const GestionStock = () => {
               <thead className="table-dark">
                 <tr>
                   <th>Sucursal</th>
-                  <th>Producto</th>
+                  <th>Ítem</th>
                   <th>Cantidad</th>
                   <th>Estado</th>
                   <th>Disponible</th>
@@ -492,34 +685,45 @@ const GestionStock = () => {
                 </tr>
               </thead>
               <tbody>
-                {stocksVisibles.length === 0 && (
+                {filasVisibles.length === 0 && (
                   <tr>
                     <td colSpan={6} className="stock-vacio text-center">
-                      {estadoFiltro === 'todos' ? (
-                        <>
-                          No hay stock cargado. Agregá productos del catálogo en
-                          la pestaña <strong>Por agregar</strong>.
-                        </>
-                      ) : (
-                        MENSAJE_VACIO[estadoFiltro] ||
-                        'No hay productos para mostrar.'
-                      )}
+                      {filtroPrincipal === 'insumos' && stocksInsumos.length === 0
+                        ? 'No hay insumos activos. Creá extras y condimentos desde Catálogo → Insumos.'
+                        : estadoFiltro === 'todos'
+                          ? filtroPrincipal === 'todos'
+                            ? 'No hay stock cargado. Agregá productos del catálogo en la pestaña Por agregar.'
+                            : 'No hay ítems para este filtro.'
+                          : MENSAJE_VACIO[estadoFiltro] ||
+                            'No hay ítems para mostrar.'}
                     </td>
                   </tr>
                 )}
-                {stocksVisibles.map((fila) => {
-                  const esCombo = fila.tipo === 'COMBO';
+                {filasVisibles.map((fila) => {
+                  const esInsumo = fila.clase === 'insumo';
+                  const esCombo = !esInsumo && fila.tipo === 'COMBO';
+                  const idFila = esInsumo ? fila.insumoId : fila.productoId;
+                  const clave = esInsumo ? `insumo-${idFila}` : idFila;
+                  const nombre = esInsumo ? fila.insumo : fila.producto;
                   return (
                     <tr
-                      key={`${fila.sucursalId}-${fila.productoId}`}
+                      key={`${fila.sucursalId}-${clave}`}
                       className={CLASE_FILA[fila.estado]}
                     >
                       <td data-label="Sucursal">{fila.sucursal}</td>
-                      <td data-label="Producto">
-                        {fila.producto}
+                      <td data-label="Ítem">
+                        {nombre}
                         {esCombo && (
                           <Badge bg="info" className="ms-2">
                             combo
+                          </Badge>
+                        )}
+                        {esInsumo && (
+                          <Badge
+                            bg={fila.tipo === 'extra' ? 'primary' : 'info'}
+                            className="ms-2"
+                          >
+                            {ETIQUETA_TIPO_INSUMO[fila.tipo] || fila.tipo}
                           </Badge>
                         )}
                       </td>
@@ -544,7 +748,7 @@ const GestionStock = () => {
                             step="1"
                             size="sm"
                             defaultValue={fila.cantidad}
-                            key={`${fila.productoId}-${fila.cantidad}-${fila.sucursalId}`}
+                            key={`${clave}-${fila.cantidad}-${fila.sucursalId}`}
                             onKeyDown={(e) => {
                               // Enter guarda la cantidad. Se delega en el onBlur en
                               // lugar de llamar a guardarFila acá: si se guardara
@@ -582,7 +786,7 @@ const GestionStock = () => {
                       <td data-label="Disponible">
                         <Form.Check
                           type="switch"
-                          id={`disp-${fila.sucursalId}-${fila.productoId}`}
+                          id={`disp-${fila.sucursalId}-${clave}`}
                           label={fila.disponible ? 'Sí' : 'No'}
                           checked={Boolean(fila.disponible)}
                           disabled={guardando}
@@ -595,7 +799,11 @@ const GestionStock = () => {
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => setStockAEliminar(fila)}
+                          onClick={() =>
+                            esInsumo
+                              ? setInsumoAQuitar(fila)
+                              : setStockAEliminar(fila)
+                          }
                         >
                           <FaTrashAlt className="me-1" aria-hidden="true" />
                           Quitar
@@ -704,6 +912,20 @@ const GestionStock = () => {
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setStockAEliminar(null)}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(insumoAQuitar)}
+        titulo="Quitar insumo de la sucursal"
+        mensaje={
+          insumoAQuitar
+            ? `¿Quitar "${insumoAQuitar.insumo}" de ${insumoAQuitar.sucursal}? Deja de ofrecerse en esta sucursal y su cantidad queda en 0. El insumo sigue existiendo en el catálogo corporativo.`
+            : ''
+        }
+        textoConfirmar="Sí, quitar"
+        cargando={confirmando}
+        onConfirmar={confirmarQuitarInsumo}
+        onCancelar={() => setInsumoAQuitar(null)}
       />
         </>
       )}

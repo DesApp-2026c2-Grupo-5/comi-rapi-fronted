@@ -22,6 +22,9 @@
 .card-comi-grupo{ border:2px solid var(--color-border-card); border-radius:14px; background:#fff; padding:8px 14px; }
 .fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #f0e0c0; }
 .fila-opcion:last-child{ border-bottom:none; }
+/* Opción agotada: gris, sin contador y con el texto "Agotado" debajo del nombre. */
+.fila-opcion-agotada{ cursor:not-allowed; }
+.fila-opcion-agotada .texto-agotado{ font-size:.75rem; color:#6c757d; line-height:1.2; margin-top:2px; }
 .pill-control{ background:#f1f1f5; border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
 .pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
 .pill-control button:hover{ background:var(--color-primary); color:var(--color-on-primary); }

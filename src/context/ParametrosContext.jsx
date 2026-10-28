@@ -22,6 +22,7 @@ import {
   useMemo,
   useEffect,
 } from 'react';
+import PropTypes from 'prop-types';
 import { obtenerParametros, actualizarParametros } from '../api/parametros';
 import { conectarSocket, desconectarSocket, EVENTOS_SOCKET } from '../services/socket';
 import { useAuth } from '../hooks/useAuth';
@@ -143,4 +144,8 @@ export const ParametrosProvider = ({ children }) => {
       {children}
     </ParametrosContext.Provider>
   );
+};
+
+ParametrosProvider.propTypes = {
+  children: PropTypes.node,
 };

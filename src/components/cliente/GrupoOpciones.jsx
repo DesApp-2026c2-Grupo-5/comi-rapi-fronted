@@ -14,19 +14,34 @@ const GrupoOpciones = ({ opciones, valores, onCambiar, conPrecio }) => {
           const minimo = op.minimo ?? 0;
           const maximo = op.maximo ?? 1;
           const cantidad = valores[key] || 0;
+          // "Agotado" = no queda stock en ninguna sucursal activa. La opción
+          // sigue visible para que el cliente entienda que existe, pero no se
+          // puede elegir.
+          const agotado = Boolean(op.agotado);
           return (
-            <div key={key} className="fila-opcion">
-              <span className="small">
-                {nombre}
-                {conPrecio && precio ? ` (+ ${formatPrice(precio)})` : ''}
+            <div
+              key={key}
+              className={`fila-opcion${agotado ? ' fila-opcion-agotada' : ''}`}
+              aria-disabled={agotado || undefined}
+            >
+              <span className="small d-flex flex-column">
+                <span className={agotado ? 'text-muted' : undefined}>
+                  {nombre}
+                  {conPrecio && precio ? ` (+ ${formatPrice(precio)})` : ''}
+                </span>
+                {agotado && (
+                  <span className="texto-agotado">Agotado</span>
+                )}
               </span>
-              <Contador
-                etiqueta={nombre}
-                valor={cantidad}
-                min={minimo}
-                max={maximo}
-                onCambiar={(d) => onCambiar(key, d, minimo, maximo)}
-              />
+              {!agotado && (
+                <Contador
+                  etiqueta={nombre}
+                  valor={cantidad}
+                  min={minimo}
+                  max={maximo}
+                  onCambiar={(d) => onCambiar(key, d, minimo, maximo)}
+                />
+              )}
             </div>
           );
         })}

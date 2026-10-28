@@ -276,14 +276,15 @@ const ReporteNegocio = () => {
     dir: 'desc',
   });
 
-  // El contador cambia al elegir/limpiar la sucursal de contexto del
-  // superadmin: el dashboard vuelve a la vista general para que el filtro
-  // manual no quede pegado a la sucursal que se estaba operando al "volver
-  // al rol" sin salir de esta pantalla.
-  const { versionSocket } = useSucursalOperativa();
+  // El panel sigue la sucursal de contexto del superadmin: al elegir una
+  // sucursal, los reportes se acotan a ella; al dejar de operar, vuelven a la
+  // vista general. El selector manual sigue disponible y solo se reajusta
+  // cuando cambia el contexto, no en cada render.
+  const { sucursalOperativaId } = useSucursalOperativa();
   useEffect(() => {
-    setSucursalId('');
-  }, [versionSocket]);
+    if (!esSuperadmin) return;
+    setSucursalId(sucursalOperativaId ? String(sucursalOperativaId) : '');
+  }, [esSuperadmin, sucursalOperativaId]);
 
   const cargar = useCallback(
     async (silencioso = false) => {
@@ -468,8 +469,7 @@ const ReporteNegocio = () => {
         <div>
           <h1 className="mb-1">Reportes</h1>
           <p className="text-muted mb-0">
-            Ventas, productos, cancelaciones y promociones del período. Solo se
-            considera venta el pedido entregado.
+            Ventas, productos, cancelaciones y promociones del período.
           </p>
         </div>
         <Button
