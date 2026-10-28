@@ -19,6 +19,8 @@ import { calcularCostoEnvio } from "../../services/envio";
 import BadgeLlegada from "./BadgeLlegada";
 import IconoEstado from "../comunes/IconoEstado";
 import HistorialStepper from "../comunes/HistorialStepper";
+import MiniaturasPedido from "./MiniaturasPedido";
+import "./ListaPedidos.css";
 
 const ListaPedidos = ({
   pedidos,
@@ -92,42 +94,45 @@ const ListaPedidos = ({
             <p className="mb-1">
               <strong>Fecha:</strong> {formatDate(pedido.fecha)}
             </p>
-            <div className="mb-1">
-              <strong>Productos:</strong>
-              {pedido.productos.map((p, i) => (
-                <div key={i} className="ms-2 small">
-                  <span>
-                    {p.nombre} x{p.cantidad}
-                  </span>
-                  {p.extras?.length > 0 && (
-                    <span className="text-muted">
-                      {" "}
-                      —{" "}
-                      {p.extras
-                        .map((e) => `${e.nombre} (+${formatPrice(e.precio)})`)
-                        .join(", ")}
+            <div className="pedido-productos mb-1">
+              <MiniaturasPedido productos={pedido.productos} />
+              <div className="pedido-productos-detalle">
+                <strong>Productos:</strong>
+                {pedido.productos.map((p, i) => (
+                  <div key={i} className="ms-2 small">
+                    <span>
+                      {p.nombre} x{p.cantidad}
                     </span>
-                  )}
-                  {p.sin?.length > 0 && (
-                    <span className="text-muted">
-                      {" "}
-                      — Sin {p.sin.join(", ")}
-                    </span>
-                  )}
-                  {p.acompanamientos?.length > 0 && (
-                    <span className="text-muted">
-                      {" "}
-                      — {p.acompanamientos.map((a) => a.nombre).join(", ")}
-                    </span>
-                  )}
-                  {p.condimentos?.length > 0 && (
-                    <span className="text-muted">
-                      {" "}
-                      — {p.condimentos.map((c) => c.nombre).join(", ")}
-                    </span>
-                  )}
-                </div>
-              ))}
+                    {p.extras?.length > 0 && (
+                      <span className="text-muted">
+                        {" "}
+                        —{" "}
+                        {p.extras
+                          .map((e) => `${e.nombre} (+${formatPrice(e.precio)})`)
+                          .join(", ")}
+                      </span>
+                    )}
+                    {p.sin?.length > 0 && (
+                      <span className="text-muted">
+                        {" "}
+                        — Sin {p.sin.join(", ")}
+                      </span>
+                    )}
+                    {p.acompanamientos?.length > 0 && (
+                      <span className="text-muted">
+                        {" "}
+                        — {p.acompanamientos.map((a) => a.nombre).join(", ")}
+                      </span>
+                    )}
+                    {p.condimentos?.length > 0 && (
+                      <span className="text-muted">
+                        {" "}
+                        — {p.condimentos.map((c) => c.nombre).join(", ")}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <p className="mb-1">
               <strong>Subtotal:</strong> {formatPrice(subtotal)}

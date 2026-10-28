@@ -1,13 +1,14 @@
 /**
  * Propósito: Pantalla de stock de la sucursal del administrador.
- * Contenido: Dos pestañas: "Stock de mi sucursal" (filtro por producto y tabla
- *            producto×cantidad con edición en el lugar; en los combos muestra
+ * Contenido: Dos pestañas: "Stock de mi sucursal" (filtros por producto y
+ *            estado, tabla producto×cantidad con edición en el lugar y aviso de
+ *            los productos que necesitan reposición; en los combos muestra
  *            cuántos se pueden armar con el stock actual) y "Por agregar" (alta
  *            al catálogo de la sucursal de los productos que todavía no están
  *            cargados, p. ej. los que crea el superadministrador).
  * Dependencias: react-bootstrap, react-icons, api/stock.js, api/productos.js,
- *               context/AuthContext (useAuth), components/comunes/Skeleton
- *               (SkeletonTabla).
+ *               hooks/useAuth, hooks/useParametros, utils/estadoStock,
+ *               components/comunes/Skeleton (SkeletonTabla).
  *
  * Un administrador tiene UNA sola sucursal asignada, así que la pantalla no
  * ofrece selector de sucursal: opera siempre sobre la suya (`user.sucursalId`) y
@@ -27,6 +28,7 @@ import { FaPlus, FaTrashAlt, FaBoxes, FaPlusCircle } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { useParametros } from '../../hooks/useParametros';
 import {
   obtenerStock,
   obtenerStockDeProducto,
@@ -35,12 +37,41 @@ import {
   eliminarStock,
 } from '../../api/stock';
 import { obtenerProductos } from '../../api/productos';
+import { ESTADOS_STOCK, estadoDeStock } from '../../utils/estadoStock';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
 
+// Cómo se muestra cada estado en la columna "Estado". "En stock" queda como
+// texto muted para que la vista no se llene de badges verdes: lo que importa
+// son los productos que necesitan reposición.
+const ETIQUETA_ESTADO = {
+  [ESTADOS_STOCK.NO_DISPONIBLE]: { texto: 'No disponible', bg: 'secondary' },
+  [ESTADOS_STOCK.SIN_STOCK]: { texto: 'Sin stock', bg: 'danger' },
+  [ESTADOS_STOCK.BAJO_STOCK]: { texto: 'Bajo stock', bg: 'warning', text: 'dark' },
+  [ESTADOS_STOCK.EN_STOCK]: { texto: 'En stock', bg: 'success' },
+};
+
+// Refuerzo visual de la fila. En mobile la tabla se arma como tarjetas y el
+// badge sigue siendo la señal principal.
+const CLASE_FILA = {
+  [ESTADOS_STOCK.SIN_STOCK]: 'table-danger',
+  [ESTADOS_STOCK.BAJO_STOCK]: 'table-warning',
+};
+
+const MENSAJE_VACIO = {
+  [ESTADOS_STOCK.SIN_STOCK]: 'No hay productos sin stock en esta sucursal.',
+  [ESTADOS_STOCK.BAJO_STOCK]: 'No hay productos con bajo stock en esta sucursal.',
+  [ESTADOS_STOCK.NO_DISPONIBLE]:
+    'No hay productos no disponibles en esta sucursal.',
+};
+
 const GestionStock = () => {
   const { notificar } = useNotificaciones();
+  const { parametros } = useParametros();
+  // Mismo umbral que usan los reportes. 0 lo desactiva: en ese caso sólo se
+  // marcan los productos sin stock o apagados.
+  const umbral = Number(parametros.stockCriticoUmbral ?? 0);
   const { user, hydrated } = useAuth();
   // La sucursal operativa de la sesión: la asignada del admin o el contexto
   // elegido del superadmin. El backend además acota el stock a ella, así que
@@ -63,6 +94,9 @@ const GestionStock = () => {
   const [confirmando, setConfirmando] = useState(false);
   // Pestaña activa: "stock" (el stock de la sucursal) o "nuevos" (por agregar).
   const [pestana, setPestana] = useState('stock');
+  // Filtro por estado de la tabla de stock. Es local: las filas ya están en
+  // memoria y no hace falta pedirle otra cosa al backend.
+  const [estadoFiltro, setEstadoFiltro] = useState('todos');
 
   // El filtro va al backend: `GET /api/stock` ya acepta productoId; el
   // `sucursalId` no se envía porque el backend usa la sucursal de la sesión.
@@ -154,6 +188,46 @@ const GestionStock = () => {
     );
     return productos.filter((p) => !enEstaSucursal.has(Number(p.id)));
   }, [productos, stocks]);
+
+  // El estado se deriva de la fila y no se guarda en `stocks`: así la tabla se
+  // actualiza sola cuando el admin edita una cantidad o cuando llega un cambio
+  // por WebSocket.
+  const stocksConEstado = useMemo(
+    () =>
+      stocks.map((fila) => ({
+        ...fila,
+        estado: estadoDeStock(fila, umbral),
+      })),
+    [stocks, umbral]
+  );
+
+  const resumen = useMemo(() => {
+    const conteo = {
+      sinStock: 0,
+      bajoStock: 0,
+      noDisponible: 0,
+      enStock: 0,
+      total: 0,
+    };
+    stocksConEstado.forEach(({ estado }) => {
+      if (estado === ESTADOS_STOCK.SIN_STOCK) conteo.sinStock += 1;
+      else if (estado === ESTADOS_STOCK.BAJO_STOCK) conteo.bajoStock += 1;
+      else if (estado === ESTADOS_STOCK.NO_DISPONIBLE) conteo.noDisponible += 1;
+      else conteo.enStock += 1;
+      conteo.total += 1;
+    });
+    return { ...conteo, faltantes: conteo.sinStock + conteo.bajoStock };
+  }, [stocksConEstado]);
+
+  // `stocks` queda intacto para que "Por agregar" y la fusión por WebSocket
+  // sigan viendo todas las filas de la sucursal.
+  const stocksVisibles = useMemo(
+    () =>
+      estadoFiltro === 'todos'
+        ? stocksConEstado
+        : stocksConEstado.filter((fila) => fila.estado === estadoFiltro),
+    [stocksConEstado, estadoFiltro]
+  );
 
   const [productoNuevo, setProductoNuevo] = useState('');
 
@@ -301,10 +375,15 @@ const GestionStock = () => {
             <>
               <FaBoxes className="me-1" aria-hidden="true" />
               Stock de mi sucursal
+              {resumen.faltantes > 0 && (
+                <Badge bg="warning" text="dark" className="ms-2">
+                  {resumen.faltantes}
+                </Badge>
+              )}
             </>
           }
         >
-          <div className="d-flex gap-2 align-items-end flex-wrap mb-3">
+          <div className="d-flex gap-2 align-items-start flex-wrap mb-3">
             <Form.Group className="filtro-stock" controlId="stock-filtro-producto">
               <Form.Label className="small mb-1">Producto</Form.Label>
               <Form.Select
@@ -321,7 +400,79 @@ const GestionStock = () => {
                 ))}
               </Form.Select>
             </Form.Group>
+            <Form.Group className="filtro-stock" controlId="stock-filtro-estado">
+              <Form.Label className="small mb-1">Estado</Form.Label>
+              <Form.Select
+                name="estado"
+                value={estadoFiltro}
+                onChange={(e) => setEstadoFiltro(e.target.value)}
+              >
+                <option value="todos">Todos ({resumen.total})</option>
+                <option value={ESTADOS_STOCK.SIN_STOCK}>
+                  Sin stock ({resumen.sinStock})
+                </option>
+                <option value={ESTADOS_STOCK.BAJO_STOCK}>
+                  Bajo stock ({resumen.bajoStock})
+                </option>
+                <option value={ESTADOS_STOCK.NO_DISPONIBLE}>
+                  No disponible ({resumen.noDisponible})
+                </option>
+              </Form.Select>
+              {umbral > 0 && (
+                <Form.Text className="text-muted">
+                  Bajo stock: {umbral} {umbral === 1 ? 'unidad' : 'unidades'} o
+                  menos.
+                </Form.Text>
+              )}
+            </Form.Group>
           </div>
+
+          {!cargando && resumen.sinStock > 0 && (
+            <Alert
+              variant="danger"
+              className="d-flex flex-wrap align-items-center gap-2"
+            >
+              <span>
+                <strong>{resumen.sinStock}</strong>{' '}
+                {resumen.sinStock === 1
+                  ? 'producto sin stock.'
+                  : 'productos sin stock.'}{' '}
+                {resumen.sinStock === 1 ? 'Necesita' : 'Necesitan'} reposición.
+              </span>
+              <Button
+                variant="outline-danger"
+                size="sm"
+                className="ms-auto"
+                onClick={() => setEstadoFiltro(ESTADOS_STOCK.SIN_STOCK)}
+              >
+                Ver sin stock
+              </Button>
+            </Alert>
+          )}
+
+          {!cargando && resumen.bajoStock > 0 && (
+            <Alert
+              variant="warning"
+              className="d-flex flex-wrap align-items-center gap-2"
+            >
+              <span>
+                <strong>{resumen.bajoStock}</strong>{' '}
+                {resumen.bajoStock === 1
+                  ? 'producto con bajo stock'
+                  : 'productos con bajo stock'}{' '}
+                ({umbral} {umbral === 1 ? 'unidad' : 'unidades'} o menos).
+                Conviene reponer.
+              </span>
+              <Button
+                variant="warning"
+                size="sm"
+                className="ms-auto"
+                onClick={() => setEstadoFiltro(ESTADOS_STOCK.BAJO_STOCK)}
+              >
+                Ver bajo stock
+              </Button>
+            </Alert>
+          )}
 
           {cargando ? (
             <div role="status" aria-live="polite">
@@ -335,23 +486,34 @@ const GestionStock = () => {
                   <th>Sucursal</th>
                   <th>Producto</th>
                   <th>Cantidad</th>
+                  <th>Estado</th>
                   <th>Disponible</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {stocks.length === 0 && (
+                {stocksVisibles.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="stock-vacio text-center">
-                      No hay stock cargado. Agregá productos del catálogo en la
-                      pestaña <strong>Por agregar</strong>.
+                    <td colSpan={6} className="stock-vacio text-center">
+                      {estadoFiltro === 'todos' ? (
+                        <>
+                          No hay stock cargado. Agregá productos del catálogo en
+                          la pestaña <strong>Por agregar</strong>.
+                        </>
+                      ) : (
+                        MENSAJE_VACIO[estadoFiltro] ||
+                        'No hay productos para mostrar.'
+                      )}
                     </td>
                   </tr>
                 )}
-                {stocks.map((fila) => {
+                {stocksVisibles.map((fila) => {
                   const esCombo = fila.tipo === 'COMBO';
                   return (
-                    <tr key={`${fila.sucursalId}-${fila.productoId}`}>
+                    <tr
+                      key={`${fila.sucursalId}-${fila.productoId}`}
+                      className={CLASE_FILA[fila.estado]}
+                    >
                       <td data-label="Sucursal">{fila.sucursal}</td>
                       <td data-label="Producto">
                         {fila.producto}
@@ -401,6 +563,20 @@ const GestionStock = () => {
                               }
                             }}
                           />
+                        )}
+                      </td>
+                      <td data-label="Estado">
+                        {fila.estado === ESTADOS_STOCK.EN_STOCK ? (
+                          <span className="text-muted small">
+                            {ETIQUETA_ESTADO[fila.estado].texto}
+                          </span>
+                        ) : (
+                          <Badge
+                            bg={ETIQUETA_ESTADO[fila.estado].bg}
+                            text={ETIQUETA_ESTADO[fila.estado].text}
+                          >
+                            {ETIQUETA_ESTADO[fila.estado].texto}
+                          </Badge>
                         )}
                       </td>
                       <td data-label="Disponible">

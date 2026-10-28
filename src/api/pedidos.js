@@ -54,6 +54,7 @@ export const mapearPedido = (p) => {
       return {
         productoId: item.productoId,
         nombre: item.nombreProducto || item.nombre,
+        imagen: item.imagen || item.Producto?.imagen || null,
         cantidad: item.cantidad,
         precio: Number(item.precioUnitario ?? item.precio),
         personalizacion,

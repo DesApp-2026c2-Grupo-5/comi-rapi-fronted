@@ -1,0 +1,75 @@
+/**
+ * Propósito: Estilos de las fotos superpuestas de los productos de un pedido.
+ * Contenido: Miniaturas alineadas a la misma altura, contador +N, fallback
+ *            sin imagen y ajuste para pantallas chicas.
+ * Dependencias: MiniaturasPedido.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/cliente/MiniaturasPedido.jsx.
+ */
+
+.pedido-miniaturas {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.4rem 0.25rem 0.2rem;
+  flex-shrink: 0;
+}
+
+.pedido-miniatura {
+  position: relative;
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background-color: var(--color-cream-soft, #fff8ef);
+  border: 2px solid var(--color-cream-soft, #fff8ef);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+}
+
+.pedido-miniatura + .pedido-miniatura {
+  margin-left: -1.15rem;
+}
+
+.pedido-miniatura-vacia,
+.pedido-miniatura-mas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.pedido-miniatura-vacia {
+  color: var(--color-primary-dark, #a85400);
+  font-size: 1.4rem;
+}
+
+.pedido-miniatura-mas {
+  color: var(--color-primary-dark, #a85400);
+  background-color: var(--color-cream, #fff4e2);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+@media (max-width: 575.98px) {
+  .pedido-miniaturas {
+    padding: 0.2rem 0.3rem 0.2rem 0.15rem;
+  }
+
+  .pedido-miniatura {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+  }
+
+  .pedido-miniatura + .pedido-miniatura {
+    margin-left: -0.95rem;
+  }
+
+  .pedido-miniatura-vacia {
+    font-size: 1.15rem;
+  }
+
+  .pedido-miniatura-mas {
+    font-size: 0.85rem;
+  }
+}

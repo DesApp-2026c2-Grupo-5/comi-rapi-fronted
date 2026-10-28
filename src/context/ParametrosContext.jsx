@@ -41,6 +41,7 @@ export const PARAMETROS_POR_DEFECTO = {
   cantidadMaximaUnidadesProducto: 20,
   porcentajeMaximoDescuento: 50,
   cantidadMaximaPromocionesAplicables: 3,
+  stockCriticoUmbral: 5,
 };
 
 /**
