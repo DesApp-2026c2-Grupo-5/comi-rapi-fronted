@@ -62,6 +62,8 @@ export const mapearPedido = (p) => {
         sin: personalizacion?.sin || [],
         acompanamientos: personalizacion?.acompanamientos || [],
         condimentos: personalizacion?.condimentos || [],
+        // Nota libre para cocina (columna propia, separada de `observacion`).
+        nota: item.nota || null,
       };
     }),
     total: Number(p.total),
@@ -140,6 +142,8 @@ function payloadBackend(datosPedido, sucursal) {
     cantidad: prod.cantidad ?? 1,
     precio: prod.precio,
     personalizacion: personalizacionParaBackend(prod),
+    // Nota para cocina: se reenvía tal cual; el backend la normaliza y valida.
+    ...(prod.nota ? { nota: prod.nota } : {}),
   }));
   // T0 (plan maestro de pedidos): el frontend envía el `direccionId` de la
   // Dirección persistida del usuario — el backend resuelve el snapshot con
