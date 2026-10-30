@@ -75,11 +75,12 @@ export const CarritoProvider = ({ children }) => {
     return () => window.removeEventListener('storage', alExterno);
   }, [clave]);
 
-  const agregarAlCarrito = useCallback((producto, cantidad = 1, personalizacion = null) => {
+  const agregarAlCarrito = useCallback((producto, cantidad = 1, personalizacion = null, nota = null) => {
     const pers = personalizacion || personalizacionVacia();
     const extras = pers.extras || [];
     const acomp = pers.acompanamientos || [];
     const precioUnitarioPersonalizado = calcularPrecioUnitario(producto.precio, extras, acomp);
+    const notaNormalizada = normalizarNota(nota);
 
     setItems((prevItems) => {
       const existente = prevItems.find(
@@ -87,7 +88,13 @@ export const CarritoProvider = ({ children }) => {
       );
       if (existente) {
         return prevItems.map((item) =>
-          item.idLinea === existente.idLinea ? { ...item, cantidad: item.cantidad + cantidad } : item
+          item.idLinea === existente.idLinea
+            ? {
+                ...item,
+                cantidad: item.cantidad + cantidad,
+                nota: item.nota || notaNormalizada,
+              }
+            : item
         );
       }
       return [
@@ -98,7 +105,7 @@ export const CarritoProvider = ({ children }) => {
           cantidad,
           personalizacion: pers,
           precioUnitarioPersonalizado,
-          nota: null,
+          nota: notaNormalizada,
         },
       ];
     });
