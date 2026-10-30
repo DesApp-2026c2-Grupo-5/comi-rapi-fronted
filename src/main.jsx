@@ -19,6 +19,10 @@ import './styles/tokens.css';
 // Tema global de botones y utilidades Comi-Rapi (debe ir DESPUÉS de Bootstrap)
 import './styles/comirapi.css';
 
+// Paleta del panel de administración y superadministración (debe ir al final
+// para pisar los estilos de marca del cliente).
+import './styles/admin-theme.css';
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(

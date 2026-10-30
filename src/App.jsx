@@ -6,6 +6,7 @@
  */
 
 import { BrowserRouter, useLocation } from 'react-router-dom';
+import { useLayoutEffect } from 'react';
 import { NotificacionProvider } from './context/NotificacionContext';
 import { AuthProvider } from './context/AuthContext';
 import { CarritoProvider } from './context/CarritoContext';
@@ -46,6 +47,19 @@ function AppLayout() {
   // administración queda abajo de tablas largas sin aportar nada, así que no se
   // muestra: la regla de "/admin" vive en utils/rutas.
   const mostrarFooter = !esRutaDeAdmin(pathname);
+  // El panel de administración y superadministración comparte una paleta verde
+  // propia. La clase va al <body> (ver useLayoutEffect) para alcanzar también
+  // la navbar y los portales de modales. El login del panel se incluye para que
+  // la navbar que lo rodea use la misma paleta.
+  const esAdmin = esRutaDeAdmin(pathname) || pathname === '/admin-login';
+
+  // Los modales y tooltips de React Bootstrap se renderizan en un portal colgado
+  // de <body>, fuera del shell. La clase en <body> alcanza también esos portales
+  // y evita que un modal del panel aparezca con los colores del cliente.
+  useLayoutEffect(() => {
+    document.body.classList.toggle('admin-theme', esAdmin);
+    return () => document.body.classList.remove('admin-theme');
+  }, [esAdmin]);
 
   return (
     <div

@@ -208,7 +208,7 @@ const PanelSuperadmin = () => {
                   <div
                     className="rounded"
                     style={{
-                      backgroundColor: '#f1c27d',
+                      backgroundColor: 'var(--color-primary-soft)',
                       flexShrink: 0,
                       height: '1rem',
                       minWidth: '0.5rem',

@@ -99,7 +99,7 @@
    comirapi.css aplica a botones y enlaces). */
 .parametros-item-control .form-control:focus {
   border-color: var(--color-focus);
-  box-shadow: 0 0 0 0.2rem rgba(168, 84, 0, 0.2);
+  box-shadow: 0 0 0 0.2rem rgba(97, 155, 138, 0.2);
 }
 
 .parametros-item-reset {

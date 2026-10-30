@@ -143,9 +143,9 @@ const ListaClientes = ({ todos = false }) => {
                     style={{
                       width: '38px',
                       height: '38px',
-                      backgroundColor: '#fff4e2',
-                      border: '1px solid #f1c27d',
-                      color: '#b55d00',
+                      backgroundColor: 'var(--color-cream)',
+                      border: '1px solid var(--color-border-cream)',
+                      color: 'var(--color-primary-dark)',
                     }}
                   >
                     {inicialesDe(cliente)}

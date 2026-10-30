@@ -51,12 +51,12 @@ const BarraRanking = ({ etiqueta, subetiqueta = '', unidades, maximo }) => (
     </div>
     <div
       className="flex-grow-1 rounded"
-      style={{ backgroundColor: '#fff4e2', height: '1rem' }}
+      style={{ backgroundColor: 'var(--color-cream)', height: '1rem' }}
     >
       <div
         className="rounded"
         style={{
-          backgroundColor: '#f1c27d',
+          backgroundColor: 'var(--color-primary-soft)',
           height: '100%',
           minWidth: '0.5rem',
           width: `${Math.round((unidades / maximo) * 100)}%`,
@@ -157,9 +157,9 @@ const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
               style={{
                 width: '52px',
                 height: '52px',
-                backgroundColor: '#fff4e2',
-                border: '1px solid #f1c27d',
-                color: '#b55d00',
+                backgroundColor: 'var(--color-cream)',
+                border: '1px solid var(--color-border-cream)',
+                color: 'var(--color-primary-dark)',
               }}
             >
               {inicialesDe(cliente)}

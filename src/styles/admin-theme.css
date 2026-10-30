@@ -1,0 +1,529 @@
+/**
+ * Propósito: Tema visual del panel de administración y superadministración.
+ * Contenido: Remapeo de los tokens de marca a la paleta verde bosque y ajustes
+ *            puntuales de navbar, botones, formularios, tablas, cards, badges y
+ *            controles de Bootstrap.
+ * Dependencias: tokens.css y comirapi.css (se importa después de ambos).
+ * Uso: Se aplica solo dentro de `body.admin-theme`, la clase que App.jsx pone
+ *      al <body> cuando la ruta empieza con /admin o /superadmin. Se usa el
+ *      body y no el shell para alcanzar los modales y tooltips que React
+ *      Bootstrap renderiza en portales.
+ */
+
+body.admin-theme {
+  --admin-dark: #a85400;
+  --admin-green: #ff9f1c;
+  --admin-green-dark: #8a5a2b;
+  --admin-sage: #f1c27d;
+  --admin-yellow: #ffb347;
+  --admin-light: #fff4e2;
+  --admin-muted: #7a6a55;
+
+  --color-primary: var(--admin-green);
+  --color-primary-hover: var(--admin-dark);
+  --color-primary-active: #d47f00;
+  --color-primary-dark: var(--admin-dark);
+  --color-primary-deep: var(--admin-dark);
+  --color-primary-soft: var(--admin-yellow);
+  --color-on-primary: #3a2410;
+  --color-focus: var(--admin-dark);
+
+  --color-cream: var(--admin-light);
+  --color-cream-hover: #ffe6c2;
+  --color-cream-active: #ffdca8;
+  --color-cream-light: #fff5e6;
+  --color-cream-soft: #fff8ef;
+  --color-border-cream: var(--admin-sage);
+  --color-border-card: #ffe9c9;
+  --color-border-strong: #d4b98f;
+
+  --color-text: #2b2b2b;
+  --color-text-muted: var(--admin-muted);
+  --color-text-brown: var(--admin-green-dark);
+
+  --color-success: var(--admin-green-dark);
+  --color-success-hover: var(--admin-dark);
+  --color-success-active: #d47f00;
+  --color-success-fill: var(--admin-green-dark);
+  --color-success-fill-hover: var(--admin-green-dark);
+
+  --shadow-cta: 0 4px 12px rgba(168, 84, 0, 0.25);
+  --shadow-cta-hover: 0 8px 18px rgba(168, 84, 0, 0.38);
+
+  background-color: var(--admin-light);
+  color: var(--admin-dark);
+  caret-color: var(--admin-dark);
+  accent-color: var(--admin-dark);
+  scrollbar-color: var(--admin-green) transparent;
+}
+
+html:has(body.admin-theme) {
+  scrollbar-color: var(--admin-green) transparent;
+}
+
+html:has(body.admin-theme)::-webkit-scrollbar-thumb {
+  background: var(--admin-green);
+}
+
+.admin-theme ::selection {
+  background: var(--admin-dark);
+  color: var(--admin-light);
+}
+
+/* ============ Navbar ============ */
+/* La navbar del panel lleva el naranja de marca del cliente, plano, sin
+   degradado. El texto va en espresso (--color-on-primary) para mantener
+   contraste sobre el naranja. */
+.admin-theme .navbar-comirapi {
+  background: var(--admin-green);
+  box-shadow: 0 4px 14px rgba(168, 84, 0, 0.22), inset 0 -2px 0 var(--admin-sage);
+}
+
+.admin-theme .navbar-comirapi .nav-submenu-enlace {
+  color: var(--color-on-primary);
+}
+
+.admin-theme .navbar-perfil:hover,
+.admin-theme .navbar-perfil:focus-visible,
+.admin-theme .btn-logout-comirapi,
+.admin-theme .btn-acceso-secundario {
+  border-color: rgba(138, 90, 43, 0.35);
+}
+
+.admin-theme .navbar-sucursal,
+.admin-theme .navbar-comirapi .btn-superadmin-contexto {
+  background: var(--admin-light);
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+}
+
+.admin-theme .navbar-sucursal-ico {
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .navbar-comirapi .nav-submenu-enlace {
+  color: var(--color-on-primary);
+}
+
+.admin-theme .navbar-comirapi .nav-submenu-enlace:hover {
+  background-color: var(--admin-light);
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .navbar-comirapi .nav-submenu-enlace.activo,
+.admin-theme .navbar-comirapi .nav-submenu-enlace.activo:hover {
+  background-color: var(--admin-green-dark);
+  color: var(--admin-light);
+}
+
+.admin-theme .navbar-comirapi .btn-superadmin-contexto:hover,
+.admin-theme .navbar-comirapi .btn-superadmin-contexto.show,
+.admin-theme .navbar-comirapi .btn-superadmin-contexto.btn-superadmin-contexto-activo {
+  background: var(--admin-yellow);
+  border-color: var(--admin-green);
+  color: var(--admin-dark);
+  box-shadow: 0 0 0 2px rgba(168, 84, 0, 0.15);
+}
+
+.admin-theme .navbar-comirapi .btn-acceso-comirapi {
+  background: var(--admin-light);
+  border: 2px solid var(--admin-yellow);
+  color: var(--admin-dark);
+}
+
+.admin-theme .navbar-comirapi .btn-acceso-comirapi:hover,
+.admin-theme .navbar-comirapi .btn-acceso-comirapi:focus-visible {
+  background: var(--admin-yellow);
+  border-color: var(--admin-yellow);
+  color: var(--admin-dark) !important;
+}
+
+.admin-theme .navbar-comirapi .btn-acceso-secundario {
+  background: transparent;
+  border: 2px solid rgba(138, 90, 43, 0.55);
+  color: var(--admin-light);
+}
+
+.admin-theme .navbar-comirapi .btn-acceso-secundario:hover,
+.admin-theme .navbar-comirapi .btn-acceso-secundario:focus-visible {
+  background: var(--admin-light);
+  border-color: var(--admin-light);
+  color: var(--admin-dark) !important;
+}
+
+/* ============ Barra inferior (responsive) ============ */
+/* La barra inferior lleva el naranja de marca plano, sin degradado, igual que
+   la navbar. */
+.admin-theme .nav-inferior {
+  background: var(--admin-green);
+}
+
+/* La hoja que despliega la barra también tenía marrones del tema cliente. */
+.admin-theme .nav-hoja .offcanvas-title,
+.admin-theme .nav-hoja-enlace {
+  color: var(--admin-dark);
+}
+
+.admin-theme .nav-hoja-enlace:hover {
+  background-color: var(--admin-light);
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .nav-hoja-enlace.activo {
+  background-color: var(--admin-green-dark);
+  color: var(--admin-light);
+}
+
+.admin-theme .nav-hoja-seccion-titulo,
+.admin-theme .nav-hoja-vacio {
+  color: var(--admin-green-dark);
+}
+
+/* ============ Botones ============ */
+.admin-theme .btn-primary {
+  --bs-btn-color: var(--admin-yellow);
+  --bs-btn-bg: var(--admin-dark);
+  --bs-btn-border-color: var(--admin-dark);
+  --bs-btn-hover-color: var(--admin-yellow);
+  --bs-btn-hover-bg: #1b303c;
+  --bs-btn-hover-border-color: #1b303c;
+  --bs-btn-active-color: var(--admin-yellow);
+  --bs-btn-active-bg: #1b303c;
+  --bs-btn-active-border-color: #1b303c;
+  --bs-btn-focus-shadow-rgb: 97, 155, 138;
+  box-shadow: 0 4px 12px rgba(168, 84, 0, 0.25);
+}
+
+.admin-theme .btn-primary:hover {
+  box-shadow: 0 8px 18px rgba(168, 84, 0, 0.38);
+}
+
+.admin-theme .btn-primary:disabled,
+.admin-theme .btn-primary.disabled {
+  --bs-btn-disabled-bg: #f8e9b2;
+  --bs-btn-disabled-border-color: var(--admin-sage);
+  --bs-btn-disabled-color: var(--admin-green-dark);
+}
+
+.admin-theme .btn-secondary {
+  --bs-btn-focus-shadow-rgb: 97, 155, 138;
+}
+
+.admin-theme .btn-warning {
+  --bs-btn-color: var(--admin-dark);
+  --bs-btn-bg: var(--admin-yellow);
+  --bs-btn-border-color: var(--admin-yellow);
+  --bs-btn-hover-color: var(--admin-dark);
+  --bs-btn-hover-bg: #f5b93f;
+  --bs-btn-hover-border-color: #f5b93f;
+  --bs-btn-active-color: var(--admin-dark);
+  --bs-btn-active-bg: #e8ac32;
+  --bs-btn-active-border-color: #e8ac32;
+  --bs-btn-focus-shadow-rgb: 255, 200, 87;
+  --bs-btn-disabled-color: var(--admin-dark);
+  --bs-btn-disabled-bg: #f8e9b2;
+  --bs-btn-disabled-border-color: #f8e9b2;
+}
+
+.admin-theme .btn-outline-primary {
+  --bs-btn-color: var(--admin-green-dark);
+  --bs-btn-border-color: var(--admin-green);
+  --bs-btn-hover-color: var(--admin-light);
+  --bs-btn-hover-bg: var(--admin-dark);
+  --bs-btn-hover-border-color: var(--admin-dark);
+  --bs-btn-active-color: var(--admin-light);
+  --bs-btn-active-bg: var(--admin-dark);
+  --bs-btn-active-border-color: var(--admin-dark);
+  --bs-btn-focus-shadow-rgb: 97, 155, 138;
+}
+
+.admin-theme .btn-outline-secondary {
+  --bs-btn-focus-shadow-rgb: 97, 155, 138;
+}
+
+.admin-theme .btn-link {
+  --bs-btn-color: var(--admin-green-dark);
+  --bs-btn-hover-color: var(--admin-dark);
+}
+
+/* ============ Formularios ============ */
+.admin-theme .form-control,
+.admin-theme .form-select {
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+}
+
+.admin-theme .form-control:focus,
+.admin-theme .form-select:focus {
+  border-color: var(--admin-green);
+  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.2);
+}
+
+.admin-theme .form-check-input:checked {
+  background-color: var(--admin-green);
+  border-color: var(--admin-green);
+}
+
+.admin-theme .form-check-input:focus {
+  border-color: var(--admin-sage);
+  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.2);
+}
+
+/* El formulario de parámetros define su propio anillo de foco; se pisa para que
+   no quede marrón dentro del panel. */
+.admin-theme .parametros-item-control .form-control:focus {
+  border-color: var(--admin-green);
+  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.2);
+}
+
+.admin-theme .form-label,
+.admin-theme .form-check-label {
+  color: var(--admin-dark);
+}
+
+/* ============ Tablas ============ */
+.admin-theme .table {
+  --bs-table-color: var(--admin-dark);
+  --bs-table-bg: #fff;
+  --bs-table-border-color: #c6d7a6;
+  --bs-table-striped-bg: #fbf0c9;
+  --bs-table-striped-color: var(--admin-dark);
+  --bs-table-hover-bg: #f4e7b5;
+  --bs-table-hover-color: var(--admin-dark);
+}
+
+.admin-theme .table-dark {
+  --bs-table-color: var(--admin-light);
+  --bs-table-bg: var(--admin-dark);
+  --bs-table-border-color: var(--admin-green);
+  --bs-table-striped-bg: #2a4857;
+  --bs-table-striped-color: var(--admin-light);
+  --bs-table-hover-bg: #315260;
+  --bs-table-hover-color: var(--admin-light);
+}
+
+/* ============ Cards ============ */
+.admin-theme .card {
+  --bs-card-bg: #fff;
+  --bs-card-border-color: #c6d7a6;
+  --bs-card-cap-bg: var(--admin-light);
+  color: var(--admin-dark);
+}
+
+.admin-theme .card-header {
+  background-color: var(--admin-light) !important;
+  border-bottom-color: var(--admin-sage);
+  color: var(--admin-dark);
+}
+
+/* ============ Badges y utilidades ============ */
+.admin-theme .bg-primary {
+  background-color: var(--admin-green-dark) !important;
+}
+
+.admin-theme .bg-warning {
+  background-color: var(--admin-yellow) !important;
+}
+
+.admin-theme .bg-dark {
+  background-color: var(--admin-dark) !important;
+}
+
+.admin-theme .text-warning {
+  color: #7a5a10 !important;
+}
+
+.admin-theme .text-dark {
+  color: var(--admin-dark) !important;
+}
+
+/* Los avisos informativos de Bootstrap venían en celeste; dentro del panel se
+   muestran en salvia para no romper la paleta. */
+.admin-theme .alert-info {
+  --bs-alert-color: var(--admin-dark);
+  --bs-alert-bg: #f8e9b2;
+  --bs-alert-border-color: var(--admin-sage);
+  --bs-alert-link-color: var(--admin-dark);
+}
+
+.admin-theme .alert-warning {
+  --bs-alert-color: var(--admin-dark);
+  --bs-alert-bg: var(--admin-light);
+  --bs-alert-border-color: var(--admin-yellow);
+  --bs-alert-link-color: var(--admin-dark);
+}
+
+.admin-theme .alert-success {
+  --bs-alert-color: var(--admin-dark);
+  --bs-alert-bg: #eef3d9;
+  --bs-alert-border-color: var(--admin-green);
+  --bs-alert-link-color: var(--admin-dark);
+}
+
+.admin-theme .text-primary {
+  color: var(--admin-green-dark) !important;
+}
+
+.admin-theme .bg-success {
+  background-color: var(--admin-green-dark) !important;
+}
+
+.admin-theme .text-success {
+  color: var(--admin-green-dark) !important;
+}
+
+.admin-theme .text-muted {
+  color: var(--admin-muted) !important;
+  opacity: 0.85;
+}
+
+.admin-theme .batch-notificacion-icono-success,
+.admin-theme .batch-notificacion-icono-info {
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .batch-notificacion-icono-warning {
+  color: #7a5a10;
+}
+
+.admin-theme .batch-notificacion-icono-danger {
+  color: var(--color-danger);
+}
+
+/* Los enlaces "Volver" usan text-danger en las pantallas del panel; se tiñen
+   con la paleta sin tocar los mensajes de error, que no son enlaces. */
+.admin-theme main a.text-danger {
+  color: var(--admin-green-dark) !important;
+}
+
+.admin-theme main a.text-danger:hover {
+  color: var(--admin-dark) !important;
+}
+
+/* ============ Navegación interna ============ */
+.admin-theme .nav-tabs .nav-link {
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .nav-tabs .nav-link.active {
+  color: var(--admin-dark);
+  border-color: var(--admin-sage) var(--admin-sage) #fff;
+}
+
+.admin-theme .page-link {
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .page-link:hover {
+  color: var(--admin-dark);
+  background-color: var(--admin-light);
+}
+
+.admin-theme .page-item.active .page-link {
+  background-color: var(--admin-green-dark);
+  border-color: var(--admin-green-dark);
+  color: var(--admin-light);
+}
+
+.admin-theme .dropdown-menu {
+  --bs-dropdown-link-hover-bg: #f8e9b2;
+  --bs-dropdown-link-hover-color: var(--admin-dark);
+  --bs-dropdown-link-active-bg: var(--admin-green-dark);
+  --bs-dropdown-link-active-color: var(--admin-light);
+}
+
+.admin-theme .list-group-item.active {
+  background-color: var(--admin-green-dark);
+  border-color: var(--admin-green-dark);
+}
+
+.admin-theme .progress {
+  --bs-progress-bar-bg: var(--admin-green);
+}
+
+.admin-theme .modal-content {
+  border-color: var(--admin-sage);
+}
+
+.admin-theme .modal-header,
+.admin-theme .modal-footer {
+  border-color: #c6d7a6;
+}
+
+/* ============ Reportes ============ */
+/* El amarillo queda sólo como acento del título; las cards y los gráficos
+   vuelven a la paleta verde. */
+.admin-theme .reporte-cabecera h1 {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.25rem;
+}
+
+.admin-theme .reporte-cabecera h1::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--admin-yellow);
+}
+
+.admin-theme .reporte-grafico-area {
+  fill: rgba(255, 159, 28, 0.16);
+}
+
+/* ============ Progreso del pedido ============ */
+/* El stepper compartido marca el estado actual en naranja. En el panel se
+   reemplaza por la paleta verde: halo, ícono, etiqueta y hora. */
+.admin-theme .historial-box {
+  background: var(--admin-light);
+  border-color: var(--admin-sage);
+}
+
+.admin-theme .historial-conector.activo {
+  background: var(--admin-green-dark);
+}
+
+.admin-theme .dir-form-ficha {
+  background: rgba(255, 159, 28, 0.1);
+  border-color: rgba(255, 159, 28, 0.35);
+}
+
+.admin-theme .estado-step.actual {
+  background-color: rgba(255, 159, 28, 0.14);
+}
+
+.admin-theme .estado-step.actual .estado-step-icono {
+  color: var(--admin-green);
+  filter: drop-shadow(0 0 7px rgba(255, 159, 28, 0.55));
+}
+
+.admin-theme .estado-step.actual .estado-step-etiqueta,
+.admin-theme .estado-step.actual .estado-step-hora {
+  color: var(--admin-dark);
+}
+
+.admin-theme .estado-step.completado .estado-step-icono,
+.admin-theme .estado-step.completado .estado-step-etiqueta,
+.admin-theme .estado-step.completado .estado-step-hora {
+  color: var(--admin-green-dark);
+}
+
+.admin-theme .estado-step.clickeable:hover {
+  background-color: rgba(255, 159, 28, 0.08);
+}
+
+.admin-theme .estado-step.clickeable:hover .estado-step-icono {
+  color: var(--admin-green-dark);
+}
+
+
+
+
+
+
+
+
+

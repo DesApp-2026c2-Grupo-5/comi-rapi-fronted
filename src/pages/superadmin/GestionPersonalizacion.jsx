@@ -167,7 +167,7 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
         </div>
       )}
 
-      <div className="card shadow-sm p-3 mb-3" style={{ border: '2px solid #ffe9c9', borderRadius: '18px' }}>
+      <div className="card shadow-sm p-3 mb-3" style={{ border: '2px solid var(--color-border-card)', borderRadius: '18px' }}>
         <div className="row g-3 align-items-end">
           <div className="col-md-6">
             <Form.Label className="fw-bold small">Producto *</Form.Label>
@@ -228,7 +228,14 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
       </div>
 
       {!productoSeleccionado && (
-        <div className="text-center py-5" style={{ border: '2px dashed #f1c27d', borderRadius: '14px', background: '#fff8ef' }}>
+        <div
+          className="text-center py-5"
+          style={{
+            border: '2px dashed var(--color-border-cream)',
+            borderRadius: '14px',
+            background: 'var(--color-cream-soft)',
+          }}
+        >
           <div className="fw-bold">Seleccioná un producto</div>
           <div className="small text-muted">
             {!cargandoProductos && productos.length === 0

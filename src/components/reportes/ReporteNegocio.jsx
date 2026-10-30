@@ -1,11 +1,13 @@
 /**
  * Propósito: Pantalla compartida de reportes y estadísticas del negocio.
  * Contenido: ReporteNegocio con filtros de período/sucursal, KPIs, gráficos
- *            (facturación, franja horaria y día de la semana), tablas de
- *            sucursales, productos, producto menos vendido, cancelaciones y
- *            promociones. El admin además ve los productos sin stock y el
- *            superadmin los clientes nuevos del período. Se refresca con
- *            eventos de tiempo real.
+ *            (pedidos por día, facturación, franja horaria y día de la
+ *            semana), distribución de pedidos por estado, clientes
+ *            (recurrentes y top), tablas de sucursales, productos más y menos
+ *            vendidos, productos sin stock, stock crítico, cancelaciones y
+ *            promociones. La misma pantalla la usan el administrador (su
+ *            sucursal) y el superadministrador (consolidado o filtrado). Se
+ *            refresca con eventos de tiempo real.
  * Dependencias: react-bootstrap, react-icons, api/reportes, api/sucursales,
  *               services/socket, utils/formatters, utils/constants,
  *               components/comunes/Skeleton y ./Graficos.
@@ -40,6 +42,7 @@ import {
   FaBoxOpen,
   FaChartLine,
   FaCheckCircle,
+  FaClipboardList,
   FaExclamationTriangle,
   FaMoneyBillWave,
   FaReceipt,
@@ -48,6 +51,7 @@ import {
   FaSyncAlt,
   FaTags,
   FaUserPlus,
+  FaUsers,
 } from 'react-icons/fa';
 import { obtenerReportes } from '../../api/reportes';
 import { obtenerSucursales } from '../../api/sucursales';
@@ -59,6 +63,7 @@ import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import {
   BarraComparativa,
   GraficoBarras,
+  GraficoDonut,
   GraficoLinea,
 } from './Graficos';
 import './ReporteNegocio.css';
@@ -275,6 +280,10 @@ const ReporteNegocio = () => {
     clave: 'facturacion',
     dir: 'desc',
   });
+  const [ordenMenosVendidos, setOrdenMenosVendidos] = useState({
+    clave: 'unidades',
+    dir: 'asc',
+  });
 
   // El panel sigue la sucursal de contexto del superadmin: al elegir una
   // sucursal, los reportes se acotan a ella; al dejar de operar, vuelven a la
@@ -380,6 +389,13 @@ const ReporteNegocio = () => {
         : { clave, dir: clave === 'nombre' || clave === 'categoria' ? 'asc' : 'desc' }
     );
 
+  const onOrdenarMenosVendidos = (clave) =>
+    setOrdenMenosVendidos((actual) =>
+      actual.clave === clave
+        ? { clave, dir: actual.dir === 'asc' ? 'desc' : 'asc' }
+        : { clave, dir: clave === 'nombre' || clave === 'categoria' ? 'asc' : 'desc' }
+    );
+
   const productos = useMemo(() => {
     const texto = busquedaProductos.trim().toLowerCase();
     const coincide = (fila) =>
@@ -394,8 +410,18 @@ const ReporteNegocio = () => {
         (datos?.productos.mayorFacturacion || []).filter(coincide),
         ordenFacturacion
       ),
+      menosVendidos: ordenarFilas(
+        (datos?.productos.menosVendidos || []).filter(coincide),
+        ordenMenosVendidos
+      ),
     };
-  }, [datos, busquedaProductos, ordenVendidos, ordenFacturacion]);
+  }, [
+    datos,
+    busquedaProductos,
+    ordenVendidos,
+    ordenFacturacion,
+    ordenMenosVendidos,
+  ]);
 
   if (!hydrated || (cargando && !datos)) {
     return (
@@ -422,6 +448,35 @@ const ReporteNegocio = () => {
   const { resumen, porDia, porSucursal, cancelaciones } = datos;
   const anterior = resumen.anterior;
   const esGlobal = porSucursal.length > 1;
+  const usosPromocion = datos.promociones.porPromocion.reduce(
+    (total, fila) => total + numero(fila.pedidos),
+    0
+  );
+  const estadoEntregado = datos.porEstado.find(
+    (fila) => fila.estado === 'entregado'
+  );
+  const metricasClientes = [
+    {
+      etiqueta: 'Con pedidos',
+      valor: formatearEntero(datos.clientes.conPedidos),
+    },
+    {
+      etiqueta: 'Recurrentes',
+      valor: formatearEntero(datos.clientes.recurrentes),
+    },
+    ...(esSuperadmin
+      ? [
+          {
+            etiqueta: 'Nuevos',
+            valor: formatearEntero(datos.clientes.nuevos),
+          },
+        ]
+      : []),
+    {
+      etiqueta: 'Ticket promedio',
+      valor: formatPrice(datos.clientes.ticketPromedio),
+    },
+  ];
   const maximoSucursal = Math.max(
     1,
     ...porSucursal.map((fila) => numero(fila.facturacion))
@@ -464,12 +519,13 @@ const ReporteNegocio = () => {
   }
 
   return (
-    <>
+    <div className="reporte-panel">
       <div className="reporte-cabecera d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <div>
           <h1 className="mb-1">Reportes</h1>
           <p className="text-muted mb-0">
-            Ventas, productos, cancelaciones y promociones del período.
+            Ventas, pedidos, productos, clientes, stock, cancelaciones y
+            promociones del período.
           </p>
         </div>
         <Button
@@ -589,18 +645,43 @@ const ReporteNegocio = () => {
         ))}
       </Row>
 
-      <Card className="shadow-sm mb-4">
-        <Card.Header as="h2" className="h5 bg-white">
-          Evolución de la facturación
-        </Card.Header>
-        <Card.Body>
-          <GraficoLinea
-            filas={porDia}
-            clave="facturacion"
-            etiqueta="Facturación"
-          />
-        </Card.Body>
-      </Card>
+      <Row className="g-3 mb-4">
+        <Col xl={6}>
+          <Card className="shadow-sm h-100">
+            <Card.Header as="h2" className="h5 bg-white">
+              Pedidos por día
+            </Card.Header>
+            <Card.Body>
+              <GraficoLinea
+                filas={porDia}
+                clave="pedidos"
+                etiqueta="Pedidos"
+                formatear={formatearEntero}
+              />
+              <p className="text-muted small mb-0 mt-2">
+                Todos los pedidos del período, en cualquier estado.
+              </p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xl={6}>
+          <Card className="shadow-sm h-100">
+            <Card.Header as="h2" className="h5 bg-white">
+              Evolución de la facturación
+            </Card.Header>
+            <Card.Body>
+              <GraficoLinea
+                filas={porDia}
+                clave="facturacion"
+                etiqueta="Facturación"
+              />
+              <p className="text-muted small mb-0 mt-2">
+                Solo pedidos entregados.
+              </p>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
       <Row className="g-3 mb-4">
         <Col lg={7}>
@@ -631,6 +712,86 @@ const ReporteNegocio = () => {
                 etiqueta={(fila) => fila.nombre.slice(0, 3)}
                 tooltip={(fila) => `${fila.nombre}: ${fila.pedidos} pedidos`}
               />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row className="g-3 mb-4">
+        <Col xl={5}>
+          <Card className="shadow-sm h-100">
+            <Card.Header as="h2" className="h5 bg-white">
+              <FaClipboardList
+                className="me-2 text-secondary"
+                aria-hidden="true"
+              />
+              Pedidos por estado
+            </Card.Header>
+            <Card.Body>
+              <GraficoDonut filas={datos.porEstado} />
+              <p className="text-muted small mb-0 mt-3">
+                Facturación de pedidos entregados:{' '}
+                {formatPrice(estadoEntregado ? estadoEntregado.importe : 0)}
+              </p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xl={7}>
+          <Card className="shadow-sm h-100">
+            <Card.Header as="h2" className="h5 bg-white">
+              <FaUsers className="me-2 text-secondary" aria-hidden="true" />
+              Clientes
+            </Card.Header>
+            <Card.Body>
+              <Row className="g-2 mb-3">
+                {metricasClientes.map((metrica) => (
+                  <Col xs={6} sm={3} key={metrica.etiqueta}>
+                    <div className="reporte-mini-dato text-center">
+                      <span className="reporte-mini-valor">
+                        {metrica.valor}
+                      </span>
+                      <span className="text-muted small">
+                        {metrica.etiqueta}
+                      </span>
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+              {datos.clientes.top.length === 0 ? (
+                <SinDatos>
+                  Ningún cliente tiene pedidos entregados en el período.
+                </SinDatos>
+              ) : (
+                <Table size="sm" striped bordered responsive className="mb-0">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Pedidos</th>
+                      <th>Facturación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {datos.clientes.top.map((fila) => (
+                      <tr key={fila.usuarioId}>
+                        <td data-label="Cliente">
+                          <span className="d-block">{fila.nombre}</span>
+                          {fila.email ? (
+                            <span className="text-muted small">
+                              {fila.email}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td data-label="Pedidos">
+                          {formatearEntero(fila.pedidos)}
+                        </td>
+                        <td data-label="Facturación">
+                          {formatPrice(fila.facturacion)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
             </Card.Body>
           </Card>
         </Col>
@@ -676,7 +837,7 @@ const ReporteNegocio = () => {
                           <BarraComparativa
                             valor={fila.facturacion}
                             maximo={maximoSucursal}
-                            color="#e8710a"
+                            color="var(--color-primary)"
                           />
                           <span className="small text-nowrap">
                             {formatearPorcentaje(
@@ -736,68 +897,108 @@ const ReporteNegocio = () => {
         </Card.Body>
       </Card>
 
+      <Card className="shadow-sm mb-4">
+        <Card.Header as="h2" className="h5 bg-white">
+          <FaArrowDown className="me-2 text-secondary" aria-hidden="true" />
+          Productos menos vendidos
+          <Badge bg="secondary" className="ms-2">
+            {formatearEntero(datos.productos.menosVendidos.length)}
+          </Badge>
+        </Card.Header>
+        <Card.Body>
+          <TablaProductos
+            titulo="Ranking por unidades vendidas (ascendente)"
+            filas={productos.menosVendidos}
+            orden={ordenMenosVendidos}
+            onOrdenar={onOrdenarMenosVendidos}
+          />
+        </Card.Body>
+      </Card>
+
       <Row className="g-3 mb-4">
-        <Col xl={esSuperadmin ? 12 : 6}>
+        <Col xl={6}>
           <Card className="shadow-sm h-100">
             <Card.Header as="h2" className="h5 bg-white">
-              <FaArrowDown className="me-2 text-secondary" aria-hidden="true" />
-              Producto menos vendido
+              <FaBoxOpen className="me-2 text-secondary" aria-hidden="true" />
+              Productos sin stock{' '}
+              <Badge bg="danger">
+                {formatearEntero(datos.stock.sinStock.length)}
+              </Badge>
             </Card.Header>
             <Card.Body>
-              {datos.productos.menosVendido ? (
-                <Row className="g-3 align-items-center">
-                  <Col md={6}>
-                    <div className="reporte-mini-dato">
-                      <span className="reporte-mini-valor">
-                        {datos.productos.menosVendido.nombre}
-                      </span>
-                      <span className="text-muted small">
-                        {datos.productos.menosVendido.categoria ||
-                          'Sin categoría'}
-                      </span>
-                    </div>
-                  </Col>
-                  <Col xs={6} md={3}>
-                    <div className="reporte-mini-dato">
-                      <span className="reporte-mini-valor">
-                        {formatearEntero(datos.productos.menosVendido.unidades)}
-                      </span>
-                      <span className="text-muted small">Unidades vendidas</span>
-                    </div>
-                  </Col>
-                  <Col xs={6} md={3}>
-                    <div className="reporte-mini-dato">
-                      <span className="reporte-mini-valor">
-                        {formatPrice(datos.productos.menosVendido.facturacion)}
-                      </span>
-                      <span className="text-muted small">Facturación</span>
-                    </div>
-                  </Col>
-                </Row>
+              {datos.stock.sinStock.length === 0 ? (
+                <SinDatos>No hay productos sin stock.</SinDatos>
               ) : (
-                <SinDatos>No hubo productos vendidos en el período.</SinDatos>
+                <Table
+                  striped
+                  bordered
+                  hover
+                  responsive
+                  className="tabla-admin mb-0"
+                >
+                  <thead className="table-dark">
+                    <tr>
+                      {esGlobal ? <th>Sucursal</th> : null}
+                      <th>Producto</th>
+                      <th>Cantidad</th>
+                      <th>Disponibilidad</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {datos.stock.sinStock.map((fila) => (
+                      <tr key={`${fila.sucursalId}-${fila.productoId}`}>
+                        {esGlobal ? (
+                          <td data-label="Sucursal">{fila.sucursal}</td>
+                        ) : null}
+                        <td data-label="Producto">{fila.producto}</td>
+                        <td data-label="Cantidad">
+                          {formatearEntero(fila.cantidad)}
+                        </td>
+                        <td data-label="Disponibilidad">
+                          <Badge bg={fila.disponible ? 'warning' : 'danger'}>
+                            {fila.disponible ? 'Sin stock' : 'No disponible'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               )}
             </Card.Body>
           </Card>
         </Col>
 
-        {!esSuperadmin ? (
-          <Col xl={6}>
-            <Card className="shadow-sm h-100">
-              <Card.Header as="h2" className="h5 bg-white">
-                <FaBoxOpen
-                  className="me-2 text-secondary"
-                  aria-hidden="true"
-                />
-                Productos sin stock{' '}
-                <Badge bg="danger">
-                  {formatearEntero(datos.stock.sinStock.length)}
+        <Col xl={6}>
+          <Card className="shadow-sm h-100">
+            <Card.Header as="h2" className="h5 bg-white">
+              <FaExclamationTriangle
+                className="me-2 text-secondary"
+                aria-hidden="true"
+              />
+              Stock crítico{' '}
+              {datos.stock.umbralCritico ? (
+                <Badge bg="warning" text="dark">
+                  {formatearEntero(datos.stock.critico.length)}
                 </Badge>
-              </Card.Header>
-              <Card.Body>
-                {datos.stock.sinStock.length === 0 ? (
-                  <SinDatos>No hay productos sin stock en la sucursal.</SinDatos>
-                ) : (
+              ) : null}
+            </Card.Header>
+            <Card.Body>
+              {!datos.stock.umbralCritico ? (
+                <SinDatos>
+                  El umbral de stock crítico está desactivado (0). Se configura
+                  en los parámetros del negocio.
+                </SinDatos>
+              ) : datos.stock.critico.length === 0 ? (
+                <SinDatos>
+                  Ningún producto tiene {datos.stock.umbralCritico} unidades o
+                  menos.
+                </SinDatos>
+              ) : (
+                <>
+                  <p className="text-muted small">
+                    Productos disponibles con {datos.stock.umbralCritico}{' '}
+                    unidades o menos.
+                  </p>
                   <Table
                     striped
                     bordered
@@ -807,32 +1008,36 @@ const ReporteNegocio = () => {
                   >
                     <thead className="table-dark">
                       <tr>
+                        {esGlobal ? <th>Sucursal</th> : null}
                         <th>Producto</th>
                         <th>Cantidad</th>
-                        <th>Disponibilidad</th>
+                        <th>Estado</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {datos.stock.sinStock.map((fila) => (
-                        <tr key={fila.productoId}>
+                      {datos.stock.critico.map((fila) => (
+                        <tr key={`${fila.sucursalId}-${fila.productoId}`}>
+                          {esGlobal ? (
+                            <td data-label="Sucursal">{fila.sucursal}</td>
+                          ) : null}
                           <td data-label="Producto">{fila.producto}</td>
                           <td data-label="Cantidad">
                             {formatearEntero(fila.cantidad)}
                           </td>
-                          <td data-label="Disponibilidad">
-                            <Badge bg={fila.disponible ? 'warning' : 'danger'}>
-                              {fila.disponible ? 'Sin stock' : 'No disponible'}
+                          <td data-label="Estado">
+                            <Badge bg="warning" text="dark">
+                              Crítico
                             </Badge>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </Table>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        ) : null}
+                </>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
       </Row>
 
       <Row className="g-3 mb-4">
@@ -872,22 +1077,38 @@ const ReporteNegocio = () => {
                   </div>
                 </Col>
               </Row>
-              {cancelaciones.porDia.length === 0 ? (
-                <SinDatos>No hubo cancelaciones en el período.</SinDatos>
+              <h3 className="h6 reporte-subtitulo">Productos cancelados</h3>
+              {cancelaciones.productos.length === 0 ? (
+                <SinDatos>
+                  No hubo productos cancelados en el período.
+                </SinDatos>
               ) : (
                 <Table size="sm" striped bordered responsive className="mb-0">
                   <thead className="table-dark">
                     <tr>
-                      <th>Día</th>
-                      <th>Cancelados</th>
+                      <th>Producto</th>
+                      <th>Unidades</th>
+                      <th>Pedidos</th>
+                      <th>Importe</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cancelaciones.porDia.map((fila) => (
-                      <tr key={fila.dia}>
-                        <td data-label="Día">{formatDateOnly(fila.dia)}</td>
-                        <td data-label="Cancelados">
-                          {formatearEntero(fila.cantidad)}
+                    {cancelaciones.productos.map((fila) => (
+                      <tr key={fila.productoId}>
+                        <td data-label="Producto">
+                          <span className="d-block">{fila.nombre}</span>
+                          <span className="text-muted small">
+                            {fila.categoria || 'Sin categoría'}
+                          </span>
+                        </td>
+                        <td data-label="Unidades">
+                          {formatearEntero(fila.unidades)}
+                        </td>
+                        <td data-label="Pedidos">
+                          {formatearEntero(fila.pedidos)}
+                        </td>
+                        <td data-label="Importe">
+                          {formatPrice(fila.importe)}
                         </td>
                       </tr>
                     ))}
@@ -906,23 +1127,31 @@ const ReporteNegocio = () => {
             </Card.Header>
             <Card.Body>
               <Row className="g-2 mb-3">
-                <Col xs={4}>
+                <Col xs={6} sm={3}>
                   <div className="reporte-mini-dato text-center">
                     <span className="reporte-mini-valor">
                       {formatearEntero(datos.promociones.pedidosConPromocion)}
                     </span>
-                    <span className="text-muted small">Pedidos con promo</span>
+                    <span className="text-muted small">Pedidos</span>
                   </div>
                 </Col>
-                <Col xs={4}>
+                <Col xs={6} sm={3}>
+                  <div className="reporte-mini-dato text-center">
+                    <span className="reporte-mini-valor">
+                      {formatearEntero(usosPromocion)}
+                    </span>
+                    <span className="text-muted small">Usos de promociones</span>
+                  </div>
+                </Col>
+                <Col xs={6} sm={3}>
                   <div className="reporte-mini-dato text-center">
                     <span className="reporte-mini-valor">
                       {formatPrice(datos.promociones.facturacionConPromocion)}
                     </span>
-                    <span className="text-muted small">Facturación</span>
+                    <span className="text-muted small">Facturación con promo</span>
                   </div>
                 </Col>
-                <Col xs={4}>
+                <Col xs={6} sm={3}>
                   <div className="reporte-mini-dato text-center">
                     <span className="reporte-mini-valor text-success">
                       {formatPrice(datos.promociones.descuentoTotal)}
@@ -940,7 +1169,7 @@ const ReporteNegocio = () => {
                   <thead className="table-dark">
                     <tr>
                       <th>Promoción</th>
-                      <th>Pedidos</th>
+                      <th>Usos</th>
                       <th>Descuento</th>
                       <th>Facturación</th>
                     </tr>
@@ -949,7 +1178,7 @@ const ReporteNegocio = () => {
                     {datos.promociones.porPromocion.map((fila) => (
                       <tr key={fila.promocionId}>
                         <td data-label="Promoción">{fila.nombre}</td>
-                        <td data-label="Pedidos">
+                        <td data-label="Usos">
                           {formatearEntero(fila.pedidos)}
                         </td>
                         <td data-label="Descuento">
@@ -963,12 +1192,16 @@ const ReporteNegocio = () => {
                   </tbody>
                 </Table>
               )}
+              {datos.promociones.porPromocion.length > 0 ? (
+                <p className="text-muted small mt-2 mb-0">
+                  Un pedido puede usar más de una promoción.
+                </p>
+              ) : null}
             </Card.Body>
           </Card>
         </Col>
       </Row>
-
-    </>
+    </div>
   );
 };
 

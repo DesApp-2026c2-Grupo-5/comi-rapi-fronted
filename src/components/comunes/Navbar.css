@@ -120,6 +120,15 @@
   background-color: rgba(255, 255, 255, 0.16);
 }
 
+/* El toggle abierto conserva la píldora blanca del estado activo. El reset de
+   <button> de arriba le dejaba el fondo transparente y el texto oscuro de
+   `.nav-enlace.activo` terminaba sobre la barra oscura, sin contraste. */
+.navbar-comirapi .nav-enlace-toggle.activo,
+.navbar-comirapi .nav-enlace-toggle.activo:hover {
+  background-color: #fff;
+  color: var(--color-primary-dark) !important;
+}
+
 /* El caret propio gira al abrir; el ::after de Bootstrap se oculta porque es un
    SVG oscuro embebido que sobre el naranja se ve sucio. */
 .navbar-comirapi .nav-enlace-toggle.dropdown-toggle::after {

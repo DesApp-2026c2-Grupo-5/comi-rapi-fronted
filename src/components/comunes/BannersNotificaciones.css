@@ -57,6 +57,22 @@
   font-size: 1.1rem;
 }
 
+.batch-notificacion-icono-success {
+  color: #22c55e;
+}
+
+.batch-notificacion-icono-danger {
+  color: #e63946;
+}
+
+.batch-notificacion-icono-warning {
+  color: #e88900;
+}
+
+.batch-notificacion-icono-info {
+  color: #f07f10;
+}
+
 .batch-notificacion-mensaje {
   flex: 1;
   min-width: 0;

@@ -24,12 +24,75 @@ const MARGEN = { arriba: 18, derecha: 16, abajo: 34, izquierda: 68 };
 
 const numero = (valor) => Number(valor) || 0;
 
+/** Cantidad con la palabra "pedido(s)" para que la leyenda se lea sola. */
+const formatearCantidadPedidos = (cantidad) => {
+  const valor = numero(cantidad);
+  return `${valor.toLocaleString('es-AR')} ${
+    valor === 1 ? 'pedido' : 'pedidos'
+  }`;
+};
+
+/** Porcentaje entero: las participaciones mínimas se muestran como 0%. */
+const formatearPorcentajeEstado = (cantidad, total) => {
+  if (!total) return '0%';
+  return `${Math.round((numero(cantidad) / total) * 100)}%`;
+};
+
 const compacto = new Intl.NumberFormat('es-AR', {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
 
 const formatearMonedaCompacta = (valor) => `$${compacto.format(numero(valor))}`;
+
+/**
+ * Paleta del reporte. `confirmado` y `entregado` comparten color en la línea
+ * de tiempo, pero en el donut necesitan colores distintos para poder leer la
+ * distribución. El resto conserva los colores de los estados de la app.
+ */
+const COLOR_ESTADO_REPORTE = {
+  ...COLOR_ESTADO_PEDIDO,
+  confirmado: '#0d6efd',
+};
+
+const canalesDeColor = (hex) =>
+  [0, 2, 4].map(
+    (indice) =>
+      parseInt(String(hex || '').replace('#', '').slice(indice, indice + 2), 16) ||
+      0
+  );
+
+const aHex = (canales) =>
+  `#${canales
+    .map((canal) => canal.toString(16).padStart(2, '0'))
+    .join('')}`;
+
+const luminanciaRelativa = (canales) => {
+  const [rojo, verde, azul] = canales.map((canal) => {
+    const proporcion = canal / 255;
+    return proporcion <= 0.03928
+      ? proporcion / 12.92
+      : ((proporcion + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * rojo + 0.7152 * verde + 0.0722 * azul;
+};
+
+/**
+ * Color de texto legible sobre el color de cada estado: oscuro en colores
+ * claros (por ejemplo el amarillo de `pendiente`) y blanco en los oscuros.
+ */
+const colorTextoSobre = (hex) =>
+  luminanciaRelativa(canalesDeColor(hex)) > 0.45 ? '#212529' : '#ffffff';
+
+/**
+ * Los números de la leyenda usan el color del estado. Solo los tonos muy
+ * claros (amarillo, cian) se oscurecen para que se sigan leyendo sobre blanco.
+ */
+const colorNumeroEstado = (hex) => {
+  const canales = canalesDeColor(hex);
+  if (luminanciaRelativa(canales) <= 0.25) return hex;
+  return aHex(canales.map((canal) => Math.round(canal * 0.68)));
+};
 
 const diaCorto = (clave) => {
   const [, mes, dia] = String(clave).split('-');
@@ -212,7 +275,7 @@ export const GraficoDonut = ({ filas }) => {
     const inicio = (acumulado / total) * 360;
     acumulado += numero(fila.cantidad);
     const fin = (acumulado / total) * 360;
-    const color = COLOR_ESTADO_PEDIDO[fila.estado] || '#adb5bd';
+    const color = COLOR_ESTADO_REPORTE[fila.estado] || '#adb5bd';
     return `${color} ${inicio}deg ${fin}deg`;
   });
 
@@ -235,22 +298,25 @@ export const GraficoDonut = ({ filas }) => {
       </div>
       <ul className="reporte-leyenda list-unstyled mb-0">
         {visibles.map((fila) => {
-          const porcentaje = Math.round((numero(fila.cantidad) / total) * 100);
+          const color = COLOR_ESTADO_REPORTE[fila.estado] || '#adb5bd';
           return (
             <li key={fila.estado} className="reporte-leyenda-item">
               <Badge
                 bg=""
-                className="reporte-leyenda-color"
+                className="reporte-leyenda-nombre"
                 style={{
-                  backgroundColor: COLOR_ESTADO_PEDIDO[fila.estado] || '#adb5bd',
+                  backgroundColor: color,
+                  color: colorTextoSobre(color),
                 }}
-                aria-hidden="true"
-              />
-              <span className="reporte-leyenda-nombre">
+              >
                 {ETIQUETAS_ESTADO_PEDIDO[fila.estado] || fila.estado}
-              </span>
-              <span className="reporte-leyenda-valor">
-                {fila.cantidad} · {porcentaje}%
+              </Badge>
+              <span
+                className="reporte-leyenda-valor"
+                style={{ color: colorNumeroEstado(color) }}
+              >
+                {formatearCantidadPedidos(fila.cantidad)} ·{' '}
+                {formatearPorcentajeEstado(fila.cantidad, total)}
               </span>
             </li>
           );

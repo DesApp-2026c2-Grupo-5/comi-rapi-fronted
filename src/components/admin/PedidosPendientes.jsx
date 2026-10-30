@@ -357,10 +357,8 @@ const PedidosPendientes = () => {
         </Modal.Header>
         <Modal.Body>
           <p className="text-muted">
-            El stock se transfiere automáticamente y el tiempo estimado se
-            recalcula. Solo se ofrecen sucursales con cobertura de la
-            dirección del cliente y stock suficiente; el backend re-valida
-            todo al confirmar.
+            Solo se ofrecen sucursales con cobertura de la dirección del cliente
+            y stock suficiente.
           </p>
           {cargandoCandidatas ? (
             <div className="text-center py-3">
@@ -375,11 +373,11 @@ const PedidosPendientes = () => {
             </Alert>
           ) : (
             <Form.Group>
-              <Form.Label>Sucursal destino</Form.Label>
               <Form.Select
                 value={sucursalDestino}
                 onChange={(e) => setSucursalDestino(e.target.value)}
                 disabled={reasignando}
+                aria-label="Sucursal destino"
               >
                 <option value="">Seleccioná una sucursal…</option>
                 {candidatas.map((s) => (

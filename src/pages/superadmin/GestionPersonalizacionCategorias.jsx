@@ -205,7 +205,7 @@ const GestionPersonalizacionCategorias = () => {
 
       <div
         className="card shadow-sm p-3 mb-3"
-        style={{ border: '2px solid #ffe9c9', borderRadius: '18px' }}
+        style={{ border: '2px solid var(--color-border-card)', borderRadius: '18px' }}
       >
         <div className="row g-3 align-items-end">
           <div className="col-md-6">
@@ -280,9 +280,9 @@ const GestionPersonalizacionCategorias = () => {
         <div
           className="text-center py-5"
           style={{
-            border: '2px dashed #f1c27d',
+            border: '2px dashed var(--color-border-cream)',
             borderRadius: '14px',
-            background: '#fff8ef',
+            background: 'var(--color-cream-soft)',
           }}
         >
           <div className="fw-bold">Seleccioná una categoría</div>
