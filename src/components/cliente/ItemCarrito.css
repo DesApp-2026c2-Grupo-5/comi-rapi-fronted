@@ -109,6 +109,56 @@
   z-index: 1;
 }
 
+/* ============ Nota para cocina (por ítem) ============ */
+/* Se edita dentro de la misma tarjeta, debajo del desglose de personalización.
+   Separador punteado para que no se confunda con la personalización. */
+
+.item-carrito-nota {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border-cream, #ffe9c9);
+}
+
+.item-carrito-nota-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text, #2b2b2b);
+  margin-bottom: 0.35rem;
+}
+
+.item-carrito-nota-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.item-carrito-nota-texto {
+  font-size: 0.85rem;
+  color: var(--color-text, #2b2b2b);
+  background: var(--color-surface-warm, #fff4e2);
+  border-left: 3px solid var(--color-primary, #f07f10);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+
+.item-carrito-nota-editar {
+  padding: 0 0 0 0.4rem;
+  vertical-align: baseline;
+}
+
+.item-carrito-nota-agregar {
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-warm, #8a4b00);
+  text-decoration: none;
+}
+
+.item-carrito-nota-agregar:hover {
+  text-decoration: underline;
+}
+
 /* ============ Responsividad ============ */
 /* Abajo de 768px el layout pasa a 2 filas (imagen+nombre / cantidad+subtotal)
    con xs={3}/xs={9} y xs={6}/xs={6}. La imagen se encoge para caber en la

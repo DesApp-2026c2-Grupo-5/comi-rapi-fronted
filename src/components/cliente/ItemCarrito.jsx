@@ -1,8 +1,10 @@
-import { Card, Row, Col } from "react-bootstrap";
-import { FaTrash, FaMinus, FaPlus } from "react-icons/fa";
+import { useState } from "react";
+import { Card, Row, Col, Form, Button } from "react-bootstrap";
+import { FaTrash, FaMinus, FaPlus, FaPen, FaStickyNote } from "react-icons/fa";
 import { useCarrito } from "../../hooks/useCarrito";
 import { useParametros } from "../../hooks/useParametros";
 import { formatPrice } from "../../utils/formatters";
+import { NOTA_MAX_CARACTERES } from "../../utils/notaHelpers";
 import "./ItemCarrito.css";
 
 const ItemCarrito = ({ item }) => {
@@ -12,10 +14,16 @@ const ItemCarrito = ({ item }) => {
     idLinea,
     personalizacion,
     precioUnitarioPersonalizado,
+    nota,
   } = item;
-  const { eliminarDelCarrito, actualizarCantidad } = useCarrito();
+  const { eliminarDelCarrito, actualizarCantidad, actualizarNota } = useCarrito();
   const { parametros } = useParametros();
   const maxUnidades = parametros.cantidadMaximaProductoCarrito;
+
+  // Nota para cocina: se edita en la misma línea y se guarda explícitamente
+  // (no al perder foco, para no guardar un texto a medio escribir).
+  const [editandoNota, setEditandoNota] = useState(false);
+  const [borradorNota, setBorradorNota] = useState(nota || "");
 
   const precioUnitario = precioUnitarioPersonalizado ?? producto.precio;
   const subtotal = precioUnitario * cantidad;
@@ -42,6 +50,21 @@ const ItemCarrito = ({ item }) => {
       // Cantidad 1 y apretó "-": elimina el item (mismo criterio que el trash).
       eliminarDelCarrito(idItem);
     }
+  };
+
+  const abrirEditorNota = () => {
+    setBorradorNota(nota || "");
+    setEditandoNota(true);
+  };
+
+  const cancelarNota = () => {
+    setBorradorNota(nota || "");
+    setEditandoNota(false);
+  };
+
+  const guardarNota = () => {
+    actualizarNota(idItem, borradorNota);
+    setEditandoNota(false);
   };
 
   return (
@@ -144,6 +167,77 @@ const ItemCarrito = ({ item }) => {
             </div>
           </Col>
         </Row>
+
+        <div className="item-carrito-nota">
+          {editandoNota ? (
+            <Form.Group controlId={`nota-${idItem}`}>
+              <Form.Label className="item-carrito-nota-label">
+                Nota para cocina
+              </Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={borradorNota}
+                maxLength={NOTA_MAX_CARACTERES}
+                onChange={(evento) => setBorradorNota(evento.target.value)}
+                onKeyDown={(evento) => {
+                  if (evento.key === "Escape") {
+                    evento.preventDefault();
+                    cancelarNota();
+                  }
+                }}
+                placeholder="Ej.: sin sal, bien cocida, sin cebolla"
+                aria-describedby={`nota-contador-${idItem}`}
+                autoFocus
+              />
+              <div className="item-carrito-nota-pie">
+                <span
+                  id={`nota-contador-${idItem}`}
+                  className="text-muted small"
+                >
+                  {borradorNota.length}/{NOTA_MAX_CARACTERES}
+                </span>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={cancelarNota}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={guardarNota}>
+                    Listo
+                  </Button>
+                </div>
+              </div>
+            </Form.Group>
+          ) : nota ? (
+            <div className="item-carrito-nota-texto">
+              <FaStickyNote aria-hidden="true" className="me-1" />
+              <span className="fw-semibold">Nota para cocina:</span> {nota}
+              <Button
+                variant="link"
+                size="sm"
+                className="item-carrito-nota-editar"
+                onClick={abrirEditorNota}
+                aria-label={`Editar la nota de ${producto.nombre}`}
+              >
+                <FaPen aria-hidden="true" size={12} />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="link"
+              size="sm"
+              className="item-carrito-nota-agregar"
+              onClick={abrirEditorNota}
+              aria-label={`Agregar una nota para cocina en ${producto.nombre}`}
+            >
+              <FaPen aria-hidden="true" size={12} className="me-1" />
+              Agregar nota para cocina
+            </Button>
+          )}
+        </div>
       </Card.Body>
     </Card>
   );
