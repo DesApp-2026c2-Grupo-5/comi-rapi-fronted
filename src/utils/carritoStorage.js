@@ -2,9 +2,11 @@
  * Propósito: Persistencia del carrito en localStorage, con clave por usuario.
  * Contenido: clave versionada, leer/guardar/limpiar, migración invitado→usuario
  *            y saneado de líneas corruptas.
- * Dependencias: Ninguna.
+ * Dependencias: utils/notaHelpers.js.
  * Uso: import { leerCarrito, guardarCarrito } from '../utils/carritoStorage';
  */
+
+import { normalizarNota } from './notaHelpers';
 
 const PREFIJO_CLAVE = 'comirapi:carrito:v1:';
 
@@ -40,9 +42,13 @@ export const esLineaValida = (item) => {
   return true;
 };
 
-/** Descarta líneas corruptas o incompletas. */
+/** Descarta líneas corruptas o incompletas y sanea la nota para cocina. */
 export const sanearItems = (items) =>
-  Array.isArray(items) ? items.filter(esLineaValida) : [];
+  Array.isArray(items)
+    ? items
+        .filter(esLineaValida)
+        .map((item) => ({ ...item, nota: normalizarNota(item.nota) }))
+    : [];
 
 /** Lee el carrito guardado (saneado) o [] si no hay nada válido. */
 export const leerCarrito = (email) => {

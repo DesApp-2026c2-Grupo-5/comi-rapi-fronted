@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { calcularPrecioUnitario } from '../services/personalizacionConfig';
 import { compararPersonalizacion, generarIdLinea, personalizacionVacia } from '../utils/personalizacionHelpers';
+import { normalizarNota } from '../utils/notaHelpers';
 import { useAuth } from '../hooks/useAuth';
 import {
   leerCarrito,
@@ -97,6 +98,7 @@ export const CarritoProvider = ({ children }) => {
           cantidad,
           personalizacion: pers,
           precioUnitarioPersonalizado,
+          nota: null,
         },
       ];
     });
@@ -132,6 +134,19 @@ export const CarritoProvider = ({ children }) => {
     );
   }, []);
 
+  // Nota para cocina de una línea del carrito (texto libre, opcional).
+  const actualizarNota = useCallback((idLineaOrProductoId, texto) => {
+    const nota = normalizarNota(texto);
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.idLinea === idLineaOrProductoId ||
+        String(item.producto.id) === String(idLineaOrProductoId)
+          ? { ...item, nota }
+          : item
+      )
+    );
+  }, []);
+
   const vaciarCarrito = useCallback(() => {
     setItems([]);
     limpiarCarrito(clave);
@@ -159,9 +174,10 @@ export const CarritoProvider = ({ children }) => {
       agregarAlCarrito,
       eliminarDelCarrito,
       actualizarCantidad,
+      actualizarNota,
       vaciarCarrito,
     }),
-    [items, totalItems, productosDistintos, total, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, vaciarCarrito]
+    [items, totalItems, productosDistintos, total, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, actualizarNota, vaciarCarrito]
   );
 
   return <CarritoContext.Provider value={value}>{children}</CarritoContext.Provider>;
