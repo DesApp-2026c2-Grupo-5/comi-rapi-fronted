@@ -150,6 +150,8 @@ const Carrito = () => {
       sin: item.personalizacion?.sin || [],
       acompanamientos: item.personalizacion?.acompanamientos || [],
       condimentos: item.personalizacion?.condimentos || [],
+      // Nota libre para cocina ("sin sal", "bien cocida").
+      ...(item.nota ? { nota: item.nota } : {}),
     })),
     total,
     costoEnvio: costoEnvioActual,
