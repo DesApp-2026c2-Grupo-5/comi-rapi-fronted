@@ -101,6 +101,11 @@ const DetalleItemsPedido = ({ items, className = '' }) => {
                 ))}
               </div>
             )}
+            {item.nota ? (
+              <div className="resumen-nota">
+                &rsaquo; <strong>Nota para cocina:</strong> {item.nota}
+              </div>
+            ) : null}
           </div>
         );
       })}

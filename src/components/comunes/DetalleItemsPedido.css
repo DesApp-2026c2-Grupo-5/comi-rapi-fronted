@@ -55,3 +55,20 @@
 .resumen-desglose strong {
   color: var(--color-text);
 }
+
+/* Nota libre del cliente para cocina: se destaca para que la cocina la vea.
+   Presente tanto en el resumen del cliente como en el panel admin. */
+.resumen-nota {
+  font-size: 0.82rem;
+  color: var(--color-text, #2b2b2b);
+  background: var(--color-surface-warm, #fff4e2);
+  border-left: 3px solid var(--color-primary, #f07f10);
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  margin-top: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.resumen-nota strong {
+  color: var(--color-text-strong, #212529);
+}
