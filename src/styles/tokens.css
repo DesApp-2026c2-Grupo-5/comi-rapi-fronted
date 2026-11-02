@@ -156,8 +156,10 @@
   --color-border-card: #352b20;
   --color-border-strong: #6b4f2d;
 
-  /* Blanco puro de marca (CTA hero sobre naranja): no cambia con el tema. */
-  --color-white: #ffffff;
+  /* En oscuro `--color-white` es el "papel" y la tinta de contraste: muchas
+     hojas lo usan como superficie de tarjeta o como texto sobre fondos claros.
+     El blanco puro de marca vive en `--color-hero-cta-*`, que no cambia. */
+  --color-white: #241f19;
   --color-surface: #241f19;
   --color-text: #f5ede2;
   --color-text-muted: #c3b39d;

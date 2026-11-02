@@ -30,19 +30,15 @@ const OPCIONES = [
   { valor: TEMAS.SISTEMA, etiqueta: 'Sistema', Icono: FaDesktop },
 ];
 
-const ETIQUETAS = OPCIONES.reduce((acc, opcion) => {
-  acc[opcion.valor] = opcion.etiqueta;
-  return acc;
-}, {});
-
 const SelectorTema = () => {
   const { tema, temaResuelto, definirTema } = useTema();
   const opcionActual = OPCIONES.find((opcion) => opcion.valor === tema) || OPCIONES[2];
   const IconoActual = opcionActual.Icono;
-  // "Sistema" resuelve a claro u oscuro según el SO: se aclara en el tooltip
-  // para que el usuario sepa qué está viendo en este momento.
-  const detalleSistema =
-    tema === TEMAS.SISTEMA ? ` (${ETIQUETAS[temaResuelto] || temaResuelto})` : '';
+  // "Sistema" resuelve a claro u oscuro según el SO. El sufijo (claro|oscuro)
+  // deja ver qué tema se está pintando ahora, tanto en el botón como en el ítem
+  // del menú (si no, "Sistema" y "Claro" parecen lo mismo con el SO en claro).
+  const sufijoSistema = temaResuelto ? ` (${temaResuelto})` : '';
+  const detalleSistema = tema === TEMAS.SISTEMA ? sufijoSistema : '';
   const descripcion = `Tema: ${opcionActual.etiqueta}${detalleSistema}. Cambiar tema`;
 
   return (
@@ -60,6 +56,8 @@ const SelectorTema = () => {
       <Dropdown.Menu className="selector-tema-menu">
         {OPCIONES.map(({ valor, etiqueta, Icono }) => {
           const elegida = tema === valor;
+          const texto =
+            valor === TEMAS.SISTEMA ? `${etiqueta}${sufijoSistema}` : etiqueta;
           return (
             <Dropdown.Item
               key={valor}
@@ -71,7 +69,7 @@ const SelectorTema = () => {
               onClick={() => definirTema(valor)}
             >
               <Icono aria-hidden="true" />
-              <span className="selector-tema-etiqueta">{etiqueta}</span>
+              <span className="selector-tema-etiqueta">{texto}</span>
               {elegida && (
                 <FaCheck className="selector-tema-check" aria-hidden="true" />
               )}
