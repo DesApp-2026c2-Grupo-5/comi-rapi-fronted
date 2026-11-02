@@ -26,6 +26,12 @@
   --color-primary-dark: #a85400;
   --color-primary-deep: #f07f10; /* inicio del degradado de navbar */
   --color-primary-soft: #ffb347; /* fin del degradado de navbar */
+  /* CTA hero: se mantiene blanco con texto naranja sobre el hero naranja en
+     ambos temas, porque el fondo del hero no cambia. */
+  --color-hero-cta-bg: #ffffff;
+  --color-hero-cta-hover: #fff4e2;
+  --color-hero-cta-active: #ffe6c2;
+  --color-hero-cta-text: #a85400;
 
   /* Tinta sobre superficies de marca (naranja).
      Blanco sobre --color-primary daba 2.05:1, y sobre el extremo claro del
@@ -56,6 +62,12 @@
 
   /* Neutros */
   --color-white: #ffffff;
+  /* Superficie de componente (cards, tablas, pills): blanco en claro y
+     superficie elevada en oscuro. No es identidad de marca, es el "papel". */
+  --color-surface: #ffffff;
+  /* Tinta sobre rellenos profundos (success/danger fill): blanco en ambos
+     temas, porque esos rellenos conservan su tono oscuro. */
+  --color-on-fill: #ffffff;
   --color-text: #2b2b2b;
   --color-text-muted: #7a6a55; /* secundario cálido */
   --color-text-brown: #8a5a2b; /* texto de outline secundario */
@@ -124,6 +136,12 @@
   --color-primary-dark: #ffb347;
   --color-primary-deep: #f07f10;
   --color-primary-soft: #ffb347;
+
+  /* CTA hero: mismos valores que en claro (el hero naranja no cambia). */
+  --color-hero-cta-bg: #ffffff;
+  --color-hero-cta-hover: #fff4e2;
+  --color-hero-cta-active: #ffe6c2;
+  --color-hero-cta-text: #a85400;
   --color-on-primary: #241505;
   --color-focus: #ffb347;
 
@@ -138,7 +156,9 @@
   --color-border-card: #352b20;
   --color-border-strong: #6b4f2d;
 
-  --color-white: #241f19;
+  /* Blanco puro de marca (CTA hero sobre naranja): no cambia con el tema. */
+  --color-white: #ffffff;
+  --color-surface: #241f19;
   --color-text: #f5ede2;
   --color-text-muted: #c3b39d;
   --color-text-brown: #e8bd8c;
