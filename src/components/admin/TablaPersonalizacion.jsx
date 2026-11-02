@@ -137,7 +137,7 @@ const TablaPersonalizacion = ({
                   refProd ? (
                     <>
                       → <strong>{refProd.nombre}</strong>{' '}
-                      <Badge bg="light" text="dark" className="border">
+                      <Badge text-bg-secondary className="border">
                         {refProd.categoria}
                       </Badge>
                     </>
@@ -270,7 +270,7 @@ const TablaPersonalizacion = ({
       </Badge>{' '}
       cobra · <Badge bg="secondary">Personalizar</Badge> no cobra ·{' '}
       <Badge bg="success">Acompaña</Badge> cobra (selector de producto) ·{' '}
-      <Badge bg="light" text="dark" className="border">
+      <Badge text-bg-secondary className="border">
         Condimento
       </Badge>{' '}
       no cobra

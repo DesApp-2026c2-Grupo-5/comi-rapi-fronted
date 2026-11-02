@@ -571,6 +571,7 @@ html:has(body.admin-theme)::-webkit-scrollbar-thumb {
   --bs-body-bg: var(--admin-light);
   --bs-secondary-bg: var(--admin-surface);
   --bs-tertiary-bg: var(--admin-surface-alt);
+  --bs-light: var(--admin-surface);
 
   background-color: var(--admin-light);
   color: var(--color-text);

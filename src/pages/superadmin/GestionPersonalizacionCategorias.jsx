@@ -357,7 +357,7 @@ const GestionPersonalizacionCategorias = () => {
           </Badge>{' '}
           cobra · <Badge bg="secondary">Personalizar</Badge> no cobra ·{' '}
           <Badge bg="success">Acompaña</Badge> cobra ·{' '}
-          <Badge bg="light" text="dark" className="border">
+          <Badge text-bg-secondary className="border">
             Condimento
           </Badge>{' '}
           no cobra
