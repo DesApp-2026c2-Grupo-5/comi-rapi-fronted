@@ -876,58 +876,66 @@ const ReporteNegocio = () => {
       <Card className="shadow-sm mb-4">
         <Card.Header as="h2" className="h5">
           <FaTags className="me-2 text-secondary" aria-hidden="true" />
-          Productos más vendidos
-        </Card.Header>
-        <Card.Body>
-          <Form.Group className="mb-3" controlId="reporte-buscar-producto">
-            <Form.Label className="visually-hidden">
-              Buscar producto o categoría
-            </Form.Label>
-            <div className="reporte-buscador">
-              <FaSearch aria-hidden="true" />
-              <Form.Control
-                type="search"
-                placeholder="Buscar producto o categoría…"
-                value={busquedaProductos}
-                onChange={(evento) => setBusquedaProductos(evento.target.value)}
-              />
-            </div>
-          </Form.Group>
-          <Row className="g-4">
-            <Col xl={6}>
-              <TablaProductos
-                titulo="Por unidades vendidas"
-                filas={productos.masVendidos}
-                orden={ordenVendidos}
-                onOrdenar={onOrdenarVendidos}
-              />
-            </Col>
-            <Col xl={6}>
-              <TablaProductos
-                titulo="Por facturación"
-                filas={productos.mayorFacturacion}
-                orden={ordenFacturacion}
-                onOrdenar={onOrdenarFacturacion}
-              />
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      <Card className="shadow-sm mb-4">
-        <Card.Header as="h2" className="h5">
-          <FaArrowDown className="me-2 text-secondary" aria-hidden="true" />
-          Productos menos vendidos
+          Productos
           <Badge bg="secondary" className="ms-2">
-            {formatearEntero(datos.productos.menosVendidos.length)}
+            {formatearEntero(filasActivas.length)}
           </Badge>
         </Card.Header>
         <Card.Body>
+          <div className="d-flex flex-column flex-md-row gap-2 mb-3 align-items-stretch">
+            <Form.Group className="flex-grow-1 mb-0" controlId="reporte-buscar-producto">
+              <Form.Label className="visually-hidden">
+                Buscar producto o categoría
+              </Form.Label>
+              <div className="reporte-buscador">
+                <FaSearch aria-hidden="true" />
+                <Form.Control
+                  type="search"
+                  placeholder="Buscar producto o categoría…"
+                  value={busquedaProductos}
+                  onChange={(evento) => setBusquedaProductos(evento.target.value)}
+                />
+              </div>
+            </Form.Group>
+            <div
+              className="btn-group"
+              role="group"
+              aria-label="Filtro de ranking de productos"
+            >
+              <Button
+                variant={rankingActivo === 'masVendidos' ? 'primary' : 'outline-primary'}
+                size="sm"
+                onClick={() => setRankingActivo('masVendidos')}
+              >
+                Más Vendido
+              </Button>
+              <Button
+                variant={rankingActivo === 'menosVendidos' ? 'primary' : 'outline-primary'}
+                size="sm"
+                onClick={() => setRankingActivo('menosVendidos')}
+              >
+                Menos Vendidos
+              </Button>
+              <Button
+                variant={rankingActivo === 'mayorFacturacion' ? 'primary' : 'outline-primary'}
+                size="sm"
+                onClick={() => setRankingActivo('mayorFacturacion')}
+              >
+                Mayor Facturación
+              </Button>
+            </div>
+          </div>
           <TablaProductos
-            titulo="Ranking por unidades vendidas (ascendente)"
-            filas={productos.menosVendidos}
-            orden={ordenMenosVendidos}
-            onOrdenar={onOrdenarMenosVendidos}
+            titulo={
+              rankingActivo === 'masVendidos'
+                ? 'Por unidades vendidas'
+                : rankingActivo === 'menosVendidos'
+                ? 'Ranking por unidades vendidas (ascendente)'
+                : 'Por facturación'
+            }
+            filas={filasActivas}
+            orden={ordenActivo}
+            onOrdenar={onOrdenarActivo}
           />
         </Card.Body>
       </Card>
