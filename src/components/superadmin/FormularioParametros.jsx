@@ -198,7 +198,7 @@ const FormularioParametros = () => {
           >
             <Card.Header
               as="h2"
-              className="h5 bg-white parametros-grupo-header"
+              className="h5 parametros-grupo-header"
             >
               {IconoGrupo ? (
                 <span className="parametros-grupo-icono" aria-hidden="true">

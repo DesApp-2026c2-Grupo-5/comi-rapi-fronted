@@ -648,7 +648,7 @@ const ReporteNegocio = () => {
       <Row className="g-3 mb-4">
         <Col xl={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               Pedidos por día
             </Card.Header>
             <Card.Body>
@@ -666,7 +666,7 @@ const ReporteNegocio = () => {
         </Col>
         <Col xl={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               Evolución de la facturación
             </Card.Header>
             <Card.Body>
@@ -686,7 +686,7 @@ const ReporteNegocio = () => {
       <Row className="g-3 mb-4">
         <Col lg={7}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               Demanda por franja horaria
             </Card.Header>
             <Card.Body>
@@ -702,7 +702,7 @@ const ReporteNegocio = () => {
         </Col>
         <Col lg={5}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               Pedidos por día de la semana
             </Card.Header>
             <Card.Body>
@@ -720,7 +720,7 @@ const ReporteNegocio = () => {
       <Row className="g-3 mb-4">
         <Col xl={5}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               <FaClipboardList
                 className="me-2 text-secondary"
                 aria-hidden="true"
@@ -738,7 +738,7 @@ const ReporteNegocio = () => {
         </Col>
         <Col xl={7}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               <FaUsers className="me-2 text-secondary" aria-hidden="true" />
               Clientes
             </Card.Header>
@@ -798,7 +798,7 @@ const ReporteNegocio = () => {
       </Row>
 
       <Card className="shadow-sm mb-4">
-        <Card.Header as="h2" className="h5 bg-white">
+        <Card.Header as="h2" className="h5">
           <FaStore className="me-2 text-secondary" aria-hidden="true" />
           {esGlobal ? 'Comparación de sucursales' : 'Sucursal'}
         </Card.Header>
@@ -857,7 +857,7 @@ const ReporteNegocio = () => {
       </Card>
 
       <Card className="shadow-sm mb-4">
-        <Card.Header as="h2" className="h5 bg-white">
+        <Card.Header as="h2" className="h5">
           <FaTags className="me-2 text-secondary" aria-hidden="true" />
           Productos más vendidos
         </Card.Header>
@@ -898,7 +898,7 @@ const ReporteNegocio = () => {
       </Card>
 
       <Card className="shadow-sm mb-4">
-        <Card.Header as="h2" className="h5 bg-white">
+        <Card.Header as="h2" className="h5">
           <FaArrowDown className="me-2 text-secondary" aria-hidden="true" />
           Productos menos vendidos
           <Badge bg="secondary" className="ms-2">
@@ -918,7 +918,7 @@ const ReporteNegocio = () => {
       <Row className="g-3 mb-4">
         <Col xl={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               <FaBoxOpen className="me-2 text-secondary" aria-hidden="true" />
               Productos sin stock{' '}
               <Badge bg="danger">
@@ -970,7 +970,7 @@ const ReporteNegocio = () => {
 
         <Col xl={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               <FaExclamationTriangle
                 className="me-2 text-secondary"
                 aria-hidden="true"
@@ -1043,7 +1043,7 @@ const ReporteNegocio = () => {
       <Row className="g-3 mb-4">
         <Col xl={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               <FaExclamationTriangle
                 className="me-2 text-secondary"
                 aria-hidden="true"
@@ -1121,7 +1121,7 @@ const ReporteNegocio = () => {
 
         <Col xl={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               <FaTags className="me-2 text-secondary" aria-hidden="true" />
               Promociones
             </Card.Header>
