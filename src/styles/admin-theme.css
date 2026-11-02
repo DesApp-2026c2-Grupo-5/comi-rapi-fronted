@@ -733,6 +733,14 @@ html:has(body.admin-theme)::-webkit-scrollbar-thumb {
   border-color: var(--admin-surface-alt);
 }
 
+/* Badges con fondo claro: texto negro para que se lea en ambos temas. */
+.admin-theme .badge.bg-warning,
+.admin-theme .badge.bg-info,
+.admin-theme .badge.bg-light,
+.admin-theme .badge.bg-secondary-subtle {
+  color: #000 !important;
+}
+
 
 
 

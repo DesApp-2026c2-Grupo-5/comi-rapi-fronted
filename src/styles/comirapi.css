@@ -669,8 +669,14 @@ a {
    queda con el blanco por defecto de `.badge` sobre un fondo claro, ilegible.
    Estas reglas fijan la tinta según el fondo en ambos temas. */
 .badge.bg-warning,
+.badge.bg-warning.text-light,
+.badge.bg-warning.text-dark,
 .badge.bg-info,
+.badge.bg-info.text-light,
+.badge.bg-info.text-dark,
 .badge.bg-light,
+.badge.bg-light.text-light,
+.badge.bg-light.text-dark,
 .badge.bg-secondary-subtle {
   color: #000 !important;
 }
