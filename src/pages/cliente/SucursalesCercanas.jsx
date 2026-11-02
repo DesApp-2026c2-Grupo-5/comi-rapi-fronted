@@ -7,11 +7,12 @@
  * Uso: Ruta "/cliente/sucursales" → <SucursalesCercanas />
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Container, Row, Col, Card, Badge, Alert } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursal } from '../../hooks/useSucursal';
 import { formatearDireccion } from '../../utils/direccion';
+import { formatearProximaApertura } from '../../utils/horarios';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 // Ubicación mock del cliente (MOCK - reemplazar por geolocalización real)
@@ -101,9 +102,25 @@ const SucursalesCercanas = () => {
                     <Card.Text className="text-muted mb-1">
                       <strong>Teléfono:</strong> {sucursal.telefono || '-'}
                     </Card.Text>
-                    <Card.Text className="text-muted mb-0">
-                      <strong>Horario:</strong> {sucursal.horarios || '-'}
+                    <Card.Text className="text-muted mb-2">
+                      <strong>Horario:</strong> {sucursal.horariosTexto || '-'}
                     </Card.Text>
+                    {/* El estado lo calcula el backend con el horario real y el
+                        margen de cierre vigente: acá no se recalcula. */}
+                    {sucursal.abiertaAhora ? (
+                      <Badge bg="success">
+                        Toma pedidos hasta {sucursal.cierrePedidos}
+                      </Badge>
+                    ) : (
+                      <Badge bg="secondary">
+                        Cerrada
+                        {sucursal.proximaApertura
+                          ? ` · abre ${formatearProximaApertura(
+                              sucursal.proximaApertura,
+                            )}`
+                          : ''}
+                      </Badge>
+                    )}
                   </Card.Body>
                 </Card>
               </Col>
@@ -115,7 +132,8 @@ const SucursalesCercanas = () => {
       {sucursalAsignada && (
         <Alert variant="warning" className="mt-2">
           <strong>Sucursal asignada:</strong> {sucursalAsignada.nombre} - {formatearDireccion(sucursalAsignada.direccion)}.
-          Se asignó por tener menos pedidos pendientes (simulado).
+          La asignación final la hace el sistema al confirmar el pedido, según
+          cercanía, cobertura, stock y horario de atención.
         </Alert>
       )}
     </Container>

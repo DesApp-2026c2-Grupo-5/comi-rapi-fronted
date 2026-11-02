@@ -28,7 +28,15 @@ async function requestJson(path, options = {}) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body.success === false) {
-    throw new Error(body.error || `Error ${res.status} en ${path}`);
+    const error = new Error(body.error || `Error ${res.status} en ${path}`);
+    // Flags funcionales que el backend usa para distinguir un error real de una
+    // decisión de negocio (p. ej. la cancelación automática por cierre).
+    error.status = res.status;
+    error.cancelado = Boolean(body.cancelado);
+    error.pedidoId = body.pedidoId ?? null;
+    error.opciones = body.opciones || null;
+    error.detalle = body.detalle || null;
+    throw error;
   }
   return body.data;
 }
@@ -245,7 +253,12 @@ export const cambiarEstado = async (id, estado, medioPago) => {
     });
     return { success: true, data: mapearPedido(data) };
   } catch (error) {
-    return { success: false, error: error?.message || 'Pedido no encontrado' };
+    return {
+      success: false,
+      error: error?.message || 'Pedido no encontrado',
+      cancelado: Boolean(error?.cancelado),
+      pedidoId: error?.pedidoId ?? null,
+    };
   }
 };
 
@@ -275,6 +288,52 @@ export const reasignarSucursal = async (id, sucursalId) => {
     return { success: true, data: mapearPedido(data) };
   } catch (error) {
     return { success: false, error: error?.message || 'No se pudo reasignar el pedido' };
+  }
+};
+
+/**
+ * Consulta la disponibilidad del CARRITO antes de confirmar (aviso, no
+ * reserva): si hay sucursal abierta con stock dentro de la cobertura de la
+ * dirección y, cuando hay exactamente una, cuánto le queda hasta el corte.
+ * El POST /pedidos revalida con las mismas reglas.
+ * @param {{direccionId: number, productos: Array}} datos
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ *   data: { disponible, unica, sucursal, sucursales, proximaApertura,
+ *           proximaAperturaTexto, margenCierreMinutos, mensaje }
+ */
+export const consultarDisponibilidad = async ({ direccionId, productos }) => {
+  try {
+    const csrf = await obtenerCsrfToken();
+    const data = await requestJson('/pedidos/disponibilidad', {
+      method: 'POST',
+      headers: { 'x-csrf-token': csrf },
+      body: JSON.stringify({ direccionId, productos }),
+    });
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'No se pudo consultar la disponibilidad',
+    };
+  }
+};
+
+/**
+ * Disponibilidad de un pedido ya creado (pantalla de pago): si su sucursal
+ * sigue tomando pedidos, a qué hora corta, cuántos segundos quedan y si hay
+ * otra sucursal abierta con stock a la que el backend pueda reasignarlo.
+ * @param {number|string} id - ID del pedido.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const obtenerDisponibilidadPedido = async (id) => {
+  try {
+    const data = await requestJson(`/pedidos/${id}/disponibilidad`);
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'No se pudo consultar la disponibilidad',
+    };
   }
 };
 

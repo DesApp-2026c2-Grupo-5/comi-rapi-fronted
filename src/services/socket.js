@@ -49,6 +49,7 @@ export const EVENTOS_SOCKET = {
   CATALOGO_ACTUALIZADO: 'catalogo_actualizado',
   PARAMETROS_ACTUALIZADOS: 'parametros_actualizados',
   STOCK_ACTUALIZADO: 'stock_actualizado',
+  SUCURSAL_ESTADO: 'sucursal_estado',
 };
 
 /**

@@ -21,31 +21,62 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Alert, ListGroup, Spinner } from 'react-bootstrap';
-import { FaSave, FaTimes, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaTimes, FaMapMarkedAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { PROVINCIAS } from '../../utils/territorio';
 import { useDireccionTerritorial } from '../../hooks/useDireccionTerritorial';
+import { useParametros } from '../../hooks/useParametros';
+import {
+  crearHorarioPorDefecto,
+  normalizarHorarios,
+  tieneFranjas,
+  validarHorarios,
+} from '../../utils/horarios';
 import Autocomplete from '../comunes/Autocomplete';
 import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
 import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
 import ResultadoDireccion from '../comunes/ResultadoDireccion';
+import EditorHorarios from './EditorHorarios';
 import '../comunes/DireccionFormulario.css';
 // Convención de dev (rediseño UI): estilos compartidos de formularios admin.
 import './FormularioAdmin.css';
 
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
+  const { parametros } = useParametros();
 
   const [nombre, setNombre] = useState('');
   const [referencia, setReferencia] = useState('');
-  const [horarios, setHorarios] = useState('');
+  const [horarios, setHorarios] = useState(() => crearHorarioPorDefecto());
   const [telefono, setTelefono] = useState('');
   const [activa, setActiva] = useState(true);
 
   const confirmarGuardado = async (datosDireccion) => {
-    // El hook valida la dirección; el nombre es propio de la sucursal.
+    // El hook valida la dirección; el nombre y el horario son propios de la
+    // sucursal. El horario se valida acá, en espejo del backend, para no
+    // geocodificar de nuevo si lo único inválido es una franja.
     if (!nombre.trim()) {
       direccionApi.mostrarError('El nombre es obligatorio.');
+      return;
+    }
+    if (!tieneFranjas(horarios)) {
+      direccionApi.mostrarError(
+        'Cargá al menos una franja de atención (para cerrar la sucursal usá el estado inactiva).',
+      );
+      return;
+    }
+    const { valido, errores } = validarHorarios(
+      horarios,
+      parametros.margenCierreMinutos,
+    );
+    if (!valido) {
+      const dia = horarios.find(
+        (d) => d.diaSemana === errores[0].diaSemana,
+      );
+      direccionApi.mostrarError(
+        `Horario del ${dia?.dia.toLowerCase() || 'día'}: ${errores[0].mensaje}`,
+      );
       return;
     }
     const datosSucursal = {
@@ -54,7 +85,10 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
         ...datosDireccion,
         referencia: referencia.trim() || null,
       },
-      horarios: horarios.trim() || null,
+      horarios: horarios.map((dia) => ({
+        diaSemana: dia.diaSemana,
+        franjas: dia.franjas,
+      })),
       telefono: telefono.trim() || null,
       activa,
     };
@@ -89,7 +123,13 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
   useEffect(() => {
     setNombre(sucursal?.nombre || '');
     setReferencia(sucursal?.direccion?.referencia || '');
-    setHorarios(sucursal?.horarios || '');
+    // La API devuelve los siete días agrupados; una sucursal nueva arranca con
+    // el horario por defecto (10:00 a 23:00 todos los días).
+    setHorarios(
+      sucursal
+        ? normalizarHorarios(sucursal.horarios)
+        : crearHorarioPorDefecto(),
+    );
     setTelefono(sucursal?.telefono || '');
     setActiva(sucursal?.activa !== false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -261,15 +301,12 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Horario de atención</Form.Label>
-            <Form.Control
-              type="text"
-              value={horarios}
-              onChange={(e) => setHorarios(e.target.value)}
-              placeholder="Ej: Lun-Dom 10:00-23:00"
-            />
-          </Form.Group>
+          <EditorHorarios
+            horarios={horarios}
+            onChange={setHorarios}
+            margenMinutos={parametros.margenCierreMinutos}
+            deshabilitado={direccionApi.guardando}
+          />
 
           <Form.Group className="mb-3">
             <Form.Label>Teléfono</Form.Label>
@@ -351,6 +388,23 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
       </Card.Body>
     </Card>
   );
+};
+
+FormularioSucursal.propTypes = {
+  /** Sucursal a editar; sin ella el formulario arranca vacío (alta). */
+  sucursal: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    nombre: PropTypes.string,
+    telefono: PropTypes.string,
+    activa: PropTypes.bool,
+    direccion: PropTypes.shape({
+      referencia: PropTypes.string,
+    }),
+    /** Horario agrupado por día que devuelve la API. */
+    horarios: PropTypes.array,
+  }),
+  /** Crea o actualiza la sucursal; devuelve { ok, data } | { ok, error }. */
+  onGuardar: PropTypes.func.isRequired,
 };
 
 export default FormularioSucursal;

@@ -81,6 +81,7 @@ const GestionSucursales = () => {
               <th>Nombre</th>
               <th>Dirección</th>
               <th>Teléfono</th>
+              <th>Horario</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -88,7 +89,7 @@ const GestionSucursales = () => {
           <tbody>
             {sucursales.length === 0 && (
               <tr>
-                <td colSpan={6} className="columna-acciones text-center">
+                <td colSpan={7} className="columna-acciones text-center">
                   No hay sucursales registradas.
                 </td>
               </tr>
@@ -99,6 +100,20 @@ const GestionSucursales = () => {
                 <td data-label="Nombre">{sucursal.nombre}</td>
                 <td data-label="Dirección">{formatearDireccion(sucursal.direccion)}</td>
                 <td data-label="Teléfono">{sucursal.telefono || '-'}</td>
+                <td data-label="Horario">
+                  <span className="d-block small">
+                    {sucursal.horariosTexto || 'Sin horario cargado'}
+                  </span>
+                  {/* El estado se calcula en el backend con el margen de cierre
+                      vigente; acá solo se muestra para no duplicar la regla. */}
+                  {sucursal.abiertaAhora ? (
+                    <Badge bg="success">
+                      Toma pedidos hasta {sucursal.cierrePedidos}
+                    </Badge>
+                  ) : (
+                    <Badge bg="secondary">Cerrada ahora</Badge>
+                  )}
+                </td>
                 <td data-label="Estado">
                   <Badge bg={sucursal.activa !== false ? 'success' : 'secondary'}>
                     {sucursal.activa !== false ? 'Activo' : 'Inactivo'}

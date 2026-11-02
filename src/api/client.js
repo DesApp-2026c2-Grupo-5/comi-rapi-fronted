@@ -110,6 +110,10 @@ async function ejecutar(method, path, datos) {
       // distancia de la sucursal activa más cercana) para explicar el
       // rechazo sin rediseñar los mensajes.
       detalle: (body && body.detalle) || null,
+      // Al confirmar el pago el backend puede cancelar el pedido si la
+      // sucursal cerró y no hay alternativa: 409 con `cancelado: true`.
+      cancelado: Boolean(body && body.cancelado),
+      pedidoId: (body && body.pedidoId) || null,
     };
   }
   return { success: true, status: res.status, data: body ? body.data : null };

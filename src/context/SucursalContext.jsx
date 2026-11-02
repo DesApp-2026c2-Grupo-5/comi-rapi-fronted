@@ -8,7 +8,8 @@
  * Uso: <SucursalProvider> envuelve la app en App.jsx. Consumir con useSucursal().
  */
 
-import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useState, useCallback, useMemo, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import {
   obtenerSucursales,
   crearSucursal,
@@ -17,6 +18,9 @@ import {
 } from '../api/sucursales';
 import { asignarSucursalOptima as asignarSucursalOptimaService } from '../services/asignacionSucursal';
 import { pedidosPendientesMock } from '../services/seedData';
+import { proximaAperturaEntre } from '../utils/horarios';
+import { conectarSocket, EVENTOS_SOCKET } from '../services/socket';
+import { useAuth } from '../hooks/useAuth';
 
 // Se crea el contexto
 export const SucursalContext = createContext(null);
@@ -34,6 +38,8 @@ export const SucursalContext = createContext(null);
  * @param {React.ReactNode} children - Componentes hijos.
  */
 export const SucursalProvider = ({ children }) => {
+  const { hydrated, user } = useAuth();
+  const emailSesion = user?.email;
   // Lista de todas las sucursales (todas las registradas, activas e inactivas)
   const [sucursales, setSucursales] = useState([]);
   // Pedidos pendientes usados por la lógica de asignación (MOCK - no se muta en esta versión)
@@ -148,10 +154,46 @@ export const SucursalProvider = ({ children }) => {
     return false;
   }, []);
 
-  // Cargar sucursales al montar
+  // Carga sucursales al montar
   useEffect(() => {
     cargarSucursales();
   }, [cargarSucursales]);
+
+  // El backend avisa por WebSocket cuando una sucursal abre o cierra
+  // (`sucursal_estado`, emitido por el vigía de horarios y por los cambios del
+  // superadmin). El evento no trae datos: se releen las sucursales, que siguen
+  // siendo la fuente de verdad. Al reconectar también se refresca, porque los
+  // cambios ocurridos sin conexión no llegaron.
+  useEffect(() => {
+    if (!hydrated || !emailSesion) return undefined;
+    const instancia = conectarSocket();
+    const alCambiarEstado = () => {
+      obtenerSucursalesFn();
+    };
+    instancia.on('connect', alCambiarEstado);
+    instancia.on(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarEstado);
+    return () => {
+      instancia.off('connect', alCambiarEstado);
+      instancia.off(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarEstado);
+    };
+  }, [hydrated, emailSesion, obtenerSucursalesFn]);
+
+  // `abiertaAhora`, `cierrePedidos` y `proximaApertura` son una foto del
+  // backend al momento de la consulta. Se refrescan al volver a la pestaña y
+  // cada dos minutos, sin polling agresivo: el backend revalida igual al crear
+  // el pedido y al confirmar el pago, y los contadores de las pantallas usan el
+  // deadline (`segundosRestantes`) que ya vino en esa foto.
+  useEffect(() => {
+    const alVolver = () => {
+      if (!document.hidden) obtenerSucursalesFn();
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    const intervalo = setInterval(alVolver, 120000);
+    return () => {
+      document.removeEventListener('visibilitychange', alVolver);
+      clearInterval(intervalo);
+    };
+  }, [obtenerSucursalesFn]);
 
   // Sucursales cercanas (solo activas) calculadas para el cliente
   const sucursalesCercanas = useMemo(
@@ -159,11 +201,27 @@ export const SucursalProvider = ({ children }) => {
     [sucursales]
   );
 
+  // Estado operativo global del catálogo: el aviso de "todas cerradas" solo
+  // aplica cuando NINGUNA sucursal activa está tomando pedidos ahora.
+  const sucursalesAbiertas = useMemo(
+    () => sucursalesCercanas.filter((s) => s.abiertaAhora),
+    [sucursalesCercanas]
+  );
+  const todasCerradas =
+    sucursalesCercanas.length > 0 && sucursalesAbiertas.length === 0;
+  const proximaApertura = useMemo(
+    () => proximaAperturaEntre(sucursalesCercanas),
+    [sucursalesCercanas]
+  );
+
   // Valor del contexto
   const value = useMemo(
     () => ({
       sucursales,
       sucursalesCercanas,
+      sucursalesAbiertas,
+      todasCerradas,
+      proximaApertura,
       pedidosPendientes,
       sucursalAsignada,
       loading,
@@ -178,6 +236,9 @@ export const SucursalProvider = ({ children }) => {
     [
       sucursales,
       sucursalesCercanas,
+      sucursalesAbiertas,
+      todasCerradas,
+      proximaApertura,
       pedidosPendientes,
       sucursalAsignada,
       loading,
@@ -192,4 +253,8 @@ export const SucursalProvider = ({ children }) => {
   );
 
   return <SucursalContext.Provider value={value}>{children}</SucursalContext.Provider>;
+};
+
+SucursalProvider.propTypes = {
+  children: PropTypes.node,
 };

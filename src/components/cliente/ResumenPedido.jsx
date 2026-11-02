@@ -25,6 +25,7 @@
 
 import { Card, Button } from 'react-bootstrap';
 import { FaCheckCircle } from 'react-icons/fa';
+import PropTypes from 'prop-types';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
 import { formatPrice } from '../../utils/formatters';
@@ -46,6 +47,11 @@ const ResumenPedido = ({
   // En desktop la card se pega al scrollear. Sólo conviene en la columna lateral
   // del carrito: en columnas únicas tapa lo que va después (ver ResumenPedido.css).
   fija = false,
+  // Deshabilita el botón de confirmar sin quitarlo: el carrito lo usa cuando la
+  // consulta de disponibilidad determinó que no hay sucursal que pueda tomar el
+  // pedido ahora (cerradas o sin stock). El motivo se explica en un Alert de la
+  // página, no acá: el resumen sólo refleja la decisión.
+  deshabilitado = false,
 }) => {
   const { items, total } = useCarrito();
   const { parametros } = useParametros();
@@ -148,7 +154,12 @@ const ResumenPedido = ({
 
       {onConfirmar && (
         <Card.Body className="pt-0">
-          <Button className="resumen-boton w-100" size="lg" onClick={onConfirmar}>
+          <Button
+            className="resumen-boton w-100"
+            size="lg"
+            onClick={onConfirmar}
+            disabled={deshabilitado}
+          >
             <FaCheckCircle aria-hidden="true" />
             {botonTexto}
           </Button>
@@ -156,6 +167,25 @@ const ResumenPedido = ({
       )}
     </Card>
   );
+};
+
+ResumenPedido.propTypes = {
+  /** Si se pasa, se renderiza el botón de confirmar. */
+  onConfirmar: PropTypes.func,
+  /** Ítems del pedido en modo lectura; sin ellos usa los del carrito. */
+  items: PropTypes.array,
+  total: PropTypes.number,
+  costoEnvio: PropTypes.number,
+  sucursal: PropTypes.shape({
+    nombre: PropTypes.string,
+    direccion: PropTypes.object,
+  }),
+  botonTexto: PropTypes.string,
+  descuento: PropTypes.number,
+  detalleDescuento: PropTypes.string,
+  promociones: PropTypes.array,
+  fija: PropTypes.bool,
+  deshabilitado: PropTypes.bool,
 };
 
 export default ResumenPedido;
