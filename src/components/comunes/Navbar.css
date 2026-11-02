@@ -92,7 +92,7 @@
   outline-offset: -2px;
 }
 .nav-enlace.activo {
-  background-color: #fff;
+  background-color: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
@@ -125,7 +125,7 @@
    `.nav-enlace.activo` terminaba sobre la barra oscura, sin contraste. */
 .navbar-comirapi .nav-enlace-toggle.activo,
 .navbar-comirapi .nav-enlace-toggle.activo:hover {
-  background-color: #fff;
+  background-color: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
 }
 
@@ -166,7 +166,7 @@
   min-height: 44px;
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  color: #5c4300;
+  color: var(--color-text-brown);
   font-weight: 600;
   text-decoration: none;
   transition:
@@ -183,7 +183,7 @@
 .navbar-comirapi .nav-submenu-enlace.activo,
 .navbar-comirapi .nav-submenu-enlace.activo:hover {
   background-color: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-on-fill);
 }
 
 .nav-submenu-ico {
@@ -212,7 +212,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background-color: var(--color-danger-fill);
-  color: #fff;
+  color: var(--color-on-fill);
   font-size: 0.68rem;
   font-weight: 800;
   line-height: 18px;
@@ -307,8 +307,8 @@
 }
 /* Página activa: fondo blanco con el naranja oscuro de la marca */
 .navbar-perfil-activo {
-  background: #fff;
-  border-color: #fff;
+  background: var(--color-on-fill);
+  border-color: var(--color-on-fill);
   color: var(--color-primary-dark);
 }
 .navbar-perfil-activo .navbar-perfil-nombre {
@@ -354,9 +354,9 @@
 }
 .btn-logout-comirapi:hover,
 .btn-logout-comirapi:focus-visible {
-  background: #fff;
+  background: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
-  border-color: #fff;
+  border-color: var(--color-on-fill);
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
@@ -397,7 +397,7 @@
 
 .btn-acceso-comirapi {
   color: var(--color-primary-dark);
-  background: #fff;
+  background: var(--color-on-fill);
 }
 .btn-acceso-comirapi:hover,
 .btn-acceso-comirapi:focus-visible {
@@ -416,9 +416,9 @@
 }
 .btn-acceso-secundario:hover,
 .btn-acceso-secundario:focus-visible {
-  background: #fff;
+  background: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
-  border-color: #fff;
+  border-color: var(--color-on-fill);
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
@@ -529,9 +529,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #fff4e2;
-  border: 1px solid #f0a10e;
-  color: #8a4b00;
+  background: var(--color-cream);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-brown);
   border-radius: 2rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -541,7 +541,7 @@
 }
 
 .navbar-sucursal-ico {
-  color: #f07f10;
+  color: var(--color-primary-deep);
 }
 
 /* ============ Botón del superadmin (selector de sucursal) ============ */
@@ -556,9 +556,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: #fff4e2;
-  border: 1px solid #f0a10e;
-  color: #8a4b00;
+  background: var(--color-cream);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-brown);
   border-radius: 2rem;
   cursor: pointer;
   padding: 0.25rem 0.7rem;
@@ -574,16 +574,16 @@
 
 .navbar-comirapi .btn-superadmin-contexto:hover,
 .navbar-comirapi .btn-superadmin-contexto.show {
-  background: #ffe6c2;
-  border-color: #d47f00;
-  color: #b55d00;
+  background: var(--color-cream-hover);
+  border-color: var(--color-primary-active);
+  color: var(--color-primary-dark);
   transform: translateY(-1px);
 }
 
 .navbar-comirapi .btn-superadmin-contexto.btn-superadmin-contexto-activo {
-  background: #fff3d4;
-  border-color: #d47f00;
-  color: #b55d00;
+  background: var(--color-cream-light);
+  border-color: var(--color-primary-active);
+  color: var(--color-primary-dark);
   box-shadow: 0 0 0 2px rgba(212, 127, 0, 0.15);
 }
 
@@ -605,7 +605,7 @@
   width: 0.65rem;
   height: 0.65rem;
   background: var(--color-success);
-  border: 2px solid #fff;
+  border: 2px solid var(--color-on-fill);
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }

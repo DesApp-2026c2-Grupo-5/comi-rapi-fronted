@@ -15,7 +15,7 @@
   height: 56px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f07f10 0%, #e06a00 100%);
+  background: linear-gradient(135deg, var(--color-primary-deep) 0%, var(--color-primary-hover) 100%);
   color: var(--color-on-primary);
   font-size: 1.4rem;
   cursor: pointer;
@@ -35,7 +35,7 @@
 }
 
 .boton-carrito-flotante:focus-visible {
-  outline: 3px solid #f0a10e;
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
@@ -47,7 +47,7 @@
   font-size: 0.75rem;
   line-height: 1;
   padding: 0.3rem 0.45rem;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-on-fill);
 }
 
 /* En móviles (< sm) el botón flotante quita espacio útil y estorba sobre la

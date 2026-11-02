@@ -7,9 +7,9 @@
  */
 
 .item-carrito {
-  border: 2px solid var(--color-border-cream, #ffe9c9);
+  border: 2px solid var(--color-border-cream);
   border-radius: 16px;
-  background-color: var(--color-surface, #fff);
+  background-color: var(--color-surface);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -22,11 +22,11 @@
 }
 
 .item-carrito-nombre {
-  color: var(--color-text, #2b2b2b);
+  color: var(--color-text);
 }
 
 .item-carrito-subtotal {
-  color: var(--color-danger, #e63946);
+  color: var(--color-danger);
   font-size: 1.05rem;
 }
 
@@ -35,14 +35,14 @@
    cuatro párrafos sueltos indistinguibles. */
 .item-carrito-desglose {
   font-size: 0.82rem;
-  color: var(--color-text-muted, #6c757d);
+  color: var(--color-text-muted);
   line-height: 1.5;
   margin-bottom: 0;
   padding-left: 1.1rem;
 }
 
 .item-carrito-desglose strong {
-  color: var(--color-text, #2b2b2b);
+  color: var(--color-text);
 }
 
 /* ============ Grupo de botones de cantidad (B1) ============ */
@@ -52,7 +52,7 @@
 .cantidad-grupo {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid var(--color-border, #dee2e6);
+  border: 1px solid var(--color-border-card);
   border-radius: 0.5rem;
   overflow: hidden;
 }
@@ -64,8 +64,8 @@
   width: 40px;
   height: 42px;
   border: none;
-  background: var(--color-surface-warm, #fff4e2);
-  color: var(--color-text-warm, #8a4b00);
+  background: var(--color-cream);
+  color: var(--color-text-brown);
   cursor: pointer;
   transition: background 0.15s ease;
   position: relative;
@@ -73,8 +73,8 @@
 }
 
 .cantidad-btn:hover:not(:disabled) {
-  background: var(--color-primary, #f07f10);
-  color: var(--color-surface, #fff);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .cantidad-btn:disabled {
@@ -88,11 +88,11 @@
 }
 
 .cantidad-btn-izq {
-  border-right: 1px solid var(--color-border, #dee2e6);
+  border-right: 1px solid var(--color-border-card);
 }
 
 .cantidad-btn-der {
-  border-left: 1px solid var(--color-border, #dee2e6);
+  border-left: 1px solid var(--color-border-card);
 }
 
 .cantidad-display {
@@ -102,8 +102,8 @@
   min-width: 56px;
   font-weight: 700;
   font-size: 1.1rem;
-  color: var(--color-text-strong, #212529);
-  background: var(--color-surface, #fff);
+  color: var(--color-text);
+  background: var(--color-surface);
   pointer-events: none;
   position: relative;
   z-index: 1;
@@ -116,13 +116,13 @@
 .item-carrito-nota {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px dashed var(--color-border-cream, #ffe9c9);
+  border-top: 1px dashed var(--color-border-cream);
 }
 
 .item-carrito-nota-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text, #2b2b2b);
+  color: var(--color-text);
   margin-bottom: 0.35rem;
 }
 
@@ -136,9 +136,9 @@
 
 .item-carrito-nota-texto {
   font-size: 0.85rem;
-  color: var(--color-text, #2b2b2b);
-  background: var(--color-surface-warm, #fff4e2);
-  border-left: 3px solid var(--color-primary, #f07f10);
+  color: var(--color-text);
+  background: var(--color-cream);
+  border-left: 3px solid var(--color-primary);
   border-radius: 8px;
   padding: 0.4rem 0.6rem;
 }
@@ -151,7 +151,7 @@
 .item-carrito-nota-agregar {
   padding: 0;
   font-size: 0.85rem;
-  color: var(--color-text-warm, #8a4b00);
+  color: var(--color-text-brown);
   text-decoration: none;
 }
 

@@ -1,10 +1,10 @@
 .modal-personalizar-content{ border:2px solid var(--color-border-card); border-radius:18px; overflow:hidden; }
 .personalizar-imagen{ width:220px; height:150px; object-fit:cover; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,.12); }
-.btn-cerrar{ position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:var(--color-text); font-size:1.4rem; line-height:1; display:flex; align-items:center; justify-content:center; }
+.btn-cerrar{ position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; background:var(--color-cream-light); border:none; color:var(--color-text); font-size:1.4rem; line-height:1; display:flex; align-items:center; justify-content:center; }
 .btn-cerrar:hover{ background:var(--color-border-card); }
 .btn-seleccionar{ background:var(--color-cream); border:1px solid var(--color-border-cream); color:var(--color-primary-dark); border-radius:999px; font-weight:700; font-size:.8rem; padding:.3rem 1rem; }
 .btn-seleccionar:hover{ background:var(--color-cream-hover); color:var(--color-primary-dark); border-color:var(--color-primary); }
-.btn-volver{ width:36px; height:36px; border-radius:50%; background:#f1f1f5; border:none; color:var(--color-text); font-size:1.3rem; }
+.btn-volver{ width:36px; height:36px; border-radius:50%; background:var(--color-cream-light); border:none; color:var(--color-text); font-size:1.3rem; }
 /* Los dos botones circulares (cerrar y volver) suben a 44px: 36px queda corto
    para el dedo en móvil. El foco visible va aparte del hover porque :hover en
    escritorio no distingue mouse de teclado. */
@@ -16,17 +16,17 @@
 
 /* Cumplimenta al botón "volver" para que el título quede centrado. */
 .espaciador-volver{ width:44px; flex:0 0 auto; }
-.fila-grupo{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0e0c0; }
+.fila-grupo{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--color-border-card); }
 .fila-grupo:last-child{ border-bottom:none; }
-.badge-grupo{ font-size:.75rem; color:#6c757d; }
-.card-comi-grupo{ border:2px solid var(--color-border-card); border-radius:14px; background:#fff; padding:8px 14px; }
-.fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #f0e0c0; }
+.badge-grupo{ font-size:.75rem; color:var(--color-text-muted); }
+.card-comi-grupo{ border:2px solid var(--color-border-card); border-radius:14px; background:var(--color-surface); padding:8px 14px; }
+.fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--color-border-card); }
 .fila-opcion:last-child{ border-bottom:none; }
 /* Opción agotada: gris, sin contador y con el texto "Agotado" debajo del nombre. */
 .fila-opcion-agotada{ cursor:not-allowed; }
-.fila-opcion-agotada .texto-agotado{ font-size:.75rem; color:#6c757d; line-height:1.2; margin-top:2px; }
-.pill-control{ background:#f1f1f5; border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
-.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
+.fila-opcion-agotada .texto-agotado{ font-size:.75rem; color:var(--color-text-muted); line-height:1.2; margin-top:2px; }
+.pill-control{ background:var(--color-cream-light); border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
+.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:var(--color-surface); box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
 .pill-control button:hover{ background:var(--color-primary); color:var(--color-on-primary); }
 .pill-control span{ min-width:18px; text-align:center; font-weight:700; }
 
@@ -38,7 +38,7 @@
 .contador .pill-control .contador-boton{
   width:44px; height:44px;
   border-radius:50%; border:none;
-  background:#fff; color:var(--color-text);
+  background:var(--color-surface); color:var(--color-text);
   box-shadow:0 1px 4px rgba(0,0,0,.1);
   font-weight:700; font-size:1.25rem; line-height:1;
   touch-action:manipulation;
@@ -58,7 +58,7 @@
 /* Botón deshabilitado: el límite se comunica con el estado, en vez de que el
    clic se ignore en silencio y el usuario piense que la app se colgó. */
 .contador .pill-control .contador-boton:disabled{
-  background:#f1f1f5; color:#9a9aa2; box-shadow:none; cursor:not-allowed;
+  background:var(--color-cream-light); color:var(--color-text-muted); box-shadow:none; cursor:not-allowed;
 }
 
 .contador .contador-valor{
@@ -96,5 +96,5 @@
 /* Estados de los resúmenes de cada grupo. Antes el color iba por style inline,
    así que un estado "vacío" y uno "con selección" solo se distinguían por el
    tono; ahora el color es una clase y se puede revisar el contraste. */
-.badge-grupo-activo{ color:#198754; }
+.badge-grupo-activo{ color:var(--color-success); }
 .badge-grupo-ambar{ color:var(--color-primary-dark); }

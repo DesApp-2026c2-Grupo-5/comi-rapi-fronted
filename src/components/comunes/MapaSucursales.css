@@ -2,7 +2,7 @@
 /* Contenedor del mapa dentro de la ficha de dirección. */
 .mapa-sucursales {
   overflow: hidden;
-  border: 1px solid #f0a10e;
+  border: 1px solid var(--color-primary);
 }
 
 /* La librería Leaflet inyecta sus propios estilos; el reset del borde

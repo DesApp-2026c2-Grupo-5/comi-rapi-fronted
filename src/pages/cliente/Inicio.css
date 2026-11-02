@@ -228,8 +228,8 @@
 
 /* Botón ORDENAR redondo */
 .boton-ordenar {
-  background-color: #ffffff;
-  color: var(--color-primary-dark);
+  background-color: var(--color-hero-cta-bg);
+  color: var(--color-hero-cta-text);
   border: none;
   border-radius: 50px;
   font-weight: 800;
@@ -291,8 +291,8 @@
   margin: 0 auto 12px;
   border-radius: 50%;
   overflow: hidden;
-  background: #fff;
-  border: 6px solid #fff;
+  background: var(--color-on-fill);
+  border: 6px solid var(--color-on-fill);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
   transition: transform 160ms var(--ease-out);
 }

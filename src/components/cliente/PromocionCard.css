@@ -61,7 +61,7 @@
 
 .promocion-boton:hover,
 .promocion-boton:focus {
-  background-color: #c1121f;
+  background-color: var(--color-danger-fill-hover);
 }
 
 .promocion-card:focus-within {

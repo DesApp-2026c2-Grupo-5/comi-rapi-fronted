@@ -45,7 +45,7 @@
 
 .resumen-desglose {
   font-size: 0.82rem;
-  color: #6c757d;
+  color: var(--color-text-muted);
   line-height: 1.6;
   margin-top: 0.25rem;
   /* Nombres de toppings y extras vienen del catálogo: pueden ser largos. */
@@ -60,9 +60,9 @@
    Presente tanto en el resumen del cliente como en el panel admin. */
 .resumen-nota {
   font-size: 0.82rem;
-  color: var(--color-text, #2b2b2b);
-  background: var(--color-surface-warm, #fff4e2);
-  border-left: 3px solid var(--color-primary, #f07f10);
+  color: var(--color-text);
+  background: var(--color-cream);
+  border-left: 3px solid var(--color-primary);
   border-radius: 8px;
   padding: 0.35rem 0.55rem;
   margin-top: 0.25rem;
@@ -70,5 +70,5 @@
 }
 
 .resumen-nota strong {
-  color: var(--color-text-strong, #212529);
+  color: var(--color-text);
 }
