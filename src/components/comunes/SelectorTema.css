@@ -1,0 +1,65 @@
+/**
+ * Propósito: Estilos del selector de tema (botón de ícono + menú de opciones).
+ * Contenido: Botón circular que hereda el color del header y menú con la opción
+ *            activa marcada con un check.
+ * Dependencias: SelectorTema.jsx (se importa al final del mismo) y los tokens
+ *               de styles/tokens.css para radio y foco.
+ * Uso: Importado desde src/components/comunes/SelectorTema.jsx.
+ */
+
+.selector-tema-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  /* `currentColor` deja el botón legible tanto sobre el naranja de la navbar
+     como sobre cualquier header claro u oscuro, sin reglas por rol. */
+  color: inherit;
+  background: transparent;
+  border: 2px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: var(--radius-pill, 999px);
+  line-height: 1;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.selector-tema-btn:hover,
+.selector-tema-btn:focus-visible,
+.selector-tema-btn.show {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+  border-color: color-mix(in srgb, currentColor 70%, transparent);
+}
+
+.selector-tema-btn:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+.selector-tema-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.selector-tema-menu {
+  min-width: 11rem;
+}
+
+.selector-tema-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.selector-tema-menu .dropdown-item svg {
+  flex: 0 0 auto;
+}
+
+.selector-tema-etiqueta {
+  flex: 1 1 auto;
+}
+
+.selector-tema-check {
+  margin-left: auto;
+}
