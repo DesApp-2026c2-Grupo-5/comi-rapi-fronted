@@ -269,6 +269,13 @@
   margin-top: 0.5rem;
 }
 
+/* El selector de tema se pinta con `currentColor`. Sobre la barra naranja la
+   tinta correcta es la de marca en ambos temas: en oscuro el color del body
+   pasa a crema y quedaría casi invisible sobre el naranja. */
+.navbar-comirapi .selector-tema-btn {
+  color: var(--color-on-primary);
+}
+
 /* Acceso al perfil: avatar + nombre del cliente, junto a cerrar sesión */
 .navbar-perfil {
   display: inline-flex;
@@ -417,6 +424,13 @@
 }
 
 /* ============ Responsive de la zona del usuario ============ */
+/* Grupo de controles de la fila superior en móvil (avatar/acceso/cierre de
+   sesión + selector de tema). Va oculto en escritorio, donde todo eso vive
+   dentro del colapsable. */
+.navbar-controles-movil {
+  display: none;
+}
+
 /* Avatar del cliente en la fila superior: da acceso al perfil sin abrir nada.
     Es el mismo elemento que la versión con nombre, pero se muestra fuera del
     colapsable. Sólo tiene sentido cuando el colapsable está plegado. */
@@ -442,22 +456,25 @@
     display: none;
   }
 
-  /* El avatar de la fila superior pasa a ser el acceso al perfil.
-      `margin-left: auto` es lo que lo pega a la derecha: el container de la
-      navbar usa `justify-content: space-between`, así que sin el margen automático
-      el avatar quedaría en el medio, entre la marca y el resto de la fila, en vez
-      de junto al botón de cerrar sesión. No lleva `order`: el orden del DOM ya es
-      marca → avatar → cerrar sesión y es el que se quiere. */
+  /* Los controles de la fila superior se agrupan y se pegan a la derecha con un
+     solo `margin-left: auto`. Antes cada control traía su propio margen: con
+     avatar quedaban cerca, pero en admin/superadmin (sin avatar) el
+     `space-between` del container dejaba el cierre de sesión en el medio y el
+     selector de tema en el extremo. */
+  .navbar-controles-movil {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
   .navbar-perfil-movil {
     display: inline-flex;
-    margin-left: auto;
-    margin-right: 0.25rem;
   }
 
   .selector-tema-movil {
     display: inline-flex;
     align-items: center;
-    margin-left: 0.25rem;
   }
 
   /* Y la copia de escritorio se oculta para no mostrar dos veces lo mismo. */
@@ -474,12 +491,10 @@
   }
 
   /* El acceso del invitado, igual que el cierre de sesión, sale en la fila
-     superior porque el colapsable está plegado acá. `margin-left: auto` lo
-     pega a la derecha: el orden del DOM es marca → acceso, pero sin el margen
-     quedaría en el medio de la fila. */
+     superior porque el colapsable está plegado acá. La separación la maneja el
+     grupo, no el botón. */
   .btn-acceso-movil {
     display: inline-flex;
-    margin-left: auto;
   }
 }
 
