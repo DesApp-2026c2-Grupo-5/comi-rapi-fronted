@@ -27,7 +27,7 @@
             oscuro ? 'dark' : 'light'
           );
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', oscuro ? '#191512' : '#ff9f1c');
+          if (meta) meta.setAttribute('content', oscuro ? '#1b1712' : '#ff9f1c');
         } catch (e) {
           document.documentElement.setAttribute('data-bs-theme', 'light');
         }
@@ -85,11 +85,11 @@
          no aparece un destello crema. Los colores coinciden con los tokens
          oscuros (src/styles/tokens.css) y con COLOR_TEMA de temaStorage.js. */
       html[data-bs-theme='dark'] {
-        background-color: #191512;
+        background-color: #1b1712;
         color-scheme: dark;
       }
       html[data-bs-theme='dark'] .splash-inicial {
-        background: #191512;
+        background: #1b1712;
       }
       html[data-bs-theme='dark'] .splash-inicial__nombre {
         color: #ffb347;

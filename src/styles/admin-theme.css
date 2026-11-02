@@ -519,6 +519,206 @@ html:has(body.admin-theme)::-webkit-scrollbar-thumb {
   color: var(--admin-green-dark);
 }
 
+/* ============ Tema oscuro del panel ============ */
+/* La paleta del panel reutiliza los mismos tokens en dos roles (texto y
+   superficie), así que el modo oscuro no alcanza con invertir valores: se
+   redefinen los tokens crudos y se ajustan los pares fondo/texto que Bootstrap
+   y las reglas de arriba dejan con colores fijos.
+   La especificidad (:root + [data-bs-theme] + body.admin-theme) le gana a
+   `body.admin-theme` sin depender del orden de importación. */
+:root[data-bs-theme='dark'] body.admin-theme {
+  --admin-dark: #ffc078;
+  --admin-green: #ff9f1c;
+  --admin-green-dark: #ffb347;
+  --admin-sage: #5a4426;
+  --admin-yellow: #ffd08a;
+  --admin-light: #1b1712;
+  --admin-muted: #c0b09a;
+  /* Superficies del panel: la página usa --admin-light y los bloques
+     (cards, tablas, inputs) suben un escalón con --admin-surface. */
+  --admin-surface: #241f19;
+  --admin-surface-alt: #2e2820;
+
+  --color-primary-active: #ffd08a;
+  --color-cream-hover: #2e2820;
+  --color-cream-active: #383026;
+  --color-cream-light: #201b16;
+  --color-cream-soft: #1b1712;
+  --color-border-card: #352b20;
+  --color-border-strong: #6b4f2d;
+  --color-text: #f5ede2;
+  /* Los rellenos de éxito llevan texto blanco: conservan el tono profundo. */
+  --color-success-fill: #8a5a00;
+  --color-success-fill-hover: #744c00;
+
+  --shadow-cta: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-cta-hover: 0 8px 18px rgba(0, 0, 0, 0.55);
+
+  --bs-body-bg: var(--admin-light);
+  --bs-secondary-bg: var(--admin-surface);
+  --bs-tertiary-bg: var(--admin-surface-alt);
+
+  background-color: var(--admin-light);
+  color: var(--color-text);
+  caret-color: var(--admin-dark);
+  accent-color: var(--admin-green);
+  scrollbar-color: var(--admin-green) transparent;
+}
+
+/* ---------- Botones ---------- */
+/* El botón primario del panel usaba fondo --admin-dark (ahora claro) con texto
+   amarillo; en oscuro pasa a naranja con tinta oscura. */
+:root[data-bs-theme='dark'] body.admin-theme .btn-primary {
+  --bs-btn-color: #241505;
+  --bs-btn-bg: var(--admin-green);
+  --bs-btn-border-color: var(--admin-green);
+  --bs-btn-hover-color: #241505;
+  --bs-btn-hover-bg: var(--admin-yellow);
+  --bs-btn-hover-border-color: var(--admin-yellow);
+  --bs-btn-active-color: #241505;
+  --bs-btn-active-bg: #f5b93f;
+  --bs-btn-active-border-color: #f5b93f;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .btn-primary:hover {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .btn-primary:disabled,
+:root[data-bs-theme='dark'] body.admin-theme .btn-primary.disabled {
+  --bs-btn-disabled-bg: var(--admin-surface-alt);
+  --bs-btn-disabled-border-color: var(--admin-sage);
+  --bs-btn-disabled-color: #9a8a75;
+}
+
+/* Amarillos: fondo claro con tinta oscura fija (no --admin-dark, que ahora es
+   claro). */
+:root[data-bs-theme='dark'] body.admin-theme .btn-warning {
+  --bs-btn-color: #241505;
+  --bs-btn-hover-color: #241505;
+  --bs-btn-active-color: #241505;
+  --bs-btn-disabled-color: #7a6a55;
+  --bs-btn-disabled-bg: var(--admin-surface-alt);
+  --bs-btn-disabled-border-color: var(--admin-surface-alt);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme
+  .navbar-comirapi
+  .btn-superadmin-contexto:hover,
+:root[data-bs-theme='dark'] body.admin-theme
+  .navbar-comirapi
+  .btn-superadmin-contexto.show,
+:root[data-bs-theme='dark'] body.admin-theme
+  .navbar-comirapi
+  .btn-superadmin-contexto.btn-superadmin-contexto-activo {
+  color: #241505;
+}
+
+:root[data-bs-theme='dark'] body.admin-theme
+  .navbar-comirapi
+  .btn-acceso-comirapi:hover,
+:root[data-bs-theme='dark'] body.admin-theme
+  .navbar-comirapi
+  .btn-acceso-comirapi:focus-visible {
+  color: #241505 !important;
+}
+
+/* ---------- Tablas y cards ---------- */
+:root[data-bs-theme='dark'] body.admin-theme .table {
+  --bs-table-color: var(--color-text);
+  --bs-table-bg: var(--admin-surface);
+  --bs-table-border-color: var(--admin-sage);
+  --bs-table-striped-bg: var(--admin-surface-alt);
+  --bs-table-striped-color: var(--color-text);
+  --bs-table-hover-bg: #332b22;
+  --bs-table-hover-color: var(--color-text);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .table-dark {
+  --bs-table-color: var(--color-text);
+  --bs-table-bg: #191512;
+  --bs-table-border-color: var(--admin-sage);
+  --bs-table-striped-bg: var(--admin-surface);
+  --bs-table-striped-color: var(--color-text);
+  --bs-table-hover-bg: var(--admin-surface-alt);
+  --bs-table-hover-color: var(--color-text);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .card {
+  --bs-card-bg: var(--admin-surface);
+  --bs-card-border-color: var(--admin-sage);
+  --bs-card-cap-bg: var(--admin-surface);
+  color: var(--color-text);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .card-header {
+  background-color: var(--admin-surface) !important;
+  border-bottom-color: var(--admin-sage);
+  color: var(--admin-dark);
+}
+
+/* ---------- Badges y utilidades ---------- */
+:root[data-bs-theme='dark'] body.admin-theme .bg-primary,
+:root[data-bs-theme='dark'] body.admin-theme .bg-success,
+:root[data-bs-theme='dark'] body.admin-theme .bg-dark,
+:root[data-bs-theme='dark'] body.admin-theme .list-group-item.active {
+  color: #241505 !important;
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .text-warning,
+:root[data-bs-theme='dark'] body.admin-theme .batch-notificacion-icono-warning {
+  color: var(--admin-yellow) !important;
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .alert-info {
+  --bs-alert-color: var(--color-text);
+  --bs-alert-bg: var(--admin-surface-alt);
+  --bs-alert-border-color: var(--admin-sage);
+  --bs-alert-link-color: var(--admin-yellow);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .alert-warning {
+  --bs-alert-color: var(--color-text);
+  --bs-alert-bg: var(--admin-surface-alt);
+  --bs-alert-border-color: var(--admin-yellow);
+  --bs-alert-link-color: var(--admin-yellow);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .alert-success {
+  --bs-alert-color: #d7f5c4;
+  --bs-alert-bg: #1f2a18;
+  --bs-alert-border-color: #3f5a2a;
+  --bs-alert-link-color: var(--admin-yellow);
+}
+
+/* ---------- Formularios, navegación y modales ---------- */
+:root[data-bs-theme='dark'] body.admin-theme .form-control,
+:root[data-bs-theme='dark'] body.admin-theme .form-select {
+  background-color: var(--admin-surface);
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .nav-tabs .nav-link.active {
+  color: var(--admin-dark);
+  background-color: transparent;
+  border-color: var(--admin-sage) var(--admin-sage) var(--admin-light);
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .dropdown-menu {
+  --bs-dropdown-link-hover-bg: var(--admin-surface-alt);
+  --bs-dropdown-link-hover-color: var(--color-text);
+  --bs-dropdown-link-active-bg: var(--admin-green-dark);
+  --bs-dropdown-link-active-color: #241505;
+}
+
+:root[data-bs-theme='dark'] body.admin-theme .modal-header,
+:root[data-bs-theme='dark'] body.admin-theme .modal-footer {
+  border-color: var(--admin-surface-alt);
+}
+
+
 
 
 

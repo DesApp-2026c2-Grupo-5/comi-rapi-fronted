@@ -640,6 +640,15 @@ a {
   font-weight: 900;
 }
 
+/* ============ Tema oscuro: ajustes puntuales ============ */
+/* El skip link usa --color-primary-dark como fondo; en oscuro ese token pasa a
+   ser un naranja claro, así que la tinta blanca perdería contraste. Se usa la
+   tinta de marca (oscura) sobre el naranja, igual que el resto de los CTA. */
+:root[data-bs-theme='dark'] .skip-link {
+  background: var(--color-primary-dark);
+  color: var(--color-on-primary);
+}
+
 /* ============ Movimiento reducido ============ */
 /* `prefers-reduced-motion` desactiva transiciones y animaciones en TODO el
    proyecto sin repetir el media query en cada hoja: las duraciones quedan en 0

@@ -28,7 +28,7 @@ export const CLAVE_TEMA = 'comirapi:tema:v1';
 /** Color de la barra del navegador (meta theme-color) por tema resuelto. */
 export const COLOR_TEMA = {
   claro: '#ff9f1c',
-  oscuro: '#191512',
+  oscuro: '#1b1712',
 };
 
 /** Valor que espera Bootstrap 5.3 en el atributo data-bs-theme. */
