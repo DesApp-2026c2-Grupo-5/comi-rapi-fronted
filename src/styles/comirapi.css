@@ -664,3 +664,22 @@ a {
   }
 }
 
+/* ============ Badges: contraste de texto según el color de fondo ============ */
+/* Bootstrap no ajusta el color del texto de `.badge` por sí solo: `.bg-warning`
+   queda con el blanco por defecto de `.badge` sobre un fondo claro, ilegible.
+   Estas reglas fijan la tinta según el fondo en ambos temas. */
+.badge.bg-warning,
+.badge.bg-info,
+.badge.bg-light,
+.badge.bg-secondary-subtle {
+  color: #000 !important;
+}
+
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-danger,
+.badge.bg-secondary,
+.badge.bg-dark {
+  color: #fff !important;
+}
+
