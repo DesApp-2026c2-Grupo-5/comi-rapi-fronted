@@ -26,7 +26,7 @@
      contenido, pero los modales (1040–1055) la tapan cuando se abren, que es lo
      correcto. */
   z-index: 1020;
-  background: linear-gradient(180deg, var(--color-primary-dark), #a04e00);
+  background: linear-gradient(180deg, var(--color-primary-deep), #a04e00);
   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.22);
   /* El padding inferior absorbe el gesto de inicio del iPhone: sin esto los
      íconos quedan debajo de la barrita y el toque va al sistema, no al enlace. */
@@ -60,7 +60,7 @@
       que pide la pauta, que es lo que hace falta con el dedo al borde. */
   min-height: 60px;
   padding: 0.4rem 0.4rem;
-  color: #fff;
+  color: var(--color-on-fill);
   text-align: center;
   text-decoration: none;
   /* Sin transición de fondo aquí: el fondo del ítem activo vive en el
@@ -148,7 +148,7 @@
 }
 
 .nav-inferior-enlace.activo::before {
-  background: #fff;
+  background: var(--color-on-fill);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
@@ -162,7 +162,7 @@
 /* Bootstrap pone `outline: 0` en los enlaces de navegación al tabular, así que
    sin esta regla el foco por teclado es invisible en el móvil con teclado. */
 .nav-inferior-enlace:focus-visible {
-  outline: 3px solid #fff;
+  outline: 3px solid var(--color-on-fill);
   outline-offset: -3px;
   border-radius: 12px;
 }
@@ -252,7 +252,7 @@
   min-height: 60px;
   padding: 0.6rem 1rem;
   border-radius: 12px;
-  color: #5c4300;
+  color: var(--color-text-brown);
   font-size: 1.05rem;
   font-weight: 600;
   text-decoration: none;
@@ -266,7 +266,7 @@
 
 .nav-hoja-enlace.activo {
   background-color: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-on-fill);
 }
 
 /* Bootstrap pone `outline: 0` en los enlaces al tabular. */
@@ -289,7 +289,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #8a6a2f;
+  color: var(--color-text-brown);
 }
 
 .nav-hoja-lista-compacta {
@@ -317,7 +317,7 @@
 
 .nav-hoja-vacio {
   padding: 0.6rem 1rem;
-  color: #8a6a2f;
+  color: var(--color-text-brown);
   font-size: 0.95rem;
 }
 
@@ -330,7 +330,7 @@
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #a63d3d;
+  color: var(--color-danger);
   font-size: 1rem;
   font-weight: 600;
   text-align: left;
@@ -339,7 +339,7 @@
 }
 
 .nav-hoja-salir:hover {
-  background-color: #f6dcdc;
+  background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
 
 /* Bootstrap pone `outline: 0` al enfocar con teclado. */

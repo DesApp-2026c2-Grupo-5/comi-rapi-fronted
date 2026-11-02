@@ -45,6 +45,7 @@ import { ROLES } from '../../utils/constants';
 import { esRutaDeAlguna, rutaActual } from '../../utils/rutas';
 import { nombreCompleto } from '../../utils/formatters';
 import Avatar from './Avatar';
+import SelectorTema from './SelectorTema';
 import './Navbar.css';
 
 // Menú del cliente (cada enlace lleva su ícono). El perfil NO va acá: se entra
@@ -397,45 +398,58 @@ const Navbar = () => {
           />
           <span translate="no">Comi-Rapi</span>
         </BSNavbar.Brand>
-        {/* Avatar del cliente en la fila superior, fuera del colapsable: en móvil
-            el perfil quedaba escondido dentro del colapsable y había que abrir
-            la barra para llegar. Sólo se ve bajo `lg`, donde el colapsable está
-            plegado. */}
-        {isCliente && (
-          <NavLink
-            to="/cliente/perfil"
-            aria-label="Mi perfil"
-            className={({ isActive }) =>
-              `navbar-perfil navbar-perfil-movil${
-                isActive ? ' navbar-perfil-activo' : ''
-              }`
-            }
-          >
-            <Avatar
-              src={user?.fotoPerfilUrl}
-              nombre={user?.nombre}
-              apellido={user?.apellido}
-              size={38}
-            />
-          </NavLink>
-        )}
-        {/* El invitado no tiene perfil ni sesión que cerrar, así que en su lugar
-            va el acceso. Va en la fila superior (no dentro del colapsable) por lo
-            mismo que el avatar: en móvil el colapsable está plegado y sería
-            inalcanzable. */}
-        {!isAuthenticated && accesoInvitado(true)}
-        {isAuthenticated && (
-          <Button
-            variant="outline-dark"
-            size="sm"
-            className="btn-logout-comirapi btn-logout-movil"
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-            onClick={handleLogout}
-          >
-            <FaSignOutAlt aria-hidden="true" />
-          </Button>
-        )}
+        {/* Controles de la fila superior en móvil: avatar/acceso/cierre de sesión
+            y selector de tema, agrupados y pegados a la derecha. Antes cada uno
+            flotaba por separado y, cuando no había avatar (admin y superadmin),
+            el `space-between` del container separaba el cierre de sesión del
+            selector de tema. */}
+        <div className="navbar-controles-movil">
+          {/* Avatar del cliente en la fila superior, fuera del colapsable: en
+              móvil el perfil quedaba escondido dentro del colapsable y había que
+              abrir la barra para llegar. Sólo se ve bajo `lg`, donde el
+              colapsable está plegado. */}
+          {isCliente && (
+            <NavLink
+              to="/cliente/perfil"
+              aria-label="Mi perfil"
+              className={({ isActive }) =>
+                `navbar-perfil navbar-perfil-movil${
+                  isActive ? ' navbar-perfil-activo' : ''
+                }`
+              }
+            >
+              <Avatar
+                src={user?.fotoPerfilUrl}
+                nombre={user?.nombre}
+                apellido={user?.apellido}
+                size={38}
+              />
+            </NavLink>
+          )}
+          {/* El invitado no tiene perfil ni sesión que cerrar, así que en su
+              lugar va el acceso. Va en la fila superior (no dentro del
+              colapsable) por lo mismo que el avatar: en móvil el colapsable está
+              plegado y sería inalcanzable. */}
+          {!isAuthenticated && accesoInvitado(true)}
+          {isAuthenticated && (
+            <Button
+              variant="outline-dark"
+              size="sm"
+              className="btn-logout-comirapi btn-logout-movil"
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              onClick={handleLogout}
+            >
+              <FaSignOutAlt aria-hidden="true" />
+            </Button>
+          )}
+          {/* Selector de tema en la fila superior: abajo de `lg` el colapsable
+              está plegado, así que el header necesita su propia copia. Arriba de
+              `lg` se oculta y se usa el de navbar-acciones. */}
+          <span className="selector-tema-movil">
+            <SelectorTema />
+          </span>
+        </div>
         <BSNavbar.Collapse id="main-navbar" className="d-none d-lg-flex">
           <Nav className="me-auto align-items-center gap-lg-1">
             {menu.map((item) => {
@@ -646,6 +660,9 @@ const Navbar = () => {
                 <span className="btn-logout-texto">Cerrar sesión</span>
               </Button>
             )}
+            {/* Selector de tema del header (escritorio). En móvil la copia de
+                la fila superior es la que se ve. */}
+            <SelectorTema />
           </Nav>
         </BSNavbar.Collapse>
       </Container>

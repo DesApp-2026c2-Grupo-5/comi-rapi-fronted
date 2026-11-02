@@ -9,7 +9,7 @@
   border: 2px solid var(--color-border-card);
   border-radius: 18px;
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--color-surface);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 

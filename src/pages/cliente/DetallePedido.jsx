@@ -346,6 +346,16 @@ const DetallePedido = () => {
                         </td>
                       </tr>
                     )}
+                    {prod.nota && (
+                      <tr>
+                        <td
+                          colSpan={esEntregado ? 5 : 4}
+                          className="small bg-crema"
+                        >
+                          &rsaquo; <strong>Nota para cocina:</strong> {prod.nota}
+                        </td>
+                      </tr>
+                    )}
                   </React.Fragment>
                 );
               })}

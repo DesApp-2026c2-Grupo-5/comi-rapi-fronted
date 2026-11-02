@@ -129,7 +129,7 @@ const PanelSuperadmin = () => {
       <Row className="g-3">
         <Col lg={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               Ventas por sucursal
             </Card.Header>
             <Card.Body>
@@ -160,7 +160,7 @@ const PanelSuperadmin = () => {
 
         <Col lg={6}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5 bg-white">
+            <Card.Header as="h2" className="h5">
               Pedidos por estado
             </Card.Header>
             <Card.Body>
@@ -192,7 +192,7 @@ const PanelSuperadmin = () => {
       </Row>
 
       <Card className="shadow-sm mt-3">
-        <Card.Header as="h2" className="h5 bg-white">
+        <Card.Header as="h2" className="h5">
           Pedidos entregados · últimos 30 días
         </Card.Header>
         <Card.Body>
@@ -228,7 +228,7 @@ const PanelSuperadmin = () => {
       </Card>
 
       <Card className="shadow-sm mt-3">
-        <Card.Header as="h2" className="h5 bg-white">
+        <Card.Header as="h2" className="h5">
           Operación
         </Card.Header>
         <Card.Body>

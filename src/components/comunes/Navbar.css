@@ -92,7 +92,7 @@
   outline-offset: -2px;
 }
 .nav-enlace.activo {
-  background-color: #fff;
+  background-color: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
@@ -125,7 +125,7 @@
    `.nav-enlace.activo` terminaba sobre la barra oscura, sin contraste. */
 .navbar-comirapi .nav-enlace-toggle.activo,
 .navbar-comirapi .nav-enlace-toggle.activo:hover {
-  background-color: #fff;
+  background-color: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
 }
 
@@ -166,7 +166,7 @@
   min-height: 44px;
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  color: #5c4300;
+  color: var(--color-text-brown);
   font-weight: 600;
   text-decoration: none;
   transition:
@@ -183,7 +183,7 @@
 .navbar-comirapi .nav-submenu-enlace.activo,
 .navbar-comirapi .nav-submenu-enlace.activo:hover {
   background-color: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-on-fill);
 }
 
 .nav-submenu-ico {
@@ -212,7 +212,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background-color: var(--color-danger-fill);
-  color: #fff;
+  color: var(--color-on-fill);
   font-size: 0.68rem;
   font-weight: 800;
   line-height: 18px;
@@ -269,6 +269,13 @@
   margin-top: 0.5rem;
 }
 
+/* El selector de tema se pinta con `currentColor`. Sobre la barra naranja la
+   tinta correcta es la de marca en ambos temas: en oscuro el color del body
+   pasa a crema y quedaría casi invisible sobre el naranja. */
+.navbar-comirapi .selector-tema-btn {
+  color: var(--color-on-primary);
+}
+
 /* Acceso al perfil: avatar + nombre del cliente, junto a cerrar sesión */
 .navbar-perfil {
   display: inline-flex;
@@ -300,8 +307,8 @@
 }
 /* Página activa: fondo blanco con el naranja oscuro de la marca */
 .navbar-perfil-activo {
-  background: #fff;
-  border-color: #fff;
+  background: var(--color-on-fill);
+  border-color: var(--color-on-fill);
   color: var(--color-primary-dark);
 }
 .navbar-perfil-activo .navbar-perfil-nombre {
@@ -347,9 +354,9 @@
 }
 .btn-logout-comirapi:hover,
 .btn-logout-comirapi:focus-visible {
-  background: #fff;
+  background: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
-  border-color: #fff;
+  border-color: var(--color-on-fill);
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
@@ -390,7 +397,7 @@
 
 .btn-acceso-comirapi {
   color: var(--color-primary-dark);
-  background: #fff;
+  background: var(--color-on-fill);
 }
 .btn-acceso-comirapi:hover,
 .btn-acceso-comirapi:focus-visible {
@@ -409,18 +416,31 @@
 }
 .btn-acceso-secundario:hover,
 .btn-acceso-secundario:focus-visible {
-  background: #fff;
+  background: var(--color-on-fill);
   color: var(--color-primary-dark) !important;
-  border-color: #fff;
+  border-color: var(--color-on-fill);
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
 
 /* ============ Responsive de la zona del usuario ============ */
+/* Grupo de controles de la fila superior en móvil (avatar/acceso/cierre de
+   sesión + selector de tema). Va oculto en escritorio, donde todo eso vive
+   dentro del colapsable. */
+.navbar-controles-movil {
+  display: none;
+}
+
 /* Avatar del cliente en la fila superior: da acceso al perfil sin abrir nada.
     Es el mismo elemento que la versión con nombre, pero se muestra fuera del
     colapsable. Sólo tiene sentido cuando el colapsable está plegado. */
 .navbar-perfil-movil {
+  display: none;
+}
+
+/* Copia del selector de tema para la fila superior: igual criterio que el
+   avatar móvil, se muestra sólo cuando el colapsable está plegado. */
+.selector-tema-movil {
   display: none;
 }
 
@@ -436,16 +456,25 @@
     display: none;
   }
 
-  /* El avatar de la fila superior pasa a ser el acceso al perfil.
-      `margin-left: auto` es lo que lo pega a la derecha: el container de la
-      navbar usa `justify-content: space-between`, así que sin el margen automático
-      el avatar quedaría en el medio, entre la marca y el resto de la fila, en vez
-      de junto al botón de cerrar sesión. No lleva `order`: el orden del DOM ya es
-      marca → avatar → cerrar sesión y es el que se quiere. */
+  /* Los controles de la fila superior se agrupan y se pegan a la derecha con un
+     solo `margin-left: auto`. Antes cada control traía su propio margen: con
+     avatar quedaban cerca, pero en admin/superadmin (sin avatar) el
+     `space-between` del container dejaba el cierre de sesión en el medio y el
+     selector de tema en el extremo. */
+  .navbar-controles-movil {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
   .navbar-perfil-movil {
     display: inline-flex;
-    margin-left: auto;
-    margin-right: 0.25rem;
+  }
+
+  .selector-tema-movil {
+    display: inline-flex;
+    align-items: center;
   }
 
   /* Y la copia de escritorio se oculta para no mostrar dos veces lo mismo. */
@@ -462,12 +491,10 @@
   }
 
   /* El acceso del invitado, igual que el cierre de sesión, sale en la fila
-     superior porque el colapsable está plegado acá. `margin-left: auto` lo
-     pega a la derecha: el orden del DOM es marca → acceso, pero sin el margen
-     quedaría en el medio de la fila. */
+     superior porque el colapsable está plegado acá. La separación la maneja el
+     grupo, no el botón. */
   .btn-acceso-movil {
     display: inline-flex;
-    margin-left: auto;
   }
 }
 
@@ -502,9 +529,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #fff4e2;
-  border: 1px solid #f0a10e;
-  color: #8a4b00;
+  background: var(--color-cream);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-brown);
   border-radius: 2rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -514,7 +541,7 @@
 }
 
 .navbar-sucursal-ico {
-  color: #f07f10;
+  color: var(--color-primary-deep);
 }
 
 /* ============ Botón del superadmin (selector de sucursal) ============ */
@@ -529,9 +556,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: #fff4e2;
-  border: 1px solid #f0a10e;
-  color: #8a4b00;
+  background: var(--color-cream);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-brown);
   border-radius: 2rem;
   cursor: pointer;
   padding: 0.25rem 0.7rem;
@@ -547,16 +574,16 @@
 
 .navbar-comirapi .btn-superadmin-contexto:hover,
 .navbar-comirapi .btn-superadmin-contexto.show {
-  background: #ffe6c2;
-  border-color: #d47f00;
-  color: #b55d00;
+  background: var(--color-cream-hover);
+  border-color: var(--color-primary-active);
+  color: var(--color-primary-dark);
   transform: translateY(-1px);
 }
 
 .navbar-comirapi .btn-superadmin-contexto.btn-superadmin-contexto-activo {
-  background: #fff3d4;
-  border-color: #d47f00;
-  color: #b55d00;
+  background: var(--color-cream-light);
+  border-color: var(--color-primary-active);
+  color: var(--color-primary-dark);
   box-shadow: 0 0 0 2px rgba(212, 127, 0, 0.15);
 }
 
@@ -578,7 +605,7 @@
   width: 0.65rem;
   height: 0.65rem;
   background: var(--color-success);
-  border: 2px solid #fff;
+  border: 2px solid var(--color-on-fill);
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }

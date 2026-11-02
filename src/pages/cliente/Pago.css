@@ -43,28 +43,28 @@
 
 /* Mercado Pago: estilo celeste de la marca */
 .pago-opcion-mp {
-  --bs-btn-bg: #fff;
+  --bs-btn-bg: var(--color-surface);
   --bs-btn-border-color: var(--color-mp);
   --bs-btn-color: var(--color-mp);
   --bs-btn-hover-bg: var(--color-mp);
   --bs-btn-hover-border-color: var(--color-mp);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-fill);
   --bs-btn-active-bg: var(--color-mp-active);
   --bs-btn-active-border-color: var(--color-mp-active);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-fill);
 }
 
 /* Tarjeta: estilo naranja de la marca */
 .pago-opcion-tarjeta {
-  --bs-btn-bg: #fff;
+  --bs-btn-bg: var(--color-surface);
   --bs-btn-border-color: var(--color-primary);
   --bs-btn-color: var(--color-primary-dark);
   --bs-btn-hover-bg: var(--color-primary);
   --bs-btn-hover-border-color: var(--color-primary);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-fill);
   --bs-btn-active-bg: var(--color-primary-hover);
   --bs-btn-active-border-color: var(--color-primary-hover);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-fill);
 }
 
 /* ============ Aviso de procesamiento ============ */

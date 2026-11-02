@@ -12,7 +12,7 @@
   border-radius: 20px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--color-surface);
 }
 
 .detalle-card-header {
@@ -63,7 +63,7 @@
 }
 
 .detalle-valor-secundario {
-  color: #6c757d;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
 }
 
@@ -79,8 +79,8 @@
 }
 
 .detalle-tabla thead th {
-  background-color: var(--color-text);
-  color: #fff;
+  background-color: var(--color-on-primary);
+  color: var(--color-on-fill);
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 1px;
@@ -99,7 +99,7 @@
 }
 
 .detalle-tabla tbody tr:hover {
-  background-color: #fffaf0;
+  background-color: var(--color-cream-soft);
 }
 
 /* ============ Total destacado ============ */

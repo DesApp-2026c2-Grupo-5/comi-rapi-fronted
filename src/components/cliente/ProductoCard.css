@@ -12,7 +12,7 @@
   border: 2px solid var(--color-border-card);
   border-radius: 18px;
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--color-surface);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
@@ -94,7 +94,7 @@
   height: 2.75rem;
   border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.8);
-  border: 2px solid #fff;
+  border: 2px solid var(--color-on-fill);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   z-index: 2;
   pointer-events: none;
@@ -123,8 +123,7 @@
   right: 10px;
   z-index: 2;
   background-color: var(--color-danger-fill);
-  color: #fff;
-  font-weight: 800;
+  color: var(--color-on-fill);
   font-size: 0.95rem;
   letter-spacing: 0.5px;
   padding: 0.35rem 0.75rem;

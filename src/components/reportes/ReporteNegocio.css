@@ -95,7 +95,7 @@
 }
 
 .reporte-grafico-punto {
-  fill: var(--color-white);
+  fill: var(--color-on-fill);
   stroke: var(--color-primary-deep);
   stroke-width: 2;
 }

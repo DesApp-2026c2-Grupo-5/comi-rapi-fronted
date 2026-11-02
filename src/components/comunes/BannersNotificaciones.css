@@ -58,19 +58,19 @@
 }
 
 .batch-notificacion-icono-success {
-  color: #22c55e;
+  color: var(--color-success);
 }
 
 .batch-notificacion-icono-danger {
-  color: #e63946;
+  color: var(--color-danger);
 }
 
 .batch-notificacion-icono-warning {
-  color: #e88900;
+  color: var(--color-primary-hover);
 }
 
 .batch-notificacion-icono-info {
-  color: #f07f10;
+  color: var(--color-primary-deep);
 }
 
 .batch-notificacion-mensaje {

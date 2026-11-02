@@ -320,7 +320,7 @@ const DetalleProducto = () => {
           </Col>
           <Col md={7}>
             <Card.Body className="p-4 d-flex flex-column h-100">
-              {producto.categoria && <Badge bg="light" text="dark" className="badge-comi align-self-start mb-2">{producto.categoria}</Badge>}
+              {producto.categoria && <Badge className="badge-comi align-self-start mb-2">{producto.categoria}</Badge>}
               <Card.Title as="h1">{producto.nombre}</Card.Title>
               <div className="mb-2 d-flex align-items-center gap-2 flex-wrap">
                 {resenas && resenas.cantidad > 0 ? (

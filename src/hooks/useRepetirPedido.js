@@ -117,7 +117,7 @@ export const useRepetirPedido = () => {
         return;
       }
       lineas.forEach((linea) => {
-        agregarAlCarrito(linea.producto, linea.cantidad, linea.personalizacion);
+        agregarAlCarrito(linea.producto, linea.cantidad, linea.personalizacion, linea.nota);
       });
       setPedidoARepetir(null);
       setVistaPrevia({ cargando: false, cambiosPrecio: [], totalAntes: 0, totalAhora: 0 });
