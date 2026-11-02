@@ -30,7 +30,7 @@
   border-radius: 50px;
   font-weight: 800;
   letter-spacing: 0.4px;
-  color: #fff;
+  color: var(--color-on-fill);
   padding: 0.6rem 1.6rem;
   box-shadow: 0 6px 16px rgba(47, 90, 95, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
@@ -38,7 +38,7 @@
 .btn-historial-avanzar:hover {
   transform: translateY(-2px) scale(1.03);
   filter: brightness(1.05);
-  color: #fff !important;
+  color: var(--color-on-fill) !important;
   box-shadow: 0 10px 20px rgba(47, 90, 95, 0.4);
 }
 
@@ -110,7 +110,7 @@
     box-shadow: 0 0 0 0 rgba(230, 57, 70, 0);
   }
   30% {
-    outline: 3px solid #e63946;
+    outline: 3px solid var(--color-danger);
     box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35);
   }
 }
