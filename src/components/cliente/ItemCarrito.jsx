@@ -20,10 +20,12 @@ const ItemCarrito = ({ item }) => {
   const { parametros } = useParametros();
   const maxUnidades = parametros.cantidadMaximaProductoCarrito;
 
-  // Nota para cocina: se edita en la misma línea y se guarda explícitamente
-  // (no al perder foco, para no guardar un texto a medio escribir).
+  // Nota para cocina: se guarda en el contexto a medida que se escribe, así no
+  // se pierde si el usuario va directo a confirmar el pedido. "Cancelar"
+  // restaura el valor que había al abrir el editor.
   const [editandoNota, setEditandoNota] = useState(false);
   const [borradorNota, setBorradorNota] = useState(nota || "");
+  const [notaAlAbrir, setNotaAlAbrir] = useState(nota || "");
 
   const precioUnitario = precioUnitarioPersonalizado ?? producto.precio;
   const subtotal = precioUnitario * cantidad;
@@ -53,17 +55,21 @@ const ItemCarrito = ({ item }) => {
   };
 
   const abrirEditorNota = () => {
-    setBorradorNota(nota || "");
+    const actual = nota || "";
+    setBorradorNota(actual);
+    setNotaAlAbrir(actual);
     setEditandoNota(true);
   };
 
   const cancelarNota = () => {
-    setBorradorNota(nota || "");
+    // Restaura la nota que había antes de abrir el editor (puede ser null).
+    actualizarNota(idItem, notaAlAbrir);
+    setBorradorNota(notaAlAbrir);
     setEditandoNota(false);
   };
 
   const guardarNota = () => {
-    actualizarNota(idItem, borradorNota);
+    // La nota ya se guardó en vivo al escribir; solo cerramos el editor.
     setEditandoNota(false);
   };
 
@@ -179,7 +185,13 @@ const ItemCarrito = ({ item }) => {
                 rows={2}
                 value={borradorNota}
                 maxLength={NOTA_MAX_CARACTERES}
-                onChange={(evento) => setBorradorNota(evento.target.value)}
+                onChange={(evento) => {
+                  const valor = evento.target.value;
+                  setBorradorNota(valor);
+                  // Persistir en vivo para no perder la nota si el usuario
+                  // confirma el pedido sin presionar "Listo".
+                  actualizarNota(idItem, valor);
+                }}
                 onKeyDown={(evento) => {
                   if (evento.key === "Escape") {
                     evento.preventDefault();
