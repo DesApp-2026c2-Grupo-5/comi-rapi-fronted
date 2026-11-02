@@ -424,6 +424,12 @@
   display: none;
 }
 
+/* Copia del selector de tema para la fila superior: igual criterio que el
+   avatar móvil, se muestra sólo cuando el colapsable está plegado. */
+.selector-tema-movil {
+  display: none;
+}
+
 /* En pantallas medianas el nombre no entra: queda el avatar, que ya identifica. */
 @media (max-width: 991.98px) {
   .navbar-acciones {
@@ -446,6 +452,12 @@
     display: inline-flex;
     margin-left: auto;
     margin-right: 0.25rem;
+  }
+
+  .selector-tema-movil {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.25rem;
   }
 
   /* Y la copia de escritorio se oculta para no mostrar dos veces lo mismo. */

@@ -45,6 +45,7 @@ import { ROLES } from '../../utils/constants';
 import { esRutaDeAlguna, rutaActual } from '../../utils/rutas';
 import { nombreCompleto } from '../../utils/formatters';
 import Avatar from './Avatar';
+import SelectorTema from './SelectorTema';
 import './Navbar.css';
 
 // Menú del cliente (cada enlace lleva su ícono). El perfil NO va acá: se entra
@@ -436,6 +437,12 @@ const Navbar = () => {
             <FaSignOutAlt aria-hidden="true" />
           </Button>
         )}
+        {/* Selector de tema en la fila superior: abajo de `lg` el colapsable
+            está plegado, así que el header necesita su propia copia. Arriba de
+            `lg` se oculta y se usa el de navbar-acciones. */}
+        <span className="selector-tema-movil">
+          <SelectorTema />
+        </span>
         <BSNavbar.Collapse id="main-navbar" className="d-none d-lg-flex">
           <Nav className="me-auto align-items-center gap-lg-1">
             {menu.map((item) => {
@@ -646,6 +653,9 @@ const Navbar = () => {
                 <span className="btn-logout-texto">Cerrar sesión</span>
               </Button>
             )}
+            {/* Selector de tema del header (escritorio). En móvil la copia de
+                la fila superior es la que se ve. */}
+            <SelectorTema />
           </Nav>
         </BSNavbar.Collapse>
       </Container>
