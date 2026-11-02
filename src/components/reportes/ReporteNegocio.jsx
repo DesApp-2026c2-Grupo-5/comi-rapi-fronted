@@ -284,6 +284,7 @@ const ReporteNegocio = () => {
     clave: 'unidades',
     dir: 'asc',
   });
+  const [rankingActivo, setRankingActivo] = useState('masVendidos');
 
   // El panel sigue la sucursal de contexto del superadmin: al elegir una
   // sucursal, los reportes se acotan a ella; al dejar de operar, vuelven a la
@@ -422,6 +423,22 @@ const ReporteNegocio = () => {
     ordenFacturacion,
     ordenMenosVendidos,
   ]);
+
+  // Derivados del ranking activo: una sola tabla reutiliza los tres estados de
+  // orden y handlers que ya existen, según el filtro elegido.
+  const ordenActivo =
+    rankingActivo === 'masVendidos'
+      ? ordenVendidos
+      : rankingActivo === 'menosVendidos'
+      ? ordenMenosVendidos
+      : ordenFacturacion;
+  const onOrdenarActivo =
+    rankingActivo === 'masVendidos'
+      ? onOrdenarVendidos
+      : rankingActivo === 'menosVendidos'
+      ? onOrdenarMenosVendidos
+      : onOrdenarFacturacion;
+  const filasActivas = productos[rankingActivo] || [];
 
   if (!hydrated || (cargando && !datos)) {
     return (
