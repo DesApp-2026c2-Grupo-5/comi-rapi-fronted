@@ -1,0 +1,858 @@
+/**
+ * Propósito: Estilos de la bandeja de reclamos tipo chat del panel.
+ * Contenido: cabecera de página, panel de dos columnas, lista de
+ *            conversaciones, hilo de burbujas, compositor, estados vacíos y
+ *            responsive. Usa los tokens del panel (admin-theme) para heredar
+ *            tema claro y oscuro.
+ * Dependencias: BandejaQuejas.jsx (se importa desde el mismo).
+ * Uso: Importado desde src/components/admin/BandejaQuejas.jsx.
+ */
+
+/* ============ Página ============ */
+/* La bandeja no necesita todo el ancho de un monitor 4K: se centra con un
+   máximo generoso para que el hilo no se convierta en líneas larguísimas. */
+.gestion-quejas-pagina {
+  max-width: 1500px;
+  margin-inline: auto;
+}
+
+/* ============ Cabecera de la página ============ */
+.quejas-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.quejas-cabecera h1 {
+  color: var(--admin-dark);
+}
+
+.quejas-girando {
+  animation: quejas-girar 900ms linear infinite;
+}
+
+@keyframes quejas-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============ Panel de dos columnas ============ */
+.quejas-panel {
+  display: grid;
+  grid-template-columns: minmax(300px, 370px) minmax(0, 1fr);
+  height: clamp(460px, calc(100dvh - 200px), 900px);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-card);
+  background: var(--admin-surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.quejas-lista-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--admin-light);
+  border-right: 1px solid var(--admin-border-soft);
+}
+
+.quejas-conversacion-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--admin-surface);
+}
+
+/* ============ Lista: cabecera, búsqueda y filtros ============ */
+.quejas-lista-cabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 0.9rem 0.75rem;
+  background: var(--admin-light);
+  border-bottom: 1px solid var(--admin-border-soft);
+}
+
+.quejas-buscador {
+  position: relative;
+}
+
+.quejas-buscador-ico {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.quejas-buscador .form-control {
+  padding-left: 2rem;
+  background: var(--admin-surface);
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+  font-size: 0.86rem;
+}
+
+.quejas-buscador .form-control::placeholder {
+  color: var(--admin-muted);
+  opacity: 1;
+}
+
+.quejas-filtros {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.15rem;
+}
+
+.queja-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--admin-sage);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--admin-dark);
+  padding: 0.22rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+
+.queja-chip:hover {
+  background: var(--admin-surface);
+}
+
+.queja-chip.activo {
+  background: var(--admin-dark);
+  border-color: var(--admin-dark);
+  color: var(--admin-light);
+}
+
+.queja-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.quejas-sucursal .form-select {
+  font-size: 0.8rem;
+  background-color: var(--admin-surface);
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+}
+
+.quejas-lista-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--admin-muted);
+}
+
+.quejas-resumen-sin-responder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--admin-dark);
+  font-weight: 700;
+}
+
+/* ============ Lista de conversaciones ============ */
+.quejas-lista {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-sage) transparent;
+}
+
+.quejas-lista::-webkit-scrollbar,
+.queja-hilo::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quejas-lista::-webkit-scrollbar-thumb,
+.queja-hilo::-webkit-scrollbar-thumb {
+  background: var(--admin-sage);
+  border-radius: var(--radius-pill);
+}
+
+.quejas-lista::-webkit-scrollbar-track,
+.queja-hilo::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.queja-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid var(--admin-border-soft);
+  background: transparent;
+  color: var(--admin-dark);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out);
+}
+
+.queja-item:hover {
+  background: color-mix(in srgb, var(--admin-green) 8%, transparent);
+}
+
+.queja-item.activa {
+  background: color-mix(in srgb, var(--admin-green) 15%, var(--admin-surface));
+}
+
+.queja-item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.queja-item-cuerpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.queja-item-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.queja-item-nombre {
+  flex: 1;
+  overflow: hidden;
+  color: var(--admin-dark);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queja-item-hora {
+  flex: 0 0 auto;
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.queja-item-estado {
+  padding: 0.18rem 0.42rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.queja-item-sin-responder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  margin-left: auto;
+  padding: 0.1rem 0.42rem;
+  border-radius: var(--radius-pill);
+  background: var(--admin-dark);
+  color: var(--admin-light);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.queja-item-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.queja-item-preview.destacado {
+  color: var(--admin-dark);
+  font-weight: 600;
+}
+
+.queja-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+}
+
+.queja-item-pedido {
+  color: var(--admin-dark);
+  font-weight: 700;
+}
+
+/* ============ Estados de la lista ============ */
+.quejas-esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.85rem;
+}
+
+.quejas-esqueleto-fila {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.quejas-esqueleto-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.quejas-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2rem 1.1rem;
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.quejas-vacio-ico {
+  margin-bottom: 0.25rem;
+  color: var(--admin-sage);
+  font-size: 1.8rem;
+}
+
+.quejas-vacio-titulo {
+  margin: 0;
+  color: var(--admin-dark);
+  font-weight: 700;
+}
+
+.quejas-vacio-texto {
+  max-width: 30ch;
+  margin: 0 0 0.5rem;
+  font-size: 0.84rem;
+}
+
+.quejas-lista-error {
+  padding: 1rem;
+  color: var(--color-danger-fill);
+  font-size: 0.84rem;
+}
+
+:root[data-bs-theme='dark'] .quejas-lista-error {
+  color: var(--color-danger);
+}
+
+/* ============ Pie de la lista ============ */
+.quejas-lista-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border-top: 1px solid var(--admin-border-soft);
+  background: var(--admin-light);
+  color: var(--admin-muted);
+  font-size: 0.74rem;
+}
+
+.quejas-paginacion {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.quejas-paginacion .btn {
+  padding: 0.15rem 0.4rem;
+  line-height: 1;
+}
+
+.quejas-paginacion-numero {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Conversación ============ */
+.queja-conversacion {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  animation: queja-conversacion-entrada 180ms var(--ease-out);
+}
+
+@keyframes queja-conversacion-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.queja-conv-cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface);
+}
+
+.queja-conv-volver {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--admin-sage);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--admin-dark);
+  cursor: pointer;
+}
+
+.queja-conv-volver:hover {
+  background: var(--admin-light);
+}
+
+.queja-conv-volver:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.queja-conv-identidad {
+  flex: 1;
+  min-width: 0;
+}
+
+.queja-conv-nombre {
+  margin: 0;
+  overflow: hidden;
+  color: var(--admin-dark);
+  font-size: 1.02rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queja-conv-email {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.queja-conv-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.queja-conv-estado {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.queja-conv-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-bottom: 1px solid transparent;
+  color: var(--admin-dark);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.queja-conv-enlace:hover {
+  border-bottom-color: currentColor;
+}
+
+.queja-conv-enlace:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.queja-conv-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.45rem 1rem;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--admin-border-soft);
+  background: var(--admin-light);
+}
+
+.queja-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.queja-dato-etiqueta {
+  color: var(--admin-muted);
+  font-size: 0.66rem;
+}
+
+.queja-dato-valor {
+  color: var(--admin-dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ============ Hilo ============ */
+.queja-hilo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+  background: var(--admin-light);
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-sage) transparent;
+}
+
+.queja-burbuja {
+  align-self: flex-start;
+  max-width: min(78%, 46rem);
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 14px;
+  background: var(--admin-surface);
+  color: var(--admin-dark);
+}
+
+.queja-burbuja.es-negocio {
+  align-self: flex-end;
+  border-color: color-mix(
+    in srgb,
+    var(--admin-green) 38%,
+    var(--admin-border-soft)
+  );
+  background: color-mix(in srgb, var(--admin-green) 14%, var(--admin-surface));
+}
+
+.queja-burbuja.sin-responder {
+  border-color: var(--admin-green);
+}
+
+.queja-burbuja-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+  color: var(--admin-muted);
+  font-size: 0.68rem;
+}
+
+.queja-burbuja-autor {
+  color: var(--admin-dark);
+  font-weight: 700;
+}
+
+.queja-burbuja-sin-responder,
+.queja-burbuja-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.42rem;
+  border-radius: var(--radius-pill);
+  background: var(--admin-yellow);
+  color: var(--color-on-primary);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.queja-burbuja-etiqueta {
+  margin-bottom: 0.25rem;
+}
+
+.queja-burbuja p {
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.queja-nota-sistema {
+  align-self: center;
+  margin: 0.25rem 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px dashed var(--admin-sage);
+  border-radius: var(--radius-pill);
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font-size: 0.74rem;
+  text-align: center;
+}
+
+/* ============ Compositor ============ */
+.queja-compositor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface);
+}
+
+.queja-compositor .form-control {
+  min-height: 70px;
+  max-height: 160px;
+  resize: none;
+  background: var(--admin-surface);
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+  font-size: 0.86rem;
+}
+
+.queja-compositor .form-control::placeholder {
+  color: var(--admin-muted);
+  opacity: 1;
+}
+
+.queja-compositor .form-control:focus {
+  border-color: var(--admin-green);
+  box-shadow: 0 0 0 0.2rem rgba(255, 159, 28, 0.2);
+}
+
+.queja-compositor-pie {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.queja-compositor-opcion {
+  flex: 0 1 15rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.queja-compositor-opcion .form-select {
+  background-color: var(--admin-surface);
+  border-color: var(--admin-sage);
+  color: var(--admin-dark);
+  font-size: 0.78rem;
+}
+
+.queja-compositor-ayuda {
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: var(--admin-muted);
+  font-size: 0.73rem;
+}
+
+.queja-compositor-contador {
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.queja-compositor-pie .btn {
+  margin-left: auto;
+}
+
+.queja-compositor-aviso {
+  color: var(--admin-warning-text);
+  font-size: 0.73rem;
+}
+
+.queja-compositor-bloqueado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.9rem 1.1rem calc(0.9rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--admin-border-soft);
+  background: var(--admin-light);
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+}
+
+.queja-compositor-bloqueado svg {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+}
+
+.queja-compositor-bloqueado p {
+  margin: 0;
+}
+
+/* ============ Placeholder sin conversación ============ */
+.queja-conv-placeholder {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 2rem;
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.queja-conv-placeholder-ico {
+  margin-bottom: 0.4rem;
+  color: var(--admin-sage);
+  font-size: 2.4rem;
+}
+
+.queja-conv-placeholder-titulo {
+  margin: 0;
+  color: var(--admin-dark);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.queja-conv-placeholder-texto {
+  max-width: 34ch;
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 991.98px) {
+  .quejas-panel {
+    grid-template-columns: minmax(0, 1fr);
+    height: clamp(380px, calc(100dvh - 240px), 900px);
+  }
+
+  .quejas-oculta-movil {
+    display: none;
+  }
+
+  .quejas-lista-panel {
+    border-right: 0;
+  }
+
+  .queja-conv-volver {
+    display: inline-flex;
+  }
+
+  .queja-burbuja {
+    max-width: 88%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .quejas-cabecera {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.5rem;
+  }
+
+  .quejas-cabecera p {
+    font-size: 0.8rem;
+  }
+
+  /* En móvil el botón queda como ícono para no empujar el panel hacia abajo:
+     la etiqueta sigue disponible para lectores de pantalla por aria-label. */
+  .quejas-btn-texto {
+    display: none;
+  }
+
+  .quejas-panel {
+    height: clamp(360px, calc(100dvh - 244px), 900px);
+  }
+
+  .queja-conv-cabecera {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .queja-conv-datos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .queja-dato-etiqueta {
+    font-size: 0.62rem;
+  }
+
+  .queja-dato-valor {
+    font-size: 0.75rem;
+  }
+
+  .queja-hilo {
+    padding: 0.75rem;
+  }
+
+  .queja-burbuja {
+    max-width: 94%;
+  }
+
+  .queja-compositor {
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
+  }
+
+  .queja-compositor-pie {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .queja-compositor-opcion {
+    flex: 1 1 auto;
+  }
+
+  .queja-compositor-pie .btn {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .queja-compositor-ayuda {
+    order: 3;
+    /* En columna, `flex-basis: 12rem` se interpretaría como alto: el texto
+       quedaría con 192px de altura y se comería el hilo. */
+    flex: 0 0 auto;
+  }
+
+  .queja-compositor-contador {
+    order: 2;
+    flex: 0 0 auto;
+    text-align: right;
+  }
+}
+
+/* ============ Movimiento reducido ============ */
+@media (prefers-reduced-motion: reduce) {
+  .queja-item,
+  .queja-chip {
+    transition: none;
+  }
+
+  .queja-conversacion,
+  .quejas-girando {
+    animation: none;
+  }
+}

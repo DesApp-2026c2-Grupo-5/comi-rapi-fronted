@@ -29,9 +29,7 @@ const AvisoSucursalesCerradas = ({ className = '' }) => {
       <strong>Estamos cerrados.</strong>{' '}
       {cuando
         ? `Volvemos a abrir ${cuando}.`
-        : 'Volvemos a abrir en el próximo horario de atención.'}{' '}
-      Podés recorrer el catálogo, pero no vamos a poder tomar tu pedido hasta
-      entonces.
+        : 'Volvemos a abrir en el próximo horario de atención.'}
     </Alert>
   );
 };

@@ -31,6 +31,7 @@ import {
   FaUserTie,
   FaCog,
   FaBriefcase,
+  FaExclamationCircle,
   FaUserCircle,
   FaSignOutAlt,
   FaSignInAlt,
@@ -85,10 +86,12 @@ const enlacesInvitado = enlacesCliente.filter((enlace) => enlace.to !== '/client
  * imágenes) es corporativo y lo hace el SUPERADMINISTRADOR. El admin conserva
  * el acceso a "Catálogo", pero en SOLO LECTURA: ve los listados y, en
  * Productos, activa/desactiva la disponibilidad de cada ítem en su sucursal.
- * Además opera pedidos, stock y clientes. Sucursales quedó fuera del menú
- * admin por lo mismo: lo maneja el superadmin. Stock queda suelto a propósito:
- * es un solo destino, y meterlo en un desplegable obligaría a un clic de más
- * para llegar a un solo lugar. */
+ * Además opera pedidos, stock y reclamos. La cartera de clientes se abre desde
+ * el botón "Ver clientes" del panel de reportes, no desde la barra: la lista de
+ * clientes se consulta junto con sus métricas y no como destino diario.
+ * Sucursales quedó fuera del menú admin por lo mismo: lo maneja el superadmin.
+ * Stock queda suelto a propósito: es un solo destino, y meterlo en un
+ * desplegable obligaría a un clic de más para llegar a un solo lugar. */
 const menuAdmin = [
   { to: '/admin/dashboard', etiqueta: 'Dashboard', icono: FaTachometerAlt },
   {
@@ -96,6 +99,12 @@ const menuAdmin = [
     etiqueta: 'Pedidos',
     icono: FaReceipt,
     badge: 'pedidos',
+  },
+  {
+    to: '/admin/quejas',
+    etiqueta: 'Reclamos',
+    icono: FaExclamationCircle,
+    badge: 'quejas',
   },
   {
     etiqueta: 'Catálogo',
@@ -122,7 +131,6 @@ const menuAdmin = [
     ],
   },
   { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
-  { to: '/admin/clientes', etiqueta: 'Clientes', icono: FaUsers, prefijo: '/admin/clientes' },
 ];
 
 /* Menú del superadministrador: su panel es global (métricas agregadas), la
@@ -133,6 +141,12 @@ const menuAdmin = [
    y no cada administrador; el admin sólo lo activa/desactiva en su sucursal. */
 const menuSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
+  {
+    to: '/admin/quejas',
+    etiqueta: 'Reclamos',
+    icono: FaExclamationCircle,
+    badge: 'quejas',
+  },
   {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
@@ -218,9 +232,12 @@ const Navbar = () => {
   const {
     productosDistintos,
     pedidosActivos,
+    quejasPendientes,
     pulsoCarrito,
     pulsoPedido,
     pulsoPedidoBadge,
+    pulsoQueja,
+    pulsoQuejaBadge,
   } = useIndicadoresNav();
   const navigate = useNavigate();
   const location = useLocation();
@@ -366,11 +383,25 @@ const Navbar = () => {
         </span>
       );
     }
+    if (clave === 'quejas' && quejasPendientes > 0) {
+      return (
+        <span className={`carrito-badge${pulsoQuejaBadge ? ' carrito-badge-pulso' : ''}`}>
+          <span aria-hidden="true">{quejasPendientes}</span>
+          <span className="visually-hidden">
+            {`${quejasPendientes} ${
+              quejasPendientes === 1 ? 'reclamo pendiente' : 'reclamos pendientes'
+            }`}
+          </span>
+        </span>
+      );
+    }
     return null;
   };
 
   const pulsoDeIcono = (clave) =>
-    (clave === 'carrito' && pulsoCarrito) || (clave === 'pedidos' && pulsoPedido)
+    (clave === 'carrito' && pulsoCarrito) ||
+    (clave === 'pedidos' && pulsoPedido) ||
+    (clave === 'quejas' && pulsoQueja)
       ? ' nav-enlace-ico-pulso'
       : '';
 

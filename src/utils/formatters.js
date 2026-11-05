@@ -31,6 +31,12 @@ const FECHA_HORA = new Intl.DateTimeFormat(LOCALE, {
   hour12: false,
 });
 
+const HORA = new Intl.DateTimeFormat(LOCALE, {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
 /* `numeric: 'auto'` produce "ayer" / "hace 2 días" en vez de "hace 1 día". */
 const RELATIVO = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 
@@ -63,6 +69,17 @@ export const formatDate = (fecha) => {
  */
 export const formatDateTime = (fecha) => {
   return FECHA_HORA.format(new Date(fecha));
+};
+
+/**
+ * Formatea solo la hora en 24hs (ej: "14:30"). Se usa en las burbujas del
+ * chat de reclamos, donde la fecha completa ya está en la cabecera.
+ *
+ * @param {string|Date} fecha - Fecha a formatear.
+ * @returns {string} Hora formateada.
+ */
+export const formatHora = (fecha) => {
+  return HORA.format(new Date(fecha));
 };
 
 /**

@@ -26,6 +26,9 @@
  *   - parametros_actualizados: un parámetro del sistema cambió (broadcast).
  *   - stock_actualizado: cambió el stock de una sucursal. Solo se emite a la
  *     room de esa sucursal, así que llega únicamente a su administrador.
+ *   - queja_actualizada: se creó o cambió un reclamo. Llega a los
+ *     administradores de la sucursal del pedido y al superadministrador; el
+ *     badge de reclamos pendientes se reconsulta por REST.
  * No existe aviso al crear un pedido: todo pedido nace `pendiente` y el panel
  * de administración no muestra los pendientes, así que el admin se entera
  * recién al confirmarse el pago. Para el cliente, su propio POST ya le devolvió
@@ -50,6 +53,7 @@ export const EVENTOS_SOCKET = {
   PARAMETROS_ACTUALIZADOS: 'parametros_actualizados',
   STOCK_ACTUALIZADO: 'stock_actualizado',
   SUCURSAL_ESTADO: 'sucursal_estado',
+  QUEJA_ACTUALIZADA: 'queja_actualizada',
 };
 
 /**

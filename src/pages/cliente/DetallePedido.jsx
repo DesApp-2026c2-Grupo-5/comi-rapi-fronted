@@ -19,8 +19,9 @@ import {
   Row,
   Col,
   Alert,
+  Form,
 } from "react-bootstrap";
-import { FaArrowLeft, FaRedo, FaShippingFast, FaStar, FaPen } from "react-icons/fa";
+import { FaArrowLeft, FaRedo, FaShippingFast, FaStar, FaPen, FaExclamationCircle } from "react-icons/fa";
 import { usePedidos } from "../../hooks/usePedidos";
 import { useRepetirPedido } from "../../hooks/useRepetirPedido";
 import { useParametros } from "../../hooks/useParametros";
@@ -28,18 +29,26 @@ import {
   obtenerMisResenas,
   obtenerProductosElegiblesParaResenar,
 } from "../../api/resenas";
+import { obtenerMisQuejas, responderQueja, cerrarQueja } from "../../api/quejas";
 import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
+  ESTADOS_QUEJA,
+  ETIQUETAS_MOTIVO_QUEJA,
+  ETIQUETAS_ESTADO_QUEJA,
+  VARIANTE_ESTADO_QUEJA,
 } from "../../utils/constants";
-import { formatPrice } from "../../utils/formatters";
+import { formatPrice, formatDateTime } from "../../utils/formatters";
 import { calcularCostoEnvio } from "../../services/envio";
+import { conectarSocket, EVENTOS_SOCKET } from "../../services/socket";
 import { formatearDireccion } from "../../utils/direccion";
 import IconoEstado from "../../components/comunes/IconoEstado";
 import HistorialStepper from "../../components/comunes/HistorialStepper";
 import ConfirmarModal from "../../components/comunes/ConfirmarModal";
 import ResenaModal from "../../components/cliente/ResenaModal";
+import QuejaModal from "../../components/cliente/QuejaModal";
+import ConversacionQuejaCliente from "../../components/cliente/ConversacionQuejaCliente";
 import { SkeletonTabla } from "../../components/comunes/Skeleton";
 import {
   mensajeConfirmarRepetir,
@@ -86,8 +95,62 @@ const DetallePedido = () => {
   const [elegibles, setElegibles] = useState([]);
   const [misResenas, setMisResenas] = useState([]);
   const [productoAResenar, setProductoAResenar] = useState(null);
+  const [queja, setQueja] = useState(null);
+  const [cargandoQueja, setCargandoQueja] = useState(false);
+  const [mostrarQuejaModal, setMostrarQuejaModal] = useState(false);
+  const [recargaQueja, setRecargaQueja] = useState(0);
+  const [respuestaQueja, setRespuestaQueja] = useState("");
+  const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
+  const [errorQueja, setErrorQueja] = useState("");
+  const [mostrarCerrarQueja, setMostrarCerrarQueja] = useState(false);
+  const [cerrandoQueja, setCerrandoQueja] = useState(false);
   const esEntregado = pedido?.estado === ESTADOS_PEDIDO.ENTREGADO;
   const pedidoId = pedido?.id;
+
+  // Reclamos: un pedido entregado admite una sola queja. Se consulta solo en
+  // ese estado para no pedir datos que no se van a mostrar.
+  useEffect(() => {
+    if (!esEntregado || !pedidoId) {
+      setQueja(null);
+      return undefined;
+    }
+    let vivo = true;
+    setCargandoQueja(true);
+    obtenerMisQuejas(pedidoId).then((res) => {
+      if (!vivo) return;
+      if (res.success) setQueja(res.data[0] || null);
+      setCargandoQueja(false);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [esEntregado, pedidoId, recargaQueja]);
+
+  useEffect(() => {
+    if (!esEntregado || !pedidoId) return undefined;
+    const socket = conectarSocket();
+    const alActualizar = () => setRecargaQueja((valor) => valor + 1);
+    socket.on(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
+
+    // Suscribirse al pedido para recibir notificaciones del cliente
+    const suscribir = async () => {
+      const resp = await suscribirPedido(pedidoId);
+      if (!resp.success) console.warn('Suscripción al pedido falló', resp.error);
+    };
+    suscribir();
+
+    // Re-suscribir al reconectar
+    const onConnect = () => {
+      suscribir();
+    };
+    socket.on('connect', onConnect);
+
+    return () => {
+      socket.off(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
+      socket.off('connect', onConnect);
+      desuscribirPedido(pedidoId);
+    };
+  }, [esEntregado, pedidoId]);
 
   useEffect(() => {
     if (!esEntregado || !pedidoId) {
@@ -174,6 +237,52 @@ const DetallePedido = () => {
     if (resElegibles.success) setElegibles(resElegibles.data);
     if (resMias.success) setMisResenas(resMias.data);
   };
+
+  const alGuardarQueja = (nuevaQueja) => {
+    setQueja(nuevaQueja);
+    setMostrarQuejaModal(false);
+  };
+
+  const enviarRespuestaQueja = async (evento) => {
+    evento.preventDefault();
+    if (!queja || !respuestaQueja.trim()) return;
+    setEnviandoRespuesta(true);
+    setErrorQueja("");
+    const res = await responderQueja(queja.id, respuestaQueja.trim());
+    setEnviandoRespuesta(false);
+    if (res.success) {
+      setQueja(res.data);
+      setRespuestaQueja("");
+    } else {
+      setErrorQueja(res.error || "No se pudo enviar la respuesta");
+    }
+  };
+
+  const confirmarCierreQueja = async () => {
+    if (!queja) return;
+    setCerrandoQueja(true);
+    setErrorQueja("");
+    const res = await cerrarQueja(queja.id);
+    setCerrandoQueja(false);
+    if (res.success) {
+      setQueja(res.data);
+      setMostrarCerrarQueja(false);
+    } else {
+      setErrorQueja(res.error || "No se pudo cerrar el reclamo");
+    }
+  };
+
+  const restantesQueja = queja
+    ? Math.max(
+        0,
+        (queja.maxRespuestasCliente ?? 5) - (queja.respuestasCliente ?? 0),
+      )
+    : 0;
+  const puedeResponderQueja =
+    Boolean(queja) &&
+    queja.estado !== ESTADOS_QUEJA.CERRADA &&
+    restantesQueja > 0;
+  const cerradaQueja = queja?.estado === ESTADOS_QUEJA.CERRADA;
 
   return (
     <Container className="py-5">
@@ -408,6 +517,43 @@ const DetallePedido = () => {
             </div>
           </div>
 
+          {/* Reclamos: solo en pedidos entregados. El cliente puede reclamar
+              una vez; después ve el estado y la respuesta del negocio. */}
+          {esEntregado && (
+            <div className="historial-box mt-4">
+              <span className="historial-titulo">Reclamos</span>
+              {cargandoQueja ? (
+                <p className="text-muted small mb-0">Cargando reclamo…</p>
+              ) : queja ? (
+                <ConversacionQuejaCliente
+                  queja={queja}
+                  respuestaActual={respuestaQueja}
+                  setRespuestaActual={setRespuestaQueja}
+                  enviandoRespuesta={enviandoRespuesta}
+                  cerrandoQueja={cerrandoQueja}
+                  error={errorQueja}
+                  onResponder={enviarRespuestaQueja}
+                  onCerrar={() => setMostrarCerrarQueja(true)}
+                />
+              ) : (
+                <>
+                  <p className="text-muted small mb-2">
+                    Si algo salió mal con este pedido, podés reclamarlo y el
+                    local te responde.
+                  </p>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => setMostrarQuejaModal(true)}
+                  >
+                    <FaExclamationCircle className="me-1" aria-hidden="true" />
+                    Hacer un reclamo
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
           {esFinal && (
             <div className="d-flex gap-2 mt-4 flex-wrap">
               <Button
@@ -451,6 +597,23 @@ const DetallePedido = () => {
         resena={productoAResenar?.resena || null}
         onGuardada={alGuardarResena}
         onCerrar={() => setProductoAResenar(null)}
+      />
+
+      <QuejaModal
+        mostrar={mostrarQuejaModal}
+        pedido={pedido}
+        onGuardada={alGuardarQueja}
+        onCerrar={() => setMostrarQuejaModal(false)}
+      />
+
+      <ConfirmarModal
+        mostrar={mostrarCerrarQueja}
+        titulo="Cerrar reclamo"
+        mensaje="Si cerrás el reclamo no vas a poder volver a responder. ¿Confirmás que ya está solucionado?"
+        textoConfirmar="Sí, cerrar reclamo"
+        cargando={cerrandoQueja}
+        onConfirmar={confirmarCierreQueja}
+        onCancelar={() => setMostrarCerrarQueja(false)}
       />
     </Container>
   );

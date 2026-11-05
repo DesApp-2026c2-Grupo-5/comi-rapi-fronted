@@ -23,6 +23,7 @@
 /* eslint-disable react/prop-types */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import {
   Alert,
@@ -261,6 +262,7 @@ const TablaProductos = ({ titulo, filas, orden, onOrdenar }) => (
 const ReporteNegocio = () => {
   const { user, hydrated } = useAuth();
   const esSuperadmin = user?.rol === ROLES.SUPERADMIN;
+  const esAdmin = user?.rol === ROLES.ADMIN;
 
   const [desde, setDesde] = useState(RANGO_INICIAL[0]);
   const [hasta, setHasta] = useState(RANGO_INICIAL[1]);
@@ -755,9 +757,25 @@ const ReporteNegocio = () => {
         </Col>
         <Col xl={7}>
           <Card className="shadow-sm h-100">
-            <Card.Header as="h2" className="h5">
-              <FaUsers className="me-2 text-secondary" aria-hidden="true" />
-              Clientes
+            <Card.Header className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <h2 className="h5 mb-0">
+                <FaUsers className="me-2 text-secondary" aria-hidden="true" />
+                Clientes
+              </h2>
+              {/* El acceso a la cartera de clientes vive acá y no en el navbar:
+                  se consulta junto con sus métricas del período. Solo el
+                  ADMINISTRADOR tiene esa pantalla; el superadmin ya la tiene en
+                  su menú Negocio. */}
+              {esAdmin && (
+                <Button
+                  as={Link}
+                  to="/admin/clientes"
+                  variant="outline-primary"
+                  size="sm"
+                >
+                  Ver clientes
+                </Button>
+              )}
             </Card.Header>
             <Card.Body>
               <Row className="g-2 mb-3">

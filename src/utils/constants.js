@@ -111,3 +111,52 @@ export const VARIANTE_TIPO = {
   [TIPO_PERSONALIZACION.ACOMPANAR]: 'success',
   [TIPO_PERSONALIZACION.CONDIMENTO]: 'light',
 };
+
+// Reclamos del cliente sobre pedidos entregados.
+export const MOTIVOS_QUEJA = {
+  PEDIDO_INCOMPLETO: 'PEDIDO_INCOMPLETO',
+  PRODUCTO_EN_MAL_ESTADO: 'PRODUCTO_EN_MAL_ESTADO',
+  DEMORA_EN_LA_ENTREGA: 'DEMORA_EN_LA_ENTREGA',
+  ERROR_DE_COBRO: 'ERROR_DE_COBRO',
+  OTRO: 'OTRO',
+};
+
+export const ETIQUETAS_MOTIVO_QUEJA = {
+  [MOTIVOS_QUEJA.PEDIDO_INCOMPLETO]: 'Pedido incompleto',
+  [MOTIVOS_QUEJA.PRODUCTO_EN_MAL_ESTADO]: 'Producto en mal estado',
+  [MOTIVOS_QUEJA.DEMORA_EN_LA_ENTREGA]: 'Demora en la entrega',
+  [MOTIVOS_QUEJA.ERROR_DE_COBRO]: 'Error de cobro',
+  [MOTIVOS_QUEJA.OTRO]: 'Otro motivo',
+};
+
+export const ESTADOS_QUEJA = {
+  PENDIENTE: 'PENDIENTE',
+  EN_REVISION: 'EN_REVISION',
+  RESUELTA: 'RESUELTA',
+  RECHAZADA: 'RECHAZADA',
+  CERRADA: 'CERRADA',
+};
+
+export const ETIQUETAS_ESTADO_QUEJA = {
+  [ESTADOS_QUEJA.PENDIENTE]: 'Pendiente',
+  [ESTADOS_QUEJA.EN_REVISION]: 'En revisión',
+  [ESTADOS_QUEJA.RESUELTA]: 'Resuelta',
+  [ESTADOS_QUEJA.RECHAZADA]: 'Rechazada',
+  [ESTADOS_QUEJA.CERRADA]: 'Cerrada por el cliente',
+};
+
+export const VARIANTE_ESTADO_QUEJA = {
+  [ESTADOS_QUEJA.PENDIENTE]: 'warning',
+  [ESTADOS_QUEJA.EN_REVISION]: 'info',
+  [ESTADOS_QUEJA.RESUELTA]: 'success',
+  [ESTADOS_QUEJA.RECHAZADA]: 'danger',
+  [ESTADOS_QUEJA.CERRADA]: 'secondary',
+};
+
+// Estados finales: no admiten más cambios.
+export const ESTADOS_QUEJA_FINALES = [
+  ESTADOS_QUEJA.RESUELTA,
+  ESTADOS_QUEJA.RECHAZADA,
+  ESTADOS_QUEJA.CERRADA,
+];
+
