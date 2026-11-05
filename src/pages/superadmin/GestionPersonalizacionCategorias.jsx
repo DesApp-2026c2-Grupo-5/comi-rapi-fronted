@@ -13,8 +13,7 @@ import { FaPlus } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { obtenerCategorias } from '../../api/categorias';
-import { obtenerProductos } from '../../api/productos';
+import { useCategorias, useProductos } from '../../hooks/queries';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import TablaPersonalizacion from '../../components/admin/TablaPersonalizacion';
 import SubnavPersonalizacion from '../../components/admin/SubnavPersonalizacion';
@@ -27,55 +26,28 @@ const GestionPersonalizacionCategorias = () => {
   const {
     plantillas,
     loading,
+    cargar,
     actualizarPlantilla,
     eliminarPlantilla,
   } = usePersonalizacion();
+
+  useEffect(() => {
+    cargar({ elementos: false });
+  }, [cargar]);
   const { notificar } = useNotificaciones();
   const [filtroTipo, setFiltroTipo] = useState('todos');
 
-  const [categorias, setCategorias] = useState([]);
-  const [cargandoCategorias, setCargandoCategorias] = useState(true);
-  const [errorCategorias, setErrorCategorias] = useState('');
-
-  const [productos, setProductos] = useState([]);
-  const [cargandoProductos, setCargandoProductos] = useState(true);
-
-  useEffect(() => {
-    let vigente = true;
-    const cargarCategorias = async () => {
-      setCargandoCategorias(true);
-      const res = await obtenerCategorias();
-      if (!vigente) return;
-      if (res.success) {
-        setCategorias(res.data || []);
-        setErrorCategorias('');
-      } else {
-        setErrorCategorias(
-          res.error || 'No se pudieron cargar las categorías.'
-        );
-      }
-      setCargandoCategorias(false);
-    };
-    cargarCategorias();
-    return () => {
-      vigente = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let vigente = true;
-    const cargarProductos = async () => {
-      setCargandoProductos(true);
-      const res = await obtenerProductos();
-      if (!vigente) return;
-      if (res.success) setProductos(res.data || []);
-      setCargandoProductos(false);
-    };
-    cargarProductos();
-    return () => {
-      vigente = false;
-    };
-  }, []);
+  // Catálogos compartidos con la caché pública del resto de la app.
+  const {
+    data: categorias = [],
+    isPending: cargandoCategorias,
+    error: errorCategoriasQuery,
+  } = useCategorias();
+  const errorCategorias = errorCategoriasQuery?.message || '';
+  const {
+    data: productos = [],
+    isPending: cargandoProductos,
+  } = useProductos();
 
   const categoriaIdParam = searchParams.get('categoriaId') || '';
   const [categoriaSeleccionada, setCategoriaSeleccionada] =

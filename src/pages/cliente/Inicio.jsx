@@ -27,20 +27,23 @@
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { FaShoppingCart } from 'react-icons/fa';
-import { useState, useEffect } from 'react';
-import { obtenerCategorias, obtenerCategoriaPorId } from '../../api/categorias';
-import { obtenerMasVendidos } from '../../api/productos';
-import { obtenerPromociones } from '../../api/promociones';
-import { useAuth } from '../../hooks/useAuth';
-import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
+import { useMemo } from 'react';
+import {
+  useCategorias,
+  useMasVendidos,
+  usePromociones,
+} from '../../hooks/queries';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import PromocionCard from '../../components/cliente/PromocionCard';
+import {
+  IMAGEN_CATEGORIA_POR_DEFECTO,
+  resolverImagen,
+} from '../../utils/imagenes';
 import {
   SkeletonCategorias,
   SkeletonTarjeta,
 } from '../../components/comunes/Skeleton';
 import './Inicio.css';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 // Un DOS_POR_UNO equivale a un 50% de descuento: así se compara contra las
 // promociones porcentuales para elegir las mejores.
@@ -65,108 +68,44 @@ const mejoresPromociones = (promociones, limite = 3) =>
 const aCategoriaVista = (categoria) => ({
   id: categoria.id,
   nombre: categoria.nombre,
-  imagen:
-    categoria.imagen ||
-    `https://via.placeholder.com/150/FF9F1C/FFF?text=${encodeURIComponent(categoria.nombre)}`,
+  imagen: categoria.imagen || IMAGEN_CATEGORIA_POR_DEFECTO,
 });
 
 const Inicio = () => {
-  const [categorias, setCategorias] = useState([]);
-  const [masVendidos, setMasVendidos] = useState([]);
-  const [promociones, setPromociones] = useState([]);
-  // La portada es la primera pantalla que ve el cliente: mientras los tres
-  // pedidos están en vuelo se muestran esqueletos con la geometría real (no un
-  // hueco bajo el título), y si alguno falla se ofrece reintentar en lugar de
-  // dejar secciones vacías sin explicación.
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
-  const { hydrated, isAuthenticated } = useAuth();
+  // Las tres lecturas de la portada son públicas y viven en la caché de
+  // TanStack Query: al volver a la home no se repiten si están frescas.
+  const categoriasQuery = useCategorias();
+  const masVendidosQuery = useMasVendidos();
+  const promocionesQuery = usePromociones();
 
-  // Se muestran los más vendidos del día, no una lista fija: el backend los
-  // calcula con las ventas reales y, si hoy no llegan a 3, completa con los más
-  // caros para que la sección nunca quede vacía.
-  const refrescarMasVendidos = async () => {
-    const res = await obtenerMasVendidos();
-    if (res.success) setMasVendidos(res.data);
-  };
+  const categorias = useMemo(
+    () => (categoriasQuery.data || []).map(aCategoriaVista),
+    [categoriasQuery.data]
+  );
+  const masVendidos = masVendidosQuery.data || [];
+  const promociones = useMemo(
+    () => mejoresPromociones(promocionesQuery.data || []),
+    [promocionesQuery.data]
+  );
 
-  // Las mejores 3 promociones activas del día: se ordena por descuento
-  // equivalente (2x1 = 50%) y se cortan en 3, igual que los más vendidos.
-  const refrescarPromociones = async () => {
-    const res = await obtenerPromociones();
-    if (res.success) setPromociones(mejoresPromociones(res.data));
-  };
+  // Mientras alguna de las tres no tenga datos se mantiene el esqueleto con la
+  // geometría real. Después las secciones se muestran por separado.
+  const cargando =
+    categoriasQuery.isLoading ||
+    masVendidosQuery.isLoading ||
+    promocionesQuery.isLoading;
+  const errorQuery =
+    categoriasQuery.error || masVendidosQuery.error || promocionesQuery.error;
+  const error = errorQuery
+    ? errorQuery.message || 'No pudimos cargar la portada.'
+    : null;
 
-  const cargar = async () => {
-    setError(null);
-    try {
-      const [resCategorias] = await Promise.all([
-        obtenerCategorias(),
-        refrescarMasVendidos(),
-        refrescarPromociones(),
-      ]);
-      if (resCategorias.success) {
-        setCategorias(resCategorias.data.map(aCategoriaVista));
-      } else {
-        setError(resCategorias.error || 'No pudimos cargar la portada.');
-      }
-    } catch {
-      // fetch rechaza cuando no hay red o el backend no responde. Sin este
-      // catch la promesa quedaba rechazada y la portada se veía vacía, sin
-      // forma de saber que algo había fallado.
-      setError('No pudimos cargar la portada.');
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  useEffect(() => {
-    cargar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !isAuthenticated) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => cargar();
-    // catalogo_actualizado sólo avisa {tipo, id, accion}. Las categorías se
-    // aplican sobre los círculos en el lugar; los más vendidos y las
-    // promociones son derivados, así que se releen (sin spinner) sólo cuando
-    // cambia algo que los afecta.
-    const alCat = async (payload) => {
-      if (payload?.tipo === 'categoria') {
-        const id = Number(payload.id);
-        if (payload.accion === 'eliminado') {
-          setCategorias((prev) => quitarPorId(prev, id));
-          return;
-        }
-        const res = await obtenerCategoriaPorId(id);
-        if (res.success && res.data && res.data.activa !== false) {
-          setCategorias((prev) => fusionarPorId(prev, aCategoriaVista(res.data)));
-        } else {
-          setCategorias((prev) => quitarPorId(prev, id));
-        }
-        return;
-      }
-      if (payload?.tipo === 'producto') {
-        await refrescarMasVendidos();
-        return;
-      }
-      if (payload?.tipo === 'promocion') {
-        await refrescarPromociones();
-      }
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, isAuthenticated]);
+  const reintentar = () =>
+    Promise.all([
+      categoriasQuery.refetch(),
+      masVendidosQuery.refetch(),
+      promocionesQuery.refetch(),
+    ]);
 
   // MODIFICADO: Icono de bicicleta (SVG inline, sin dependencias extra).
   const BicicletaIcon = () => (
@@ -281,10 +220,7 @@ const Inicio = () => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                setCargando(true);
-                cargar();
-              }}
+              onClick={reintentar}
             >
               Reintentar
             </Button>
@@ -317,7 +253,7 @@ const Inicio = () => {
                         {/* width/height reserves el espacio y evita el salto de layout
                             al cargar; lazy porque recién se ven si el usuario baja. */}
                         <img
-                          src={cat.imagen}
+                          src={resolverImagen(cat.imagen)}
                           alt={cat.nombre}
                           width={150}
                           height={150}

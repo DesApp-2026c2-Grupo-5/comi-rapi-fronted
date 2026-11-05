@@ -22,179 +22,91 @@
  *
  */
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert, Form } from 'react-bootstrap';
-import { obtenerProductos, obtenerProductoPorId } from '../../api/productos';
-import { obtenerCategorias, obtenerCategoriaPorId } from '../../api/categorias';
 import {
-  obtenerPromociones,
-  obtenerPromocionPorId,
-  obtenerProductosDePromocion,
-} from '../../api/promociones';
+  useCategorias,
+  useProductos,
+  useProductosDePromocion,
+  usePromocion,
+  usePromociones,
+} from '../../hooks/queries';
 import { useAuth } from '../../hooks/useAuth';
 import { rutaActual } from '../../utils/rutas';
-import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import RangoPrecio from '../../components/cliente/RangoPrecio';
 import { SkeletonGrillaProductos } from '../../components/comunes/Skeleton';
 import './Catalogo.css';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [productos, setProductos] = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
-  const [idsProductosPromocion, setIdsProductosPromocion] = useState(null);
-  const [nombrePromocion, setNombrePromocion] = useState('');
-  const [errorPromocion, setErrorPromocion] = useState('');
-  const [promocionesPorProducto, setPromocionesPorProducto] = useState(new Map());
-  const { isAuthenticated, hydrated } = useAuth();
+  const productosQuery = useProductos();
+  const categoriasQuery = useCategorias();
+  const promocionesQuery = usePromociones({ incluirProductos: true });
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
+
+  const productos = useMemo(() => productosQuery.data || [], [productosQuery.data]);
+  const categorias = categoriasQuery.data || [];
+  const cargando =
+    productosQuery.isLoading ||
+    categoriasQuery.isLoading ||
+    promocionesQuery.isLoading;
+  const error = productosQuery.error
+    ? productosQuery.error.message || 'No se pudieron cargar los productos.'
+    : "";
 
   // Origen para los enlaces de acceso: se vuelve al catálogo con los filtros
   // que el visitante tenía puestos.
   const origen = rutaActual(location);
 
   // Mapa productoId → mejor promoción activa que lo alcanza, para el badge de
-  // las tarjetas. Un producto puede estar en varias promociones: se queda con la
-  // de mayor descuento (2x1 equivale a 50%). Es un derivado del cruce
-  // promoción×productos, así que se rearma solo (sin spinner).
-  const refrescarPromocionesPorProducto = async () => {
-    const resPromociones = await obtenerPromociones();
-    if (!resPromociones.success) return;
+  // las tarjetas. Es un derivado del cruce promoción×productos que ahora llega
+  // resuelto en una sola respuesta (?include=productos), sin cascada N+1.
+  const promocionesPorProducto = useMemo(() => {
     const descuentoEquivalente = (promo) =>
       promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor);
-    const productosDePromos = await Promise.all(
-      resPromociones.data.map(async (promo) => {
-        const resProd = await obtenerProductosDePromocion(promo.id);
-        return resProd.success
-          ? resProd.data.map((p) => ({ productoId: p.id, promo }))
-          : [];
-      })
-    );
     const porProducto = new Map();
-    productosDePromos.flat().forEach(({ productoId, promo }) => {
-      const actual = porProducto.get(productoId);
-      if (!actual || descuentoEquivalente(promo) > descuentoEquivalente(actual)) {
-        porProducto.set(productoId, promo);
-      }
-    });
-    setPromocionesPorProducto(porProducto);
-  };
-
-  const cargarCatalogo = async () => {
-    setCargando(true);
-    setError('');
-    const [resProductos, resCategorias] = await Promise.all([
-      obtenerProductos(),
-      obtenerCategorias(),
-    ]);
-    if (resProductos.success) {
-      setProductos(resProductos.data);
-    } else {
-      setError(resProductos.error || 'No se pudieron cargar los productos.');
-    }
-    if (resCategorias.success) {
-      setCategorias(resCategorias.data);
-    }
-    await refrescarPromocionesPorProducto();
-    setCargando(false);
-  };
-
-  useEffect(() => {
-    cargarCatalogo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !isAuthenticated) return undefined;
-    const instancia = conectarSocket();
-    // Si se perdió un cambio durante una desconexión, el aviso no llegó:
-    // como el socket es solo un aviso, se resincroniza por REST al reconectar.
-    // La carga inicial la hace el useEffect de arriba, por eso no se pide aquí.
-    const alConectar = () => cargarCatalogo();
-    // catalogo_actualizado sólo avisa {tipo, id, accion}: se relee esa entidad
-    // por REST y se aplica sobre la grilla/pills en memoria, sin recargar toda
-    // la página. Las promociones sí rearman el mapa de badges (es un cruce).
-    const alCat = async (payload) => {
-      if (payload?.tipo === 'producto') {
-        const id = Number(payload.id);
-        if (payload.accion === 'eliminado') {
-          setProductos((prev) => quitarPorId(prev, id));
-          return;
-        }
-        const result = await obtenerProductoPorId(id);
-        if (result.success && result.data && result.data.activo !== false) {
-          setProductos((prev) => fusionarPorId(prev, result.data));
-        } else {
-          setProductos((prev) => quitarPorId(prev, id));
-        }
-        return;
-      }
-      if (payload?.tipo === 'categoria') {
-        const id = Number(payload.id);
-        if (payload.accion === 'eliminado') {
-          setCategorias((prev) => quitarPorId(prev, id));
-          return;
-        }
-        // Para el cliente, `show` da 404 si la categoría quedó inactiva: ese
-        // 404 la saca de las pills.
-        const result = await obtenerCategoriaPorId(id);
-        if (result.success && result.data && result.data.activa !== false) {
-          setCategorias((prev) => fusionarPorId(prev, result.data));
-        } else {
-          setCategorias((prev) => quitarPorId(prev, id));
-        }
-        return;
-      }
-      if (payload?.tipo === 'promocion') {
-        await refrescarPromocionesPorProducto();
-      }
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, isAuthenticated]);
+    (promocionesQuery.data || [])
+      .filter((promo) => promo.activa !== false)
+      .forEach((promo) => {
+        const alcanzados = Array.isArray(promo.productos) ? promo.productos : [];
+        alcanzados.forEach((producto) => {
+          const actual = porProducto.get(producto.id);
+          if (
+            !actual ||
+            descuentoEquivalente(promo) > descuentoEquivalente(actual)
+          ) {
+            porProducto.set(producto.id, promo);
+          }
+        });
+      });
+    return porProducto;
+  }, [promocionesQuery.data]);
 
   // Promoción activa: viene del query param (?promocion=<id>) desde la home
   // ("Aprovechar"). Se cargan los productos alcanzados y se filtra la grilla.
   const promocionId = searchParams.get("promocion");
+  const promocionQuery = usePromocion(promocionId);
+  const productosPromocionQuery = useProductosDePromocion(promocionId);
 
-  useEffect(() => {
-    if (!promocionId) {
-      setIdsProductosPromocion(null);
-      setNombrePromocion("");
-      setErrorPromocion("");
-      return;
+  const nombrePromocion = promocionId
+    ? promocionQuery.data?.nombre || ""
+    : "";
+
+  const idsProductosPromocion = useMemo(() => {
+    if (!promocionId || !Array.isArray(productosPromocionQuery.data)) {
+      return null;
     }
-    const cargar = async () => {
-      const [resPromocion, resProductos] = await Promise.all([
-        obtenerPromocionPorId(promocionId),
-        obtenerProductosDePromocion(promocionId),
-      ]);
-      if (resPromocion.success) {
-        setNombrePromocion(resPromocion.data.nombre);
-      }
-      if (resProductos.success) {
-        setIdsProductosPromocion(new Set(resProductos.data.map((p) => p.id)));
-        setErrorPromocion("");
-      } else {
-        setIdsProductosPromocion(null);
-        setErrorPromocion(
-          resProductos.error ||
-            "No se pudieron cargar los productos de la promoción.",
-        );
-      }
-    };
-    cargar();
-  }, [promocionId]);
+    return new Set(productosPromocionQuery.data.map((p) => p.id));
+  }, [promocionId, productosPromocionQuery.data]);
+
+  const errorPromocion =
+    promocionId && productosPromocionQuery.isError
+      ? productosPromocionQuery.error?.message ||
+        "No se pudieron cargar los productos de la promoción."
+      : "";
 
   // Categoría activa: viene del query param (?categoria=<id>) o por defecto "Todos"
   const categoriaParam = searchParams.get("categoria");

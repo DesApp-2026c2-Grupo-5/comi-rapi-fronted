@@ -28,16 +28,18 @@ const simularDistancia = () => {
 
 const SucursalesCercanas = () => {
   const { isAuthenticated } = useAuth();
-  const { sucursalesCercanas, sucursalAsignada, loading, asignarSucursalOptima } = useSucursal();
+  const { sucursalesCercanas, sucursalAsignada, loading, cargarSucursales } = useSucursal();
   // Distancias simuladas por sucursal (se calculan una sola vez al cargar)
   const [distancias, setDistancias] = useState({});
 
   // Ejecuta la lógica de asignación al entrar a la página y calcula distancias mock
   useEffect(() => {
+    // El proveedor ya no carga para CLIENTE: esta pantalla pide la lista (y deja
+    // asignada la sucursal óptima) al entrar.
     if (isAuthenticated) {
-      asignarSucursalOptima();
+      cargarSucursales();
     }
-  }, [isAuthenticated, asignarSucursalOptima]);
+  }, [isAuthenticated, cargarSucursales]);
 
   // Calcula las distancias simuladas para las sucursales activas
   useEffect(() => {

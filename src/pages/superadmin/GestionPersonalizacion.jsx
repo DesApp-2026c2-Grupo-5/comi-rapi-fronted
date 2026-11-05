@@ -5,7 +5,7 @@ import { FaPlus } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { obtenerProductos } from '../../api/productos';
+import { useProductos } from '../../hooks/queries';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import TablaPersonalizacion from '../../components/admin/TablaPersonalizacion';
 import SubnavPersonalizacion from '../../components/admin/SubnavPersonalizacion';
@@ -24,35 +24,19 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
   // plantillas de su categoría a PersonalizacionElementos y el contexto cargado
   // al inicio de la app puede estar desactualizado.
   useEffect(() => {
-    cargar();
+    cargar({ plantillas: false });
   }, [cargar]);
 
-  // Catálogo real del backend. Antes se usaba `productosMock`, por lo que los
-  // productos dados de alta desde /superadmin/productos no aparecían acá y no
-  // se les podía asignar personalización.
-  const [productos, setProductos] = useState([]);
-  const [cargandoProductos, setCargandoProductos] = useState(true);
-  const [errorProductos, setErrorProductos] = useState('');
-
-  useEffect(() => {
-    let vigente = true;
-    const cargarProductos = async () => {
-      setCargandoProductos(true);
-      const res = await obtenerProductos();
-      if (!vigente) return;
-      if (res.success) {
-        setProductos(res.data || []);
-        setErrorProductos('');
-      } else {
-        setErrorProductos(res.error || 'No se pudieron cargar los productos.');
-      }
-      setCargandoProductos(false);
-    };
-    cargarProductos();
-    return () => {
-      vigente = false;
-    };
-  }, []);
+  // Catálogo real del backend, compartido con la caché pública. Antes se usaba
+  // `productosMock`, por lo que los productos dados de alta desde
+  // /superadmin/productos no aparecían acá y no se les podía asignar
+  // personalización.
+  const {
+    data: productos = [],
+    isPending: cargandoProductos,
+    error: errorProductosQuery,
+  } = useProductos();
+  const errorProductos = errorProductosQuery?.message || '';
 
   const productoIdParam = searchParams.get('productoId') || '';
   const [productoSeleccionado, setProductoSeleccionado] = useState(productoIdParam);

@@ -7,6 +7,11 @@
  * Uso: import { ROLES, ESTADOS_PEDIDO, ESTADO_SUCURSAL } from '../utils/constants';
  */
 
+// Tiempo que una consulta de TanStack Query se considera fresca. Durante esa
+// ventana no se vuelve a pedir al backend al navegar ni al volver a la pestaña;
+// los cambios reales igual llegan por invalidación (socket o mutaciones).
+export const TIEMPO_CACHE_QUERY_MS = 20 * 60 * 1000;
+
 export const ROLES = {
   CLIENTE: 'CLIENTE',
   ADMIN: 'ADMINISTRADOR',

@@ -1,7 +1,7 @@
 /**
  * Propósito: Botón para subir la imagen de un producto o de una categoría
- * desde el dispositivo (desktop o celular). El backend la guarda como
- * archivo en el repo del frontend y devuelve la ruta relativa.
+ * desde el dispositivo (desktop o celular). El backend la guarda en
+ * `public/imagenes` y devuelve la ruta relativa servida en /api/imagenes.
  * Contenido: Componente SubirImagen con input oculto, spinner de subida y
  * vista previa de la imagen actual.
  * Dependencias: react-bootstrap (Button, Spinner), react-icons, api/imagenes.js.
@@ -18,6 +18,7 @@ import {
   subirImagenProducto,
 } from '../../api/imagenes';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { resolverImagen } from '../../utils/imagenes';
 import './SubirImagen.css';
 
 /* El proyecto no usa PropTypes en ningún componente. */
@@ -86,7 +87,7 @@ const SubirImagen = ({ tipo = 'producto', imagen, onImagenSubida }) => {
       </span>
       {imagen ? (
         <img
-          src={imagen}
+          src={resolverImagen(imagen)}
           alt={`Vista previa de la imagen actual de ${nombreSujeto}`}
           className="subir-imagen-preview rounded"
           width={80}

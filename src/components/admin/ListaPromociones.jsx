@@ -9,32 +9,30 @@
  * Uso: <ListaPromociones /> (superadmin) o <ListaPromociones soloLectura /> (admin).
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Container, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
-import {
-  obtenerPromociones,
-  obtenerPromocionPorId,
-  eliminarPromocion,
-  editarPromocion,
-  obtenerProductosDePromocion,
-} from '../../api/promociones';
-import { fusionarPorId } from '../../utils/catalogoRealtime';
+import { eliminarPromocion, editarPromocion } from '../../api/promociones';
 import { formatDate } from '../../utils/formatters';
+import { usePromociones } from '../../hooks/queries';
 import ConfirmarModal from '../comunes/ConfirmarModal';
-import { useAuth } from '../../hooks/useAuth';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
 const ListaPromociones = ({ soloLectura = false }) => {
   const navigate = useNavigate();
-  const { user, hydrated } = useAuth();
-  const [promociones, setPromociones] = useState([]);
-  const [conteoProductos, setConteoProductos] = useState({});
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  // Se piden todas (incluidas las dadas de baja) con sus productos: el conteo
+  // sale de cada promoción, sin una segunda vuelta por cada fila.
+  const {
+    data: promociones = [],
+    isPending: cargando,
+    error: errorQuery,
+  } = usePromociones({ incluirInactivas: true, incluirProductos: true });
+  const [errorLocal, setErrorLocal] = useState('');
+  const error = errorLocal || errorQuery?.message || '';
   const [filtroEstado, setFiltroEstado] = useState('todas');
   const [filtroTipo, setFiltroTipo] = useState('todos');
   // Objetos { id, nombre } que esperan confirmación en el modal
@@ -42,66 +40,11 @@ const ListaPromociones = ({ soloLectura = false }) => {
   const [promoAReactivar, setPromoAReactivar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
 
-  const cargarPromociones = async () => {
-    setCargando(true);
-    setError('');
-    const result = await obtenerPromociones({ incluirInactivas: true });
-    if (result.success) {
-      setPromociones(result.data);
-      const conteos = await Promise.all(
-        result.data.map(async (promocion) => {
-          const res = await obtenerProductosDePromocion(promocion.id);
-          return [promocion.id, res.success ? res.data.length : 0];
-        })
-      );
-      setConteoProductos(Object.fromEntries(conteos));
-    } else {
-      setError(result.error || 'No se pudieron cargar las promociones.');
-    }
-    setCargando(false);
-  };
+  const conteoProductos = (promocion) =>
+    Array.isArray(promocion.productos) ? promocion.productos.length : 0;
 
-  useEffect(() => {
-    cargarPromociones();
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => cargarPromociones();
-    // catalogo_actualizado avisa qué promoción cambió (incluido asignar/quitar
-    // un producto, que emite `actualizado`): se relee la promoción y su conteo
-    // de productos, sin recargar la tabla.
-    const alCat = async (payload) => {
-      if (payload?.tipo !== 'promocion') return;
-      const id = Number(payload.id);
-      if (payload.accion === 'eliminado') {
-        setPromociones((prev) =>
-          prev.map((promocion) =>
-            Number(promocion.id) === id ? { ...promocion, activa: false } : promocion
-          )
-        );
-        return;
-      }
-      const result = await obtenerPromocionPorId(id);
-      if (result.success && result.data) {
-        setPromociones((prev) => fusionarPorId(prev, result.data));
-        const res = await obtenerProductosDePromocion(id);
-        if (res.success) {
-          setConteoProductos((prev) => ({ ...prev, [id]: res.data.length }));
-        }
-      }
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    };
-  }, [hydrated, user]);
+  const refrescar = () =>
+    queryClient.invalidateQueries({ queryKey: ['public', 'promociones'] });
 
   const handleEditar = (id) => {
     navigate(`/superadmin/promocion/editar/${id}`);
@@ -119,9 +62,9 @@ const ListaPromociones = ({ soloLectura = false }) => {
     const result = await eliminarPromocion(promoAEliminar.id);
     if (result.success) {
       setPromoAEliminar(null);
-      cargarPromociones();
+      await refrescar();
     } else {
-      setError(result.error || 'No se pudo eliminar la promoción.');
+      setErrorLocal(result.error || 'No se pudo eliminar la promoción.');
     }
     setConfirmando(false);
   };
@@ -134,9 +77,9 @@ const ListaPromociones = ({ soloLectura = false }) => {
     const result = await editarPromocion(promoAReactivar.id, { activa: true });
     if (result.success) {
       setPromoAReactivar(null);
-      cargarPromociones();
+      await refrescar();
     } else {
-      setError(result.error || 'No se pudo reactivar la promoción.');
+      setErrorLocal(result.error || 'No se pudo reactivar la promoción.');
     }
     setConfirmando(false);
   };
@@ -227,7 +170,7 @@ const ListaPromociones = ({ soloLectura = false }) => {
                 <td data-label="Nombre">
                   {promocion.nombre}
                   <div className="small text-muted">
-                    {conteoProductos[promocion.id] ?? 0} productos
+                    {conteoProductos(promocion)} productos
                     {promocion.descripcion ? ` — ${promocion.descripcion}` : ''}
                   </div>
                 </td>

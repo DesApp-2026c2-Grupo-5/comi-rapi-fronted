@@ -12,7 +12,7 @@ export const productosMock = [
     nombre: 'Hamburguesa Clásica',
     precio: 9800,
     categoria: 'Hamburguesas',
-    imagen: 'https://via.placeholder.com/300x200?text=Hamburguesa+Clásica',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Deliciosa hamburguesa con lechuga, tomate y queso.',
   },
   {
@@ -20,7 +20,7 @@ export const productosMock = [
     nombre: 'Hamburguesa Doble',
     precio: 12900,
     categoria: 'Hamburguesas',
-    imagen: 'https://via.placeholder.com/300x200?text=Hamburguesa+Doble',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Doble carne, doble queso, doble sabor.',
   },
   {
@@ -28,7 +28,7 @@ export const productosMock = [
     nombre: 'Pizza Muzzarella',
     precio: 16900,
     categoria: 'Pizzas',
-    imagen: 'https://via.placeholder.com/300x200?text=Pizza+Muzzarella',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Pizza clásica con abundante muzzarella.',
   },
   {
@@ -36,7 +36,7 @@ export const productosMock = [
     nombre: 'Pizza Napolitana',
     precio: 19500,
     categoria: 'Pizzas',
-    imagen: 'https://via.placeholder.com/300x200?text=Pizza+Napolitana',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Con tomate, muzzarella y albahaca fresca.',
   },
   {
@@ -44,7 +44,7 @@ export const productosMock = [
     nombre: 'Coca-Cola 500ml',
     precio: 3600,
     categoria: 'Bebidas',
-    imagen: 'https://via.placeholder.com/300x200?text=Coca-Cola',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Coca-Cola bien fría de 500ml.',
   },
   {
@@ -52,7 +52,7 @@ export const productosMock = [
     nombre: 'Limonada Natural',
     precio: 3400,
     categoria: 'Bebidas',
-    imagen: 'https://via.placeholder.com/300x200?text=Limonada',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Limonada natural recién preparada.',
   },
   {
@@ -60,7 +60,7 @@ export const productosMock = [
     nombre: 'Combo Doble',
     precio: 21900,
     categoria: 'Combos',
-    imagen: 'https://via.placeholder.com/300x200?text=Combo+Doble',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Hamburguesa doble, papas fritas y bebida incluida.',
   },
   {
@@ -68,7 +68,7 @@ export const productosMock = [
     nombre: 'Papas Fritas Grandes',
     precio: 6900,
     categoria: 'Papas',
-    imagen: 'https://via.placeholder.com/300x200?text=Papas+Fritas',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Porción grande de papas crujientes con sal.',
   },
   {
@@ -76,7 +76,7 @@ export const productosMock = [
     nombre: 'Papas Cheddar',
     precio: 8700,
     categoria: 'Papas',
-    imagen: 'https://via.placeholder.com/300x200?text=Papas+Cheddar',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Papas con abundante cheddar fundido y cebollín.',
   },
   {
@@ -84,7 +84,7 @@ export const productosMock = [
     nombre: 'Lava Cake',
     precio: 7400,
     categoria: 'Postres',
-    imagen: 'https://via.placeholder.com/300x200?text=Lava+Cake',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Bizcocho de chocolate con centro fundido.',
   },
   {
@@ -92,7 +92,7 @@ export const productosMock = [
     nombre: 'Cheesecake',
     precio: 7900,
     categoria: 'Postres',
-    imagen: 'https://via.placeholder.com/300x200?text=Cheesecake',
+    imagen: '/api/imagenes/productos/placeholder-producto.png',
     descripcion: 'Cheesecake cremoso con salsa de frutos rojos.',
   },
 ];

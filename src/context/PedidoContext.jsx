@@ -3,22 +3,32 @@
  *            y las transiciones de estado (PENDIENTE → CONFIRMADO → ... → ENTREGADO / CANCELADO).
  * Contenido: PedidoProvider, PedidoContext, con funciones crearPedido, confirmarPedido,
  *            cambiarEstado y obtenerPedidosPendientes.
- * Dependencias: React (createContext, useState, useCallback, useMemo, useEffect),
- *               utils/constants.js, api/pedidos.js.
+ * Dependencias: React, @tanstack/react-query, utils/constants.js, api/pedidos.js,
+ *               hooks/queries (clave y lectura de pedidos).
  * Uso: <PedidoProvider> envuelve la app en App.jsx. Consumir con usePedidos().
  *
  * NOTA: Sin mocks ni fallbacks. Todos los datos provienen de la API real
  * (Postgres): si la API falla, el error se muestra y no se simula nada.
+ *
+ * La lista vive en la caché privada de TanStack Query. Las mutaciones
+ * (crear/confirmar/cambiar estado) actualizan esa caché con la respuesta del
+ * backend, así todas las pantallas y el contexto ven el mismo pedido sin
+ * volver a pedir la lista.
  */
 
-import React, { createContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { createContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import PropTypes from 'prop-types';
 import { ESTADOS_PEDIDO } from '../utils/constants';
 import { useAuth } from '../hooks/useAuth';
 import { useSucursalOperativa } from '../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../hooks/useNotificaciones';
 import * as pedidosApi from '../api/pedidos';
+import { queryKeys, usePedidosQuery } from '../hooks/queries';
+import { fetchPedidos } from '../hooks/queries/fetchers';
 import {
+  alReconectar,
   conectarSocket,
   desconectarSocket,
   EVENTOS_SOCKET,
@@ -28,17 +38,17 @@ import {
 // Se crea el contexto
 export const PedidoContext = createContext(null);
 
+// Clave de la lista sin filtros: la misma que observa usePedidosQuery.
+const CLAVE_PEDIDOS = queryKeys.private.pedidos({});
+
 /**
  * Proveedor del contexto de pedidos.
  * @param {React.ReactNode} children - Componentes hijos.
  */
 export const PedidoProvider = ({ children }) => {
-  // Todos los pedidos del usuario autenticado (desde la API real)
-  const [pedidos, setPedidos] = useState([]);
+  const queryClient = useQueryClient();
   // Pedido recién creado/confirmado (se muestra en la página de confirmación)
   const [pedidoActual, setPedidoActual] = useState(null);
-  // Carga inicial desde la API
-  const [cargandoPedidos, setCargandoPedidos] = useState(false);
   // Se incrementa al confirmar un pago: el Navbar lo usa para animar "Mis Pedidos"
   const [senalPedido, setSenalPedido] = useState(0);
   const { user, hydrated, isAdmin, isCliente, isSuperadmin } = useAuth();
@@ -46,6 +56,11 @@ export const PedidoProvider = ({ children }) => {
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
   const emailSesion = user?.email;
+  const haySesion = hydrated && Boolean(emailSesion);
+
+  // La lista se lee de la caché privada. El backend la scopea por su propia
+  // cookie (cliente: sus pedidos; admin: su sucursal; superadmin: global).
+  const pedidosQuery = usePedidosQuery({ enabled: haySesion });
 
   // El panel operativo no muestra pedidos PENDIENTE (sin pagar). El admin ve
   // los de su sucursal (el backend ya los scopea); el superadmin recibe la
@@ -54,49 +69,40 @@ export const PedidoProvider = ({ children }) => {
   // aviso de elegir sucursal.
   const filtrarPorRol = useCallback(
     (lista) => {
+      const pedidos = lista || [];
       if (isAdmin) {
-        return (lista || []).filter((p) => p.estado !== ESTADOS_PEDIDO.PENDIENTE);
+        return pedidos.filter((p) => p.estado !== ESTADOS_PEDIDO.PENDIENTE);
       }
       if (isSuperadmin) {
         if (!sucursalOperativaId) return [];
-        return (lista || []).filter(
+        return pedidos.filter(
           (p) =>
             p.estado !== ESTADOS_PEDIDO.PENDIENTE &&
             Number(p.sucursal?.id ?? p.sucursalId) === Number(sucursalOperativaId)
         );
       }
-      return lista;
+      return pedidos;
     },
     [isAdmin, isSuperadmin, sucursalOperativaId]
   );
 
-  // Carga inicial y ante cambios de sesión: el backend scopea por su propia
-  // cookie, acá solo se espera a la hidratación y se limpia al salir.
-  useEffect(() => {
-    if (!hydrated) return;
-    let vivo = true;
-    (async () => {
-      setCargandoPedidos(true);
-      try {
-        if (!emailSesion) {
-          if (vivo) setPedidos([]);
-          return;
-        }
-        const res = await pedidosApi.obtenerPedidos();
-        if (vivo && res.success && Array.isArray(res.data)) {
-          setPedidos(filtrarPorRol(res.data));
-        }
-      } finally {
-        if (vivo) setCargandoPedidos(false);
-      }
-    })();
-    return () => {
-      vivo = false;
-    };
-  }, [hydrated, emailSesion, filtrarPorRol]);
+  // La caché guarda la respuesta cruda del backend; el filtro por rol es un
+  // derivado de la vista y se recalcula sin volver a pedir la lista.
+  const pedidos = useMemo(
+    () => filtrarPorRol(pedidosQuery.data),
+    [filtrarPorRol, pedidosQuery.data]
+  );
+
+  const cargandoPedidos = haySesion && pedidosQuery.isLoading;
 
   // Último estado conocido por pedido (para detectar transiciones)
   const estadosPreviosRef = useRef({});
+
+  // Al cambiar de sesión no se comparan estados de otra cuenta: el primer
+  // listado de la sesión nueva sólo arma el snapshot.
+  useEffect(() => {
+    estadosPreviosRef.current = {};
+  }, [emailSesion]);
 
   const detectarCambios = useCallback(
     (lista) => {
@@ -179,6 +185,23 @@ export const PedidoProvider = ({ children }) => {
     [notificar, user, isAdmin, isCliente, isSuperadmin, sucursalOperativaId, navigate]
   );
 
+  // Cada vez que la lista cambia (carga inicial, mutación o aviso de socket) se
+  // comparan los estados contra el snapshot anterior. En la primera carga no
+  // hay snapshot, así que no se dispara ningún aviso por pedidos viejos.
+  useEffect(() => {
+    if (!haySesion) return;
+    detectarCambios(pedidos);
+  }, [haySesion, pedidos, detectarCambios]);
+
+  // La página de confirmación vive en pedidoActual, que solo existe en
+  // memoria: si la lista trae una versión más nueva, se sincroniza.
+  useEffect(() => {
+    setPedidoActual((current) => {
+      if (!current) return current;
+      return pedidos.find((p) => p.id === current.id) || current;
+    });
+  }, [pedidos]);
+
   // Las rooms viven en el servidor, así que hay que volver a suscribirse
   // cuando cambia el conjunto de pedidos (p. ej. al crear uno nuevo). Se usa un
   // string de ids como dependencia para no re-suscribir en cada cambio de estado.
@@ -188,29 +211,52 @@ export const PedidoProvider = ({ children }) => {
   );
 
   /**
-   * Vuelve a leer la lista de pedidos por REST y la deja en el estado.
-   *
-   * El socket no trae datos: solo avisa. Por eso, ante cualquier evento, la
-   * fuente de verdad sigue siendo `GET /api/pedidos`.
+   * Vuelve a leer la lista de pedidos por REST y deja la respuesta en la
+   * caché. El socket no trae datos: solo avisa, y la fuente de verdad sigue
+   * siendo `GET /api/pedidos`.
    * @returns {Promise<void>}
    */
   const refrescarPedidos = useCallback(async () => {
+    if (!haySesion) return;
     try {
-      const res = await pedidosApi.obtenerPedidos();
-      if (!res.success || !Array.isArray(res.data)) return;
-      const lista = filtrarPorRol(res.data);
-      detectarCambios(lista);
-      setPedidos(lista);
-      // La página de confirmación vive en pedidoActual, que solo existe en
-      // memoria: si no se actualiza, queda mostrando el estado viejo.
-      setPedidoActual((current) => {
-        if (!current) return current;
-        return lista.find((p) => p.id === current.id) || current;
+      await queryClient.fetchQuery({
+        queryKey: CLAVE_PEDIDOS,
+        queryFn: ({ signal }) => fetchPedidos({ filtros: {}, signal }),
+        // Fuerza una lectura real: el aviso del socket puede referirse a un
+        // cambio ocurrido dentro de la ventana de frescura de la caché.
+        staleTime: 0,
       });
     } catch {
       // refresco silencioso: no se molesta al usuario con banners de error
     }
-  }, [filtrarPorRol, detectarCambios]);
+  }, [haySesion, queryClient]);
+
+  /**
+   * Al recibir pedido_actualizado por socket, solo se trae ese pedido por REST
+   * y se actualiza la caché de forma quirúrgica, sin re-fetch de toda la lista.
+   * @param {number} pedidoId
+   */
+  const actualizarPedidoCache = useCallback(
+    async (pedidoId) => {
+      if (!haySesion) return;
+      try {
+        const res = await pedidosApi.obtenerPedidoPorId(pedidoId);
+        if (res.success && res.data) {
+          queryClient.setQueryData(CLAVE_PEDIDOS, (prev) =>
+            Array.isArray(prev)
+              ? prev.map((p) => (p.id === pedidoId ? res.data : p))
+              : prev
+          );
+          setPedidoActual((current) =>
+            current && current.id === pedidoId ? res.data : current
+          );
+        }
+      } catch {
+        // silencioso: si falla, la caché se mantiene como estaba
+      }
+    },
+    [haySesion, queryClient]
+  );
 
   // Avisos en tiempo real: reemplaza al refresco periódico de 3 s.
   //   - admin:      recibe pedido_actualizado de su sucursal, sin suscribirse.
@@ -238,21 +284,26 @@ export const PedidoProvider = ({ children }) => {
       // entra a `sucursal:{id}` y el superadmin a `admins` desde el backend al
       // conectar, así que suscribirlos acá sería redundante.
       if (isCliente) ids.forEach((id) => { suscribirPedido(id); });
-      // Si se perdió un cambio mientras no había conexión, el aviso no llegó.
-      // Como el socket es solo un aviso, se resincroniza por REST.
-      refrescarPedidos();
     };
-    const alCambiarPedido = () => { refrescarPedidos(); };
+    // La carga inicial la hace la query al habilitarse. Solo una reconexión
+    // necesita resincronizar: durante la caída del canal se pudo perder un aviso.
+    const desregistrarReconexion = alReconectar(instancia, refrescarPedidos);
+    const alCambiarPedido = ({ pedidoId }) => {
+      actualizarPedidoCache(pedidoId);
+    };
 
     instancia.on('connect', alConectar);
     instancia.on(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alCambiarPedido);
-    alConectar(); // por si la conexión ya venía abierta de una instancia previa
+    // Si la conexión ya venía abierta de una instancia previa, no habrá un
+    // nuevo 'connect': las rooms se piden ahora, sin volver a pedir /pedidos.
+    if (instancia.connected) alConectar();
 
     return () => {
+      desregistrarReconexion();
       instancia.off('connect', alConectar);
       instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alCambiarPedido);
     };
-  }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos, versionSocket]);
+  }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos, actualizarPedidoCache, versionSocket]);
 
   // Al cerrar sesión se cierra el canal: con otra cookie, el backend rechazaría
   // el handshake de todas formas, y dejarlo abierto sería una conexión muerta.
@@ -275,7 +326,9 @@ export const PedidoProvider = ({ children }) => {
   const crearPedido = useCallback(async (datosPedido, sucursalAsignada) => {
       const res = await pedidosApi.crearPedido(datosPedido, sucursalAsignada);
       if (res.success) {
-        setPedidos((prev) => insertarPrimero(prev, res.data));
+        queryClient.setQueryData(CLAVE_PEDIDOS, (prev) =>
+          insertarPrimero(Array.isArray(prev) ? prev : [], res.data)
+        );
         setPedidoActual(res.data);
         return res.data;
       }
@@ -284,7 +337,7 @@ export const PedidoProvider = ({ children }) => {
     // "No se pudo guardar el pedido en la base de datos" sólo le agregaba ruido.
     notificar(res.error || 'No se pudo guardar el pedido.', 'danger');
     return null;
-  }, [notificar]);
+  }, [notificar, queryClient]);
 
   /**
    * Confirma el pago: PENDIENTE → CONFIRMADO en la API real, persistiendo el
@@ -296,8 +349,10 @@ export const PedidoProvider = ({ children }) => {
   const confirmarPedido = useCallback(async (pedidoId, medioPago) => {
     const res = await pedidosApi.confirmarPedido(pedidoId, medioPago);
     if (res.success && res.data) {
-      setPedidos((prev) =>
-        prev.map((p) => (p.id === pedidoId ? res.data : p))
+      queryClient.setQueryData(CLAVE_PEDIDOS, (prev) =>
+        Array.isArray(prev)
+          ? prev.map((p) => (p.id === pedidoId ? res.data : p))
+          : prev
       );
       setPedidoActual((current) =>
         current && current.id === pedidoId ? res.data : current
@@ -309,7 +364,7 @@ export const PedidoProvider = ({ children }) => {
     // cliente y este wrapper sólo lo pisaría con el prefijo y el id del pedido.
     notificar(res.error || 'No se pudo confirmar el pedido.', 'danger');
     return null;
-  }, [notificar]);
+  }, [notificar, queryClient]);
 
   /**
    * Cambia el estado de un pedido contra la API real (usado por el admin).
@@ -323,8 +378,10 @@ export const PedidoProvider = ({ children }) => {
     try {
       const res = await pedidosApi.cambiarEstado(pedidoId, nuevoEstado);
       if (res.success && res.data) {
-        setPedidos((prev) =>
-          prev.map((p) => (p.id === pedidoId ? res.data : p))
+        queryClient.setQueryData(CLAVE_PEDIDOS, (prev) =>
+          Array.isArray(prev)
+            ? prev.map((p) => (p.id === pedidoId ? res.data : p))
+            : prev
         );
         setPedidoActual((current) =>
           current && current.id === pedidoId ? res.data : current
@@ -337,7 +394,7 @@ export const PedidoProvider = ({ children }) => {
       notificar(`No se pudo cambiar el estado del pedido #${pedidoId}: ${error.message}`, 'danger');
       return null;
     }
-  }, [notificar]);
+  }, [notificar, queryClient]);
 
   /**
    * Devuelve los pedidos pendientes (PENDIENTE y CONFIRMADO) usados por la
@@ -369,4 +426,8 @@ export const PedidoProvider = ({ children }) => {
   );
 
   return <PedidoContext.Provider value={value}>{children}</PedidoContext.Provider>;
+};
+
+PedidoProvider.propTypes = {
+  children: PropTypes.node,
 };

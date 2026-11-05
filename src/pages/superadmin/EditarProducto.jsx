@@ -1,11 +1,11 @@
 /**
  * Propósito: Página para editar o crear un producto usando Container de Bootstrap.
- * Contenido: Componente EditarProducto con carga de datos por ID, recarga ante
- *            `catalogo_actualizado` de ESTE producto, FormularioProducto y el
- *            aviso de promociones que no alcanzan al producto.
+ * Contenido: Componente EditarProducto con carga de datos por ID vía TanStack
+ *            Query, FormularioProducto y el aviso de promociones que no
+ *            alcanzan al producto.
  * Dependencias: react-bootstrap (Container, Alert, Button), react-router-dom,
  *               FormularioProducto, api/productos.js, api/promociones.js,
- *               hooks/useAuth, hooks/useNotificaciones, services/socket,
+ *               hooks/queries, hooks/useNotificaciones,
  *               components/comunes/Skeleton (SkeletonTarjeta), EditarProducto.css.
  * Uso: Ruta "/superadmin/producto/editar/:id" o "/superadmin/producto/nuevo" → <EditarProducto />
  *
@@ -15,20 +15,16 @@
  * hueco al abrir y al guardar, y ofrece el alta en un clic.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
-import { obtenerProductoPorId, crearProducto, editarProducto } from '../../api/productos';
-import {
-  obtenerPromociones,
-  obtenerProductosDePromocion,
-  asignarProducto,
-} from '../../api/promociones';
-import { useAuth } from '../../hooks/useAuth';
+import { crearProducto, editarProducto } from '../../api/productos';
+import { asignarProducto } from '../../api/promociones';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { useProducto, usePromociones } from '../../hooks/queries';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 import './EditarProducto.css';
 
@@ -40,108 +36,74 @@ import './EditarProducto.css';
  * las promos ("10% Hamburguesas"), aunque el modelo guarde el alcance producto
  * por producto. Devuelve solo los huecos: lo que ya está asignado no se repite.
  *
+ * @param {Array} promociones promociones activas con `productos` incluidos
  * @param {number|string} productoId
  * @param {number|string} categoriaId
- * @returns {Promise<Array<{id: number, nombre: string}>>}
+ * @returns {Array<{id: number, nombre: string}>}
  */
-const promocionesQueNoAlcanzan = async (productoId, categoriaId) => {
+const promocionesQueNoAlcanzan = (promociones, productoId, categoriaId) => {
   const idProducto = Number(productoId);
   const idCategoria = Number(categoriaId);
   if (!Number.isInteger(idProducto) || !Number.isInteger(idCategoria)) {
     return [];
   }
 
-  // Sin argumentos trae solo las promociones activas.
-  const resPromociones = await obtenerPromociones();
-  if (!resPromociones.success) return [];
-
-  const faltantes = [];
-  for (const promocion of resPromociones.data) {
-    const resProductos = await obtenerProductosDePromocion(promocion.id);
-    if (!resProductos.success) continue;
-    const alcanzados = resProductos.data || [];
-    if (alcanzados.some((p) => Number(p.id) === idProducto)) continue;
-    if (alcanzados.some((p) => Number(p.categoriaId) === idCategoria)) {
-      faltantes.push(promocion);
-    }
-  }
-  return faltantes;
+  return promociones.filter((promocion) => {
+    const alcanzados = Array.isArray(promocion.productos)
+      ? promocion.productos
+      : [];
+    if (alcanzados.some((p) => Number(p.id) === idProducto)) return false;
+    return alcanzados.some((p) => Number(p.categoriaId) === idCategoria);
+  });
 };
 
 const EditarProducto = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, hydrated } = useAuth();
+  const queryClient = useQueryClient();
   const { notificar } = useNotificaciones();
-  const [producto, setProducto] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-  // Promos de la categoría que todavía no incluyen a este producto.
-  const [sugerencias, setSugerencias] = useState([]);
+  // `staleTime: Infinity` evita que un refetch al volver a la pestaña pise la
+  // edición en curso. Las claves se invalidan cuando el backend avisa cambios.
+  const {
+    data: producto = null,
+    isPending,
+    error: errorProducto,
+  } = useProducto(id, { enabled: Boolean(id), staleTime: Infinity });
+  const [errorLocal, setErrorLocal] = useState('');
   const [agregandoId, setAgregandoId] = useState(null);
   const [descartado, setDescartado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const error = errorLocal || errorProducto?.message || '';
+  const cargando = Boolean(id) && isPending;
+
+  // Las promos activas traen sus productos incluidos: el aviso se deduce de esa
+  // misma lectura, sin una petición por cada promo.
+  const { data: promociones = [] } = usePromociones({
+    incluirProductos: true,
+    enabled: Boolean(id),
+  });
+  const sugerencias = useMemo(
+    () =>
+      producto && producto.tipo !== 'COMBO'
+        ? promocionesQueNoAlcanzan(
+            promociones,
+            producto.id,
+            producto.categoriaId
+          )
+        : [],
+    [promociones, producto]
+  );
 
   // Un combo se crea en su propia pantalla, así el formulario no le muestra al
   // admin el campo "tipo" para elegir entre producto y combo.
   const forzarTipo = location.pathname.includes('nuevo-combo') ? 'COMBO' : null;
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    if (id) {
-      const result = await obtenerProductoPorId(id);
-      if (result.success) {
-        setProducto(result.data);
-      } else {
-        setProducto(null);
-        setError(result.error || 'No se pudo cargar el producto.');
-      }
-    }
-    setCargando(false);
-  }, [id]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
-
-  // Si cambia ESTE producto (el que se está editando), se recarga para mostrar
-  // los datos vigentes. Eventos de otras entidades se ignoran a propósito:
-  // resetear el formulario por cambios ajenos perdería la edición en curso.
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    const alEvento = (payload) => {
-      if (payload?.tipo !== 'producto') return;
-      if (Number(payload?.id) !== Number(id)) return;
-      cargar();
-    };
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
-    return () => {
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
-    };
-  }, [hydrated, user, id, cargar]);
-
   // El aviso es por producto: al cambiar de pantalla vuelve a mostrarse aunque
   // se haya ocultado en el anterior.
   useEffect(() => {
     setDescartado(false);
-    setSugerencias([]);
   }, [id]);
-
-  // Revisión al abrir. Cubre también los productos creados antes de que
-  // existiera este aviso, sin obligar a guardarlos de nuevo.
-  useEffect(() => {
-    if (!id || !producto || producto.tipo === 'COMBO') return undefined;
-    let vigente = true;
-    promocionesQueNoAlcanzan(producto.id, producto.categoriaId).then((res) => {
-      if (vigente) setSugerencias(res);
-    });
-    return () => {
-      vigente = false;
-    };
-  }, [id, producto]);
 
   const agregarAPromocion = async (promocion) => {
     const productoId = producto?.id ?? id;
@@ -150,25 +112,29 @@ const EditarProducto = () => {
     const result = await asignarProducto(promocion.id, productoId);
     setAgregandoId(null);
     if (!result.success) {
-      setError(result.error || 'No se pudo agregar el producto a la promoción.');
+      setErrorLocal(result.error || 'No se pudo agregar el producto a la promoción.');
       return;
     }
     notificar(`Producto agregado a ${promocion.nombre}.`, 'success');
-    setSugerencias((prev) => prev.filter((p) => p.id !== promocion.id));
+    // La lista de promociones incluye los productos asignados: al invalidarla,
+    // el aviso recalcula y esta promoción deja de aparecer.
+    await queryClient.invalidateQueries({ queryKey: ['public', 'promociones'] });
   };
 
   const handleGuardar = async (datosProducto) => {
     if (guardando) return;
     setGuardando(true);
-    setError('');
+    setErrorLocal('');
     try {
       const result = id
         ? await editarProducto(id, datosProducto)
         : await crearProducto(datosProducto);
       if (!result.success) {
-        setError(result.error || 'No se pudo guardar el producto.');
+        setErrorLocal(result.error || 'No se pudo guardar el producto.');
         return;
       }
+
+      await queryClient.invalidateQueries({ queryKey: ['public'] });
 
       // Un combo no puede ser alcanzado por promociones: el backend lo rechaza.
       if (datosProducto.tipo === 'COMBO') {
@@ -177,7 +143,8 @@ const EditarProducto = () => {
       }
 
       const productoId = id || result.data?.id;
-      const nuevas = await promocionesQueNoAlcanzan(
+      const nuevas = promocionesQueNoAlcanzan(
+        promociones,
         productoId,
         datosProducto.categoriaId
       );
@@ -187,12 +154,10 @@ const EditarProducto = () => {
         return;
       }
 
-      // Se queda en la pantalla en vez de ir al listado: el aviso solo sirve si
-      // está a la vista cuando el admin todavía tiene fresco el producto.
-      setSugerencias(nuevas);
       setDescartado(false);
       if (!id) {
-        // Ya existe: la ruta de alta volvería a crear otro producto.
+        // Ya existe: la ruta de alta volvería a crear otro producto. La pantalla
+        // de edición recalcula el aviso con los datos recién creados.
         navigate(`/superadmin/producto/editar/${productoId}`, { replace: true });
       }
     } finally {

@@ -11,7 +11,8 @@
  * Uso: <PanelSuperadmin /> - Se renderiza en PanelSuperadminPage.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Row,
   Col,
@@ -21,55 +22,45 @@ import {
   Badge,
 } from 'react-bootstrap';
 import { FaChartBar, FaStore, FaClipboardCheck } from 'react-icons/fa';
-import { obtenerResumen } from '../../api/superadmin';
 import { SkeletonPagina } from '../comunes/Skeleton';
 import {
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
 } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { queryKeys, useResumenSuperadminQuery } from '../../hooks/queries';
+import { conectarSocket, alReconectar, EVENTOS_SOCKET } from '../../services/socket';
 
 const formatearPesos = (valor) =>
   `$${Number(valor || 0).toLocaleString('es-AR')}`;
 
 const PanelSuperadmin = () => {
-  const [resumen, setResumen] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const {
+    data: resumen,
+    isPending: cargando,
+    error: errorQuery,
+  } = useResumenSuperadminQuery();
+  const error = errorQuery?.message || '';
   const { user, hydrated } = useAuth();
 
-  const cargar = async () => {
-    setCargando(true);
-    setError('');
-    const result = await obtenerResumen();
-    if (result.success) {
-      setResumen(result.data);
-    } else {
-      setError(result.error || 'No se pudieron cargar las métricas.');
-    }
-    setCargando(false);
-  };
+  const invalidarResumen = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.private.resumenSuperadmin });
 
-  useEffect(() => {
-    cargar();
-  }, []);
-
+  // Las métricas dependen de los pedidos: se refrescan con cada aviso y al
+  // reconectar (los que se perdieron durante una caída no vuelven a llegar).
+  // El catálogo y el stock no cambian las métricas de este panel.
   useEffect(() => {
     if (!hydrated || !user) return undefined;
     const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => cargar();
-    const alPedido = () => cargar();
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alPedido);
+    const desregistrarReconexion = alReconectar(instancia, invalidarResumen);
+    instancia.on(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, invalidarResumen);
     return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, alPedido);
+      desregistrarReconexion();
+      instancia.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, invalidarResumen);
     };
-  }, [hydrated, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, user, queryClient]);
 
   if (cargando) {
     return (
@@ -83,6 +74,8 @@ const PanelSuperadmin = () => {
   if (error) {
     return <Alert variant="danger" role="alert">{error}</Alert>;
   }
+
+  if (!resumen) return null;
 
   const { pedidos, porEstado, porSucursal, porDia, operacion } = resumen;
 

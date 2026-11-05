@@ -46,7 +46,6 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { useCarrito } from "../../hooks/useCarrito";
 import { usePromocionesCarrito } from "../../hooks/usePromocionesCarrito";
-import { useSucursal } from "../../hooks/useSucursal";
 import { usePedidos } from "../../hooks/usePedidos";
 import { useDirecciones } from "../../hooks/useDirecciones";
 import { useNotificaciones } from "../../hooks/useNotificaciones";
@@ -66,14 +65,7 @@ const Carrito = () => {
   const { descuentoTotal, promocionIds, promosAplicadas } =
     usePromocionesCarrito(items);
   const [actualizando, setActualizando] = useState(false);
-  const { sucursales } = useSucursal();
-  const {
-    crearPedido,
-    obtenerPedidosPendientes,
-    pedidoActual,
-    pedidos,
-    cambiarEstado,
-  } = usePedidos();
+  const { crearPedido, pedidoActual, pedidos, cambiarEstado } = usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();

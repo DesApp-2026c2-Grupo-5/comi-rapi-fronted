@@ -25,15 +25,24 @@ const envolver = (resultado) => ({
 
 /**
  * Lista el stock. Sin filtros devuelve la matriz completa.
- * @param {{sucursalId?: number|string, productoId?: number|string}} [filtros]
- * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ * Con `incluirInsumos` el backend agrega `insumos` en la misma respuesta.
+ * @param {{sucursalId?: number|string, productoId?: number|string,
+ *   incluirInsumos?: boolean}} [filtros]
+ * @returns {Promise<{success: boolean, data?: Array, insumos?: Array, error?: string}>}
  */
 export const obtenerStock = async (filtros = {}) => {
   const params = new URLSearchParams();
   if (filtros.sucursalId) params.append('sucursalId', filtros.sucursalId);
   if (filtros.productoId) params.append('productoId', filtros.productoId);
+  if (filtros.incluirInsumos) params.append('include', 'insumos');
   const query = params.toString();
-  return envolver(await apiGet(`/stock${query ? `?${query}` : ''}`));
+  const resultado = await apiGet(`/stock${query ? `?${query}` : ''}`);
+  return {
+    success: resultado.success,
+    data: resultado.data,
+    insumos: resultado.insumos,
+    error: resultado.error,
+  };
 };
 
 /**

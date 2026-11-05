@@ -5,20 +5,20 @@
  *            SUPERADMINISTRADOR.
  * Contenido: Componente ListaClientes con buscador, filtro por estado y
  *            botón Ver detalle por fila (apunta al detalle según el rol).
- *            Carga desde el backend (rol CLIENTE).
+ *            Carga desde el backend con TanStack Query.
  * Dependencias: react-bootstrap (Table, Button, Container, Alert, Badge, Form, Row, Col),
- *               api/usuarios.js, react-router-dom, react-icons,
+ *               hooks/queries (useClientesQuery), react-router-dom, react-icons,
  *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <ListaClientes /> - Se renderiza en GestionClientes (admin).
  *      <ListaClientes todos /> - Se renderiza en la gestión de clientes del superadmin.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Table, Button, Container, Alert, Badge, Form, Row, Col } from 'react-bootstrap';
 import { FaEye, FaUsers } from 'react-icons/fa';
-import { obtenerClientes } from '../../api/usuarios';
+import { useClientesQuery } from '../../hooks/queries';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
 const inicialesDe = (cliente) => {
@@ -32,26 +32,15 @@ const nombreCompleto = (cliente) =>
 
 const ListaClientes = ({ todos = false }) => {
   const navigate = useNavigate();
-  const [clientes, setClientes] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    data,
+    isPending: cargando,
+    error: errorQuery,
+  } = useClientesQuery();
+  const clientes = useMemo(() => data?.items || [], [data]);
+  const error = errorQuery?.message || '';
   const [buscar, setBuscar] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
-
-  useEffect(() => {
-    const cargar = async () => {
-      setCargando(true);
-      setError('');
-      const result = await obtenerClientes();
-      if (result.success) {
-        setClientes(result.data);
-      } else {
-        setError(result.error || 'No se pudieron cargar los clientes.');
-      }
-      setCargando(false);
-    };
-    cargar();
-  }, []);
 
   const visibles = useMemo(() => {
     const q = buscar.trim().toLowerCase();

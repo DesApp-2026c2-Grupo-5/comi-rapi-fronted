@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { FaUtensils } from "react-icons/fa";
+import { resolverImagen } from "../../utils/imagenes";
 import "./MiniaturasPedido.css";
 
 // Cuatro fotos alcanzan para identificar el pedido sin que la tarjeta crezca
@@ -47,7 +48,7 @@ const Miniatura = ({ producto }) => {
 
   return (
     <img
-      src={imagen}
+      src={resolverImagen(imagen)}
       alt=""
       width={64}
       height={64}

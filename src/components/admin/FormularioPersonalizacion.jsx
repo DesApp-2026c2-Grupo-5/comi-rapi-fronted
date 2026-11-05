@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { TIPO_PERSONALIZACION } from '../../utils/constants';
 import { validatePersonalizacionElemento, validatePlantillaCategoria } from '../../utils/validators';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import { obtenerInsumos } from '../../api/insumos';
+import { useInsumosQuery } from '../../hooks/queries';
 import './FormularioAdmin.css';
 
 const FormularioPersonalizacion = ({
@@ -21,6 +21,12 @@ const FormularioPersonalizacion = ({
   const navigate = useNavigate();
   const { notificar } = useNotificaciones();
 
+  // Catálogo de insumos compartido. Con sesión de gestión el backend devuelve
+  // también los dados de baja, así un elemento existente conserva su vínculo
+  // aunque el insumo ya no se ofrezca. RealtimeBridge invalida la clave ante
+  // cambios de catálogo.
+  const { data: insumos = [] } = useInsumosQuery();
+
   // Modo plantilla por categoría: en vez de un producto concreto, el elemento
   // pertenece a una categoría y se copia a los productos nuevos.
   const categoriaEfectiva =
@@ -33,25 +39,11 @@ const FormularioPersonalizacion = ({
   const [tipo, setTipo] = useState(elemento?.tipo || '');
   const [nombre, setNombre] = useState(elemento?.nombre || '');
   const [insumoId, setInsumoId] = useState(elemento?.insumoId ? String(elemento.insumoId) : '');
-  const [insumos, setInsumos] = useState([]);
   const [precio, setPrecio] = useState(elemento?.precio ?? '');
   const [productoReferenciaId, setProductoReferenciaId] = useState(elemento?.productoReferenciaId ? String(elemento.productoReferenciaId) : '');
   const [minimo, setMinimo] = useState(elemento?.minimo ?? 0);
   const [maximo, setMaximo] = useState(elemento?.maximo ?? 1);
   const [activo, setActivo] = useState(elemento?.activo ?? true);
-
-  // El catálogo de insumos se carga una sola vez. El superadmin recibe todos
-  // (también los dados de baja) para poder conservar el vínculo de un elemento
-  // existente aunque su insumo ya no se ofrezca.
-  useEffect(() => {
-    let vigente = true;
-    obtenerInsumos().then((resultado) => {
-      if (vigente && resultado.success) setInsumos(resultado.data || []);
-    });
-    return () => {
-      vigente = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (elemento && elemento.productoId) {

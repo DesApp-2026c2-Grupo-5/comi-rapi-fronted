@@ -5,16 +5,16 @@
  * Uso: Ruta "/cliente/historial" → <HistorialPedidos />
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Card, Button } from 'react-bootstrap';
 import { FaUtensils } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { useAuth } from '../../hooks/useAuth';
+import { useSucursalesQuery } from '../../hooks/queries';
 import { ESTADOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
-import { obtenerSucursales } from '../../api/sucursales';
 import { filtrarPedidos, FILTRO_INICIAL } from '../../utils/filtrosPedidos';
 import FiltrosPedidos from '../../components/cliente/FiltrosPedidos';
 import ListaPedidos from '../../components/cliente/ListaPedidos';
@@ -27,7 +27,7 @@ const HistorialPedidos = () => {
   const { pedidos } = usePedidos();
   const { user } = useAuth();
   const [filtros, setFiltros] = useState(FILTRO_INICIAL);
-  const [sucursales, setSucursales] = useState([]);
+  const { data: sucursales = [] } = useSucursalesQuery();
   const {
     repitiendoId,
     pedidoARepetir,
@@ -38,16 +38,6 @@ const HistorialPedidos = () => {
     cerrarAviso,
     confirmarRepeticion,
   } = useRepetirPedido();
-
-  useEffect(() => {
-    let vivo = true;
-    obtenerSucursales().then((res) => {
-      if (vivo && res.success) setSucursales(res.data);
-    });
-    return () => {
-      vivo = false;
-    };
-  }, []);
 
   const terminados = useMemo(
     () => pedidos.filter((p) => ESTADOS_FINALES.includes(p.estado)),

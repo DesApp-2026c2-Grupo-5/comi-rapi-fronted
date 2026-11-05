@@ -79,6 +79,10 @@ export const conectarSocket = () => {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });
+
+  // Los avisos de catálogo/parámetros/stock los consume RealtimeBridge, que
+  // invalida las claves de TanStack Query. `pedido_actualizado` lo maneja
+  // PedidoContext. El socket sigue siendo sólo un aviso; no lee datos.
   return socket;
 };
 
@@ -130,4 +134,35 @@ export const desuscribirPedido = (pedidoId) => {
 export const onPedidoEvento = (evento, handler) => {
   if (!socket) return null;
   return socket.on(evento, handler);
+};
+
+/**
+ * Registra un handler para las RECONEXIONES del socket, ignorando la primera
+ * conexión de la sesión.
+ *
+ * Las pantallas ya cargan sus datos al montar; el evento `connect` también se
+ * emite en la primera conexión, así que sin este guard se duplicaba cada carga
+ * completa de página. Solo las reconexiones (red caída, reinicio del backend)
+ * necesitan resincronizar por REST, porque el aviso se perdió mientras no había
+ * canal.
+ *
+ * @param {import('socket.io-client').Socket} instancia - Socket ya conectado o en curso.
+ * @param {() => void} handler - Acción a ejecutar al reconectar.
+ * @returns {() => void} Cleanup para el `useEffect`.
+ */
+export const alReconectar = (instancia, handler) => {
+  if (!instancia) return () => {};
+  // Si la instancia ya está conectada al registrar el handler, la primera
+  // conexión de la sesión ya ocurrió: el próximo `connect` es una reconexión y
+  // sí debe resincronizar. Si todavía está conectando, se ignora la primera.
+  let primeraConexion = !instancia.connected;
+  const listener = () => {
+    if (primeraConexion) {
+      primeraConexion = false;
+      return;
+    }
+    handler();
+  };
+  instancia.on('connect', listener);
+  return () => instancia.off('connect', listener);
 };

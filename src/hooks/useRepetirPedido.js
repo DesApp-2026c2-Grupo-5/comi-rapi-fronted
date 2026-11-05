@@ -3,42 +3,61 @@
  * - Bloquea (todo o nada) si falta un producto o una personalización dada de baja.
  * - Si todo existe, deja repetir con precios vigentes y avisa cambios de precio.
  * - Suma al carrito existente (no reemplaza); el storage se actualiza solo.
+ *
+ * Catálogo y personalización se leen con queryClient.fetchQuery: comparten la
+ * caché de las pantallas y se deduplican. La personalización se pide UNA vez
+ * (sin productoId) y se agrupa por producto, en vez de una llamada por ítem.
+ *
  * Uso: const { repitiendoId, pedidoARepetir, vistaPrevia, noRepetible, ... } = useRepetirPedido();
  */
 
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCarrito } from './useCarrito';
 import { useNotificaciones } from './useNotificaciones';
-import { obtenerProductos } from '../api/productos';
-import { apiGet } from '../api/client';
+import { TIEMPO_CACHE_QUERY_MS } from '../utils/constants';
+import { queryKeys } from './queries/queryKeys';
+import { fetchPersonalizacion, fetchProductos } from './queries/fetchers';
 import { mapearPedidoACarrito } from '../utils/repetirPedidoMapper.js';
 
-async function cargarPersonalizacionVigente(productoIds) {
-  const entradas = await Promise.all(
-    productoIds.map(async (id) => {
-      try {
-        const res = await apiGet(`/personalizacion?productoId=${id}`);
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          return [String(id), res.data];
-        }
-      } catch {
-        // fail-open: sin datos vigentes no se bloquea por personalización
-      }
-      return [String(id), null];
-    })
-  );
-  const mapa = new Map();
-  for (const [id, lista] of entradas) {
-    if (lista) mapa.set(id, lista);
+async function cargarCatalogoVigente(queryClient) {
+  return queryClient.fetchQuery({
+    queryKey: queryKeys.public.productos({}),
+    queryFn: ({ signal }) => fetchProductos({ signal }),
+    staleTime: TIEMPO_CACHE_QUERY_MS,
+  });
+}
+
+async function cargarPersonalizacionVigente(queryClient, productoIds) {
+  const ids = new Set(productoIds.map((id) => String(id)));
+  if (ids.size === 0) return null;
+  try {
+    const elementos = await queryClient.fetchQuery({
+      queryKey: queryKeys.public.personalizacion(null),
+      queryFn: ({ signal }) => fetchPersonalizacion({ signal }),
+      staleTime: TIEMPO_CACHE_QUERY_MS,
+    });
+    const mapa = new Map();
+    (elementos || []).forEach((elemento) => {
+      const clave = String(elemento.productoId);
+      if (!ids.has(clave)) return;
+      const lista = mapa.get(clave) || [];
+      lista.push(elemento);
+      mapa.set(clave, lista);
+    });
+    return mapa.size > 0 ? mapa : null;
+  } catch {
+    // fail-open: sin datos vigentes no se bloquea por personalización
+    return null;
   }
-  return mapa.size > 0 ? mapa : null;
 }
 
 export const useRepetirPedido = () => {
   const { agregarAlCarrito } = useCarrito();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [repitiendoId, setRepitiendoId] = useState(null);
   const [pedidoARepetir, setPedidoARepetir] = useState(null);
   const [vistaPrevia, setVistaPrevia] = useState({
@@ -55,16 +74,12 @@ export const useRepetirPedido = () => {
       setNoRepetible(null);
       setVistaPrevia({ cargando: true, cambiosPrecio: [], totalAntes: 0, totalAhora: 0 });
       try {
-        const resCatalogo = await obtenerProductos();
-        if (!resCatalogo.success) {
-          setVistaPrevia({ cargando: false, cambiosPrecio: [], totalAntes: 0, totalAhora: 0 });
-          return;
-        }
+        const catalogo = await cargarCatalogoVigente(queryClient);
         const ids = (pedido?.productos || [])
           .map((p) => p?.productoId)
           .filter((v) => v !== undefined && v !== null);
-        const mapaPers = await cargarPersonalizacionVigente(ids);
-        const preview = mapearPedidoACarrito(pedido, resCatalogo.data, mapaPers);
+        const mapaPers = await cargarPersonalizacionVigente(queryClient, ids);
+        const preview = mapearPedidoACarrito(pedido, catalogo, mapaPers);
         if (!preview.puedeRepetir) {
           setNoRepetible({ pedido, faltantes: preview.faltantes });
           setPedidoARepetir(null);
@@ -81,7 +96,7 @@ export const useRepetirPedido = () => {
         setVistaPrevia({ cargando: false, cambiosPrecio: [], totalAntes: 0, totalAhora: 0 });
       }
     },
-    []
+    [queryClient]
   );
 
   const cancelarRepeticion = useCallback(() => {
@@ -97,18 +112,14 @@ export const useRepetirPedido = () => {
     if (!pedidoARepetir) return;
     setRepitiendoId(pedidoARepetir.id);
     try {
-      const resCatalogo = await obtenerProductos();
-      if (!resCatalogo.success) {
-        notificar('No se pudo verificar la disponibilidad actual.', 'danger');
-        return;
-      }
+      const catalogo = await cargarCatalogoVigente(queryClient);
       const ids = (pedidoARepetir?.productos || [])
         .map((p) => p?.productoId)
         .filter((v) => v !== undefined && v !== null);
-      const mapaPers = await cargarPersonalizacionVigente(ids);
+      const mapaPers = await cargarPersonalizacionVigente(queryClient, ids);
       const { puedeRepetir, lineas, faltantes } = mapearPedidoACarrito(
         pedidoARepetir,
-        resCatalogo.data,
+        catalogo,
         mapaPers
       );
       if (!puedeRepetir) {
@@ -122,10 +133,12 @@ export const useRepetirPedido = () => {
       setPedidoARepetir(null);
       setVistaPrevia({ cargando: false, cambiosPrecio: [], totalAntes: 0, totalAhora: 0 });
       navigate('/cliente/carrito');
+    } catch {
+      notificar('No se pudo verificar la disponibilidad actual.', 'danger');
     } finally {
       setRepitiendoId(null);
     }
-  }, [pedidoARepetir, agregarAlCarrito, notificar, navigate]);
+  }, [pedidoARepetir, agregarAlCarrito, notificar, navigate, queryClient]);
 
   return {
     repitiendoId,
