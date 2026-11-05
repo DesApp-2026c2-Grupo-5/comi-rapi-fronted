@@ -28,7 +28,7 @@ const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
     categoriaIdRaw === null || categoriaIdRaw === undefined
       ? null
       : typeof categoriaIdRaw === 'object'
-      ? categoriaIdRaw.id
+      ? categoriaIdRaw?.id ?? null
       : categoriaIdRaw;
   // Solo se consulta cuando el producto existe, el modal está abierto y el id
   // de categoría es un número válido. Esto evita enviar [object Object] o
