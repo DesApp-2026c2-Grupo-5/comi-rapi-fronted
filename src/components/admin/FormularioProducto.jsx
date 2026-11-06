@@ -59,6 +59,7 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
 
 
   const [cargandoCategorias, setCargandoCategorias] = useState(true);
+  const [categorias, setCategorias] = useState([]);
   // Receta del combo: [{ productoId, cantidad }]
   const [componentes, setComponentes] = useState([]);
   // Catálogo para elegir los productos de la receta.
