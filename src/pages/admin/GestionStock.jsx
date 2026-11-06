@@ -37,9 +37,11 @@ import {
   obtenerStock,
   obtenerStockDeProducto,
   obtenerStockInsumos,
+  obtenerStockIngredientes,
   crearStock,
   actualizarStock,
   actualizarStockInsumo,
+  actualizarStockIngrediente,
   eliminarStock,
 } from '../../api/stock';
 import { obtenerProductos } from '../../api/productos';
@@ -77,6 +79,7 @@ const FILTROS_PRINCIPALES = [
   { clave: 'productos', etiqueta: 'Productos' },
   { clave: 'combos', etiqueta: 'Combos' },
   { clave: 'insumos', etiqueta: 'Insumos' },
+  { clave: 'ingredientes', etiqueta: 'Ingredientes' },
 ];
 
 const ETIQUETA_TIPO_INSUMO = {
@@ -100,6 +103,7 @@ const GestionStock = () => {
 
   const [stocks, setStocks] = useState([]);
   const [stocksInsumos, setStocksInsumos] = useState([]);
+  const [stocksIngredientes, setStocksIngredientes] = useState([]);
   const [productos, setProductos] = useState([]);
   const [productoId, setProductoId] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -135,11 +139,12 @@ const GestionStock = () => {
     setError('');
     try {
       const filtros = productoId ? { productoId } : {};
-      const [resultadoStock, resultadoProductos, resultadoInsumos] =
+      const [resultadoStock, resultadoProductos, resultadoInsumos, resultadoIngredientes] =
         await Promise.all([
           obtenerStock(filtros),
           obtenerProductos(),
           obtenerStockInsumos(),
+          obtenerStockIngredientes(),
         ]);
       if (resultadoStock.success) setStocks(resultadoStock.data || []);
       else setError(resultadoStock.error || 'No se pudo cargar el stock.');
@@ -148,6 +153,9 @@ const GestionStock = () => {
         setStocksInsumos(resultadoInsumos.data || []);
       } else if (!resultadoStock.success) {
         setError(resultadoInsumos.error || 'No se pudo cargar el stock de insumos.');
+      }
+      if (resultadoIngredientes.success) {
+        setStocksIngredientes(resultadoIngredientes.data || []);
       }
     } finally {
       setCargando(false);
@@ -184,6 +192,14 @@ const GestionStock = () => {
         const resultadoInsumos = await obtenerStockInsumos();
         if (resultadoInsumos.success) {
           setStocksInsumos(resultadoInsumos.data || []);
+        }
+      }
+
+      const tieneIngredientes = Array.isArray(payload?.ingredienteIds);
+      if (tieneIngredientes) {
+        const resultadoIngredientes = await obtenerStockIngredientes();
+        if (resultadoIngredientes.success) {
+          setStocksIngredientes(resultadoIngredientes.data || []);
         }
       }
 
@@ -256,8 +272,13 @@ const GestionStock = () => {
         clase: 'insumo',
         estado: estadoDeStock(fila, umbral),
       })),
+      ...stocksIngredientes.map((fila) => ({
+        ...fila,
+        clase: 'ingrediente',
+        estado: estadoDeStock(fila, umbral),
+      })),
     ],
-    [stocks, stocksInsumos, umbral]
+    [stocks, stocksInsumos, stocksIngredientes, umbral]
   );
 
   const conteos = useMemo(
@@ -266,6 +287,7 @@ const GestionStock = () => {
       productos: stocks.filter((f) => f.tipo !== 'COMBO').length,
       combos: stocks.filter((f) => f.tipo === 'COMBO').length,
       insumos: stocksInsumos.length,
+      ingredientes: stocksIngredientes.length,
     }),
     [filasConEstado.length, stocks, stocksInsumos.length]
   );
@@ -297,6 +319,9 @@ const GestionStock = () => {
       }
       if (filtroPrincipal === 'combos') {
         return fila.clase === 'producto' && fila.tipo === 'COMBO';
+      }
+      if (filtroPrincipal === 'ingredientes') {
+        return fila.clase === 'ingrediente';
       }
       if (filtroPrincipal === 'insumos') {
         return (
@@ -399,8 +424,11 @@ const GestionStock = () => {
   const guardarFila = async (fila, cambios) => {
     setGuardando(true);
     const esInsumo = fila.clase === 'insumo';
+    const esIngrediente = fila.clase === 'ingrediente';
     const resultado = esInsumo
       ? await actualizarStockInsumo(fila.insumoId, cambios)
+      : esIngrediente
+      ? await actualizarStockIngrediente(fila.ingredienteId, cambios)
       : await actualizarStock(fila.sucursalId, fila.productoId, cambios);
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
@@ -411,6 +439,15 @@ const GestionStock = () => {
             prev.map((f) =>
               Number(f.sucursalId) === Number(actualizada.sucursalId) &&
               Number(f.insumoId) === Number(actualizada.insumoId)
+                ? actualizada
+                : f
+            )
+          );
+        } else if (esIngrediente) {
+          setStocksIngredientes((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.ingredienteId) === Number(actualizada.ingredienteId)
                 ? actualizada
                 : f
             )
@@ -701,10 +738,23 @@ const GestionStock = () => {
                 )}
                 {filasVisibles.map((fila) => {
                   const esInsumo = fila.clase === 'insumo';
-                  const esCombo = !esInsumo && fila.tipo === 'COMBO';
-                  const idFila = esInsumo ? fila.insumoId : fila.productoId;
-                  const clave = esInsumo ? `insumo-${idFila}` : idFila;
-                  const nombre = esInsumo ? fila.insumo : fila.producto;
+                  const esIngrediente = fila.clase === 'ingrediente';
+                  const esCombo = !esInsumo && !esIngrediente && fila.tipo === 'COMBO';
+                  const idFila = esInsumo
+                    ? fila.insumoId
+                    : esIngrediente
+                    ? fila.ingredienteId
+                    : fila.productoId;
+                  const clave = esInsumo
+                    ? `insumo-${idFila}`
+                    : esIngrediente
+                    ? `ingrediente-${idFila}`
+                    : idFila;
+                  const nombre = esInsumo
+                    ? fila.insumo
+                    : esIngrediente
+                    ? `${fila.ingrediente} (${fila.unidadMedida})`
+                    : fila.producto;
                   return (
                     <tr
                       key={`${fila.sucursalId}-${clave}`}
@@ -745,7 +795,7 @@ const GestionStock = () => {
                           <Form.Control
                             type="number"
                             min="0"
-                            step="1"
+                            step={esIngrediente ? '0.001' : '1'}
                             size="sm"
                             defaultValue={fila.cantidad}
                             key={`${clave}-${fila.cantidad}-${fila.sucursalId}`}
