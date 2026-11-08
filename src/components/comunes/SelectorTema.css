@@ -1,65 +1,217 @@
 /**
- * Propósito: Estilos del selector de tema (botón de ícono + menú de opciones).
- * Contenido: Botón circular que hereda el color del header y menú con la opción
- *            activa marcada con un check.
- * Dependencias: SelectorTema.jsx (se importa al final del mismo) y los tokens
- *               de styles/tokens.css para radio y foco.
+ * Propósito: Estilos del selector de tema en formato interruptor día/noche.
+ * Contenido: Pista de cielo, estrellas, nube, disco sol/luna con cráteres y las
+ *            dos variantes de tamaño (compacta para la barra, fila para el menú
+ *            de cuenta).
+ * Dependencias: SelectorTema.jsx (se importa desde el mismo componente) y los
+ *               tokens de styles/tokens.css.
  * Uso: Importado desde src/components/comunes/SelectorTema.jsx.
+ *
+ * El gesto es el de un switch físico: el disco se corre de izquierda a derecha
+ * y, al pasar al lado oscuro, el sol se convierte en luna y aparecen las
+ * estrellas. El tamaño se controla con variables para que la misma pieza sirva
+ * en la barra (26px de alto) y en el menú de cuenta (30px) sin duplicar reglas.
+ *
+ * La paleta es la de la marca: cielo de crema a naranja suave con sol naranja
+ * de día, y café profundo con luna de crema de noche. Nada de celeste ni azul,
+ * que rompían con el resto de la página.
  */
 
-.selector-tema-btn {
+.tema-switch {
+  /* Medidas base. La variante compacta es la que se usa en los encabezados. */
+  --tema-alto: 26px;
+  --tema-ancho: 50px;
+  --tema-borde: 3px;
+  --tema-boton: calc(var(--tema-alto) - var(--tema-borde) * 2);
+  --tema-recorrido: calc(
+    var(--tema-ancho) - var(--tema-boton) - var(--tema-borde) * 2
+  );
+
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  padding: 0;
-  /* `currentColor` deja el botón legible tanto sobre el naranja de la navbar
-     como sobre cualquier header claro u oscuro, sin reglas por rol. */
-  color: inherit;
-  background: transparent;
-  border: 2px solid color-mix(in srgb, currentColor 45%, transparent);
-  border-radius: var(--radius-pill, 999px);
-  line-height: 1;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.selector-tema-btn:hover,
-.selector-tema-btn:focus-visible,
-.selector-tema-btn.show {
-  background-color: color-mix(in srgb, currentColor 16%, transparent);
-  border-color: color-mix(in srgb, currentColor 70%, transparent);
-}
-
-.selector-tema-btn:focus-visible {
-  outline: 3px solid currentColor;
-  outline-offset: 2px;
-}
-
-.selector-tema-btn svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.selector-tema-menu {
-  min-width: 11rem;
-}
-
-.selector-tema-menu .dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-}
-
-.selector-tema-menu .dropdown-item svg {
   flex: 0 0 auto;
+  width: var(--tema-ancho);
+  height: var(--tema-alto);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.selector-tema-etiqueta {
-  flex: 1 1 auto;
+/* La fila del menú de cuenta usa la pista un poco más grande: ahí se toca con
+   el pulgar y compite con la altura de los demás renglones. */
+.tema-switch-fila {
+  --tema-alto: 30px;
+  --tema-ancho: 58px;
 }
 
-.selector-tema-check {
-  margin-left: auto;
+.tema-switch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* Sobre el naranja del encabezado el anillo de foco tiene que ser el de la
+   marca: el naranja oscuro del tema claro se perdería contra el fondo. */
+.navbar-comirapi .tema-switch:focus-visible {
+  outline-color: var(--color-on-primary);
+}
+
+/* ============ Pista: cielo ============ */
+.tema-switch-pista {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  /* Cielo diurno: durazno a naranja suave. Tiene cuerpo propio para leerse como
+     objeto tanto sobre el blanco del menú como sobre el naranja de la barra. */
+  background: linear-gradient(180deg, #ffe3b5 0%, #ffc46b 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(58, 36, 16, 0.18),
+    inset 0 2px 4px rgba(58, 36, 16, 0.1);
+  transition: background 0.35s var(--ease-out);
+}
+
+.tema-switch-pista-oscura {
+  /* Noche de café: el marrón profundo de la marca, no un azul genérico. El
+     filo claro la separa de las superficies oscuras del tema. */
+  background: linear-gradient(180deg, #4a2f16 0%, #241708 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 226, 0.18),
+    inset 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* ============ Estrellas ============ */
+.tema-switch-estrellas {
+  position: absolute;
+  top: 6px;
+  left: 9px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #ffe9c8;
+  box-shadow:
+    5px 7px 0 0 #ffe9c8,
+    11px -2px 0 0 rgba(255, 233, 200, 0.85),
+    16px 8px 0 0 rgba(255, 233, 200, 0.7),
+    22px 2px 0 0 #ffe9c8,
+    27px 9px 0 0 rgba(255, 233, 200, 0.6);
+  opacity: 0;
+  transition: opacity 0.2s var(--ease-out);
+}
+
+.tema-switch-pista-oscura .tema-switch-estrellas {
+  opacity: 1;
+  transition-delay: 0.12s;
+}
+
+/* ============ Nube ============ */
+.tema-switch-nube {
+  position: absolute;
+  top: 16px;
+  right: 8px;
+  width: 16px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  opacity: 0.92;
+  transition:
+    opacity 0.25s var(--ease-out),
+    transform 0.35s var(--ease-out);
+}
+
+.tema-switch-nube::before,
+.tema-switch-nube::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.tema-switch-nube::before {
+  top: -5px;
+  left: 3px;
+  width: 9px;
+  height: 9px;
+}
+
+.tema-switch-nube::after {
+  top: -3px;
+  left: 8px;
+  width: 7px;
+  height: 7px;
+}
+
+.tema-switch-pista-oscura .tema-switch-nube {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* ============ Disco: sol / luna ============ */
+.tema-switch-boton {
+  position: absolute;
+  top: var(--tema-borde);
+  left: var(--tema-borde);
+  width: var(--tema-boton);
+  height: var(--tema-boton);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff0cf 0%, #ff9f1c 52%, #e8720a 100%);
+  box-shadow:
+    0 0 8px rgba(232, 114, 10, 0.5),
+    0 1px 3px rgba(58, 36, 16, 0.35);
+  transform: translateX(0);
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.3s var(--ease-out),
+    box-shadow 0.3s var(--ease-out);
+}
+
+.tema-switch-pista-oscura .tema-switch-boton {
+  background: radial-gradient(circle at 38% 32%, #fffaf0 0%, #f3e3c8 60%, #cdb794 100%);
+  box-shadow:
+    0 0 10px rgba(255, 244, 226, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+  transform: translateX(var(--tema-recorrido));
+}
+
+/* Cráteres de la luna: sólo se ven del lado oscuro. */
+.tema-switch-crater {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(58, 36, 16, 0.2);
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-out);
+}
+
+.tema-switch-crater-1 {
+  top: 22%;
+  left: 20%;
+  width: 26%;
+  height: 26%;
+}
+
+.tema-switch-crater-2 {
+  right: 18%;
+  bottom: 20%;
+  width: 18%;
+  height: 18%;
+}
+
+.tema-switch-pista-oscura .tema-switch-crater {
+  opacity: 1;
+  transition-delay: 0.1s;
+}
+
+/* ============ Movimiento reducido ============ */
+@media (prefers-reduced-motion: reduce) {
+  .tema-switch-pista,
+  .tema-switch-estrellas,
+  .tema-switch-nube,
+  .tema-switch-boton,
+  .tema-switch-crater {
+    transition: none;
+  }
 }

@@ -10,6 +10,7 @@ import { useLayoutEffect } from 'react';
 import { NotificacionProvider } from './context/NotificacionContext';
 import { TemaProvider } from './context/TemaContext';
 import { AuthProvider } from './context/AuthContext';
+import { NotificacionesCentroProvider } from './context/NotificacionesCentroContext';
 import { CarritoProvider } from './context/CarritoContext';
 import { SucursalProvider } from './context/SucursalContext';
 import { SucursalOperativaProvider } from './context/SucursalOperativaContext';
@@ -93,25 +94,27 @@ function App() {
           {/* ParametrosProvider va DESPUÉS de AuthProvider: usa useAuth para
               recargar parámetros vía WebSocket solo con sesión vigente. */}
           <AuthProvider>
-            <ParametrosProvider>
-              {/* SucursalOperativaProvider: usa useAuth (sucursalOperativa de
-                  /auth/me) y lo consumen PedidoContext, Navbar y las pantallas
-                  operativas. Va antes de PedidoProvider, que rearma sus
-                  listeners del socket cuando cambia el contexto. */}
-              <SucursalOperativaProvider>
-                <CarritoProvider>
-                  <SucursalProvider>
-                    <PedidoProvider>
-                      <DireccionProvider>
-                        <PersonalizacionProvider>
-                          <AppLayout />
-                        </PersonalizacionProvider>
-                      </DireccionProvider>
-                    </PedidoProvider>
-                  </SucursalProvider>
-                </CarritoProvider>
-              </SucursalOperativaProvider>
-            </ParametrosProvider>
+            <NotificacionesCentroProvider>
+              <ParametrosProvider>
+                {/* SucursalOperativaProvider: usa useAuth (sucursalOperativa de
+                    /auth/me) y lo consumen PedidoContext, Navbar y las pantallas
+                    operativas. Va antes de PedidoProvider, que rearma sus
+                    listeners del socket cuando cambia el contexto. */}
+                <SucursalOperativaProvider>
+                  <CarritoProvider>
+                    <SucursalProvider>
+                      <PedidoProvider>
+                        <DireccionProvider>
+                          <PersonalizacionProvider>
+                            <AppLayout />
+                          </PersonalizacionProvider>
+                        </DireccionProvider>
+                      </PedidoProvider>
+                    </SucursalProvider>
+                  </CarritoProvider>
+                </SucursalOperativaProvider>
+              </ParametrosProvider>
+            </NotificacionesCentroProvider>
           </AuthProvider>
         </NotificacionProvider>
       </BrowserRouter>

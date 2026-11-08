@@ -1,0 +1,385 @@
+/**
+ * Propósito: Estilos del menú de cuenta que abre el logo.
+ * Contenido: Botón de marca (reset de <button>), panel flotante con identidad y
+ *            acciones, y hoja inferior con fondo oscurecido en el teléfono.
+ * Dependencias: MenuCuenta.jsx (se importa desde el mismo componente).
+ * Uso: Importado desde src/components/comunes/MenuCuenta.jsx.
+ *
+ * El panel no depende de Bootstrap: es un bloque propio posicionado respecto
+ * del logo. Así ninguna regla de `.dropdown-item` (como el fondo azul del estado
+ * `active`) puede pisar la paleta de la marca.
+ *
+ * Medidas: el ítem mide 48px de alto y el ícono vive en una ficha de 34px. La
+ * separación entre ficha y texto es de 0.8rem, suficiente para que el ícono no
+ * se lea pegado a la etiqueta ni en el tamaño táctil.
+ */
+
+/* ============ Contenedor y botón de marca ============ */
+.menu-cuenta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* El logo era un <a class="navbar-brand">; ahora es un <button> con los mismos
+   estilos, así que hay que neutralizar el fondo, el borde y la tipografía que el
+   navegador le pone a un botón. */
+.navbar-marca-boton {
+  padding: 0.3125rem 0;
+  margin-right: 1rem;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.navbar-marca-caret {
+  margin-left: 0.15rem;
+  font-size: 0.65rem;
+  opacity: 0.8;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.menu-cuenta-boton-abierto .navbar-marca-caret {
+  transform: rotate(180deg);
+}
+
+.navbar-marca-boton:focus-visible {
+  outline: 2px solid var(--color-on-primary);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ============ Panel ============ */
+/* El panel se monta en un portal sobre <body> y se ubica con `top`/`left`
+   calculados desde el logo (ver calcularPosicion en MenuCuenta.jsx). Por eso es
+   `fixed` y no `absolute`: dentro de la navbar, su z-index quedaría encerrado en
+   el contexto de apilado del header. */
+.menu-cuenta-panel {
+  position: fixed;
+  z-index: 1056;
+  width: 20rem;
+  max-width: calc(100vw - 1.5rem);
+  padding: 0.5rem;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow:
+    0 18px 44px rgba(58, 36, 16, 0.2),
+    0 4px 12px rgba(58, 36, 16, 0.1);
+  transform-origin: top left;
+  animation: menu-cuenta-aparece 0.18s var(--ease-out);
+}
+
+@keyframes menu-cuenta-aparece {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+/* ============ Identidad ============ */
+.menu-cuenta-identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.65rem 0.8rem;
+}
+
+.menu-cuenta-datos {
+  min-width: 0;
+}
+
+.menu-cuenta-nombre {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-cuenta-email {
+  margin: 0.1rem 0 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-cuenta-divisor {
+  height: 1px;
+  margin: 0.3rem 0.55rem;
+  background: var(--color-border-card);
+}
+
+/* ============ Acciones ============ */
+.menu-cuenta-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* ============ Renglón de tema ============ */
+.menu-cuenta-tema {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+/* El interruptor se pega al borde derecho del renglón y no se comprime aunque
+   la etiqueta sea larga. */
+.menu-cuenta-tema-fila .tema-switch {
+  margin-left: auto;
+}
+
+/* Vuelta al tema del sistema: acción secundaria, alineada con el texto del
+   renglón de arriba para no competir con la etiqueta principal. */
+.menu-cuenta-sistema {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.4rem;
+  margin: 0.1rem 0 0.15rem calc(0.55rem + 34px + 0.8rem);
+  padding: 0.2rem 0.4rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+}
+
+.menu-cuenta-sistema svg {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+}
+
+.menu-cuenta-sistema:hover,
+.menu-cuenta-sistema:focus-visible {
+  background: var(--color-cream);
+  color: var(--color-primary-dark);
+}
+
+.menu-cuenta-sistema:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.menu-cuenta-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+}
+
+/* La ficha del ícono separa visualmente el glifo de la etiqueta y da un blanco
+   de color estable en los dos temas. */
+.menu-cuenta-icono {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--color-cream);
+  color: var(--color-primary-dark);
+  font-size: 0.95rem;
+  transition:
+    background-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+}
+
+.menu-cuenta-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-cuenta-flecha {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  opacity: 0.5;
+  transition:
+    opacity 0.18s var(--ease-out),
+    transform 0.18s var(--ease-out);
+}
+
+.menu-cuenta-opcion:hover,
+.menu-cuenta-opcion:focus-visible {
+  background: var(--color-cream);
+}
+
+.menu-cuenta-opcion:hover .menu-cuenta-icono,
+.menu-cuenta-opcion:focus-visible .menu-cuenta-icono {
+  background: var(--color-cream-hover);
+}
+
+.menu-cuenta-opcion:hover .menu-cuenta-flecha,
+.menu-cuenta-opcion:focus-visible .menu-cuenta-flecha {
+  opacity: 0.85;
+  transform: translateX(2px);
+}
+
+.menu-cuenta-opcion:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+/* Ruta actual: se marca con la ficha naranja, no con un relleno de otro color.
+   Sólo se activa una opción por vez (ver estaActivo en MenuCuenta.jsx). */
+.menu-cuenta-opcion-activa {
+  color: var(--color-primary-dark);
+}
+
+.menu-cuenta-opcion-activa .menu-cuenta-icono {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.menu-cuenta-opcion-activa .menu-cuenta-flecha {
+  opacity: 0.85;
+}
+
+/* ============ Cerrar sesión ============ */
+.menu-cuenta-salir {
+  color: var(--color-danger-fill);
+}
+
+.menu-cuenta-salir .menu-cuenta-icono {
+  background: rgba(230, 57, 70, 0.12);
+  color: var(--color-danger-fill);
+}
+
+.menu-cuenta-salir:hover,
+.menu-cuenta-salir:focus-visible {
+  background: rgba(230, 57, 70, 0.09);
+  color: var(--color-danger-fill);
+}
+
+.menu-cuenta-salir:hover .menu-cuenta-icono,
+.menu-cuenta-salir:focus-visible .menu-cuenta-icono {
+  background: rgba(230, 57, 70, 0.2);
+}
+
+/* ============ Hoja inferior en el teléfono ============ */
+/* El fondo oscurecido sólo existe en móvil; en escritorio el panel flota y el
+   cierre por clic afuera lo resuelve el listener del componente. */
+.menu-cuenta-fondo {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .menu-cuenta-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 1054;
+    display: block;
+    background: rgba(43, 26, 10, 0.45);
+    animation: menu-cuenta-fondo-aparece 0.18s var(--ease-out);
+  }
+
+  .menu-cuenta-panel {
+    /* La hoja se apoya en el borde inferior y tapa la barra de navegación del
+       teléfono: sus 1056 quedan por encima del z-index de `.nav-inferior`
+       (1020) y del botón del carrito (1050). Los `!important` pisan las
+       coordenadas inline que trae el panel. */
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 82vh;
+    padding: 0.85rem 0.9rem calc(0.9rem + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    transform-origin: bottom center;
+    animation: menu-cuenta-sube 0.24s var(--ease-out);
+  }
+
+  /* Manija visual de la hoja, como en las hojas nativas. */
+  .menu-cuenta-panel::before {
+    content: '';
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: -0.3rem auto 0.7rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-border-strong);
+  }
+
+  .menu-cuenta-identidad {
+    padding-top: 0;
+    padding-bottom: 0.75rem;
+  }
+
+  .menu-cuenta-opcion {
+    min-height: 54px;
+    font-size: 0.98rem;
+  }
+
+  .menu-cuenta-flecha {
+    display: none;
+  }
+
+  /* El fondo no scrollea detrás de la hoja. */
+  body.menu-cuenta-abierto {
+    overflow: hidden;
+  }
+}
+
+@keyframes menu-cuenta-sube {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes menu-cuenta-fondo-aparece {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ============ Movimiento reducido ============ */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-marca-caret,
+  .menu-cuenta-icono,
+  .menu-cuenta-opcion,
+  .menu-cuenta-flecha {
+    transition: none;
+  }
+
+  .menu-cuenta-panel,
+  .menu-cuenta-fondo {
+    animation: none;
+  }
+}

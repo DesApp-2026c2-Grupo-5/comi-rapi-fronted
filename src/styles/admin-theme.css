@@ -95,9 +95,6 @@ html:has(body.admin-theme)::-webkit-scrollbar-thumb {
   color: var(--color-on-primary);
 }
 
-.admin-theme .navbar-perfil:hover,
-.admin-theme .navbar-perfil:focus-visible,
-.admin-theme .btn-logout-comirapi,
 .admin-theme .btn-acceso-secundario {
   border-color: rgba(138, 90, 43, 0.35);
 }

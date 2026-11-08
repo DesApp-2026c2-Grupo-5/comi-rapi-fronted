@@ -44,3 +44,35 @@ default 30). El frontend no recalcula esa regla: muestra `abiertaAhora`, `cierre
   `/superadmin/parametros` ajusta `margenCierreMinutos`.
 
 El detalle funcional está en `documentacion.md` (§8.1).
+
+## Centro de notificaciones y menú de cuenta
+
+- **Campanita del cliente**: visible solo para el rol CLIENTE, en la fila superior del
+  móvil y en la zona de escritorio del header. Muestra el contador de no leídas
+  (`9+` a partir de diez) y abre un drawer lateral derecho con filtros Todas / Pedidos /
+  Reclamos, estados de carga, vacío y error, y paginación "Ver más".
+- **Persistencia real**: el listado y el contador salen de `/api/notificaciones` y el
+  estado leído se guarda en la base, así que es el mismo desde cualquier dispositivo.
+  El socket solo avisa `notificacion_creada`; los datos se releen por REST.
+- **Menú de cuenta**: con sesión, el logo de Comi-Rapi es un botón que abre un menú con
+  foto, nombre, correo, las opciones Editar direcciones (`/cliente/perfil?direcciones=1`),
+  Configurar perfil (`/cliente/perfil`) y Cerrar sesión, más el interruptor de modo
+  oscuro. El perfil, el logout y el nombre del cliente ya no están a la derecha del
+  header. En móvil el menú se muestra como hoja inferior que tapa la barra de navegación;
+  en escritorio cae debajo del logo. Para invitados el logo sigue siendo el enlace al
+  inicio. El panel **no** usa el `Dropdown` de Bootstrap: sus clases
+  (`.dropdown-item.active`) pintaban de azul el ítem de la ruta actual y, como `NavLink`
+  ignora el query string, en `/cliente/perfil` marcaban las dos opciones a la vez. El
+  estado activo se calcula comparando `pathname` + `search`, y el panel se monta en un
+  portal sobre `<body>` para quedar por encima de la barra inferior del teléfono (mismo
+  `z-index` que el header). Cierra con clic afuera y Escape; el foco queda contenido en
+  el panel y las flechas recorren las opciones.
+- **Interruptor de tema**: `SelectorTema.jsx` es un switch día/noche (sol con nube / luna
+  con estrellas y cráteres) con dos variantes. La compacta vive en la barra de escritorio
+  y, para el invitado, en la fila superior del móvil; la variante `fila` va dentro del
+  menú de cuenta, donde además aparece "Seguir el tema del sistema" cuando la preferencia
+  no es `SISTEMA`. El estado se expone con `role="switch"` y `aria-checked`.
+- **Tiempo real**: el contexto del centro se conecta al socket del backend y refresca el
+  badge al recibir el evento, sin reemplazar al listado REST.
+
+El detalle del backend está en `comi-rapi-backend/docs/notificaciones.md`.

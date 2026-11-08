@@ -19,7 +19,6 @@ import {
   Row,
   Col,
   Alert,
-  Form,
 } from "react-bootstrap";
 import { FaArrowLeft, FaRedo, FaShippingFast, FaStar, FaPen, FaExclamationCircle } from "react-icons/fa";
 import { usePedidos } from "../../hooks/usePedidos";
@@ -34,14 +33,15 @@ import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
   VARIANTE_ESTADO_PEDIDO,
-  ESTADOS_QUEJA,
-  ETIQUETAS_MOTIVO_QUEJA,
-  ETIQUETAS_ESTADO_QUEJA,
-  VARIANTE_ESTADO_QUEJA,
 } from "../../utils/constants";
-import { formatPrice, formatDateTime } from "../../utils/formatters";
+import { formatPrice } from "../../utils/formatters";
 import { calcularCostoEnvio } from "../../services/envio";
-import { conectarSocket, EVENTOS_SOCKET } from "../../services/socket";
+import {
+  conectarSocket,
+  EVENTOS_SOCKET,
+  suscribirPedido,
+  desuscribirPedido,
+} from "../../services/socket";
 import { formatearDireccion } from "../../utils/direccion";
 import IconoEstado from "../../components/comunes/IconoEstado";
 import HistorialStepper from "../../components/comunes/HistorialStepper";
@@ -271,18 +271,6 @@ const DetallePedido = () => {
       setErrorQueja(res.error || "No se pudo cerrar el reclamo");
     }
   };
-
-  const restantesQueja = queja
-    ? Math.max(
-        0,
-        (queja.maxRespuestasCliente ?? 5) - (queja.respuestasCliente ?? 0),
-      )
-    : 0;
-  const puedeResponderQueja =
-    Boolean(queja) &&
-    queja.estado !== ESTADOS_QUEJA.CERRADA &&
-    restantesQueja > 0;
-  const cerradaQueja = queja?.estado === ESTADOS_QUEJA.CERRADA;
 
   return (
     <Container className="py-5">

@@ -1,84 +1,112 @@
 /**
- * Propósito: Selector de tema claro / oscuro / sistema para los encabezados de
- *            la app (navbar del cliente y navbar del panel).
- * Contenido: Botón compacto con ícono del tema activo que abre un menú de tres
- *            opciones (Claro, Oscuro, Sistema) y marca la elegida.
- * Dependencias: react-bootstrap (Dropdown), react-icons/fa, useTema,
- *               utils/temaStorage (TEMAS), SelectorTema.css.
- * Uso: <SelectorTema /> dentro de la barra de acciones de un header.
+ * Propósito: Selector de tema claro / oscuro para los encabezados y el menú de
+ *            cuenta.
+ * Contenido: Componente SelectorTema en dos variantes: `compacto` (interruptor
+ *            suelto para la barra) y `fila` (renglón con etiqueta para el menú
+ *            de cuenta, más el acceso a "seguir el tema del sistema").
+ * Dependencias: react-icons/fa, useTema, utils/temaStorage (TEMAS),
+ *               SelectorTema.css.
+ * Uso: <SelectorTema /> en la barra; <SelectorTema variante="fila" /> dentro
+ *      de MenuCuenta.
  *
- * El botón hereda el color del contenedor (currentColor), así que se ve bien
- * sobre el naranja de la navbar del cliente y sobre la del panel sin reglas
- * específicas por rol. Los ítems del menú usan role="menuitemradio" para que el
- * lector de pantalla anuncie cuál está elegido.
+ * El interruptor imita el gesto de un switch físico: un disco que se corre de
+ * izquierda a derecha. En claro es un sol sobre cielo diurno; en oscuro, una
+ * luna con cráteres sobre cielo nocturno con estrellas. El estado se expone con
+ * `role="switch"` y `aria-checked`, así el lector de pantalla anuncia si el modo
+ * oscuro está activo, y el foco de teclado se dibuja sobre la pista.
+ *
+ * El tema "sistema" no desaparece: el switch siempre deja una elección explícita
+ * (claro u oscuro) y, mientras la preferencia no sea la del sistema, la variante
+ * `fila` ofrece volver a seguirla.
  */
 
-import { Dropdown } from 'react-bootstrap';
-import {
-  FaCheck,
-  FaDesktop,
-  FaMoon,
-  FaSun,
-} from 'react-icons/fa';
+import { FaDesktop, FaMoon, FaSun } from 'react-icons/fa';
+import PropTypes from 'prop-types';
 import { useTema } from '../../hooks/useTema';
 import { TEMAS } from '../../utils/temaStorage';
 import './SelectorTema.css';
 
-const OPCIONES = [
-  { valor: TEMAS.CLARO, etiqueta: 'Claro', Icono: FaSun },
-  { valor: TEMAS.OSCURO, etiqueta: 'Oscuro', Icono: FaMoon },
-  { valor: TEMAS.SISTEMA, etiqueta: 'Sistema', Icono: FaDesktop },
-];
+/**
+ * Pista del interruptor: cielo, estrellas, nube y disco.
+ * @param {{ oscuro: boolean }} props
+ */
+const PistaTema = ({ oscuro }) => (
+  <span
+    className={`tema-switch-pista${
+      oscuro ? ' tema-switch-pista-oscura' : ''
+    }`}
+    aria-hidden="true"
+  >
+    <span className="tema-switch-estrellas" />
+    <span className="tema-switch-nube" />
+    <span className="tema-switch-boton">
+      <span className="tema-switch-crater tema-switch-crater-1" />
+      <span className="tema-switch-crater tema-switch-crater-2" />
+    </span>
+  </span>
+);
 
-const SelectorTema = () => {
+PistaTema.propTypes = {
+  oscuro: PropTypes.bool.isRequired,
+};
+
+const SelectorTema = ({ variante = 'compacto', className = '' }) => {
   const { tema, temaResuelto, definirTema } = useTema();
-  const opcionActual = OPCIONES.find((opcion) => opcion.valor === tema) || OPCIONES[2];
-  const IconoActual = opcionActual.Icono;
-  // "Sistema" resuelve a claro u oscuro según el SO. El sufijo (claro|oscuro)
-  // deja ver qué tema se está pintando ahora, tanto en el botón como en el ítem
-  // del menú (si no, "Sistema" y "Claro" parecen lo mismo con el SO en claro).
-  const sufijoSistema = temaResuelto ? ` (${temaResuelto})` : '';
-  const detalleSistema = tema === TEMAS.SISTEMA ? sufijoSistema : '';
-  const descripcion = `Tema: ${opcionActual.etiqueta}${detalleSistema}. Cambiar tema`;
+  const oscuro = temaResuelto === TEMAS.OSCURO;
+  const alternar = () => definirTema(oscuro ? TEMAS.CLARO : TEMAS.OSCURO);
+  const etiqueta = oscuro ? 'Desactivar modo oscuro' : 'Activar modo oscuro';
+
+  if (variante === 'fila') {
+    return (
+      <div className="menu-cuenta-tema">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={oscuro}
+          className="menu-cuenta-opcion menu-cuenta-tema-fila"
+          onClick={alternar}
+        >
+          <span className="menu-cuenta-icono" aria-hidden="true">
+            {oscuro ? <FaMoon /> : <FaSun />}
+          </span>
+          <span className="menu-cuenta-texto">Modo oscuro</span>
+          <span className="tema-switch tema-switch-fila" aria-hidden="true">
+            <PistaTema oscuro={oscuro} />
+          </span>
+        </button>
+
+        {tema !== TEMAS.SISTEMA && (
+          <button
+            type="button"
+            className="menu-cuenta-sistema"
+            onClick={() => definirTema(TEMAS.SISTEMA)}
+          >
+            <FaDesktop aria-hidden="true" />
+            Seguir el tema del sistema
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <Dropdown align="end" className="selector-tema">
-      <Dropdown.Toggle
-        as="button"
-        type="button"
-        variant=""
-        className="selector-tema-btn"
-        aria-label={descripcion}
-        title={descripcion}
-      >
-        <IconoActual aria-hidden="true" />
-      </Dropdown.Toggle>
-      <Dropdown.Menu className="selector-tema-menu">
-        {OPCIONES.map(({ valor, etiqueta, Icono }) => {
-          const elegida = tema === valor;
-          const texto =
-            valor === TEMAS.SISTEMA ? `${etiqueta}${sufijoSistema}` : etiqueta;
-          return (
-            <Dropdown.Item
-              key={valor}
-              as="button"
-              type="button"
-              role="menuitemradio"
-              aria-checked={elegida}
-              active={elegida}
-              onClick={() => definirTema(valor)}
-            >
-              <Icono aria-hidden="true" />
-              <span className="selector-tema-etiqueta">{texto}</span>
-              {elegida && (
-                <FaCheck className="selector-tema-check" aria-hidden="true" />
-              )}
-            </Dropdown.Item>
-          );
-        })}
-      </Dropdown.Menu>
-    </Dropdown>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={oscuro}
+      aria-label={etiqueta}
+      title={etiqueta}
+      className={`tema-switch ${className}`.trim()}
+      onClick={alternar}
+    >
+      <PistaTema oscuro={oscuro} />
+    </button>
   );
+};
+
+SelectorTema.propTypes = {
+  variante: PropTypes.oneOf(['compacto', 'fila']),
+  className: PropTypes.string,
 };
 
 export default SelectorTema;
