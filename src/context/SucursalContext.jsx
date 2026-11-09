@@ -14,9 +14,10 @@
  * - El superadministrador la habilita al hidratar la sesión porque su selector
  *   de contexto operativo la necesita.
  * - El cliente la pide on-demand con `cargarSucursales` (pantalla Sucursales).
- * - Las mutaciones invalidan el prefijo para que cualquier consumidor vuelva a
- *   leer. La lógica de asignación de sucursal no cambia: sigue siendo el
- *   servicio `asignarSucursalOptima`.
+ * - Las mutaciones actualizan el elemento afectado en la caché (alta/edición/
+ *   baja lógica) sin invalidar la lista; el evento de Socket.IO hace lo mismo
+ *   en las demás sesiones. La lógica de asignación de sucursal no cambia: sigue
+ *   siendo el servicio `asignarSucursalOptima`.
  */
 
 import {
@@ -36,6 +37,7 @@ import {
 } from '../api/sucursales';
 import { asignarSucursalOptima as asignarSucursalOptimaService } from '../services/asignacionSucursal';
 import { pedidosPendientesMock } from '../services/seedData';
+import { actualizarSucursalEnCache } from '../utils/sucursalesCache';
 import { useAuth } from '../hooks/useAuth';
 import { useSucursalesQuery } from '../hooks/queries';
 
@@ -79,6 +81,7 @@ export const SucursalProvider = ({ children }) => {
     data: sucursales = LISTA_VACIA,
     isPending,
     isFetching,
+    isStale,
     refetch,
   } = useSucursalesQuery({
     incluirInactivas: true,
@@ -98,17 +101,24 @@ export const SucursalProvider = ({ children }) => {
   sucursalesRef.current = sucursales;
   const fetchingRef = useRef(isFetching);
   fetchingRef.current = isFetching;
+  // Se usa para no repetir un GET cuando la lista ya está fresca en la caché
+  // (p. ej. al volver a la pantalla después de crear/editar una sucursal).
+  const staleRef = useRef(isStale);
+  staleRef.current = isStale;
 
   /**
    * Carga las sucursales desde el backend (a través de TanStack Query) y
    * devuelve la lista. Si la consulta todavía no estaba habilitada, la
    * habilita: el fetch arranca y el resultado llega al estado del hook. Si ya
-   * hay una lectura en curso se reutiliza en vez de cancelarla y repetirla.
+   * hay una lectura en curso se reutiliza en vez de cancelarla y repetirla. Si
+   * la caché está fresca no se pide de nuevo: las altas/ediciones ya se
+   * aplicaron localmente.
    */
   const obtenerSucursalesFn = useCallback(async () => {
     setConsultaSolicitada(true);
     if (!habilitadaRef.current) return sucursalesRef.current;
     if (fetchingRef.current) return sucursalesRef.current;
+    if (!staleRef.current) return sucursalesRef.current;
     const resultado = await refetch();
     return resultado.data || LISTA_VACIA;
   }, [refetch]);
@@ -133,6 +143,20 @@ export const SucursalProvider = ({ children }) => {
     );
     setAsignacionPendiente(false);
   }, [asignacionPendiente, consultaHabilitada, sucursales]);
+
+  // `sucursalAsignada` es una copia del objeto de la lista. Si la sucursal se
+  // edita (en esta sesión o por el evento realtime de otra), se sincroniza el
+  // nombre/datos sin cambiar la asignación ni volver a pedir la lista.
+  useEffect(() => {
+    setSucursalAsignada((actual) => {
+      if (!actual) return actual;
+      const actualizada = sucursales.find(
+        (s) => String(s.id) === String(actual.id)
+      );
+      if (!actualizada || actualizada === actual) return actual;
+      return actualizada;
+    });
+  }, [sucursales]);
 
   /**
    * Asigna la sucursal óptima usando la lógica del servicio
@@ -160,13 +184,9 @@ export const SucursalProvider = ({ children }) => {
     [sucursales]
   );
 
-  const refrescarSucursales = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: CLAVE_SUCURSALES }),
-    [queryClient]
-  );
-
   /**
-   * Agrega una nueva sucursal (la persiste en el backend e invalida la lista).
+   * Agrega una nueva sucursal. La respuesta del POST trae el objeto completo,
+   * así que se inserta en la caché local en vez de recargar la lista entera.
    * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
    * de Georef) para que el formulario las muestre y el usuario elija.
    * @param {object} sucursal - Datos de la nueva sucursal.
@@ -176,16 +196,25 @@ export const SucursalProvider = ({ children }) => {
     async (sucursal) => {
       const result = await crearSucursal(sucursal);
       if (result.success) {
-        await refrescarSucursales();
+        if (result.data) {
+          actualizarSucursalEnCache(queryClient, {
+            accion: 'creado',
+            data: result.data,
+          });
+        } else {
+          // Sin datos para actualizar la vista: recién acá se revalida.
+          await queryClient.invalidateQueries({ queryKey: CLAVE_SUCURSALES });
+        }
         return { ok: true, data: result.data };
       }
       return { ok: false, error: result.error, opciones: result.opciones };
     },
-    [refrescarSucursales]
+    [queryClient]
   );
 
   /**
-   * Actualiza una sucursal existente e invalida la lista compartida.
+   * Actualiza una sucursal existente. La respuesta del PUT trae el objeto
+   * completo: se reemplaza sólo ese elemento en la caché local.
    * Iteración 1-geo: un 409 devuelve `opciones` (identidades territoriales
    * de Georef) para que el formulario las muestre y el usuario elija.
    * @param {number} id - ID de la sucursal a actualizar.
@@ -196,16 +225,24 @@ export const SucursalProvider = ({ children }) => {
     async (id, datos) => {
       const result = await actualizarSucursal(id, datos);
       if (result.success) {
-        await refrescarSucursales();
+        if (result.data) {
+          actualizarSucursalEnCache(queryClient, {
+            accion: 'actualizado',
+            data: result.data,
+          });
+        } else {
+          await queryClient.invalidateQueries({ queryKey: CLAVE_SUCURSALES });
+        }
         return { ok: true, data: result.data };
       }
       return { ok: false, error: result.error, opciones: result.opciones };
     },
-    [refrescarSucursales]
+    [queryClient]
   );
 
   /**
-   * Elimina (baja lógica) una sucursal e invalida la lista compartida.
+   * Elimina (baja lógica) una sucursal. El backend devuelve la sucursal ya
+   * inactiva: se marca en la caché local sin recargar la lista.
    * @param {number} id - ID de la sucursal a eliminar.
    * @returns {Promise<boolean>} true si se eliminó correctamente.
    */
@@ -213,12 +250,15 @@ export const SucursalProvider = ({ children }) => {
     async (id) => {
       const result = await eliminarSucursal(id);
       if (result.success) {
-        await refrescarSucursales();
+        actualizarSucursalEnCache(queryClient, {
+          accion: 'eliminado',
+          data: result.data || { id, activa: false },
+        });
         return true;
       }
       return false;
     },
-    [refrescarSucursales]
+    [queryClient]
   );
 
   // El superadministrador necesita la lista (incluidas inactivas) para su

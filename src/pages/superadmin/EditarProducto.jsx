@@ -25,6 +25,7 @@ import { crearProducto, editarProducto } from '../../api/productos';
 import { asignarProducto } from '../../api/promociones';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useProducto, usePromociones } from '../../hooks/queries';
+import { queryKeys } from '../../hooks/queries';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 import './EditarProducto.css';
 
@@ -134,7 +135,53 @@ const EditarProducto = () => {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['public'] });
+      // Actualizar caché directamente para evitar refetch innecesario
+      const productoActualizado = result.data;
+      const productoId = id || result.data?.id;
+
+      // 1. Actualizar detalle individual
+      queryClient.setQueryData(queryKeys.public.producto(productoId), productoActualizado);
+
+      // 2. Actualizar TODAS las variantes de lista de productos en caché
+      const variantesLista = [
+        queryKeys.public.productos({}), // base
+        queryKeys.public.productos({ incluirPersonalizacion: true }),
+        queryKeys.public.productos({ incluirResenas: true }),
+        queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }),
+      ];
+
+      const ordenarPorNombre = (a, b) =>
+        String(a.nombre).localeCompare(String(b.nombre), 'es');
+
+      for (const clave of variantesLista) {
+        const lista = queryClient.getQueryData(clave);
+        if (Array.isArray(lista)) {
+          if (id) {
+            // Edición: reemplazar en la lista
+            const idx = lista.findIndex((p) => String(p.id) === String(productoId));
+            if (idx >= 0) {
+              const nuevaLista = [...lista];
+              nuevaLista[idx] = productoActualizado;
+              queryClient.setQueryData(clave, nuevaLista);
+            }
+          } else {
+            // Creación: agregar ordenado por nombre
+            const nuevaLista = [...lista, productoActualizado].sort(ordenarPorNombre);
+            queryClient.setQueryData(clave, nuevaLista);
+          }
+        }
+      }
+
+      // 3. Actualizar más vendidos si aplica
+      const masVendidos = queryClient.getQueryData(queryKeys.public.masVendidos);
+      if (Array.isArray(masVendidos)) {
+        const idx = masVendidos.findIndex((p) => String(p.id) === String(productoId));
+        if (idx >= 0) {
+          const nuevaLista = [...masVendidos];
+          nuevaLista[idx] = productoActualizado;
+          queryClient.setQueryData(queryKeys.public.masVendidos, nuevaLista);
+        }
+      }
 
       // Un combo no puede ser alcanzado por promociones: el backend lo rechaza.
       if (datosProducto.tipo === 'COMBO') {
@@ -142,7 +189,6 @@ const EditarProducto = () => {
         return;
       }
 
-      const productoId = id || result.data?.id;
       const nuevas = promocionesQueNoAlcanzan(
         promociones,
         productoId,

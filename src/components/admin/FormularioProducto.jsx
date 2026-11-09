@@ -69,8 +69,9 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   // claves cuando cambia una categoría o un producto.
   const { data: categorias = [], isPending: cargandoCategorias } =
     useCategorias();
-  // Los productos posibles de una receta; sólo se piden si es combo.
-  const { data: productos = [] } = useProductos({ enabled: esCombo });
+  // Los productos posibles de una receta; se mantiene la query siempre activa
+  // para recibir actualizaciones en tiempo real (RealtimeBridge → setQueryData).
+  const { data: productos = [] } = useProductos();
 
   // Un combo se guarda siempre en la categoría "Combos": el admin no la elige.
   const categoriaCombos = categorias.find(esCategoriaCombos);

@@ -13,16 +13,18 @@
  * para el primer render (antes de que responda el backend) y para que la app
  * siga siendo usable si la API no responde.
  *
- * La lectura vive en la caché pública de TanStack Query: ParametrosContext ya
- * no hace su propia petición ni escucha el socket. RealtimeBridge invalida
+ * La lectura vive en la caché pública de TanStack Query. RealtimeBridge invalida
  * ['public', 'parametros'] cuando el backend avisa un cambio y el contexto se
  * re-renderiza con los datos frescos.
  */
 
-import { createContext, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useQueryClient } from '@tanstack/react-query';
-import { actualizarParametros } from '../api/parametros';
+import {
+  actualizarParametros as actualizarParametrosApi,
+  actualizarParametro as actualizarParametroApi,
+} from '../api/parametros';
 import { desconectarSocket } from '../services/socket';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys, useParametrosQuery } from '../hooks/queries';
@@ -89,7 +91,7 @@ export const ParametrosProvider = ({ children }) => {
    */
   const actualizar = useCallback(
     async (cambios) => {
-      const result = await actualizarParametros(cambios);
+      const result = await actualizarParametrosApi(cambios);
       if (result.success) {
         queryClient.setQueryData(queryKeys.public.parametros, result.data);
         return { success: true };
@@ -99,15 +101,41 @@ export const ParametrosProvider = ({ children }) => {
     [queryClient]
   );
 
-  // El socket se cierra al cerrar sesión: con otra cookie, el backend rechazaría
-  // el handshake de todas formas y dejarlo abierto sería una conexión muerta.
+  /**
+   * Actualiza un único parámetro (solo superadmin) y sincroniza la caché.
+   * @param {string} clave - Clave del parámetro.
+   * @param {number} valor - Nuevo valor.
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  const actualizarParametro = useCallback(
+    async (clave, valor) => {
+      const result = await actualizarParametroApi(clave, valor);
+      if (result.success) {
+        queryClient.setQueryData(queryKeys.public.parametros, result.data);
+        return { success: true };
+      }
+      return { success: false, error: result.error };
+    },
+    [queryClient]
+  );
+
+  // Track if we ever had a user session to avoid disconnecting on initial load for guests
+  const hadUserRef = useRef(false);
   useEffect(() => {
-    if (hydrated && !user) desconectarSocket();
+    if (user) hadUserRef.current = true;
+  }, [user]);
+
+  // El socket se cierra al cerrar sesión: solo si HABÍA usuario antes y ahora no hay.
+  // Esto evita desconectar el socket en la carga inicial para invitados (sin sesión).
+  useEffect(() => {
+    if (hydrated && hadUserRef.current && !user) {
+      desconectarSocket();
+    }
   }, [hydrated, user]);
 
   const value = useMemo(
-    () => ({ parametros, lista, loading, recargar, actualizar }),
-    [parametros, lista, loading, recargar, actualizar]
+    () => ({ parametros, lista, loading, recargar, actualizar, actualizarParametro }),
+    [parametros, lista, loading, recargar, actualizar, actualizarParametro]
   );
 
   return (

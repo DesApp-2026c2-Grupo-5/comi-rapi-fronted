@@ -305,10 +305,19 @@ export const PedidoProvider = ({ children }) => {
     };
   }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos, actualizarPedidoCache, versionSocket]);
 
+  // Track if we ever had a user session to avoid disconnecting on initial load for guests
+  const hadUserRef = useRef(false);
+  useEffect(() => {
+    if (emailSesion) hadUserRef.current = true;
+  }, [emailSesion]);
+
   // Al cerrar sesión se cierra el canal: con otra cookie, el backend rechazaría
   // el handshake de todas formas, y dejarlo abierto sería una conexión muerta.
+  // Solo desconecta si HABÍA usuario antes y ahora no hay (evita desconectar en carga inicial para invitados).
   useEffect(() => {
-    if (hydrated && !emailSesion) desconectarSocket();
+    if (hydrated && hadUserRef.current && !emailSesion) {
+      desconectarSocket();
+    }
   }, [hydrated, emailSesion]);
 
   // Inserta un pedido al inicio (recientes primero), sin duplicar por id

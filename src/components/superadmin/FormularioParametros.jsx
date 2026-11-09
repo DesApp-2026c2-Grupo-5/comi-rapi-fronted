@@ -4,17 +4,19 @@
  * Contenido: Componente FormularioParametros que agrupa el catálogo por `grupo`
  *            (con ícono y tarjeta propia), lo muestra en una grilla responsiva
  *            de dos columnas en pantallas grandes, permite editar cada valor y
- *            guarda el lote completo con useParametros().actualizar
- *            (PUT /superadmin/parametros). Paleta y formas: styles/tokens.css.
+ *            guarda individualmente cada parámetro (PUT /superadmin/parametros).
+ *            Cada parámetro tiene su propio botón Guardar que se habilita solo
+ *            cuando el valor cambió. Enter guarda solo el campo en foco.
  * Dependencias: react-bootstrap (Card, Form, Button, Alert, Row, Col,
- *               Badge), react-icons/fa (FaSave, FaUndoAlt e íconos por
+ *               Badge, Spinner), react-icons/fa (FaSave, FaUndoAlt e íconos por
  *               grupo), useParametros, useNotificaciones,
  *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: <FormularioParametros />
  *
  * El backend es la autoridad: acá solo se valida en espejo (tipo/rango) para
- * avisar sin ida y vuelta. Al guardar se envían todos los valores; el backend
- * valida el lote completo y rechaza todo si alguno es inválido.
+ * avisar sin ida y vuelta. Al guardar se envía solo el parámetro modificado;
+ * el backend valida y emite evento Socket.IO solo para ese parámetro.
+ * Las demás sesiones lo reciben y actualizan su caché sin GET general.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -26,6 +28,7 @@ import {
   Row,
   Col,
   Badge,
+  Spinner,
 } from 'react-bootstrap';
 import {
   FaSave,
@@ -82,15 +85,22 @@ const ordenDeGrupo = (grupo) => {
 };
 
 const FormularioParametros = () => {
-  const { lista, loading, actualizar } = useParametros();
+  const { lista, loading, actualizarParametro } = useParametros();
   const { notificar } = useNotificaciones();
   const [valores, setValores] = useState({});
-  const [guardando, setGuardando] = useState(false);
+  const [guardando, setGuardando] = useState({});
+  const [valoresOriginales, setValoresOriginales] = useState({});
 
   // Sincroniza el estado editable cuando llega/actualiza el catálogo.
   useEffect(() => {
     if (lista.length === 0) return;
     setValores(
+      lista.reduce((acc, parametro) => {
+        acc[parametro.clave] = String(parametro.valor);
+        return acc;
+      }, {})
+    );
+    setValoresOriginales(
       lista.reduce((acc, parametro) => {
         acc[parametro.clave] = String(parametro.valor);
         return acc;
@@ -114,59 +124,78 @@ const FormularioParametros = () => {
       .sort((a, b) => ordenDeGrupo(a.grupo) - ordenDeGrupo(b.grupo));
   }, [lista]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Detecta si un parámetro específico cambió respecto a su valor original
+  const haCambiado = (clave) => valores[clave] !== valoresOriginales[clave];
 
-    // Validación en espejo del backend, para avisar sin ida y vuelta.
-    for (const parametro of lista) {
-      const crudo = valores[parametro.clave];
-      const numero = Number(crudo);
-      if (crudo === '' || crudo === undefined || Number.isNaN(numero)) {
-        notificar(
-          `El valor de "${parametro.clave}" tiene que ser numérico.`,
-          'warning'
-        );
-        return;
-      }
-      if (parametro.tipo === 'entero' && !Number.isInteger(numero)) {
-        notificar(
-          `El valor de "${parametro.clave}" tiene que ser un entero.`,
-          'warning'
-        );
-        return;
-      }
-      if (numero < parametro.minimo) {
-        notificar(
-          `"${parametro.clave}" no puede ser menor a ${parametro.minimo}.`,
-          'warning'
-        );
-        return;
-      }
-      if (parametro.maximo !== undefined && numero > parametro.maximo) {
-        notificar(
-          `"${parametro.clave}" no puede ser mayor a ${parametro.maximo}.`,
-          'warning'
-        );
-        return;
-      }
+  // Validación individual de un parámetro
+  const validarParametro = (parametro, valor) => {
+    const crudo = valor;
+    const numero = Number(crudo);
+    if (crudo === '' || crudo === undefined || Number.isNaN(numero)) {
+      return 'El valor tiene que ser numérico.';
+    }
+    if (parametro.tipo === 'entero' && !Number.isInteger(numero)) {
+      return 'El valor tiene que ser un entero.';
+    }
+    if (numero < parametro.minimo) {
+      return 'No puede ser menor a ' + parametro.minimo + '.';
+    }
+    if (parametro.maximo !== undefined && numero > parametro.maximo) {
+      return 'No puede ser mayor a ' + parametro.maximo + '.';
+    }
+    return null;
+  };
+
+  // Guarda un único parámetro
+  const guardarParametro = async (parametro) => {
+    const clave = parametro.clave;
+    const valor = valores[clave];
+    const error = validarParametro(parametro, valor);
+    if (error) {
+      notificar('"' + parametro.descripcion + '": ' + error, 'warning');
+      return;
     }
 
-    const cambios = Object.fromEntries(
-      lista.map((parametro) => [parametro.clave, Number(valores[parametro.clave])])
-    );
+    setGuardando((prev) => ({ ...prev, [clave]: true }));
 
-    setGuardando(true);
-    const result = await actualizar(cambios);
-    setGuardando(false);
+    try {
+      const result = await actualizarParametro(clave, Number(valores[clave]));
 
-    if (result.success) {
-      notificar('Parámetros guardados.', 'success');
-    } else {
+      setGuardando((prev) => ({ ...prev, [clave]: false }));
+
+      if (result.success) {
+        // Actualizar valor original para reflejar que ya no hay cambios pendientes
+        setValoresOriginales((prev) => ({ ...prev, [clave]: valores[clave] }));
+        notificar('Parámetro "' + parametro.descripcion + '" guardado.', 'success');
+      } else {
+        notificar(
+          result.error || 'No se pudo guardar "' + parametro.descripcion + '".',
+          'danger'
+        );
+      }
+    } catch (err) {
+      setGuardando((prev) => ({ ...prev, [clave]: false }));
+      console.error('Error guardando parámetro:', err);
       notificar(
-        result.error || 'No se pudieron guardar los parámetros.',
+        'No se pudo guardar "' + parametro.descripcion + '".',
         'danger'
       );
     }
+  };
+
+  // Maneja Enter en un campo: guarda solo ese parámetro
+  const handleKeyDown = (e, parametro) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (haCambiado(parametro.clave)) {
+        guardarParametro(parametro);
+      }
+    }
+  };
+
+  // Previene el submit del formulario global (Enter en cualquier campo)
+  const handleSubmit = (e) => {
+    e.preventDefault();
   };
 
   if (loading && lista.length === 0) {
@@ -209,7 +238,7 @@ const FormularioParametros = () => {
               <Badge bg={null} className="parametros-grupo-cantidad">
                 {grupo.parametros.length === 1
                   ? '1 parámetro'
-                  : `${grupo.parametros.length} parámetros`}
+                  : grupo.parametros.length + ' parámetros'}
               </Badge>
             </Card.Header>
             <Card.Body>
@@ -217,7 +246,7 @@ const FormularioParametros = () => {
                 {grupo.parametros.map((parametro) => (
                   <Col key={parametro.clave}>
                     <Form.Group
-                      controlId={`parametro-${parametro.clave}`}
+                      controlId={'parametro-' + parametro.clave}
                       className="parametros-item"
                     >
                       <Form.Label className="parametros-item-label">
@@ -245,46 +274,53 @@ const FormularioParametros = () => {
                               [parametro.clave]: e.target.value,
                             }))
                           }
+                          onKeyDown={(e) => handleKeyDown(e, parametro)}
                         />
-                        <Button
-                          type="button"
-                          variant="outline-secondary"
-                          className="parametros-item-reset"
-                          title={`Volver al valor por defecto (${parametro.valorPorDefecto})`}
-                          onClick={() =>
-                            setValores((prev) => ({
-                              ...prev,
-                              [parametro.clave]: String(parametro.valorPorDefecto),
-                            }))
-                          }
-                        >
-                          <FaUndoAlt aria-hidden="true" />
-                          <span className="visually-hidden">
-                            Restablecer {parametro.clave}
-                          </span>
-                        </Button>
+                        <div className="parametros-item-actions">
+                          <Button
+                            type="button"
+                            variant="outline-secondary"
+                            className="parametros-item-reset"
+                            title={'Volver al valor por defecto (' + parametro.valorPorDefecto + ')'}
+                            onClick={() =>
+                              setValores((prev) => ({
+                                ...prev,
+                                [parametro.clave]: String(parametro.valorPorDefecto),
+                              }))
+                            }
+                          >
+                            <FaUndoAlt aria-hidden="true" />
+                            <span className="visually-hidden">
+                              Restablecer {parametro.clave}
+                            </span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="primary"
+                            className="parametros-item-save"
+                            disabled={!haCambiado(parametro.clave) || guardando[parametro.clave]}
+                            onClick={() => guardarParametro(parametro)}
+                          >
+                            {guardando[parametro.clave] ? (
+                              <Spinner animation="border" size="sm" aria-hidden="true" />
+                            ) : (
+                              <FaSave className="me-1" aria-hidden="true" />
+                            )}
+                            <span className="visually-hidden">
+                              Guardar {parametro.clave}
+                            </span>
+                          </Button>
+                        </div>
                       </div>
-                    </Form.Group>
-                  </Col>
+                      </Form.Group>
+                    </Col>
                 ))}
               </Row>
             </Card.Body>
           </Card>
         );
       })}
-      <div className="parametros-pie">
-        <Button
-          variant="primary"
-          type="submit"
-          size="lg"
-          disabled={guardando}
-          className="parametros-guardar"
-        >
-          <FaSave className="me-2" aria-hidden="true" />
-          {guardando ? 'Guardando…' : 'Guardar parámetros'}
-        </Button>
-      </div>
-    </Form>
+      </Form>
   );
 };
 

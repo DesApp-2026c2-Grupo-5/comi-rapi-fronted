@@ -17,6 +17,7 @@ import { Table, Button, Container, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import { eliminarCategoria, editarCategoria } from '../../api/categorias';
 import { useCategorias } from '../../hooks/queries';
+import { queryKeys } from '../../hooks/queries';
 import ConfirmarModal from '../comunes/ConfirmarModal';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
@@ -38,13 +39,65 @@ const ListaCategorias = ({ soloLectura = false }) => {
   const [categoriaAReactivar, setCategoriaAReactivar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
 
-  const refrescar = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['public', 'categorias'] }),
-      // La tabla de productos muestra el nombre de la categoría: se refresca
-      // para que no quede viejo.
-      queryClient.invalidateQueries({ queryKey: ['public', 'productos'] }),
-    ]);
+  const confirmarEliminar = async () => {
+    if (!categoriaAEliminar) return;
+    setConfirmando(true);
+    const result = await eliminarCategoria(categoriaAEliminar.id);
+    if (result.success) {
+      const categoriaId = categoriaAEliminar.id;
+      setCategoriaAEliminar(null);
+      // Actualizar caché directamente en lugar de invalidar
+      // 1. Lista de todas (incluye inactivas)
+      const claveTodas = queryKeys.public.categorias(true);
+      const listaTodas = queryClient.getQueryData(claveTodas);
+      if (Array.isArray(listaTodas)) {
+        queryClient.setQueryData(claveTodas, listaTodas.filter((c) => c.id !== categoriaId));
+      }
+      // 2. Lista de activas
+      const claveActivas = queryKeys.public.categorias(false);
+      const listaActivas = queryClient.getQueryData(claveActivas);
+      if (Array.isArray(listaActivas)) {
+        queryClient.setQueryData(claveActivas, listaActivas.filter((c) => c.id !== categoriaId));
+      }
+    } else {
+      setErrorLocal(result.error || 'No se pudo eliminar la categoría.');
+    }
+    setConfirmando(false);
+  };
+
+  const confirmarReactivar = async () => {
+    if (!categoriaAReactivar) return;
+    setConfirmando(true);
+    const result = await editarCategoria(categoriaAReactivar.id, { activa: true });
+    if (result.success) {
+      const categoriaActualizada = result.data;
+      setCategoriaAReactivar(null);
+      // Actualizar caché directamente
+      // 1. Lista de todas
+      const claveTodas = queryKeys.public.categorias(true);
+      const listaTodas = queryClient.getQueryData(claveTodas);
+      if (Array.isArray(listaTodas)) {
+        const idx = listaTodas.findIndex((c) => c.id === categoriaActualizada.id);
+        if (idx >= 0) {
+          const nuevaLista = [...listaTodas];
+          nuevaLista[idx] = categoriaActualizada;
+          queryClient.setQueryData(claveTodas, nuevaLista);
+        }
+      }
+      // 2. Lista de activas - agregar la reactivada
+      const claveActivas = queryKeys.public.categorias(false);
+      const listaActivas = queryClient.getQueryData(claveActivas);
+      if (Array.isArray(listaActivas)) {
+        const nuevaLista = [...listaActivas, categoriaActualizada].sort((a, b) =>
+          String(a.nombre).localeCompare(String(b.nombre), 'es')
+        );
+        queryClient.setQueryData(claveActivas, nuevaLista);
+      }
+    } else {
+      setErrorLocal(result.error || 'No se pudo reactivar la categoría.');
+    }
+    setConfirmando(false);
+  };
 
   const handleEditar = (id) => {
     navigate(`/superadmin/categoria/editar/${id}`);
@@ -56,33 +109,7 @@ const ListaCategorias = ({ soloLectura = false }) => {
 
   const handleEliminar = (id, nombre) => setCategoriaAEliminar({ id, nombre });
 
-  const confirmarEliminar = async () => {
-    if (!categoriaAEliminar) return;
-    setConfirmando(true);
-    const result = await eliminarCategoria(categoriaAEliminar.id);
-    if (result.success) {
-      setCategoriaAEliminar(null);
-      await refrescar();
-    } else {
-      setErrorLocal(result.error || 'No se pudo eliminar la categoría.');
-    }
-    setConfirmando(false);
-  };
-
   const handleReactivar = (id, nombre) => setCategoriaAReactivar({ id, nombre });
-
-  const confirmarReactivar = async () => {
-    if (!categoriaAReactivar) return;
-    setConfirmando(true);
-    const result = await editarCategoria(categoriaAReactivar.id, { activa: true });
-    if (result.success) {
-      setCategoriaAReactivar(null);
-      await refrescar();
-    } else {
-      setErrorLocal(result.error || 'No se pudo reactivar la categoría.');
-    }
-    setConfirmando(false);
-  };
 
   return (
     <Container>

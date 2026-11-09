@@ -89,11 +89,21 @@ const ListaProductos = ({ soloLectura = false }) => {
     const result = await eliminarProducto(productoAEliminar.id);
     if (result.success) {
       notificar(`Producto "${productoAEliminar.nombre}" eliminado.`, 'success');
+      const productoId = productoAEliminar.id;
       setProductoAEliminar(null);
       setErrorLocal('');
-      await queryClient.invalidateQueries({
-        queryKey: ['public', 'productos'],
-      });
+      // Actualizar caché directamente en lugar de invalidar
+      // Usar las mismas queryKeys que el hook useProductos()
+      const claveListaBase = queryKeys.public.productos({});
+      const listaBase = queryClient.getQueryData(claveListaBase);
+      if (Array.isArray(listaBase)) {
+        queryClient.setQueryData(claveListaBase, listaBase.filter((p) => p.id !== productoId));
+      }
+      // Más vendidos
+      const masVendidos = queryClient.getQueryData(queryKeys.public.masVendidos);
+      if (Array.isArray(masVendidos)) {
+        queryClient.setQueryData(queryKeys.public.masVendidos, masVendidos.filter((p) => p.id !== productoId));
+      }
     } else {
       setErrorLocal(result.error || 'No se pudo eliminar el producto.');
     }

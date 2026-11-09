@@ -73,7 +73,7 @@ export const fetchPromociones = ({
   ).then(desenvolver);
 
 export const fetchPromocion = ({ id, signal } = {}) =>
-  apiGet(`/promociones/${encodeURIComponent(id)}`, { signal }).then(desenvolver);
+  apiGet(`/promociones/${encodeURIComponent(id)}?include=productos`, { signal }).then(desenvolver);
 
 export const fetchProductosDePromocion = ({ id, signal } = {}) =>
   apiGet(`/promociones/${encodeURIComponent(id)}/productos`, { signal }).then(desenvolver);

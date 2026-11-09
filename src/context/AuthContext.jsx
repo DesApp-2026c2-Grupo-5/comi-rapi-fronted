@@ -98,6 +98,28 @@ export const AuthProvider = ({ children }) => {
     return result;
   }, []);
 
+  // Refresca localmente los datos de la sucursal operativa cuando llega el
+  // aviso de tiempo real de esa sucursal. No vuelve a pedir /auth/me: el id (y
+  // por lo tanto la sucursal asignada/elegida) no cambia, sólo sus datos.
+  const actualizarSucursalOperativa = useCallback((sucursal) => {
+    if (!sucursal || sucursal.id === undefined || sucursal.id === null) return;
+    setUser((actual) => {
+      const operativa = actual?.sucursalOperativa;
+      if (!operativa || String(operativa.id) !== String(sucursal.id)) {
+        return actual;
+      }
+      const nombre = sucursal.nombre ?? operativa.nombre;
+      const activa = sucursal.activa ?? operativa.activa;
+      if (nombre === operativa.nombre && activa === operativa.activa) {
+        return actual;
+      }
+      return {
+        ...actual,
+        sucursalOperativa: { ...operativa, nombre, activa },
+      };
+    });
+  }, []);
+
   // Restaurar la sesión desde el backend al cargar la app.
   React.useEffect(() => {
     (async () => {
@@ -128,8 +150,9 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       refrescarUsuario,
+      actualizarSucursalOperativa,
     }),
-    [user, loading, hydrated, isAuthenticated, isAdmin, isSuperadmin, isCliente, login, loginPanelAdmin, register, logout, refrescarUsuario]
+    [user, loading, hydrated, isAuthenticated, isAdmin, isSuperadmin, isCliente, login, loginPanelAdmin, register, logout, refrescarUsuario, actualizarSucursalOperativa]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

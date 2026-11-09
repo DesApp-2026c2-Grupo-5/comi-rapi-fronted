@@ -17,7 +17,7 @@ import { Table, Button, Container, Alert, Badge, Form, Row, Col } from 'react-bo
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import { eliminarPromocion, editarPromocion } from '../../api/promociones';
 import { formatDate } from '../../utils/formatters';
-import { usePromociones } from '../../hooks/queries';
+import { usePromociones, queryKeys } from '../../hooks/queries';
 import ConfirmarModal from '../comunes/ConfirmarModal';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
@@ -43,9 +43,6 @@ const ListaPromociones = ({ soloLectura = false }) => {
   const conteoProductos = (promocion) =>
     Array.isArray(promocion.productos) ? promocion.productos.length : 0;
 
-  const refrescar = () =>
-    queryClient.invalidateQueries({ queryKey: ['public', 'promociones'] });
-
   const handleEditar = (id) => {
     navigate(`/superadmin/promocion/editar/${id}`);
   };
@@ -61,8 +58,15 @@ const ListaPromociones = ({ soloLectura = false }) => {
     setConfirmando(true);
     const result = await eliminarPromocion(promoAEliminar.id);
     if (result.success) {
+      const promoId = promoAEliminar.id;
       setPromoAEliminar(null);
-      await refrescar();
+      // Actualizar caché directamente en lugar de invalidar
+      // Usar las mismas queryKeys que el hook usePromociones({ incluirInactivas: true, incluirProductos: true })
+      const claveLista = queryKeys.public.promociones({ incluirInactivas: true, incluirProductos: true });
+      const listaPromociones = queryClient.getQueryData(claveLista);
+      if (Array.isArray(listaPromociones)) {
+        queryClient.setQueryData(claveLista, listaPromociones.filter((p) => p.id !== promoId));
+      }
     } else {
       setErrorLocal(result.error || 'No se pudo eliminar la promoción.');
     }
@@ -76,8 +80,17 @@ const ListaPromociones = ({ soloLectura = false }) => {
     setConfirmando(true);
     const result = await editarPromocion(promoAReactivar.id, { activa: true });
     if (result.success) {
+      const promoActualizada = result.data;
       setPromoAReactivar(null);
-      await refrescar();
+      // Actualizar caché directamente
+      const claveLista = queryKeys.public.promociones({ incluirInactivas: true, incluirProductos: true });
+      const listaPromociones = queryClient.getQueryData(claveLista);
+      if (Array.isArray(listaPromociones)) {
+        const nuevaLista = [...listaPromociones, promoActualizada].sort((a, b) =>
+          String(a.nombre).localeCompare(String(b.nombre), 'es')
+        );
+        queryClient.setQueryData(claveLista, nuevaLista);
+      }
     } else {
       setErrorLocal(result.error || 'No se pudo reactivar la promoción.');
     }
