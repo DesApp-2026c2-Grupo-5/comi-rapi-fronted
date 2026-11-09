@@ -98,7 +98,7 @@ const GestionStock = () => {
   // elegido del superadmin. El backend además acota el stock a ella, así que
   // no hay nada que elegir en la pantalla. Sin sucursal operativa (superadmin
   // sin contexto) no se carga nada: el aviso pide elegir una sucursal.
-  const { sucursalOperativa, sucursalOperativaId } = useSucursalOperativa();
+  const { sucursalOperativa, sucursalOperativaId, versionSocket } = useSucursalOperativa();
   const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
   const [stocks, setStocks] = useState([]);
@@ -207,7 +207,12 @@ const GestionStock = () => {
         // Un evento sólo de insumos ya quedó resuelto arriba. Recargar todo acá
         // haría parpadear la tabla y perdería el foco. Sólo se recarga si el
         // payload no traía ningún id (aviso genérico).
-        if (!tieneInsumos) await cargar();
+        if (tieneInsumos || tieneIngredientes) {
+          notificar('El stock se actualizó.', 'info');
+        }
+        if (!tieneInsumos && !tieneIngredientes) {
+          await cargar();
+        }
         return;
       }
       // Con un filtro activo la tabla sólo muestra ese producto: si el cambio no
@@ -219,17 +224,33 @@ const GestionStock = () => {
       const resultados = await Promise.all(
         ids.map((id) => obtenerStockDeProducto(sucursalId, id))
       );
-      const filas = resultados
-        .filter((r) => r.success && r.data)
-        .map((r) => r.data);
-      if (filas.length === 0) return;
+      const filasActualizadas = new Map();
+      const idsSinFila = new Set();
+      resultados.forEach((r, i) => {
+        if (r.success && r.data) {
+          filasActualizadas.set(
+            `${r.data.sucursalId}-${r.data.productoId}`,
+            r.data
+          );
+        } else {
+          idsSinFila.add(ids[i]);
+        }
+      });
+      if (filasActualizadas.size === 0 && idsSinFila.size === 0) return;
       setStocks((prev) => {
         const porClave = new Map(
           prev.map((f) => [`${f.sucursalId}-${f.productoId}`, f])
         );
-        filas.forEach((f) => porClave.set(`${f.sucursalId}-${f.productoId}`, f));
+        filasActualizadas.forEach((f, clave) => porClave.set(clave, f));
+        for (const id of idsSinFila) {
+          // Elimina la fila si el producto se sacó de la sucursal.
+          for (const clave of [...porClave.keys()]) {
+            if (clave.endsWith(`-${id}`)) porClave.delete(clave);
+          }
+        }
         return [...porClave.values()];
       });
+      notificar('El stock se actualizó.', 'info');
     };
     instancia.on('connect', alConectar);
     instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
@@ -242,7 +263,7 @@ const GestionStock = () => {
     // también: al cambiar el contexto del superadmin, el filtro de defensa y
     // las refencias de las filas tienen que apuntar a la sucursal nueva.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, user, productoId, sucursalId]);
+  }, [hydrated, user, productoId, sucursalId, versionSocket]);
 
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
