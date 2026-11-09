@@ -778,20 +778,7 @@ const GestionStock = () => {
                         )}
                       </td>
                       <td data-label="Cantidad" className="stock-cantidad">
-                        {esCombo ? (
-                          // En un combo el número no se toca: el backend lo deriva
-                          // de la receta, así que no hay input editable. Se muestra
-                          // como texto plano con el mismo estilo que los inputs de
-                          // las demás filas (plaintext + size sm comparten tipografía
-                          // y alturas) para que la columna se lea uniforme.
-                          <Form.Control
-                            plaintext
-                            readOnly
-                            size="sm"
-                            value={fila.cantidad}
-                            aria-label="Cantidad del combo (calculada con el stock de sus componentes)"
-                          />
-                        ) : (
+                        {esInsumo || esIngrediente ? (
                           <Form.Control
                             type="number"
                             min="0"
@@ -816,6 +803,24 @@ const GestionStock = () => {
                                 guardarFila(fila, { cantidad: valor });
                               }
                             }}
+                          />
+                        ) : (
+                          // En productos y combos el número no se toca: el backend
+                          // lo deriva del stock de ingredientes y la receta (o, en
+                          // un combo, del stock de sus componentes). Se muestra
+                          // como texto plano con el mismo estilo que los inputs de
+                          // las demás filas (plaintext + size sm comparten tipografía
+                          // y alturas) para que la columna se lea uniforme.
+                          <Form.Control
+                            plaintext
+                            readOnly
+                            size="sm"
+                            value={fila.cantidad}
+                            aria-label={
+                              esCombo
+                                ? 'Cantidad del combo (calculada con el stock de sus componentes)'
+                                : 'Cantidad del producto (calculada con el stock de ingredientes y la receta)'
+                            }
                           />
                         )}
                       </td>
