@@ -4,42 +4,12 @@
  * AuthContext). Sin mocks ni login silencioso: los errores de la API se
  * propagan al llamador ({ success: false, error }).
  * Funciones: crearPedido, obtenerPedidos, obtenerPedidoPorId, cambiarEstado, confirmarPedido.
+ *
+ * Todo el transporte (credenciales, CSRF, reintento y normalización) vive en
+ * client.js: este módulo solo mapea payloads y respuestas.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-async function obtenerCsrfToken() {
-  const res = await fetch(`${API_URL}/auth/csrf-token`, {
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    throw new Error(`Error ${res.status} al obtener CSRF`);
-  }
-  const body = await res.json();
-  return body?.data?.csrfToken;
-}
-
-async function requestJson(path, options = {}) {
-  const { headers: opcionesHeaders, ...restoOpciones } = options;
-  const res = await fetch(`${API_URL}${path}`, {
-    credentials: 'include',
-    ...restoOpciones,
-    headers: { 'Content-Type': 'application/json', ...(opcionesHeaders || {}) },
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || body.success === false) {
-    const error = new Error(body.error || `Error ${res.status} en ${path}`);
-    // Flags funcionales que el backend usa para distinguir un error real de una
-    // decisión de negocio (p. ej. la cancelación automática por cierre).
-    error.status = res.status;
-    error.cancelado = Boolean(body.cancelado);
-    error.pedidoId = body.pedidoId ?? null;
-    error.opciones = body.opciones || null;
-    error.detalle = body.detalle || null;
-    throw error;
-  }
-  return body.data;
-}
+import { apiGet, apiPatch, apiPost } from './client';
 
 /** Mapea un pedido del backend (DER) al shape que usa el frontend. */
 export const mapearPedido = (p) => {
@@ -191,13 +161,12 @@ function payloadBackend(datosPedido, sucursal) {
  */
 export const crearPedido = async (datosPedido, sucursal) => {
   try {
-    const csrf = await obtenerCsrfToken();
-    const data = await requestJson('/pedidos', {
-      method: 'POST',
-      headers: { 'x-csrf-token': csrf },
-      body: JSON.stringify(payloadBackend(datosPedido, sucursal)),
-    });
-    return { success: true, data: mapearPedido(data) };
+    const result = await apiPost(
+      '/pedidos',
+      payloadBackend(datosPedido, sucursal)
+    );
+    if (!result.success) return result;
+    return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -216,12 +185,27 @@ export const obtenerPedidos = async (filtros = {}) => {
     const params = new URLSearchParams();
     if (filtros.estado) params.set('estado', filtros.estado);
     if (filtros.sucursalId) params.set('sucursalId', String(filtros.sucursalId));
+    if (filtros.usuarioId) params.set('usuarioId', String(filtros.usuarioId));
     if (filtros.desde) params.set('desde', filtros.desde);
     if (filtros.hasta) params.set('hasta', filtros.hasta);
+    if (filtros.pagina) params.set('pagina', String(filtros.pagina));
+    if (filtros.limite) params.set('limite', String(filtros.limite));
     const qs = params.toString();
-    const data = await requestJson(`/pedidos${qs ? `?${qs}` : ''}`);
-    const lista = (Array.isArray(data) ? data : []).map(mapearPedido);
-    return { success: true, data: lista };
+    const result = await apiGet(`/pedidos${qs ? `?${qs}` : ''}`);
+    if (!result.success) return result;
+    const data = result.data;
+    // El backend devuelve el array histórico. Con paginación opt-in responde
+    // { items, total, pagina, limite }: se normaliza a data.items y se
+    // conserva el sobre en `meta` para quien necesite el total.
+    const crudo = Array.isArray(data) ? data : data?.items || [];
+    const lista = crudo.map(mapearPedido);
+    return {
+      success: true,
+      data: lista,
+      ...(Array.isArray(data)
+        ? {}
+        : { meta: { total: data?.total, pagina: data?.pagina, limite: data?.limite } }),
+    };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -233,8 +217,9 @@ export const obtenerPedidos = async (filtros = {}) => {
  */
 export const obtenerPedidoPorId = async (id) => {
   try {
-    const data = await requestJson(`/pedidos/${id}`);
-    return { success: true, data: mapearPedido(data) };
+    const result = await apiGet(`/pedidos/${id}`);
+    if (!result.success) return result;
+    return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
     return { success: false, error: error?.message || 'Pedido no encontrado' };
   }
@@ -249,13 +234,12 @@ export const obtenerPedidoPorId = async (id) => {
  */
 export const cambiarEstado = async (id, estado, medioPago) => {
   try {
-    const csrf = await obtenerCsrfToken();
-    const data = await requestJson(`/pedidos/${id}/estado`, {
-      method: 'PATCH',
-      headers: { 'x-csrf-token': csrf },
-      body: JSON.stringify({ estado, ...(medioPago ? { medioPago } : {}) }),
-    });
-    return { success: true, data: mapearPedido(data) };
+    const result = await apiPatch(
+      `/pedidos/${id}/estado`,
+      { estado, ...(medioPago ? { medioPago } : {}) }
+    );
+    if (!result.success) return result;
+    return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
     return {
       success: false,
@@ -283,13 +267,12 @@ export const confirmarPedido = async (id, medioPago) => {
  */
 export const reasignarSucursal = async (id, sucursalId) => {
   try {
-    const csrf = await obtenerCsrfToken();
-    const data = await requestJson(`/pedidos/${id}/sucursal`, {
-      method: 'PATCH',
-      headers: { 'x-csrf-token': csrf },
-      body: JSON.stringify({ sucursalId }),
-    });
-    return { success: true, data: mapearPedido(data) };
+    const result = await apiPatch(
+      `/pedidos/${id}/sucursal`,
+      { sucursalId }
+    );
+    if (!result.success) return result;
+    return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
     return { success: false, error: error?.message || 'No se pudo reasignar el pedido' };
   }
@@ -307,13 +290,12 @@ export const reasignarSucursal = async (id, sucursalId) => {
  */
 export const consultarDisponibilidad = async ({ direccionId, productos }) => {
   try {
-    const csrf = await obtenerCsrfToken();
-    const data = await requestJson('/pedidos/disponibilidad', {
-      method: 'POST',
-      headers: { 'x-csrf-token': csrf },
-      body: JSON.stringify({ direccionId, productos }),
+    const result = await apiPost('/pedidos/disponibilidad', {
+      direccionId,
+      productos,
     });
-    return { success: true, data };
+    if (!result.success) return result;
+    return { success: true, data: result.data };
   } catch (error) {
     return {
       success: false,
@@ -331,8 +313,9 @@ export const consultarDisponibilidad = async ({ direccionId, productos }) => {
  */
 export const obtenerDisponibilidadPedido = async (id) => {
   try {
-    const data = await requestJson(`/pedidos/${id}/disponibilidad`);
-    return { success: true, data };
+    const result = await apiGet(`/pedidos/${id}/disponibilidad`);
+    if (!result.success) return result;
+    return { success: true, data: result.data };
   } catch (error) {
     return {
       success: false,
@@ -351,8 +334,9 @@ export const obtenerDisponibilidadPedido = async (id) => {
  */
 export const obtenerSucursalesCandidatas = async (id) => {
   try {
-    const data = await requestJson(`/pedidos/${id}/sucursales-candidatas`);
-    return { success: true, data: Array.isArray(data) ? data : [] };
+    const result = await apiGet(`/pedidos/${id}/sucursales-candidatas`);
+    if (!result.success) return result;
+    return { success: true, data: Array.isArray(result.data) ? result.data : [] };
   } catch (error) {
     return {
       success: false,

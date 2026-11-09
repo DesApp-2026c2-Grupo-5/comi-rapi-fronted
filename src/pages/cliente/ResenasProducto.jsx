@@ -2,16 +2,16 @@
  * Propósito: Página con todas las reseñas de un producto.
  * Contenido: ResenasProducto.
  * Dependencias: react-bootstrap (Alert, Card, Container, Spinner), react-router-dom,
- *               api/productos, api/resenas, ListaResenas, ResenasProducto.css.
+ *               hooks/queries (useProducto, useResenasProducto), ListaResenas,
+ *               ResenasProducto.css.
  * Uso: ruta /producto/:id/resenas (pública).
  */
 
-import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Card, Container, Spinner } from 'react-bootstrap';
-import { obtenerProductoPorId } from '../../api/productos';
-import { obtenerResenasDeProducto } from '../../api/resenas';
+import { useProducto, useResenasProducto } from '../../hooks/queries';
 import ListaResenas from '../../components/cliente/ListaResenas';
+import { resolverImagen } from '../../utils/imagenes';
 import './ResenasProducto.css';
 
 // El backend acepta hasta 50 por página y cada producto tiene menos que eso,
@@ -20,41 +20,19 @@ const LIMITE_OPINIONES = 50;
 
 const ResenasProducto = () => {
   const { id } = useParams();
-  const [producto, setProducto] = useState(null);
-  const [resenas, setResenas] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    data: producto,
+    isPending: cargandoProducto,
+    error: errorProducto,
+  } = useProducto(id);
+  const {
+    data: resenas,
+    isPending: cargandoResenas,
+    error: errorResenas,
+  } = useResenasProducto(id, { pagina: 1, limite: LIMITE_OPINIONES });
 
-  useEffect(() => {
-    let vigente = true;
-    setCargando(true);
-    setError('');
-    setProducto(null);
-    setResenas(null);
-
-    Promise.all([
-      obtenerProductoPorId(id),
-      obtenerResenasDeProducto(id, { pagina: 1, limite: LIMITE_OPINIONES }),
-    ]).then(([resProducto, resResenas]) => {
-      if (!vigente) return;
-      if (!resProducto.success) {
-        setError(resProducto.error || 'Producto no encontrado.');
-        setCargando(false);
-        return;
-      }
-      setProducto(resProducto.data);
-      if (resResenas.success) {
-        setResenas(resResenas.data);
-      } else {
-        setError(resResenas.error || 'No se pudieron cargar las opiniones.');
-      }
-      setCargando(false);
-    });
-
-    return () => {
-      vigente = false;
-    };
-  }, [id]);
+  const cargando = cargandoProducto || cargandoResenas;
+  const error = errorProducto?.message || errorResenas?.message || '';
 
   if (cargando) {
     return (
@@ -67,10 +45,12 @@ const ResenasProducto = () => {
     );
   }
 
-  if (error && !producto) {
+  if (errorProducto && !producto) {
     return (
       <Container className="py-5 text-center opiniones-producto">
-        <Alert variant="danger">{error}</Alert>
+        <Alert variant="danger">
+          {errorProducto.message || 'Producto no encontrado.'}
+        </Alert>
         <Link to="/cliente/catalogo" className="boton-volver">← Volver al catálogo</Link>
       </Container>
     );
@@ -86,7 +66,7 @@ const ResenasProducto = () => {
         <div className="opiniones-producto-cabecera">
           {producto?.imagen && (
             <img
-              src={producto.imagen}
+              src={resolverImagen(producto.imagen)}
               alt={producto.nombre}
               className="opiniones-producto-img"
             />

@@ -11,35 +11,61 @@
  *      <ListaProductos soloLectura /> (vista del admin, con disponibilidad).
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Container, Alert, Form } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt } from 'react-icons/fa';
-import { obtenerProductos, obtenerProductoPorId, eliminarProducto } from '../../api/productos';
-import { obtenerStock, actualizarStock, crearStock } from '../../api/stock';
-import { useAuth } from '../../hooks/useAuth';
+import { eliminarProducto } from '../../api/productos';
+import { actualizarStock, crearStock } from '../../api/stock';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { formatPrice } from '../../utils/formatters';
-import { fusionarPorId, quitarPorId } from '../../utils/catalogoRealtime';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { queryKeys, useProductos, useStockQuery } from '../../hooks/queries';
 import ConfirmarModal from '../comunes/ConfirmarModal';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
 const ListaProductos = ({ soloLectura = false }) => {
   const navigate = useNavigate();
   const { notificar } = useNotificaciones();
-  const { user, hydrated } = useAuth();
   // Sucursal operativa de la sesión (asignada del admin o contexto del
   // superadmin): define sobre qué local se lee/escribe la disponibilidad.
   const { sucursalOperativaId } = useSucursalOperativa();
-  const [productos, setProductos] = useState([]);
-  // [soloLectura] Disponibilidad por sucursal: productoId → { disponible, sucursalId }
-  const [stock, setStock] = useState({});
-  const [cargando, setCargando] = useState(true);
+  const queryClient = useQueryClient();
+  // Catálogo público compartido: cualquier alta/edición/baja se invalida desde
+  // RealtimeBridge (catalogo_actualizado) y esta tabla se refresca sola.
+  const {
+    data: productos = [],
+    isPending: cargandoProductos,
+    error: errorProductos,
+  } = useProductos();
+  // [soloLectura] Disponibilidad por sucursal: sólo el admin la necesita. El
+  // stock vive en la caché privada (clave por sucursal operativa) y se invalida
+  // con stock_actualizado.
+  const stockQuery = useStockQuery({
+    sucursalId: sucursalOperativaId,
+    enabled: soloLectura && Boolean(sucursalOperativaId),
+  });
+  const stock = useMemo(() => {
+    const mapa = {};
+    (stockQuery.data?.filas || []).forEach((fila) => {
+      mapa[Number(fila.productoId)] = {
+        disponible: Boolean(fila.disponible),
+        sucursalId: fila.sucursalId,
+      };
+    });
+    return mapa;
+  }, [stockQuery.data]);
+  const cargando =
+    cargandoProductos || (soloLectura && stockQuery.isPending);
   const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState('');
+  const [errorLocal, setErrorLocal] = useState('');
+  const error =
+    errorLocal ||
+    errorProductos?.message ||
+    (soloLectura ? stockQuery.error?.message : '') ||
+    '';
   // Producto { id, nombre } que espera confirmación en el modal
   const [productoAEliminar, setProductoAEliminar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
@@ -50,107 +76,6 @@ const ListaProductos = ({ soloLectura = false }) => {
     if (filtro === 'combos') return productos.filter((p) => p.tipo === 'COMBO');
     return productos.filter((p) => p.tipo !== 'COMBO');
   }, [productos, filtro]);
-
-  // `silencioso` refresca la lista sin encender el spinner: se usa para cambios
-  // del catálogo que afectan a muchas filas a la vez (p. ej. el nombre de una
-  // categoría, que aparece en cada producto).
-  const cargarProductos = async ({ silencioso = false } = {}) => {
-    if (!silencioso) {
-      setCargando(true);
-      setError('');
-    }
-    const result = await obtenerProductos();
-    if (result.success) {
-      setProductos(result.data);
-      setError('');
-    } else if (!silencioso) {
-      setError(result.error || 'No se pudieron cargar los productos.');
-    }
-    if (!silencioso) setCargando(false);
-  };
-
-  // En modo solo lectura al admin también le hace falta la disponibilidad de cada
-  // producto en SU sucursal: GET /api/stock ya acota al admin a su propia sucursal.
-  const cargarStock = async () => {
-    const result = await obtenerStock();
-    if (result.success) {
-      const mapa = {};
-      (result.data || []).forEach((fila) => {
-        mapa[Number(fila.productoId)] = {
-          disponible: Boolean(fila.disponible),
-          sucursalId: fila.sucursalId,
-        };
-      });
-      setStock(mapa);
-    } else {
-      setError(result.error || 'No se pudo cargar la disponibilidad.');
-    }
-  };
-
-  useEffect(() => {
-    cargarProductos();
-    if (soloLectura) cargarStock();
-  }, [soloLectura]);
-
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => {
-      cargarProductos();
-      if (soloLectura) cargarStock();
-    };
-    // catalogo_actualizado avisa qué entidad cambió (sin datos): se relee sólo
-    // esa fila y se fusiona, sin recargar toda la tabla. Si la baja lógica la
-    // deja inactiva, sale del listado (el backend sólo devuelve activos).
-    const alCat = async (payload) => {
-      if (payload?.tipo === 'categoria') {
-        // La tabla muestra `producto.categoria`: ante un alta/edición/baja de
-        // categoría se refresca en silencio para que los nombres no queden
-        // viejos, sin spinner ni remontaje.
-        await cargarProductos({ silencioso: true });
-        return;
-      }
-      if (payload?.tipo !== 'producto') return;
-      const id = Number(payload.id);
-      if (payload.accion === 'eliminado') {
-        setProductos((prev) => quitarPorId(prev, id));
-        if (soloLectura) {
-          setStock((prev) => {
-            const copia = { ...prev };
-            delete copia[id];
-            return copia;
-          });
-        }
-        return;
-      }
-      const result = await obtenerProductoPorId(id);
-      if (result.success && result.data && result.data.activo !== false) {
-        setProductos((prev) => fusionarPorId(prev, result.data));
-      } else {
-        setProductos((prev) => quitarPorId(prev, id));
-      }
-    };
-    // stock_actualizado solo va a la room de la sucursal afectada; el filtro
-    // por sucursalId es defensa por si el backend emitiera a más de una room.
-    // Se compara contra la sucursal OPERATIVA (asignada del admin o contexto
-    // del superadmin), no contra `user.sucursalId`.
-    const alStock = (payload) => {
-      if (!soloLectura) return;
-      if (Number(payload?.sucursalId) !== Number(sucursalOperativaId)) return;
-      cargarStock();
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-      instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
-    };
-  }, [hydrated, user, soloLectura, sucursalOperativaId]);
 
   const handleEditar = (id) => {
     navigate(`/superadmin/producto/editar/${id}`);
@@ -164,10 +89,23 @@ const ListaProductos = ({ soloLectura = false }) => {
     const result = await eliminarProducto(productoAEliminar.id);
     if (result.success) {
       notificar(`Producto "${productoAEliminar.nombre}" eliminado.`, 'success');
+      const productoId = productoAEliminar.id;
       setProductoAEliminar(null);
-      cargarProductos();
+      setErrorLocal('');
+      // Actualizar caché directamente en lugar de invalidar
+      // Usar las mismas queryKeys que el hook useProductos()
+      const claveListaBase = queryKeys.public.productos({});
+      const listaBase = queryClient.getQueryData(claveListaBase);
+      if (Array.isArray(listaBase)) {
+        queryClient.setQueryData(claveListaBase, listaBase.filter((p) => p.id !== productoId));
+      }
+      // Más vendidos
+      const masVendidos = queryClient.getQueryData(queryKeys.public.masVendidos);
+      if (Array.isArray(masVendidos)) {
+        queryClient.setQueryData(queryKeys.public.masVendidos, masVendidos.filter((p) => p.id !== productoId));
+      }
     } else {
-      setError(result.error || 'No se pudo eliminar el producto.');
+      setErrorLocal(result.error || 'No se pudo eliminar el producto.');
     }
     setConfirmando(false);
   };
@@ -214,7 +152,7 @@ const ListaProductos = ({ soloLectura = false }) => {
       );
     }
     setGuardando(false);
-    await cargarStock();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.private.stock });
   };
 
   return (

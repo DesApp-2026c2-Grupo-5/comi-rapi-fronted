@@ -4,25 +4,35 @@ import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioPersonalizacion from '../../components/admin/FormularioPersonalizacion';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
-import { obtenerProductos } from '../../api/productos';
+import { useProductos } from '../../hooks/queries';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarPersonalizacion = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { elementos, loading, agregar, actualizar } = usePersonalizacion();
+  const { elementos, loading, cargado, cargar, agregar, actualizar } = usePersonalizacion();
   const [elemento, setElemento] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-  // Catálogo real del backend para elegir producto y producto de referencia.
-  const [productos, setProductos] = useState([]);
-  const [cargandoProductos, setCargandoProductos] = useState(true);
+  const [errorLocal, setErrorLocal] = useState('');
+  // Catálogo real del backend para elegir producto y producto de referencia;
+  // se comparte con la caché pública del resto de la app.
+  const {
+    data: productos = [],
+    isPending: cargandoProductos,
+    error: errorProductosQuery,
+  } = useProductos();
+  const error = errorLocal || errorProductosQuery?.message || '';
 
   const productoPreseleccionado = searchParams.get('productoId');
   const tipoPreseleccionado = searchParams.get('tipo');
 
   useEffect(() => {
+    cargar({ plantillas: false });
+  }, [cargar]);
+
+  useEffect(() => {
+    if (!cargado) return;
     if (id) {
       const enc = elementos.find((e) => String(e.id) === String(id));
       setElemento(enc || null);
@@ -31,28 +41,7 @@ const EditarPersonalizacion = () => {
       setElemento(null);
       setCargando(false);
     }
-  }, [id, elementos]);
-
-  // Productos activos del backend: así el formulario ofrece también los que se
-  // crearon después y no sólo los de los datos semilla.
-  useEffect(() => {
-    let vigente = true;
-    const cargarProductos = async () => {
-      setCargandoProductos(true);
-      const res = await obtenerProductos();
-      if (!vigente) return;
-      if (res.success) {
-        setProductos(res.data || []);
-      } else {
-        setError(res.error || 'No se pudieron cargar los productos.');
-      }
-      setCargandoProductos(false);
-    };
-    cargarProductos();
-    return () => {
-      vigente = false;
-    };
-  }, []);
+  }, [id, elementos, cargado]);
 
   const handleGuardar = async (datos) => {
     // si viene tipo por query y no se eligió, usarlo
@@ -63,14 +52,14 @@ const EditarPersonalizacion = () => {
       if (res.success) {
         navigate(`/superadmin/personalizacion?productoId=${datos.productoId || elemento.productoId}`);
       } else {
-        setError(res.error || 'No se pudo actualizar.');
+        setErrorLocal(res.error || 'No se pudo actualizar.');
       }
     } else {
       const res = await agregar(datos);
       if (res.success) {
         navigate(`/superadmin/personalizacion?productoId=${datos.productoId}`);
       } else {
-        setError(res.error || 'No se pudo crear.');
+        setErrorLocal(res.error || 'No se pudo crear.');
       }
     }
   };

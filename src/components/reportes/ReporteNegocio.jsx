@@ -22,8 +22,9 @@
 /* El proyecto no usa prop-types; se desactiva por archivo como en Skeleton.jsx. */
 /* eslint-disable react/prop-types */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import {
   Alert,
@@ -54,13 +55,12 @@ import {
   FaUserPlus,
   FaUsers,
 } from 'react-icons/fa';
-import { obtenerReportes } from '../../api/reportes';
-import { obtenerSucursales } from '../../api/sucursales';
 import { SkeletonPagina } from '../comunes/Skeleton';
 import { formatDateOnly, formatPrice } from '../../utils/formatters';
 import { ROLES } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { useReportesQuery, useSucursalesQuery } from '../../hooks/queries';
+import { conectarSocket, alReconectar, EVENTOS_SOCKET } from '../../services/socket';
 import {
   BarraComparativa,
   GraficoBarras,
@@ -268,11 +268,6 @@ const ReporteNegocio = () => {
   const [hasta, setHasta] = useState(RANGO_INICIAL[1]);
   const [preset, setPreset] = useState('30d');
   const [sucursalId, setSucursalId] = useState('');
-  const [sucursales, setSucursales] = useState([]);
-  const [datos, setDatos] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [actualizando, setActualizando] = useState(false);
-  const [error, setError] = useState('');
   const [busquedaProductos, setBusquedaProductos] = useState('');
   const [ordenVendidos, setOrdenVendidos] = useState({
     clave: 'unidades',
@@ -298,78 +293,65 @@ const ReporteNegocio = () => {
     setSucursalId(sucursalOperativaId ? String(sucursalOperativaId) : '');
   }, [esSuperadmin, sucursalOperativaId]);
 
-  const cargar = useCallback(
-    async (silencioso = false) => {
-      if (desde > hasta) {
-        setError('La fecha desde no puede ser posterior a la hasta.');
-        setCargando(false);
-        return;
-      }
-      if (silencioso) {
-        setActualizando(true);
-      } else {
-        setCargando(true);
-      }
-      setError('');
-      const result = await obtenerReportes({
-        desde,
-        hasta,
-        sucursalId: sucursalId || undefined,
-      });
-      if (result.success) {
-        setDatos(result.data);
-      } else {
-        setError(result.error || 'No se pudieron cargar los reportes.');
-      }
-      setCargando(false);
-      setActualizando(false);
-    },
-    [desde, hasta, sucursalId]
-  );
+  // Un rango al revés no se pide al backend: se explica en pantalla.
+  const rangoInvalido = desde > hasta;
 
-  useEffect(() => {
-    const temporizador = setTimeout(() => cargar(), 250);
-    return () => clearTimeout(temporizador);
-  }, [cargar]);
+  // La consulta se cachea por período+sucursal. `isPending` es la carga
+  // inicial (skeleton) e `isFetching` el refresco silencioso (spinner del
+  // botón), igual que antes.
+  const queryClient = useQueryClient();
+  const {
+    data: datos,
+    isPending: cargando,
+    isFetching: actualizando,
+    error: errorQuery,
+    refetch,
+  } = useReportesQuery({
+    desde,
+    hasta,
+    sucursalId: sucursalId || undefined,
+    enabled: !rangoInvalido,
+  });
+  const error = rangoInvalido
+    ? 'La fecha desde no puede ser posterior a la hasta.'
+    : errorQuery?.message || '';
 
-  const cargarRef = useRef(cargar);
-  useEffect(() => {
-    cargarRef.current = cargar;
-  }, [cargar]);
+  // El selector de sucursales sólo lo usa el superadministrador; la clave es
+  // pública y la comparte con el resto de la app.
+  const { data: sucursales = [] } = useSucursalesQuery({
+    incluirInactivas: true,
+    enabled: esSuperadmin,
+  });
 
-  useEffect(() => {
-    if (!esSuperadmin) return undefined;
-    let activo = true;
-    obtenerSucursales({ incluirInactivas: true }).then((result) => {
-      if (activo && result.success) setSucursales(result.data);
-    });
-    return () => {
-      activo = false;
-    };
-  }, [esSuperadmin]);
-
+  // Las métricas dependen de pedidos, catálogo, parámetros y stock. El socket
+  // es sólo un aviso: se invalida la consulta con un pequeño debounce para
+  // agrupar ráfagas y TanStack Query vuelve a leer por REST.
   useEffect(() => {
     if (!hydrated || !user) return undefined;
     const socket = conectarSocket();
     let temporizador = null;
     const refrescar = () => {
       clearTimeout(temporizador);
-      temporizador = setTimeout(() => cargarRef.current(true), 600);
+      temporizador = setTimeout(
+        () =>
+          queryClient.invalidateQueries({ queryKey: ['private', 'reportes'] }),
+        600
+      );
     };
-    socket.on('connect', refrescar);
+    const desregistrarReconexion = alReconectar(socket, refrescar);
     socket.on(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, refrescar);
     socket.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, refrescar);
     socket.on(EVENTOS_SOCKET.PARAMETROS_ACTUALIZADOS, refrescar);
     socket.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, refrescar);
     return () => {
       clearTimeout(temporizador);
-      socket.off('connect', refrescar);
+      desregistrarReconexion();
       socket.off(EVENTOS_SOCKET.PEDIDO_ACTUALIZADO, refrescar);
       socket.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, refrescar);
       socket.off(EVENTOS_SOCKET.PARAMETROS_ACTUALIZADOS, refrescar);
       socket.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, refrescar);
     };
-  }, [hydrated, user]);
+  }, [hydrated, user, queryClient]);
 
   const aplicarPreset = (opcion) => {
     const [nuevoDesde, nuevoHasta] = opcion.rango();
@@ -455,7 +437,7 @@ const ReporteNegocio = () => {
     return (
       <Alert variant="danger" role="alert">
         <p className="mb-2">{error}</p>
-        <Button variant="outline-danger" size="sm" onClick={() => cargar()}>
+        <Button variant="outline-danger" size="sm" onClick={() => refetch()}>
           Reintentar
         </Button>
       </Alert>
@@ -549,7 +531,7 @@ const ReporteNegocio = () => {
         </div>
         <Button
           variant="outline-secondary"
-          onClick={() => cargar(true)}
+          onClick={() => refetch()}
           disabled={actualizando}
         >
           {actualizando ? (

@@ -16,6 +16,7 @@
 import { useState, useEffect } from 'react';
 import { FaUserCircle } from 'react-icons/fa';
 import { obtenerIniciales } from '../../utils/formatters';
+import { resolverImagen } from '../../utils/imagenes';
 import './Avatar.css';
 
 const Avatar = ({ src, nombre = '', apellido = '', size = 40, alt = '', className = '' }) => {
@@ -34,11 +35,12 @@ const Avatar = ({ src, nombre = '', apellido = '', size = 40, alt = '', classNam
     fontSize: `${Math.round(size * 0.36)}px`,
   };
   const clases = `avatar-comirapi ${className}`.trim();
+  const fuente = resolverImagen(src);
 
-  if (src && !imagenRota) {
+  if (fuente && !imagenRota) {
     return (
       <img
-        src={src}
+        src={fuente}
         alt={alt}
         className={clases}
         style={estilo}

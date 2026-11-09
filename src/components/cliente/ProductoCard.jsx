@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { FaCartPlus, FaTrophy, FaMedal, FaAward } from 'react-icons/fa';
 import { formatPrice } from '../../utils/formatters';
+import { resolverImagen } from '../../utils/imagenes';
 import ProductoPersonalizarModal from './ProductoPersonalizarModal';
 import './ProductoCard.css';
 
@@ -60,7 +61,7 @@ const ProductoCard = ({ producto, rank, promocion }) => {
             veces. La foto es decorativa dentro de este contexto. */}
         <Card.Img
           variant="top"
-          src={producto.imagen}
+          src={resolverImagen(producto.imagen)}
           alt=""
           width={400}
           height={280}

@@ -21,9 +21,9 @@ import PropTypes from 'prop-types';
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
-import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
+import { useProductos } from '../../hooks/queries';
 import './FormularioAdmin.css';
 
 const TIPOS = [
@@ -61,10 +61,14 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [activa, setActiva] = useState(true);
-  const [productos, setProductos] = useState([]);
   const [seleccionados, setSeleccionados] = useState([]);
-  const [cargandoProductos, setCargandoProductos] = useState(true);
-  const [errorProductos, setErrorProductos] = useState('');
+  // Catálogo público compartido; se refresca por RealtimeBridge.
+  const {
+    data: productos = [],
+    isPending: cargandoProductos,
+    error: errorProductosQuery,
+  } = useProductos();
+  const errorProductos = errorProductosQuery?.message || '';
   const [busqueda, setBusqueda] = useState('');
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
 
@@ -96,34 +100,19 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
     );
   }, [productoIdsIniciales]);
 
-  useEffect(() => {
-    const cargar = async () => {
-      setCargandoProductos(true);
-      setErrorProductos('');
-      const result = await obtenerProductos();
-      if (result.success) {
-        setProductos(result.data);
-        quitarCombosSeleccionados(result.data);
-      } else {
-        setErrorProductos(result.error || 'No se pudieron cargar los productos.');
-      }
-      setCargandoProductos(false);
-    };
-    cargar();
-  }, []);
-
   /**
    * Un combo no puede ser alcanzado por una promoción (su precio ya es la
    * promoción respecto de sus componentes), así que no se ofrece para marcar.
-   * Si la promoción guardada tenía un combo, se lo quita al guardar.
+   * Si la promoción guardada tenía un combo, se lo quita al cargar el catálogo.
    */
-  const quitarCombosSeleccionados = (lista) => {
-    const idsCombo = (lista || [])
+  useEffect(() => {
+    if (productos.length === 0) return;
+    const idsCombo = productos
       .filter((p) => p.tipo === 'COMBO')
       .map((p) => String(p.id));
     if (idsCombo.length === 0) return;
     setSeleccionados((prev) => prev.filter((id) => !idsCombo.includes(id)));
-  };
+  }, [productos]);
 
   const toggleProducto = (id) => {
     const clave = String(id);

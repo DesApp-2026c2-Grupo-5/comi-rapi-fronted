@@ -4,6 +4,7 @@ import { FaTrash, FaMinus, FaPlus, FaPen, FaStickyNote } from "react-icons/fa";
 import { useCarrito } from "../../hooks/useCarrito";
 import { useParametros } from "../../hooks/useParametros";
 import { formatPrice } from "../../utils/formatters";
+import { resolverImagen } from "../../utils/imagenes";
 import { NOTA_MAX_CARACTERES } from "../../utils/notaHelpers";
 import "./ItemCarrito.css";
 
@@ -81,7 +82,7 @@ const ItemCarrito = ({ item }) => {
             {/* alt vacío: el nombre del producto está en la columna de al lado y
                 se lee igual, así que la foto no necesita duplicarlo. */}
             <img
-              src={producto.imagen}
+              src={resolverImagen(producto.imagen)}
               alt=""
               width={90}
               height={90}

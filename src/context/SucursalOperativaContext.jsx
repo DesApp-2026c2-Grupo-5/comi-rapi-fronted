@@ -24,7 +24,7 @@ import {
   elegirSucursalContexto as apiElegir,
   limpiarSucursalContexto as apiLimpiar,
 } from '../api/auth';
-import { desconectarSocket } from '../services/socket';
+import { forzarReconexion } from '../services/socket';
 
 export const SucursalOperativaContext = createContext(null);
 
@@ -41,17 +41,15 @@ export const SucursalOperativaProvider = ({ children }) => {
   /**
    * Elige la sucursal de contexto (solo SUPERADMINISTRADOR). El backend la
    * valida (existe y activa) y la guarda en la sesión; después se releen los
-   * datos del usuario y se reconecta el socket para entrar a la room de la
-   * sucursal elegida.
+   * datos del usuario y se fuerza la reconexión del socket para renegociar
+   * el handshake con la nueva cookie (incluye sucursalOperativaId).
    */
   const elegirSucursal = useCallback(
     async (sucursalId) => {
       const result = await apiElegir(sucursalId);
       if (result.success) {
-        // El handshake viejo tiene las rooms viejas: se cierra para que la
-        // próxima conexión (lazy, la abre PedidoContext) negocie de nuevo.
-        desconectarSocket();
         await refrescarUsuario();
+        forzarReconexion();
         setVersionSocket((v) => v + 1);
       }
       return result;
@@ -63,8 +61,8 @@ export const SucursalOperativaProvider = ({ children }) => {
   const limpiarSucursal = useCallback(async () => {
     const result = await apiLimpiar();
     if (result.success) {
-      desconectarSocket();
       await refrescarUsuario();
+      forzarReconexion();
       setVersionSocket((v) => v + 1);
     }
     return result;

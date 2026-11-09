@@ -2,7 +2,7 @@
  * Propósito: Alta y edición de plantillas de personalización por categoría.
  * Contenido: carga la plantilla y la categoría, y reutiliza
  *            FormularioPersonalizacion en modo categoría.
- * Dependencias: usePersonalizacion, api/categorias, api/productos,
+ * Dependencias: usePersonalizacion, hooks/queries (categorías y productos),
  *               FormularioPersonalizacion y SkeletonTarjeta.
  * Uso: /superadmin/personalizacion/categorias/nuevo?categoriaId=ID
  *      /superadmin/personalizacion/categorias/editar/:id?categoriaId=ID
@@ -14,8 +14,7 @@ import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioPersonalizacion from '../../components/admin/FormularioPersonalizacion';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
-import { obtenerCategorias } from '../../api/categorias';
-import { obtenerProductos } from '../../api/productos';
+import { useCategorias, useProductos } from '../../hooks/queries';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarPlantillaCategoria = () => {
@@ -25,38 +24,36 @@ const EditarPlantillaCategoria = () => {
   const {
     plantillas,
     loading,
+    cargar,
     agregarPlantilla,
     actualizarPlantilla,
   } = usePersonalizacion();
 
+  useEffect(() => {
+    cargar({ elementos: false });
+  }, [cargar]);
+
   const categoriaIdQuery = searchParams.get('categoriaId') || '';
   const tipoPreseleccionado = searchParams.get('tipo');
 
-  const [categorias, setCategorias] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let vigente = true;
-    const cargarCatalogos = async () => {
-      setCargandoCatalogos(true);
-      const [resCategorias, resProductos] = await Promise.all([
-        obtenerCategorias(),
-        obtenerProductos(),
-      ]);
-      if (!vigente) return;
-      if (resCategorias.success) setCategorias(resCategorias.data || []);
-      else setError(resCategorias.error || 'No se pudieron cargar las categorías.');
-      if (resProductos.success) setProductos(resProductos.data || []);
-      else setError(resProductos.error || 'No se pudieron cargar los productos.');
-      setCargandoCatalogos(false);
-    };
-    cargarCatalogos();
-    return () => {
-      vigente = false;
-    };
-  }, []);
+  // Catálogos compartidos con la caché pública del resto de la app.
+  const {
+    data: categorias = [],
+    isPending: cargandoCategorias,
+    error: errorCategoriasQuery,
+  } = useCategorias();
+  const {
+    data: productos = [],
+    isPending: cargandoProductos,
+    error: errorProductosQuery,
+  } = useProductos();
+  const [errorLocal, setErrorLocal] = useState('');
+  const error =
+    errorLocal ||
+    errorCategoriasQuery?.message ||
+    errorProductosQuery?.message ||
+    '';
+  const cargandoCatalogos = cargandoCategorias || cargandoProductos;
 
   if (id && (loading || cargandoCatalogos)) {
     return (
@@ -125,7 +122,7 @@ const EditarPlantillaCategoria = () => {
     if (id) {
       const res = await actualizarPlantilla(id, datos);
       if (res.success) navigate(volverTo);
-      else setError(res.error || 'No se pudo actualizar.');
+      else setErrorLocal(res.error || 'No se pudo actualizar.');
     } else {
       const res = await agregarPlantilla(datos);
       if (res.success) {
@@ -135,7 +132,7 @@ const EditarPlantillaCategoria = () => {
           }`
         );
       } else {
-        setError(res.error || 'No se pudo crear.');
+        setErrorLocal(res.error || 'No se pudo crear.');
       }
     }
   };

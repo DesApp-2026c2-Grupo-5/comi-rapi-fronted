@@ -14,7 +14,7 @@
  * página se recarga).
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Card, Button } from 'react-bootstrap';
 import { FaUtensils, FaHistory } from 'react-icons/fa';
@@ -22,9 +22,9 @@ import { usePedidos } from '../../hooks/usePedidos';
 import { useRepetirPedido } from '../../hooks/useRepetirPedido';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useAuth } from '../../hooks/useAuth';
+import { useSucursalesQuery } from '../../hooks/queries';
 import { ESTADOS_PEDIDO, ESTADOS_ACTIVOS_PEDIDO, ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { formatPrice } from '../../utils/formatters';
-import { obtenerSucursales } from '../../api/sucursales';
 import { filtrarPedidos, FILTRO_INICIAL } from '../../utils/filtrosPedidos';
 import FiltrosPedidos from '../../components/cliente/FiltrosPedidos';
 import ListaPedidos from '../../components/cliente/ListaPedidos';
@@ -47,7 +47,7 @@ const MisPedidos = () => {
   // Pedido que no puede cancelarse (se muestra el aviso "ya comenzó a prepararse")
   const [pedidoNoCancelable, setPedidoNoCancelable] = useState(null);
   const [filtros, setFiltros] = useState(FILTRO_INICIAL);
-  const [sucursales, setSucursales] = useState([]);
+  const { data: sucursales = [] } = useSucursalesQuery();
   const {
     repitiendoId,
     pedidoARepetir,
@@ -58,16 +58,6 @@ const MisPedidos = () => {
     cerrarAviso,
     confirmarRepeticion,
   } = useRepetirPedido();
-
-  useEffect(() => {
-    let vivo = true;
-    obtenerSucursales().then((res) => {
-      if (vivo && res.success) setSucursales(res.data);
-    });
-    return () => {
-      vivo = false;
-    };
-  }, []);
 
   const activos = useMemo(
     () => pedidos.filter((p) => ESTADOS_ACTIVOS.includes(p.estado)),

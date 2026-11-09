@@ -12,19 +12,20 @@
  * no acá.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Container, Table, Button, Badge, Alert, Form } from 'react-bootstrap';
+import { useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
 import {
   actualizarInsumo,
   crearInsumo,
   eliminarInsumo,
-  obtenerInsumos,
 } from '../../api/insumos';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import FormularioInsumo from '../../components/admin/FormularioInsumo';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
+import { useInsumosQuery } from '../../hooks/queries';
 import { formatPrice } from '../../utils/formatters';
 
 const ETIQUETA_TIPO = {
@@ -34,9 +35,16 @@ const ETIQUETA_TIPO = {
 
 const GestionInsumos = () => {
   const { notificar } = useNotificaciones();
-  const [insumos, setInsumos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  // Con sesión de gestión el backend devuelve también los dados de baja, que es
+  // lo que necesita la tabla para poder reactivarlos.
+  const {
+    data: insumos = [],
+    isPending: cargando,
+    error: errorQuery,
+  } = useInsumosQuery();
+  const [errorLocal, setErrorLocal] = useState('');
+  const error = errorLocal || errorQuery?.message || '';
   const [filtros, setFiltros] = useState({
     tipo: 'todos',
     estado: 'todos',
@@ -49,21 +57,8 @@ const GestionInsumos = () => {
   const [insumoAReactivar, setInsumoAReactivar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
 
-  const cargarInsumos = async () => {
-    setCargando(true);
-    setError('');
-    const result = await obtenerInsumos();
-    if (result.success) {
-      setInsumos(result.data || []);
-    } else {
-      setError(result.error || 'No se pudieron cargar los insumos.');
-    }
-    setCargando(false);
-  };
-
-  useEffect(() => {
-    cargarInsumos();
-  }, []);
+  const refrescar = () =>
+    queryClient.invalidateQueries({ queryKey: ['public', 'insumos'] });
 
   const visibles = useMemo(() => {
     const texto = filtros.q.trim().toLowerCase();
@@ -109,7 +104,7 @@ const GestionInsumos = () => {
         : 'Insumo creado. Ya podés cargar su stock en Stock.',
       'success'
     );
-    cargarInsumos();
+    refrescar();
   };
 
   const confirmarEliminar = async () => {
@@ -123,7 +118,7 @@ const GestionInsumos = () => {
     }
     setInsumoAEliminar(null);
     notificar('Insumo dado de baja.', 'success');
-    cargarInsumos();
+    refrescar();
   };
 
   const confirmarReactivar = async () => {
@@ -137,7 +132,7 @@ const GestionInsumos = () => {
     }
     setInsumoAReactivar(null);
     notificar('Insumo reactivado.', 'success');
-    cargarInsumos();
+    refrescar();
   };
 
   return (

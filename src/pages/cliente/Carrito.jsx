@@ -87,12 +87,7 @@ const Carrito = () => {
   const { descuentoTotal, promocionIds, promosAplicadas } =
     usePromocionesCarrito(items);
   const [actualizando, setActualizando] = useState(false);
-  const {
-    crearPedido,
-    pedidoActual,
-    pedidos,
-    cambiarEstado,
-  } = usePedidos();
+  const { crearPedido, pedidoActual, pedidos, cambiarEstado } = usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();

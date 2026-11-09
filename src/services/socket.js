@@ -26,6 +26,9 @@
  *   - parametros_actualizados: un parámetro del sistema cambió (broadcast).
  *   - stock_actualizado: cambió el stock de una sucursal. Solo se emite a la
  *     room de esa sucursal, así que llega únicamente a su administrador.
+ *   - sucursal_actualizado: se creó, editó o dio de baja una sucursal. Es
+ *     público (la lista de activas la usan clientes e invitados) y trae el
+ *     elemento afectado para actualizar la caché sin GET.
  *   - queja_actualizada: se creó o cambió un reclamo. Llega a los
  *     administradores de la sucursal del pedido y al superadministrador; el
  *     badge de reclamos pendientes se reconsulta por REST.
@@ -39,6 +42,11 @@
  */
 
 import { io } from 'socket.io-client';
+
+/** Exponer singleton global para debugging/testing (solo desarrollo) */
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  window.__getSocketInstance = () => socket;
+}
 
 /** Origen del servidor de tiempo real; sin VITE_SOCKET_URL se deriva de la API. */
 const ORIGEN_SOCKET =
@@ -55,6 +63,7 @@ export const EVENTOS_SOCKET = {
   CATALOGO_ACTUALIZADO: 'catalogo_actualizado',
   PARAMETROS_ACTUALIZADOS: 'parametros_actualizados',
   STOCK_ACTUALIZADO: 'stock_actualizado',
+  SUCURSAL_ACTUALIZADO: 'sucursal_actualizado',
   SUCURSAL_ESTADO: 'sucursal_estado',
   QUEJA_ACTUALIZADA: 'queja_actualizada',
   NOTIFICACION_CREADA: 'notificacion_creada',
@@ -70,31 +79,73 @@ let socket = null;
 /**
  * Abre (o reutiliza) la conexión con el backend.
  *
- * Es idempotente: si ya hay una instancia, la devuelve sin tocar nada.
+ * Es idempotente: si ya hay una instancia viva, la devuelve.
+ * Si existe pero está desconectada, fuerza una reconexión para renegociar
+ * el handshake con la cookie de sesión actual.
  *
  * @returns {import('socket.io-client').Socket} Instancia conectada o en reconexión.
  */
 export const conectarSocket = () => {
-  if (socket) return socket;
+  if (socket) {
+    if (socket.connected) {
+      console.log('[DIAG] Socket: reutilizando instancia existente', { connected: true, id: socket.id });
+      return socket;
+    }
+    // Instancia existe pero está desconectada: forzar reconexión con cookie actual
+    console.log('[DIAG] Socket: instancia desconectada, forzando reconexión...', { id: socket.id });
+    socket.connect();
+    return socket;
+  }
+  console.log('[DIAG] Socket: creando nueva conexión...');
   socket = io(ORIGEN_SOCKET, {
     withCredentials: true,
     transports: ['websocket', 'polling'],
-    // Reconexión automática con backoff: si se cae la red o se reinicia el
-    // backend, el socket vuelve solo. Cada reconexión dispara 'connect' de
-    // nuevo, que es donde hay que volver a suscribirse (las rooms viven en el
-    // servidor y se pierden al cambiar de socket.id).
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });
+
+  socket.on('connect', () => {
+    console.log('[DIAG] Socket: conectado', { id: socket.id });
+  });
+  socket.on('disconnect', (reason) => {
+    console.log('[DIAG] Socket: desconectado', { reason });
+  });
+  socket.on('connect_error', (error) => {
+    console.log('[DIAG] Socket: error de conexión', { message: error.message });
+  });
+
   return socket;
 };
 
-/** Cierra la conexión y descarta la instancia. */
+/**
+ * Fuerza una reconexión inmediata del singleton manteniendo los listeners.
+ * Útil cuando la sesión cambió (ej. SUPERADMIN elige sucursal) y hay que
+ * renegociar el handshake con la nueva cookie sin destruir la instancia.
+ *
+ * @returns {import('socket.io-client').Socket} La misma instancia, reconectando.
+ */
+export const forzarReconexion = () => {
+  if (!socket) {
+    console.log('[DIAG] forzarReconexion: no hay instancia, creando nueva...');
+    return conectarSocket();
+  }
+  if (socket.connected) {
+    console.log('[DIAG] forzarReconexion: desconectando para renegociar handshake...');
+    socket.disconnect();
+  }
+  // socket.connect() usa la cookie actual (ya actualizada por refrescarUsuario)
+  console.log('[DIAG] forzarReconexion: conectando con nueva sesión...');
+  socket.connect();
+  return socket;
+};
+
+/** Cierra la conexión y descarta la instancia (solo para logout). */
 export const desconectarSocket = () => {
   if (!socket) return;
-  socket.removeAllListeners();
+  console.log('[DIAG] desconectarSocket: cerrando instancia singleton (logout)');
+  socket.removeAllListeners(); // Limpio total al cerrar sesión
   socket.disconnect();
   socket = null;
 };
@@ -139,4 +190,35 @@ export const desuscribirPedido = (pedidoId) => {
 export const onPedidoEvento = (evento, handler) => {
   if (!socket) return null;
   return socket.on(evento, handler);
+};
+
+/**
+ * Registra un handler para las RECONEXIONES del socket, ignorando la primera
+ * conexión de la sesión.
+ *
+ * Las pantallas ya cargan sus datos al montar; el evento `connect` también se
+ * emite en la primera conexión, así que sin este guard se duplicaba cada carga
+ * completa de página. Solo las reconexiones (red caída, reinicio del backend)
+ * necesitan resincronizar por REST, porque el aviso se perdió mientras no había
+ * canal.
+ *
+ * @param {import('socket.io-client').Socket} instancia - Socket ya conectado o en curso.
+ * @param {() => void} handler - Acción a ejecutar al reconectar.
+ * @returns {() => void} Cleanup para el `useEffect`.
+ */
+export const alReconectar = (instancia, handler) => {
+  if (!instancia) return () => {};
+  // Si la instancia ya está conectada al registrar el handler, la primera
+  // conexión de la sesión ya ocurrió: el próximo `connect` es una reconexión y
+  // sí debe resincronizar. Si todavía está conectando, se ignora la primera.
+  let primeraConexion = !instancia.connected;
+  const listener = () => {
+    if (primeraConexion) {
+      primeraConexion = false;
+      return;
+    }
+    handler();
+  };
+  instancia.on('connect', listener);
+  return () => instancia.off('connect', listener);
 };

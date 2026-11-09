@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Modal, Button } from 'react-bootstrap';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
-import { usePersonalizacion } from '../../hooks/usePersonalizacion';
+import { usePersonalizacionProducto,
+  usePlantillasPersonalizacionQuery,
+} from '../../hooks/queries';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { calcularPrecioUnitario } from '../../services/personalizacionConfig';
 import { formatPrice } from '../../utils/formatters';
+import { resolverImagen } from '../../utils/imagenes';
 import GrupoOpciones from './GrupoOpciones';
 import Contador from './Contador';
 import './ProductoPersonalizarModal.css';
@@ -14,9 +17,132 @@ import './ProductoPersonalizarModal.css';
 const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
   const { agregarAlCarrito } = useCarrito();
   const { parametros } = useParametros();
-  const { getConfigParaProducto } = usePersonalizacion();
   const { notificar } = useNotificaciones();
-  const config = getConfigParaProducto(producto);
+
+  // Lectura específica por producto y su categoría: solo se trae lo que se va
+  // a mostrar, no el catálogo entero de personalización. Se habilita solo cuando
+  // el producto existe Y el modal está abierto, para no disparar peticiones al
+  // entrar a la página de detalle si el usuario no abre el modal.
+  const categoriaIdRaw = producto?.categoriaId;
+  const categoriaId =
+    categoriaIdRaw === null || categoriaIdRaw === undefined
+      ? null
+      : typeof categoriaIdRaw === 'object'
+      ? categoriaIdRaw?.id ?? null
+      : categoriaIdRaw;
+  // Solo se consulta cuando el producto existe, el modal está abierto y el id
+  // de categoría es un número válido. Esto evita enviar [object Object] o
+  // undefined como parámetro de consulta.
+  const categoriaIdValida =
+    categoriaId !== null && categoriaId !== undefined && Number.isFinite(categoriaId);
+  const elementosQuery = usePersonalizacionProducto(producto?.id ?? null, {
+    enabled: Boolean(producto) && show,
+  });
+  const plantillasQuery = usePlantillasPersonalizacionQuery(categoriaId, {
+    enabled: categoriaIdValida && show,
+  });
+
+  const elementos = elementosQuery.data || [];
+  const plantillasCategoria = plantillasQuery.data || [];
+
+  const CONFIG_VACIA = {
+    extra: [],
+    personalizar: [],
+    acompanar: [],
+    condimento: [],
+  };
+
+  const normalizarElemento = (e) => ({
+    id: String(e.id),
+    nombre: e.nombre,
+    precio:
+      e.precio !== null && e.precio !== undefined ? Number(e.precio) : undefined,
+    productoReferenciaId: e.productoReferenciaId,
+    minimo: e.minimo ?? 0,
+    maximo: e.maximo ?? 1,
+    insumoId: e.insumoId ?? null,
+    stockTotal: e.stockTotal ?? null,
+    agotado: Boolean(e.agotado),
+  });
+
+  const normalizarElementoPersonalizar = (e) => ({
+    id: String(e.id),
+    nombre: e.nombre,
+    minimo: e.minimo ?? 0,
+    maximo: e.maximo ?? 1,
+  });
+
+  const normalizarPlantilla = (p) => ({
+    id: String(p.id),
+    nombre: p.nombre,
+    precio:
+      p.precio !== null && p.precio !== undefined ? Number(p.precio) : undefined,
+    productoReferenciaId: p.productoReferenciaId,
+    minimo: p.minimo ?? 0,
+    maximo: p.maximo ?? 1,
+    insumoId: p.insumoId ?? null,
+    stockTotal: p.stockTotal ?? null,
+    agotado: Boolean(p.agotado),
+  });
+
+  const config = useMemo(() => {
+    if (!producto) return CONFIG_VACIA;
+    const todosPorProducto = elementos.filter(
+      (e) => String(e.productoId) === String(producto.id)
+    );
+    const activos = todosPorProducto.filter((e) => e.activo);
+    const cfgCategoria = categoriaId !== null
+      ? plantillasCategoria.filter(
+          (p) =>
+            String(p.categoriaId) === String(categoriaId) && p.activo
+        )
+      : [];
+
+    // Si el producto no tiene elementos propios, se usa el fallback por categoría.
+    if (todosPorProducto.length === 0) {
+      return {
+        extra: cfgCategoria
+          .filter((p) => p.tipo === 'extra')
+          .map(normalizarPlantilla),
+        personalizar: [],
+        acompanar: cfgCategoria
+          .filter((p) => p.tipo === 'acompanar')
+          .map(normalizarPlantilla),
+        condimento: cfgCategoria
+          .filter((p) => p.tipo === 'condimento')
+          .map(normalizarPlantilla),
+      };
+    }
+
+    const porTipo = (tipo) => todosPorProducto.filter((e) => e.tipo === tipo);
+    const activosPorTipo = (tipo) => activos.filter((e) => e.tipo === tipo);
+
+    return {
+      extra:
+        porTipo('extra').length === 0
+          ? cfgCategoria
+              .filter((p) => p.tipo === 'extra')
+              .map(normalizarPlantilla)
+          : activosPorTipo('extra').map(normalizarElemento),
+      personalizar:
+        porTipo('personalizar').length === 0
+          ? []
+          : activosPorTipo('personalizar').map(normalizarElementoPersonalizar),
+      acompanar:
+        porTipo('acompanar').length === 0
+          ? cfgCategoria
+              .filter((p) => p.tipo === 'acompanar')
+              .map(normalizarPlantilla)
+          : activosPorTipo('acompanar').map(normalizarElemento),
+      condimento:
+        porTipo('condimento').length === 0
+          ? cfgCategoria
+              .filter((p) => p.tipo === 'condimento')
+              .map(normalizarPlantilla)
+          : activosPorTipo('condimento').map(normalizarElemento),
+    };
+  }, [elementos, plantillasCategoria, producto]);
+
   const [vista, setVista] = useState('principal');
   const [unidades, setUnidades] = useState(1);
   const [extraCant, setExtraCant] = useState({});
@@ -185,7 +311,7 @@ const cambiarUnidades = (d) =>
         <Modal.Body className="text-center">
           {/* alt vacío: el nombre ya está en el título del diálogo. */}
           <img
-            src={producto.imagen}
+            src={resolverImagen(producto.imagen)}
             alt=""
             width={160}
             height={110}
@@ -241,7 +367,7 @@ const cambiarUnidades = (d) =>
                 <span aria-hidden="true">×</span>
               </Button>
               {/* alt vacío: el nombre del producto está en el h2 de abajo. */}
-              <img src={producto.imagen} alt="" width={220} height={150} className="personalizar-imagen" />
+              <img src={resolverImagen(producto.imagen)} alt="" width={220} height={150} className="personalizar-imagen" />
             </div>
             <div className="px-3 pb-3">
               <div className="d-flex justify-content-between align-items-start">

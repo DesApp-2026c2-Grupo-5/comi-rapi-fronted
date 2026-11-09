@@ -18,9 +18,12 @@ import { apiGet, apiPost, apiPut, apiDelete } from './client';
  * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
 export const obtenerPromociones = async (opciones = {}) => {
-  const { incluirInactivas = false } = opciones;
-  const query = incluirInactivas ? '?activa=false' : '';
-  const result = await apiGet(`/promociones${query}`);
+  const { incluirInactivas = false, incluirProductos = false } = opciones;
+  const params = new URLSearchParams();
+  if (incluirInactivas) params.set('activa', 'false');
+  if (incluirProductos) params.set('include', 'productos');
+  const query = params.toString();
+  const result = await apiGet(`/promociones${query ? `?${query}` : ''}`);
   if (result.success) {
     return { success: true, data: result.data };
   }
