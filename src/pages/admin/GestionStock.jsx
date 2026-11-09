@@ -758,7 +758,7 @@ const GestionStock = () => {
                   return (
                     <tr
                       key={`${fila.sucursalId}-${clave}`}
-                      className={CLASE_FILA[fila.estado]}
+                      className={undefined}
                     >
                       <td data-label="Sucursal">{fila.sucursal}</td>
                       <td data-label="Ítem">
