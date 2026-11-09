@@ -1,8 +1,8 @@
 /**
  * Propósito: Página de login del panel de administración (ADMINISTRADOR y
  *            SUPERADMINISTRADOR) con la identidad visual Comi-Rapi.
- * Contenido: Componente AdminLogin con formulario controlado, estilo naranja degradado
- *            (cabecera con marca, inputs con ícono y botón pill) y navegación.
+ * Contenido: Componente AdminLogin con formulario controlado, estilo verde
+ *            bosque degradado (cabecera con marca, inputs con ícono y botón pill) y navegación.
  * Dependencias: react-bootstrap (Form, Button, Alert), react-router-dom, useAuth hook,
  *               react-icons/fa (FaUserShield, FaEnvelope, FaLock, FaRightToBracket), Login.css.
  * Uso: Ruta "/admin-login" → <AdminLogin />
@@ -42,7 +42,7 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="auth-comirapi-bg">
+    <div className="auth-comirapi-bg auth-admin">
       <div className="auth-card-comirapi">
         <div className="auth-card-header">
           <div className="auth-brand-ico">

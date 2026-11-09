@@ -15,7 +15,7 @@
  * Bootstrap pliega el colapsable de la barra superior.
  *
  * Los contadores vienen de useIndicadoresNav, el mismo hook que usa Navbar.jsx,
- * para que el número de pedidos sea el mismo en las dos barras.
+ * para que el número de pedidos y de reclamos sea el mismo en las dos barras.
  *
  * No incluye el perfil: son destinos de trabajo y el perfil se alcanza desde el
  * avatar de la barra superior, que en móvil quedó siempre visible. Meterlo como
@@ -44,6 +44,7 @@ import {
   FaCog,
   FaBriefcase,
   FaCheck,
+  FaExclamationCircle,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursal } from '../../hooks/useSucursal';
@@ -56,7 +57,7 @@ import useMuestraNavInferior from '../../hooks/useMuestraNavInferior';
 import './NavInferior.css';
 
 /* El del cliente entra completo en la barra. La del admin lleva la operación de
-   su sucursal (Inicio, Pedidos, Clientes y Stock) y una hoja de Catálogo: el
+   su sucursal (Inicio, Pedidos, Reclamos y Stock) y una hoja de Catálogo: el
    CRUD de productos, categorías, promociones y personalización es del
    SUPERADMINISTRADOR, y el admin los ve en SOLO LECTURA (con el interruptor de
    disponibilidad en Productos). Las sucursales tampoco son del admin. */
@@ -90,10 +91,10 @@ const enlacesAdmin = [
     badge: 'pedidos',
   },
   {
-    to: '/admin/clientes',
-    etiqueta: 'Clientes',
-    icono: FaUsers,
-    prefijo: '/admin/clientes',
+    to: '/admin/quejas',
+    etiqueta: 'Reclamos',
+    icono: FaExclamationCircle,
+    badge: 'quejas',
   },
   {
     etiqueta: 'Catálogo',
@@ -125,12 +126,21 @@ const enlacesAdmin = [
 ];
 
 /* El superadministrador comparte el andamiaje de la barra inferior: panel,
-   hoja de Catálogo (el CRUD completo) y hoja de Negocio
+   reclamos, hoja de Catálogo (el CRUD completo) y hoja de Negocio
    (parámetros, sucursales, clientes y administradores). Así, en el móvil
    navega igual que el admin, con los destinos al alcance del pulgar y sin
    depender del menú hamburguesa. */
 const enlacesSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
+  {
+    /* La bandeja de reclamos es compartida con el admin (/admin/quejas) y en
+       móvil la barra superior está plegada: sin este ítem el superadmin no
+       tendría cómo llegar ni ver el badge de pendientes. */
+    to: '/admin/quejas',
+    etiqueta: 'Reclamos',
+    icono: FaExclamationCircle,
+    badge: 'quejas',
+  },
   {
     /* Hoja "Sucursal": en pantalla chica el menú superior (con el selector de
        contexto y los destinos operativos) queda oculto por el colapsable.
@@ -245,9 +255,12 @@ const NavInferior = () => {
   const {
     productosDistintos,
     pedidosActivos,
+    quejasPendientes,
     pulsoCarrito,
     pulsoPedido,
     pulsoPedidoBadge,
+    pulsoQueja,
+    pulsoQuejaBadge,
   } = useIndicadoresNav();
 
   // Los hooks van antes de esta salida: si se retornara null antes de llamarlos,
@@ -293,11 +306,25 @@ const NavInferior = () => {
         </span>
       );
     }
+    if (clave === 'quejas' && quejasPendientes > 0) {
+      return (
+        <span className={`carrito-badge nav-inferior-badge${pulsoQuejaBadge ? ' carrito-badge-pulso' : ''}`}>
+          <span aria-hidden="true">{quejasPendientes}</span>
+          <span className="visually-hidden">
+            {`${quejasPendientes} ${
+              quejasPendientes === 1 ? 'reclamo pendiente' : 'reclamos pendientes'
+            }`}
+          </span>
+        </span>
+      );
+    }
     return null;
   };
 
   const pulsoDeIcono = (clave) =>
-    (clave === 'carrito' && pulsoCarrito) || (clave === 'pedidos' && pulsoPedido)
+    (clave === 'carrito' && pulsoCarrito) ||
+    (clave === 'pedidos' && pulsoPedido) ||
+    (clave === 'quejas' && pulsoQueja)
       ? ' nav-enlace-ico-pulso'
       : '';
 

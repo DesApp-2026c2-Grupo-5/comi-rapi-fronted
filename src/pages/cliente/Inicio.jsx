@@ -35,6 +35,7 @@ import {
 } from '../../hooks/queries';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import PromocionCard from '../../components/cliente/PromocionCard';
+import AvisoSucursalesCerradas from '../../components/comunes/AvisoSucursalesCerradas';
 import {
   IMAGEN_CATEGORIA_POR_DEFECTO,
   resolverImagen,
@@ -210,6 +211,12 @@ const Inicio = () => {
           </Row>
         </Container>
       </section>
+
+      {/* Aviso global de horario: sólo cuando ninguna sucursal activa está
+          tomando pedidos. El catálogo se sigue pudiendo recorrer. */}
+      <Container className="pt-4">
+        <AvisoSucursalesCerradas className="mb-0" />
+      </Container>
 
       {/* Error de carga: se muestra lo que sí llegó, pero se avisa que faltan
           secciones y se da una salida (reintentar) en vez de dejarlas mudas. */}

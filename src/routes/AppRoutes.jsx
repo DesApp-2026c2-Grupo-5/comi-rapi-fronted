@@ -89,6 +89,7 @@ const Perfil = lazy(() => import('../pages/cliente/Perfil'));
 const Dashboard = lazy(() => import('../pages/admin/Dashboard'));
 const GestionPedidos = lazy(() => import('../pages/admin/GestionPedidos'));
 const GestionStock = lazy(() => import('../pages/admin/GestionStock'));
+const GestionQuejas = lazy(() => import('../pages/admin/GestionQuejas'));
 const GestionClientes = lazy(() => import('../pages/admin/GestionClientes'));
 const DetalleCliente = lazy(() => import('../pages/admin/DetalleCliente'));
 // Catálogo del admin: solo lectura + disponibilidad por sucursal
@@ -185,6 +186,7 @@ const AppRoutes = () => {
           >
             <Route path="/admin/pedidos" element={<GestionPedidos />} />
             <Route path="/admin/stock" element={<GestionStock />} />
+            <Route path="/admin/quejas" element={<GestionQuejas />} />
           </Route>
 
           {/* Rutas protegidas de administrador: operación de su sucursal

@@ -36,6 +36,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { rutaActual } from '../../utils/rutas';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import RangoPrecio from '../../components/cliente/RangoPrecio';
+import AvisoSucursalesCerradas from '../../components/comunes/AvisoSucursalesCerradas';
 import { SkeletonGrillaProductos } from '../../components/comunes/Skeleton';
 import './Catalogo.css';
 
@@ -223,6 +224,10 @@ const Catalogo = () => {
           Elegí tu favorito y añadilo al carrito.
         </p>
       </div>
+
+      {/* Aviso global de horario: se muestra una sola vez, no por producto. El
+          backend rechaza igual el alta si ninguna sucursal puede tomar pedidos. */}
+      <AvisoSucursalesCerradas className="mb-4" />
 
       {/* Aviso para el visitante sin sesión. Va arriba de todo, antes de los
           filtros: la cuenta se pide recién al confirmar, pero conviene que sepa

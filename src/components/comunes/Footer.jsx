@@ -1,10 +1,13 @@
 /**
  * Propósito: Pie de página de marca para Comi-Rapi.
- * Contenido: Marca con logo, horarios, contacto, redes y créditos.
+ * Contenido: Marca con logo, contacto, redes y créditos.
  * Dependencias: react-bootstrap, react-icons, logo SVG (public/imagenes),
  *   Footer.css (superficie crema y tipografía de marca).
  * Uso: <Footer /> en las pantallas de la tienda. AppLayout no lo monta en el
  *      panel de administración (ver esRutaDeAdmin en utils/rutas).
+ *
+ * Los horarios de atención NO se muestran acá: viven en la ficha de cada
+ * sucursal y en los avisos del catálogo/carrito/pago.
  */
 
 import { Container, Row, Col } from 'react-bootstrap';
@@ -19,7 +22,7 @@ const Footer = () => {
     <footer className="footer-comirapi py-4 mt-5">
       <Container>
         <Row>
-          <Col md={4} className="mb-3">
+          <Col md={5} className="mb-3">
             <span className="footer-marca">
               <img src="/imagenes/logo-comirapi.svg" alt="" aria-hidden="true" />
               <span translate="no">Comi-Rapi</span>
@@ -29,21 +32,14 @@ const Footer = () => {
               y mucho más.
             </p>
           </Col>
-          <Col md={3} className="mb-3">
-            <h5 className="footer-titulo">Horarios</h5>
-            <ul className="list-unstyled footer-lista mb-0">
-              <li>Lunes a Viernes: 11:00 – 23:00</li>
-              <li>Sábados y Domingos: 11:00 – 00:00</li>
-            </ul>
-          </Col>
-          <Col md={3} className="mb-3">
+          <Col md={4} className="mb-3">
             <h5 className="footer-titulo">Atención al cliente</h5>
             <ul className="list-unstyled footer-lista mb-0">
               <li>WhatsApp: 11 5000-5000</li>
               <li>info@comirapi.com</li>
             </ul>
           </Col>
-          <Col md={2} className="mb-3">
+          <Col md={3} className="mb-3">
             <h5 className="footer-titulo">Seguinos</h5>
             <div className="d-flex gap-2">
               <a href="#" aria-label="Instagram" className="footer-red">

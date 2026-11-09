@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ff9f1c" />
+    <!-- Anti-flash de tema: resuelve claro/oscuro ANTES de pintar la primera
+         pantalla. Tiene que ir inline (no puede esperar al bundle de React) y
+         mantener la misma clave y valores que src/utils/temaStorage.js. -->
+    <script>
+      (function () {
+        try {
+          var CLAVE = 'comirapi:tema:v1';
+          var guardado = null;
+          try {
+            guardado = localStorage.getItem(CLAVE);
+          } catch (e) {
+            /* Modo privado: se resuelve con el sistema. */
+          }
+          var oscuro =
+            guardado === 'oscuro' ||
+            (guardado !== 'claro' &&
+              !!window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute(
+            'data-bs-theme',
+            oscuro ? 'dark' : 'light'
+          );
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', oscuro ? '#1b1712' : '#ff9f1c');
+        } catch (e) {
+          document.documentElement.setAttribute('data-bs-theme', 'light');
+        }
+      })();
+    </script>
     <meta
       name="description"
       content="Comi-Rapi: pedidos de comida a domicilio. Elegí tu sucursal, armá el pedido y seguí su estado en tiempo real."
@@ -50,6 +79,20 @@
         font-size: 1.4rem;
         letter-spacing: 2px;
         color: #b55d00;
+      }
+      /* Tema oscuro (atributo puesto por el script anti-flash): el fondo del
+         documento y el del splash se pintan oscuros desde el primer frame, así
+         no aparece un destello crema. Los colores coinciden con los tokens
+         oscuros (src/styles/tokens.css) y con COLOR_TEMA de temaStorage.js. */
+      html[data-bs-theme='dark'] {
+        background-color: #1b1712;
+        color-scheme: dark;
+      }
+      html[data-bs-theme='dark'] .splash-inicial {
+        background: #1b1712;
+      }
+      html[data-bs-theme='dark'] .splash-inicial__nombre {
+        color: #ffb347;
       }
       /* Bootstrap (con .visually-hidden) todavía no cargó: el texto de estado
          se oculta con las reglas clásicas de recorte para lectores de pantalla. */

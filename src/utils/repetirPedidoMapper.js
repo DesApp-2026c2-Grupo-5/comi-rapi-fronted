@@ -233,6 +233,7 @@ export function mapearPedidoACarrito(
       },
       cantidad,
       personalizacion: pers,
+      nota: item.nota || null,
     });
   }
 

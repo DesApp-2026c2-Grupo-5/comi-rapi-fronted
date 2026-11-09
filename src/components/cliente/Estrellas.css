@@ -29,7 +29,7 @@
   background: transparent;
   padding: 2px;
   line-height: 1;
-  color: #c9c2b6;
+  color: var(--color-border-strong);
   border-radius: 6px;
 }
 
@@ -44,5 +44,5 @@
 
 .estrellas-comi-valor {
   font-size: 0.875rem;
-  color: var(--color-text-muted, #6c6257);
+  color: var(--color-text-muted);
 }

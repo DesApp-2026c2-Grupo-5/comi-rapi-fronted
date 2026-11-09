@@ -1,13 +1,16 @@
 /**
  * Propósito: Componente principal de la aplicación que configura Router y Contextos.
- * Contenido: Función App que envuelve la app con NotificacionProvider, AuthProvider, ParametrosProvider, CarritoProvider, SucursalProvider y BrowserRouter.
+ * Contenido: Función App que envuelve la app con TemaProvider, NotificacionProvider, AuthProvider, ParametrosProvider, CarritoProvider, SucursalProvider y BrowserRouter.
  * Dependencias: react-router-dom, context/AuthContext, context/CarritoContext, context/SucursalContext, context/ParametrosContext, routes/AppRoutes, Navbar, NavInferior, Footer.
  * Uso: Se renderiza en main.jsx como componente raíz.
  */
 
 import { BrowserRouter, useLocation } from 'react-router-dom';
+import { useLayoutEffect } from 'react';
 import { NotificacionProvider } from './context/NotificacionContext';
+import { TemaProvider } from './context/TemaContext';
 import { AuthProvider } from './context/AuthContext';
+import { NotificacionesCentroProvider } from './context/NotificacionesCentroContext';
 import { CarritoProvider } from './context/CarritoContext';
 import { SucursalProvider } from './context/SucursalContext';
 import { SucursalOperativaProvider } from './context/SucursalOperativaContext';
@@ -48,6 +51,19 @@ function AppLayout() {
   // administración queda abajo de tablas largas sin aportar nada, así que no se
   // muestra: la regla de "/admin" vive en utils/rutas.
   const mostrarFooter = !esRutaDeAdmin(pathname);
+  // El panel de administración y superadministración comparte una paleta verde
+  // propia. La clase va al <body> (ver useLayoutEffect) para alcanzar también
+  // la navbar y los portales de modales. El login del panel se incluye para que
+  // la navbar que lo rodea use la misma paleta.
+  const esAdmin = esRutaDeAdmin(pathname) || pathname === '/admin-login';
+
+  // Los modales y tooltips de React Bootstrap se renderizan en un portal colgado
+  // de <body>, fuera del shell. La clase en <body> alcanza también esos portales
+  // y evita que un modal del panel aparezca con los colores del cliente.
+  useLayoutEffect(() => {
+    document.body.classList.toggle('admin-theme', esAdmin);
+    return () => document.body.classList.remove('admin-theme');
+  }, [esAdmin]);
 
   // Precarga opcional del snapshot público (parámetros, catálogo y
   // promociones). En el panel no aporta: esas pantallas piden listados de
@@ -78,33 +94,39 @@ function AppLayout() {
  */
 function App() {
   return (
-    <BrowserRouter>
-      <NotificacionProvider>
-        {/* ParametrosProvider va DESPUÉS de AuthProvider: usa useAuth para
-            recargar parámetros vía WebSocket solo con sesión vigente. */}
-        <AuthProvider>
-          <ParametrosProvider>
-            {/* SucursalOperativaProvider: usa useAuth (sucursalOperativa de
-                /auth/me) y lo consumen PedidoContext, Navbar y las pantallas
-                operativas. Va antes de PedidoProvider, que rearma sus
-                listeners del socket cuando cambia el contexto. */}
-            <SucursalOperativaProvider>
-              <CarritoProvider>
-                <SucursalProvider>
-                  <PedidoProvider>
-                    <DireccionProvider>
-                      <PersonalizacionProvider>
-                        <AppLayout />
-                      </PersonalizacionProvider>
-                    </DireccionProvider>
-                  </PedidoProvider>
-                </SucursalProvider>
-              </CarritoProvider>
-            </SucursalOperativaProvider>
-          </ParametrosProvider>
-        </AuthProvider>
-      </NotificacionProvider>
-    </BrowserRouter>
+    // TemaProvider va lo más arriba posible: aplica data-bs-theme al <html> y
+    // no depende de sesión, router ni datos de la API.
+    <TemaProvider>
+      <BrowserRouter>
+        <NotificacionProvider>
+          {/* ParametrosProvider va DESPUÉS de AuthProvider: usa useAuth para
+              recargar parámetros vía WebSocket solo con sesión vigente. */}
+          <AuthProvider>
+            <NotificacionesCentroProvider>
+              <ParametrosProvider>
+                {/* SucursalOperativaProvider: usa useAuth (sucursalOperativa de
+                    /auth/me) y lo consumen PedidoContext, Navbar y las pantallas
+                    operativas. Va antes de PedidoProvider, que rearma sus
+                    listeners del socket cuando cambia el contexto. */}
+                <SucursalOperativaProvider>
+                  <CarritoProvider>
+                    <SucursalProvider>
+                      <PedidoProvider>
+                        <DireccionProvider>
+                          <PersonalizacionProvider>
+                            <AppLayout />
+                          </PersonalizacionProvider>
+                        </DireccionProvider>
+                      </PedidoProvider>
+                    </SucursalProvider>
+                  </CarritoProvider>
+                </SucursalOperativaProvider>
+              </ParametrosProvider>
+            </NotificacionesCentroProvider>
+          </AuthProvider>
+        </NotificacionProvider>
+      </BrowserRouter>
+    </TemaProvider>
   );
 }
 

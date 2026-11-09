@@ -352,8 +352,11 @@ export const PedidoProvider = ({ children }) => {
    * Confirma el pago: PENDIENTE → CONFIRMADO en la API real, persistiendo el
    * medio de pago elegido en el pedido.
    * Si la API falla, muestra el error y devuelve null (no se simula nada).
+   * Si el backend canceló el pedido por cierre de sucursal, devuelve
+   * `{ cancelado: true }` (el stock ya fue repuesto por el backend).
    * @param {number} pedidoId - ID del pedido a confirmar.
    * @param {string} [medioPago] - Medio de pago ('MERCADO_PAGO' | 'TARJETA').
+   * @returns {Promise<object|null>} Pedido confirmado, señal de cancelación o null.
    */
   const confirmarPedido = useCallback(async (pedidoId, medioPago) => {
     const res = await pedidosApi.confirmarPedido(pedidoId, medioPago);
@@ -369,11 +372,18 @@ export const PedidoProvider = ({ children }) => {
       setSenalPedido((n) => n + 1);
       return res.data;
     }
+    // El backend cancela el pedido cuando la sucursal cerró y no hay otra
+    // abierta con stock: repone el stock y responde 409 con `cancelado`. No es
+    // un error para mostrar como fallo, sino una señal para volver al carrito.
+    if (res.cancelado) {
+      await refrescarPedidos();
+      return { cancelado: true };
+    }
     // Igual que en `crearPedido`: el backend ya devuelve un mensaje para el
     // cliente y este wrapper sólo lo pisaría con el prefijo y el id del pedido.
     notificar(res.error || 'No se pudo confirmar el pedido.', 'danger');
     return null;
-  }, [notificar, queryClient]);
+  }, [notificar, queryClient, refrescarPedidos]);
 
   /**
    * Cambia el estado de un pedido contra la API real (usado por el admin).

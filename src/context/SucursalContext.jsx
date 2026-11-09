@@ -38,8 +38,10 @@ import {
 import { asignarSucursalOptima as asignarSucursalOptimaService } from '../services/asignacionSucursal';
 import { pedidosPendientesMock } from '../services/seedData';
 import { actualizarSucursalEnCache } from '../utils/sucursalesCache';
-import { useAuth } from '../hooks/useAuth';
 import { useSucursalesQuery } from '../hooks/queries';
+import { proximaAperturaEntre } from '../utils/horarios';
+import { conectarSocket, EVENTOS_SOCKET } from '../services/socket';
+import { useAuth } from '../hooks/useAuth';
 
 // Se crea el contexto
 export const SucursalContext = createContext(null);
@@ -73,7 +75,8 @@ export const SucursalProvider = ({ children }) => {
   // al abrir la pantalla de sucursales. Hasta que alguien la pide, la consulta
   // queda deshabilitada.
   const [consultaSolicitada, setConsultaSolicitada] = useState(false);
-  const { hydrated, isSuperadmin } = useAuth();
+  const { hydrated, user, isSuperadmin } = useAuth();
+  const emailSesion = user?.email;
 
   const consultaHabilitada = hydrated && (isSuperadmin || consultaSolicitada);
 
@@ -126,6 +129,18 @@ export const SucursalProvider = ({ children }) => {
   // Se dispara cuando `cargarSucursales` pidió asignar la óptima y la lista
   // recién llega (primer fetch del cliente, que antes era una promesa directa).
   const [asignacionPendiente, setAsignacionPendiente] = useState(false);
+
+  /**
+   * Refresco en segundo plano (socket, pestaña visible, intervalo). Sólo actúa
+   * si la lista ya fue solicitada alguna vez: nunca habilita la consulta por sí
+   * solo, para no romper la carga perezosa del cliente ni sumar GETs
+   * innecesarios. A diferencia de `obtenerSucursalesFn`, fuerza la relectura
+   * porque estos eventos indican que el estado del backend cambió.
+   */
+  const refrescarSucursalesEnSegundoPlano = useCallback(async () => {
+    if (!habilitadaRef.current) return;
+    await refetch();
+  }, [refetch]);
 
   /**
    * Carga las sucursales y asigna la óptima al cliente (lógica interna).
@@ -269,10 +284,62 @@ export const SucursalProvider = ({ children }) => {
     cargarSucursales();
   }, [hydrated, isSuperadmin, cargarSucursales]);
 
+  // El backend avisa por WebSocket cuando una sucursal abre o cierra
+  // (`sucursal_estado`, emitido por el vigía de horarios y por los cambios del
+  // superadmin). Cuando viene de un alta/edición/baja trae `sucursalId` y el
+  // evento `sucursal_actualizado` ya actualiza la caché con el objeto completo:
+  // no hace falta otra lectura. El resto (vigía, cambio de margen) no trae
+  // datos y sí obliga a releer para refrescar `abiertaAhora`. Al reconectar
+  // también se refresca, porque los cambios ocurridos sin conexión no llegaron.
+  useEffect(() => {
+    if (!hydrated || !emailSesion) return undefined;
+    const instancia = conectarSocket();
+    const alCambiarEstado = (payload) => {
+      if (payload && payload.sucursalId) return;
+      refrescarSucursalesEnSegundoPlano();
+    };
+    instancia.on('connect', alCambiarEstado);
+    instancia.on(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarEstado);
+    return () => {
+      instancia.off('connect', alCambiarEstado);
+      instancia.off(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarEstado);
+    };
+  }, [hydrated, emailSesion, refrescarSucursalesEnSegundoPlano]);
+
+  // `abiertaAhora`, `cierrePedidos` y `proximaApertura` son una foto del
+  // backend al momento de la consulta. Se refrescan al volver a la pestaña y
+  // cada dos minutos, sin polling agresivo: el backend revalida igual al crear
+  // el pedido y al confirmar el pago, y los contadores de las pantallas usan el
+  // deadline (`segundosRestantes`) que ya vino en esa foto.
+  useEffect(() => {
+    const alVolver = () => {
+      if (!document.hidden) refrescarSucursalesEnSegundoPlano();
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    const intervalo = setInterval(alVolver, 120000);
+    return () => {
+      document.removeEventListener('visibilitychange', alVolver);
+      clearInterval(intervalo);
+    };
+  }, [refrescarSucursalesEnSegundoPlano]);
+
   // Sucursales cercanas (solo activas) calculadas para el cliente
   const sucursalesCercanas = useMemo(
     () => sucursales.filter((s) => s.activa !== false),
     [sucursales]
+  );
+
+  // Estado operativo global del catálogo: el aviso de "todas cerradas" solo
+  // aplica cuando NINGUNA sucursal activa está tomando pedidos ahora.
+  const sucursalesAbiertas = useMemo(
+    () => sucursalesCercanas.filter((s) => s.abiertaAhora),
+    [sucursalesCercanas]
+  );
+  const todasCerradas =
+    sucursalesCercanas.length > 0 && sucursalesAbiertas.length === 0;
+  const proximaApertura = useMemo(
+    () => proximaAperturaEntre(sucursalesCercanas),
+    [sucursalesCercanas]
   );
 
   // Valor del contexto
@@ -280,6 +347,9 @@ export const SucursalProvider = ({ children }) => {
     () => ({
       sucursales,
       sucursalesCercanas,
+      sucursalesAbiertas,
+      todasCerradas,
+      proximaApertura,
       pedidosPendientes,
       sucursalAsignada,
       loading,
@@ -294,6 +364,9 @@ export const SucursalProvider = ({ children }) => {
     [
       sucursales,
       sucursalesCercanas,
+      sucursalesAbiertas,
+      todasCerradas,
+      proximaApertura,
       pedidosPendientes,
       sucursalAsignada,
       loading,

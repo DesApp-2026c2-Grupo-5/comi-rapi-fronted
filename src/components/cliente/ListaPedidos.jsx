@@ -1,14 +1,24 @@
 /**
  * Propósito: Lista reutilizable de tarjetas de pedido (Mis Pedidos / Historial).
  * Extraída de MisPedidos: mismo visual, stepper y acciones.
+ * Las tarjetas entregadas muestran, por producto, "Calificar" o "Editar" y
+ * abren el modal de reseña en la misma pantalla (sin pasar por el detalle).
  * Props: pedidos ya filtrados, user, cancelandoId, repitiendoId,
  * pedirCancelacion?, pedirRepeticion, mostrarCancelar (default true).
  */
 
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Card, Badge, Button } from "react-bootstrap";
-import { FaEye, FaTimesCircle, FaRedo, FaClock, FaStar } from "react-icons/fa";
+import {
+  FaEye,
+  FaTimesCircle,
+  FaRedo,
+  FaClock,
+  FaStar,
+  FaPen,
+} from "react-icons/fa";
 import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
@@ -16,10 +26,15 @@ import {
 } from "../../utils/constants";
 import { formatPrice, formatDate } from "../../utils/formatters";
 import { calcularCostoEnvio } from "../../services/envio";
+import {
+  obtenerMisResenas,
+  obtenerProductosElegiblesParaResenar,
+} from "../../api/resenas";
 import BadgeLlegada from "./BadgeLlegada";
 import IconoEstado from "../comunes/IconoEstado";
 import HistorialStepper from "../comunes/HistorialStepper";
 import MiniaturasPedido from "./MiniaturasPedido";
+import ResenaModal from "./ResenaModal";
 import "./ListaPedidos.css";
 
 const ListaPedidos = ({
@@ -30,7 +45,49 @@ const ListaPedidos = ({
   pedirCancelacion,
   pedirRepeticion,
   mostrarCancelar = true,
-}) => (
+}) => {
+  // Reseñas: se cargan solo si hay alguna tarjeta entregada. `elegibles` son
+  // los productos comprados y todavía sin reseñar; `misResenas` permite
+  // ofrecer "Editar" en los que ya tienen una.
+  const [elegibles, setElegibles] = useState([]);
+  const [misResenas, setMisResenas] = useState([]);
+  const [productoAResenar, setProductoAResenar] = useState(null);
+  const hayEntregado = pedidos.some(
+    (pedido) => pedido.estado === ESTADOS_PEDIDO.ENTREGADO,
+  );
+
+  const cargarResenas = useCallback(async () => {
+    const [resElegibles, resMias] = await Promise.all([
+      obtenerProductosElegiblesParaResenar(),
+      obtenerMisResenas(),
+    ]);
+    if (resElegibles.success) setElegibles(resElegibles.data);
+    if (resMias.success) setMisResenas(resMias.data);
+  }, []);
+
+  useEffect(() => {
+    if (!hayEntregado) {
+      setElegibles([]);
+      setMisResenas([]);
+      return;
+    }
+    cargarResenas();
+  }, [hayEntregado, cargarResenas]);
+
+  const miResenaDe = (productoId) =>
+    productoId
+      ? misResenas.find((r) => String(r.productoId) === String(productoId))
+      : undefined;
+
+  const esElegible = (productoId) =>
+    elegibles.some((p) => String(p.productoId) === String(productoId));
+
+  const alGuardarResena = async () => {
+    setProductoAResenar(null);
+    await cargarResenas();
+  };
+
+  return (
   <>
     {pedidos.map((pedido) => {
       const estadoLabel =
@@ -40,6 +97,7 @@ const ListaPedidos = ({
       const esFinal =
         pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||
         pedido.estado === ESTADOS_PEDIDO.CANCELADO;
+      const esEntregado = pedido.estado === ESTADOS_PEDIDO.ENTREGADO;
       const esCancelado = pedido.estado === ESTADOS_PEDIDO.CANCELADO;
       const registroCancelacion = (pedido.historialEstados || []).find(
         (h) => h.estado === ESTADOS_PEDIDO.CANCELADO,
@@ -98,40 +156,77 @@ const ListaPedidos = ({
               <MiniaturasPedido productos={pedido.productos} />
               <div className="pedido-productos-detalle">
                 <strong>Productos:</strong>
-                {pedido.productos.map((p, i) => (
-                  <div key={i} className="ms-2 small">
-                    <span>
-                      {p.nombre} x{p.cantidad}
-                    </span>
-                    {p.extras?.length > 0 && (
-                      <span className="text-muted">
-                        {" "}
-                        —{" "}
-                        {p.extras
-                          .map((e) => `${e.nombre} (+${formatPrice(e.precio)})`)
-                          .join(", ")}
-                      </span>
-                    )}
-                    {p.sin?.length > 0 && (
-                      <span className="text-muted">
-                        {" "}
-                        — Sin {p.sin.join(", ")}
-                      </span>
-                    )}
-                    {p.acompanamientos?.length > 0 && (
-                      <span className="text-muted">
-                        {" "}
-                        — {p.acompanamientos.map((a) => a.nombre).join(", ")}
-                      </span>
-                    )}
-                    {p.condimentos?.length > 0 && (
-                      <span className="text-muted">
-                        {" "}
-                        — {p.condimentos.map((c) => c.nombre).join(", ")}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {pedido.productos.map((p, i) => {
+                  const resena = miResenaDe(p.productoId);
+                  const puedeCalificar =
+                    esEntregado &&
+                    p.productoId &&
+                    !resena &&
+                    esElegible(p.productoId);
+                  return (
+                    <div
+                      key={i}
+                      className="ms-2 small d-flex flex-wrap justify-content-between align-items-start gap-1"
+                    >
+                      <div>
+                        <span>
+                          {p.nombre} x{p.cantidad}
+                        </span>
+                        {p.extras?.length > 0 && (
+                          <span className="text-muted">
+                            {" "}
+                            —{" "}
+                            {p.extras
+                              .map((e) => `${e.nombre} (+${formatPrice(e.precio)})`)
+                              .join(", ")}
+                          </span>
+                        )}
+                        {p.sin?.length > 0 && (
+                          <span className="text-muted">
+                            {" "}
+                            — Sin {p.sin.join(", ")}
+                          </span>
+                        )}
+                        {p.acompanamientos?.length > 0 && (
+                          <span className="text-muted">
+                            {" "}
+                            — {p.acompanamientos.map((a) => a.nombre).join(", ")}
+                          </span>
+                        )}
+                        {p.condimentos?.length > 0 && (
+                          <span className="text-muted">
+                            {" "}
+                            — {p.condimentos.map((c) => c.nombre).join(", ")}
+                          </span>
+                        )}
+                      </div>
+                      {(resena || puedeCalificar) && (
+                        <Button
+                          variant={resena ? "outline-secondary" : "outline-primary"}
+                          size="sm"
+                          className="flex-shrink-0"
+                          onClick={() =>
+                            setProductoAResenar({
+                              id: p.productoId,
+                              nombre: p.nombre,
+                              resena: resena || null,
+                            })
+                          }
+                          aria-label={`${resena ? "Editar la reseña de" : "Calificar"} ${p.nombre}`}
+                        >
+                          {resena ? (
+                            <FaPen aria-hidden="true" />
+                          ) : (
+                            <FaStar aria-hidden="true" />
+                          )}
+                          <span className="ms-1">
+                            {resena ? "Editar" : "Calificar"}
+                          </span>
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <p className="mb-1">
@@ -210,17 +305,6 @@ const ListaPedidos = ({
                 <FaEye aria-hidden="true" />
                 Ver detalle
               </Button>
-              {pedido.estado === ESTADOS_PEDIDO.ENTREGADO && (
-                <Button
-                  as={Link}
-                  to={`/cliente/pedido/${pedido.id}`}
-                  variant="outline-primary"
-                  size="sm"
-                >
-                  <FaStar aria-hidden="true" />
-                  Calificar
-                </Button>
-              )}
               {mostrarCancelar && !esFinal && pedirCancelacion && (
                 <Button
                   variant="outline-danger"
@@ -248,8 +332,17 @@ const ListaPedidos = ({
         </Card>
       );
     })}
+
+    <ResenaModal
+      mostrar={Boolean(productoAResenar)}
+      producto={productoAResenar}
+      resena={productoAResenar?.resena || null}
+      onGuardada={alGuardarResena}
+      onCerrar={() => setProductoAResenar(null)}
+    />
   </>
-);
+  );
+};
 
 ListaPedidos.propTypes = {
   pedidos: PropTypes.arrayOf(PropTypes.object).isRequired,

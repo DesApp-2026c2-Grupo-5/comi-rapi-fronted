@@ -17,7 +17,7 @@
   max-width: 480px;
   border: 2px dashed var(--color-border-cream);
   border-radius: 18px;
-  background-color: #fff;
+  background-color: var(--color-surface);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -38,7 +38,7 @@
 
 /* ============ Botón gestionar direcciones ============ */
 .carrito-boton-direcciones {
-  --bs-btn-bg: #fff;
+  --bs-btn-bg: var(--color-surface);
   --bs-btn-color: var(--color-primary-dark);
   --bs-btn-border-color: var(--color-primary);
   --bs-btn-hover-bg: var(--color-primary);

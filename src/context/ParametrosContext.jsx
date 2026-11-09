@@ -36,6 +36,7 @@ export const PARAMETROS_POR_DEFECTO = {
   montoMinimoEnvioGratis: 10000,
   costoEnvioFijo: 350,
   radioCoberturaKm: 5,
+  margenCierreMinutos: 30,
   cantidadMaximaProductoCarrito: 20,
   minimoComponentesCombo: 2,
   montoMinimoPedido: 2000,

@@ -18,12 +18,11 @@ import {
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import './BannersNotificaciones.css';
 
-// Icono y color por tipo, alineados a la paleta de Comi-Rapi.
 const CONFIG_TIPO = {
-  success: { icono: FaCheckCircle, color: '#22c55e' },
-  danger: { icono: FaTimesCircle, color: '#e63946' },
-  warning: { icono: FaExclamationTriangle, color: '#e88900' },
-  info: { icono: FaInfoCircle, color: '#f07f10' },
+  success: { icono: FaCheckCircle },
+  danger: { icono: FaTimesCircle },
+  warning: { icono: FaExclamationTriangle },
+  info: { icono: FaInfoCircle },
 };
 
 const BannersNotificaciones = () => {
@@ -37,14 +36,14 @@ const BannersNotificaciones = () => {
     // `role="alert"`, que interrumpe con cada mensaje.
     <div className="banners-inline" role="status" aria-live="polite">
       {banners.map((banner) => {
-        const config = CONFIG_TIPO[banner.tipo] || CONFIG_TIPO.info;
+        const tipo = CONFIG_TIPO[banner.tipo] ? banner.tipo : 'info';
+        const config = CONFIG_TIPO[tipo];
         const Icono = config.icono;
         const cerrar = () => quitar(banner.id);
         return (
           <div key={banner.id} className="batch-notificacion">
             <Icono
-              className="batch-notificacion-icono"
-              style={{ color: config.color }}
+              className={`batch-notificacion-icono batch-notificacion-icono-${tipo}`}
               aria-hidden="true"
             />
             {banner.enClick ? (

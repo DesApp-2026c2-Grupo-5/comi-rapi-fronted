@@ -29,6 +29,12 @@
  *   - sucursal_actualizado: se creó, editó o dio de baja una sucursal. Es
  *     público (la lista de activas la usan clientes e invitados) y trae el
  *     elemento afectado para actualizar la caché sin GET.
+ *   - queja_actualizada: se creó o cambió un reclamo. Llega a los
+ *     administradores de la sucursal del pedido y al superadministrador; el
+ *     badge de reclamos pendientes se reconsulta por REST.
+ *   - notificacion_creada: el usuario tiene una fila nueva en su centro de
+ *     notificaciones. Va sólo a su room privada `usuario:{id}`; el listado y el
+ *     contador se reconsultan por REST.
  * No existe aviso al crear un pedido: todo pedido nace `pendiente` y el panel
  * de administración no muestra los pendientes, así que el admin se entera
  * recién al confirmarse el pago. Para el cliente, su propio POST ya le devolvió
@@ -58,6 +64,9 @@ export const EVENTOS_SOCKET = {
   PARAMETROS_ACTUALIZADOS: 'parametros_actualizados',
   STOCK_ACTUALIZADO: 'stock_actualizado',
   SUCURSAL_ACTUALIZADO: 'sucursal_actualizado',
+  SUCURSAL_ESTADO: 'sucursal_estado',
+  QUEJA_ACTUALIZADA: 'queja_actualizada',
+  NOTIFICACION_CREADA: 'notificacion_creada',
 };
 
 /**

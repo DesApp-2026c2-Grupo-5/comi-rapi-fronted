@@ -57,6 +57,22 @@
   font-size: 1.1rem;
 }
 
+.batch-notificacion-icono-success {
+  color: var(--color-success);
+}
+
+.batch-notificacion-icono-danger {
+  color: var(--color-danger);
+}
+
+.batch-notificacion-icono-warning {
+  color: var(--color-primary-hover);
+}
+
+.batch-notificacion-icono-info {
+  color: var(--color-primary-deep);
+}
+
 .batch-notificacion-mensaje {
   flex: 1;
   min-width: 0;

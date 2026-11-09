@@ -102,13 +102,13 @@
 .btn-success,
 .resumen-boton,
 .btn-historial-avanzar {
-  --bs-btn-color: #fff;
+  --bs-btn-color: var(--color-on-fill);
   --bs-btn-bg: var(--color-success-fill);
   --bs-btn-border-color: var(--color-success-fill);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-fill);
   --bs-btn-hover-bg: var(--color-success-fill-hover);
   --bs-btn-hover-border-color: var(--color-success-fill-hover);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-fill);
   --bs-btn-active-bg: var(--color-success-fill-hover);
   --bs-btn-active-border-color: var(--color-success-fill-hover);
   --bs-btn-disabled-bg: var(--color-success-fill);
@@ -124,13 +124,13 @@
 
 /* ============ Danger: rojo (destructivo) ============ */
 .btn-danger {
-  --bs-btn-color: #fff;
+  --bs-btn-color: var(--color-on-fill);
   --bs-btn-bg: var(--color-danger-fill);
   --bs-btn-border-color: var(--color-danger-fill);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-fill);
   --bs-btn-hover-bg: var(--color-danger-fill-hover);
   --bs-btn-hover-border-color: var(--color-danger-fill-hover);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-fill);
   --bs-btn-active-bg: var(--color-danger-fill-hover);
   --bs-btn-active-border-color: var(--color-danger-fill-hover);
   --bs-btn-disabled-bg: var(--color-danger-fill);
@@ -160,15 +160,15 @@
 /* ============ Hero CTAs: blanco con texto naranja (propio color) ============ */
 .boton-ordenar,
 .envio-boton {
-  --bs-btn-color: var(--color-primary-dark);
-  --bs-btn-bg: #fff;
-  --bs-btn-border-color: #fff;
-  --bs-btn-hover-color: var(--color-primary-dark);
-  --bs-btn-hover-bg: var(--color-cream);
-  --bs-btn-hover-border-color: #fff;
-  --bs-btn-active-color: var(--color-primary-dark);
-  --bs-btn-active-bg: var(--color-cream-hover);
-  --bs-btn-active-border-color: #fff;
+  --bs-btn-color: var(--color-hero-cta-text);
+  --bs-btn-bg: var(--color-hero-cta-bg);
+  --bs-btn-border-color: var(--color-hero-cta-bg);
+  --bs-btn-hover-color: var(--color-hero-cta-text);
+  --bs-btn-hover-bg: var(--color-hero-cta-hover);
+  --bs-btn-hover-border-color: var(--color-hero-cta-bg);
+  --bs-btn-active-color: var(--color-hero-cta-text);
+  --bs-btn-active-bg: var(--color-hero-cta-active);
+  --bs-btn-active-border-color: var(--color-hero-cta-bg);
   --bs-btn-focus-shadow-rgb: 255, 255, 255;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
@@ -181,10 +181,10 @@
 .btn-outline-danger {
   --bs-btn-color: var(--color-danger-hover);
   --bs-btn-border-color: var(--color-danger);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-fill);
   --bs-btn-hover-bg: var(--color-danger-fill);
   --bs-btn-hover-border-color: var(--color-danger-fill);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-fill);
   --bs-btn-active-bg: var(--color-danger-fill-hover);
   --bs-btn-active-border-color: var(--color-danger-fill-hover);
   --bs-btn-focus-shadow-rgb: 230, 57, 70;
@@ -193,10 +193,10 @@
 .btn-outline-success {
   --bs-btn-color: var(--color-success-hover);
   --bs-btn-border-color: var(--color-success);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--color-on-fill);
   --bs-btn-hover-bg: var(--color-success-fill);
   --bs-btn-hover-border-color: var(--color-success-fill);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--color-on-fill);
   --bs-btn-active-bg: var(--color-success-fill-hover);
   --bs-btn-active-border-color: var(--color-success-fill-hover);
   --bs-btn-focus-shadow-rgb: 34, 197, 94;
@@ -217,7 +217,7 @@
 /* ============ Filtros inactivos (blanco) ============ */
 .filtro-pill.filtro-inactivo {
   --bs-btn-color: var(--color-text);
-  --bs-btn-bg: #fff;
+  --bs-btn-bg: var(--color-surface);
   --bs-btn-border-color: var(--color-border-cream);
   --bs-btn-hover-color: var(--color-text);
   --bs-btn-hover-bg: var(--color-cream-light);
@@ -225,7 +225,7 @@
   --bs-btn-active-color: var(--color-text);
   --bs-btn-active-bg: var(--color-cream-hover);
   --bs-btn-active-border-color: var(--color-primary);
-  --bs-btn-disabled-bg: #fff;
+  --bs-btn-disabled-bg: var(--color-surface);
   --bs-btn-disabled-border-color: var(--color-border-cream);
   --bs-btn-focus-shadow-rgb: 255, 159, 28;
 }
@@ -359,7 +359,7 @@
     border: 1px solid var(--color-border-cream);
     border-radius: 14px;
     padding: 0.25rem 0.5rem;
-    background: #fff;
+    background: var(--color-surface);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
@@ -451,7 +451,7 @@
   .tabla-admin tbody td.stock-vacio {
     display: block;
     text-align: center;
-    color: #6c757d;
+    color: var(--color-text-muted);
     border-bottom: none;
   }
 
@@ -503,14 +503,14 @@
   padding: 0.6rem 1rem;
   border-radius: 0 0 10px 10px;
   background: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
   text-decoration: none;
   transition: transform 0.15s ease;
 }
 .skip-link:focus-visible {
   transform: translateY(0);
-  outline: 3px solid #fff;
+  outline: 3px solid var(--color-white);
   outline-offset: 2px;
 }
 
@@ -619,7 +619,7 @@ a {
   color: var(--color-text);
   font-family: var(--font-display);
   font-weight: 600;
-  background-color: #fff;
+  background-color: var(--color-surface);
   border: 2px solid var(--color-border-cream);
   border-radius: 50px;
   padding: 0.5rem 1.15rem;
@@ -640,6 +640,15 @@ a {
   font-weight: 900;
 }
 
+/* ============ Tema oscuro: ajustes puntuales ============ */
+/* El skip link usa --color-primary-dark como fondo; en oscuro ese token pasa a
+   ser un naranja claro, así que la tinta blanca perdería contraste. Se usa la
+   tinta de marca (oscura) sobre el naranja, igual que el resto de los CTA. */
+:root[data-bs-theme='dark'] .skip-link {
+  background: var(--color-primary-dark);
+  color: var(--color-on-primary);
+}
+
 /* ============ Movimiento reducido ============ */
 /* `prefers-reduced-motion` desactiva transiciones y animaciones en TODO el
    proyecto sin repetir el media query en cada hoja: las duraciones quedan en 0
@@ -653,5 +662,30 @@ a {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============ Badges: contraste de texto según el color de fondo ============ */
+/* Bootstrap no ajusta el color del texto de `.badge` por sí solo: `.bg-warning`
+   queda con el blanco por defecto de `.badge` sobre un fondo claro, ilegible.
+   Estas reglas fijan la tinta según el fondo en ambos temas. */
+.badge.bg-warning,
+.badge.bg-warning.text-light,
+.badge.bg-warning.text-dark,
+.badge.bg-info,
+.badge.bg-info.text-light,
+.badge.bg-info.text-dark,
+.badge.bg-light,
+.badge.bg-light.text-light,
+.badge.bg-light.text-dark,
+.badge.bg-secondary-subtle {
+  color: #000 !important;
+}
+
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-danger,
+.badge.bg-secondary,
+.badge.bg-dark {
+  color: #fff !important;
 }
 

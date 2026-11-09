@@ -42,6 +42,7 @@ import {
   FaTrashAlt,
   FaMapMarkerAlt,
   FaSearch,
+  FaClock,
 } from "react-icons/fa";
 import { useAuth } from "../../hooks/useAuth";
 import { useCarrito } from "../../hooks/useCarrito";
@@ -56,9 +57,30 @@ import { useParametros } from "../../hooks/useParametros";
 import { calcularCostoEnvio } from "../../services/envio";
 import { ESTADOS_PEDIDO } from "../../utils/constants";
 import { rutaActual } from "../../utils/rutas";
+import { dentroDelAvisoDeCierre } from "../../utils/horarios";
 import ItemCarrito from "../../components/cliente/ItemCarrito";
 import ResumenPedido from "../../components/cliente/ResumenPedido";
+import ContadorCierre from "../../components/comunes/ContadorCierre";
+import { consultarDisponibilidad } from "../../api/pedidos";
 import "./Carrito.css";
+
+/**
+ * Productos del carrito en el shape mínimo que necesita la consulta de
+ * disponibilidad (el mismo que acepta `POST /pedidos`). El backend resuelve el
+ * stock con el `productoId`; nombre y precio no hacen falta para decidir si hay
+ * sucursal.
+ */
+const productosParaDisponibilidad = (items) =>
+  (items || []).map((item) => ({
+    productoId: item.producto?.id,
+    cantidad: item.cantidad,
+    personalizacion: {
+      extras: item.personalizacion?.extras || [],
+      sin: item.personalizacion?.sin || [],
+      acompanamientos: item.personalizacion?.acompanamientos || [],
+      condimentos: item.personalizacion?.condimentos || [],
+    },
+  }));
 
 const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
@@ -109,6 +131,79 @@ const Carrito = () => {
     [direcciones, direccionId],
   );
 
+  /* DISPONIBILIDAD (aviso, no reserva): antes de confirmar se le pregunta al
+     backend si hay una sucursal abierta con stock dentro de la cobertura de la
+     dirección elegida. El POST /pedidos revalida con las mismas reglas, así que
+     esto sólo sirve para avisar antes y deshabilitar el botón sin un ida y
+     vuelta que termine en error.
+
+     `unica` es el caso en que conviene mostrar el contador: si hay más de una
+     sucursal viable, el backend puede reasignar y no hay urgencia. El deadline
+     (`segundosRestantes`) lo calcula el backend; acá sólo corre la cuenta. */
+  const [disponibilidad, setDisponibilidad] = useState(null);
+  const [refrescoDisponibilidad, setRefrescoDisponibilidad] = useState(0);
+
+  // Firma serializada de los ítems: el efecto no debe re-consultar en cada
+  // render (el array `items` cambia de identidad aunque el contenido no).
+  const firmaItems = useMemo(
+    () =>
+      JSON.stringify(
+        (items || []).map((item) => ({
+          productoId: item.producto?.id,
+          cantidad: item.cantidad,
+          extras: (item.personalizacion?.extras || []).map(
+            (extra) => extra.id ?? extra.nombre,
+          ),
+          sin: item.personalizacion?.sin || [],
+          acompanamientos: item.personalizacion?.acompanamientos || [],
+          condimentos: item.personalizacion?.condimentos || [],
+        })),
+      ),
+    [items],
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated || !direccionSeleccionada || items.length === 0) {
+      setDisponibilidad(null);
+      return undefined;
+    }
+    let vivo = true;
+    const consultar = async () => {
+      const res = await consultarDisponibilidad({
+        direccionId: direccionSeleccionada.id,
+        productos: productosParaDisponibilidad(items),
+      });
+      if (!vivo) return;
+      // Si la consulta falla (red, sesión vencida) no se bloquea el carrito: el
+      // backend sigue siendo la autoridad y rechazará el alta si corresponde.
+      setDisponibilidad(res.success ? res.data : null);
+    };
+    consultar();
+    return () => {
+      vivo = false;
+    };
+    // `items` se lee a través de `firmaItems` para no re-consultar de más.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isAuthenticated,
+    direccionSeleccionada?.id,
+    firmaItems,
+    refrescoDisponibilidad,
+  ]);
+
+  // Bloquea la creación sólo cuando el backend ya dijo que no hay ninguna
+  // sucursal viable. Con un pago pendiente, el botón lleva a Pagar y esa
+  // pantalla hace su propia comprobación.
+  const sinSucursalViable =
+    !tienePagoPendiente &&
+    Boolean(disponibilidad) &&
+    disponibilidad.disponible === false;
+  const contadorSucursalUnica =
+    !tienePagoPendiente &&
+    Boolean(disponibilidad?.disponible) &&
+    disponibilidad.unica &&
+    dentroDelAvisoDeCierre(disponibilidad.sucursal?.segundosRestantes);
+
   // El pendiente queda obsoleto si cambiaron promos o importes desde que se creó:
   // en ese caso hay que recrearlo para que el Pago coincida con el carrito.
   const costoEnvioActual = calcularCostoEnvio(total, parametros);
@@ -142,6 +237,8 @@ const Carrito = () => {
       sin: item.personalizacion?.sin || [],
       acompanamientos: item.personalizacion?.acompanamientos || [],
       condimentos: item.personalizacion?.condimentos || [],
+      // Nota libre para cocina ("sin sal", "bien cocida").
+      ...(item.nota ? { nota: item.nota } : {}),
     })),
     total,
     costoEnvio: costoEnvioActual,
@@ -166,12 +263,26 @@ const Carrito = () => {
       return;
     }
 
+    // El aviso ya está en pantalla; se evita el POST que el backend rechazaría.
+    if (sinSucursalViable) {
+      notificar(
+        disponibilidad.mensaje || "No hay sucursal disponible en este momento.",
+        "warning",
+      );
+      return;
+    }
+
     // T1 (plan maestro): el backend selecciona la sucursal con las reglas
     // reales (más cercana por ruta con stock, dentro de cobertura). El
     // frontend YA NO pre-asigna — se eliminó el espejo de
     // asignacionSucursal.js que duplicaba la lógica y podía divergir.
     const pedidoCreado = await crearPedido(construirDatosPedido(direccion));
-    if (!pedidoCreado) return;
+    if (!pedidoCreado) {
+      // El backend pudo rechazar por horario o stock: se vuelve a consultar para
+      // que el aviso y el estado del botón reflejen la situación real.
+      setRefrescoDisponibilidad((n) => n + 1);
+      return;
+    }
 
     // Redirigir a la pantalla intermedia de pago (el pedido queda en estado PENDIENTE)
     navigate("/cliente/pago");
@@ -207,7 +318,10 @@ const Carrito = () => {
       if (!cancelado) return;
       // T1: el backend asigna la sucursal con las reglas reales.
       const pedidoCreado = await crearPedido(construirDatosPedido(direccion));
-      if (!pedidoCreado) return;
+      if (!pedidoCreado) {
+        setRefrescoDisponibilidad((n) => n + 1);
+        return;
+      }
       navigate("/cliente/pago");
     } finally {
       setActualizando(false);
@@ -279,6 +393,39 @@ const Carrito = () => {
                   Agregá una dirección
                 </Link>{" "}
                 antes de confirmar tu pedido.
+              </Alert>
+            </Col>
+          )}
+
+          {/* Aviso de disponibilidad: ninguna sucursal puede tomar el pedido
+              desde esta dirección (cerradas o sin stock). El motivo lo escribe
+              el backend, incluida la próxima apertura. */}
+          {sinSucursalViable && (
+            <Col xs={12} className="mb-3">
+              <Alert variant="danger" className="mb-0" role="status">
+                <strong>No podemos tomar tu pedido ahora.</strong>{" "}
+                {disponibilidad.mensaje ||
+                  "Ninguna sucursal cercana está abierta con stock suficiente."}
+              </Alert>
+            </Col>
+          )}
+
+          {/* Contador: hay una sola sucursal viable, así que no hay a dónde
+              reasignar. Sólo se avisa; el backend revalida al confirmar. */}
+          {contadorSucursalUnica && (
+            <Col xs={12} className="mb-3">
+              <Alert variant="info" className="mb-0" role="status">
+                <FaClock aria-hidden="true" className="me-2" />
+                <strong>{disponibilidad.sucursal.nombre}</strong> toma pedidos
+                hasta las {disponibilidad.sucursal.cierrePedidos}.{" "}
+                Es la única sucursal que puede entregar en tu dirección.{" "}
+                Te quedan{" "}
+                <ContadorCierre
+                  segundos={disponibilidad.sucursal.segundosRestantes}
+                  onVencido={() => setRefrescoDisponibilidad((n) => n + 1)}
+                  className="fw-bold"
+                />
+                .
               </Alert>
             </Col>
           )}
@@ -368,14 +515,17 @@ const Carrito = () => {
               botonTexto={
                 !isAuthenticated
                   ? "Iniciá sesión para confirmar"
-                  : tienePagoPendiente
-                    ? pendienteObsoleto
-                      ? actualizando
-                        ? "Actualizando…"
-                        : "Actualizar y pagar"
-                      : "Ir a Pagar"
-                    : "Confirmar Pedido"
+                  : sinSucursalViable
+                    ? "Sin sucursal disponible"
+                    : tienePagoPendiente
+                      ? pendienteObsoleto
+                        ? actualizando
+                          ? "Actualizando…"
+                          : "Actualizar y pagar"
+                        : "Ir a Pagar"
+                      : "Confirmar Pedido"
               }
+              deshabilitado={sinSucursalViable}
               descuento={descuentoTotal}
               detalleDescuento={promosAplicadas
                 .map((promo) => promo.nombre)

@@ -9,10 +9,11 @@
  * Uso: Ruta "/cliente/pago" → <Pago />
  */
 
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Card, Button, Badge, Row, Col } from 'react-bootstrap';
-import { FaArrowLeft, FaDollarSign, FaCreditCard, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { Container, Card, Button, Badge, Row, Col, Alert } from 'react-bootstrap';
+import PropTypes from 'prop-types';
+import { FaArrowLeft, FaDollarSign, FaCreditCard, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
@@ -22,7 +23,11 @@ import { formatDate, formatPrice } from '../../utils/formatters';
 import { formatearDireccion } from '../../utils/direccion';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
+import ContadorCierre from '../../components/comunes/ContadorCierre';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import { obtenerDisponibilidadPedido } from '../../api/pedidos';
+import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { dentroDelAvisoDeCierre } from '../../utils/horarios';
 import './Pago.css';
 
 // El frontend usa claves en minúscula para las opciones; el backend persiste
@@ -40,6 +45,8 @@ const Pago = () => {
   const [paginando, setPaginando] = useState(false);
   const [metodoElegido, setMetodoElegido] = useState(null);
   const [mostrarConfirmarCancelar, setMostrarConfirmarCancelar] = useState(false);
+  const [disponibilidadPedido, setDisponibilidadPedido] = useState(null);
+  const [refrescoDisponibilidad, setRefrescoDisponibilidad] = useState(0);
 
   // Pedido a pagar. Normalmente es el que acaba de crear el carrito, pero si el
   // cliente recarga o navega y vuelve, `pedidoActual` (que vive sólo en
@@ -50,6 +57,88 @@ const Pago = () => {
       ? pedidoActual
       : (pedidos || []).find((p) => p.estado === ESTADOS_PEDIDO.PENDIENTE) ||
         null;
+  const pedidoId = pedido?.id ?? null;
+
+  /* DISPONIBILIDAD AL PAGAR: la sucursal asignada pudo cerrar entre el carrito
+     y el pago. El backend revalida al confirmar y, si hace falta, reasigna el
+     pedido a otra sucursal abierta con stock. Acá se muestra esa decisión antes
+     de pagar: si hay alternativa se avisa la reasignación; si no hay, el pago
+     se bloquea y el pedido se cancela (el backend repone el stock) para volver
+     al carrito con los productos. */
+  useEffect(() => {
+    if (!pedidoId) {
+      setDisponibilidadPedido(null);
+      return undefined;
+    }
+    let vivo = true;
+    const consultar = async () => {
+      const res = await obtenerDisponibilidadPedido(pedidoId);
+      if (!vivo) return;
+      // Si la consulta falla, no se bloquea el pago: el backend revalida igual.
+      setDisponibilidadPedido(res.success ? res.data : null);
+    };
+    consultar();
+    return () => {
+      vivo = false;
+    };
+  }, [pedidoId, refrescoDisponibilidad]);
+
+  const sucursalCerradaSinAlternativa =
+    Boolean(disponibilidadPedido) &&
+    !disponibilidadPedido.abierta &&
+    !disponibilidadPedido.hayAlternativa;
+  const contadorSinAlternativa =
+    Boolean(disponibilidadPedido) &&
+    disponibilidadPedido.abierta &&
+    !disponibilidadPedido.hayAlternativa &&
+    dentroDelAvisoDeCierre(disponibilidadPedido.segundosRestantes);
+
+  // El vigía de horarios del backend emite `sucursal_estado` cuando una
+  // sucursal abre o cierra. El evento no trae datos: se re-consulta la
+  // disponibilidad de este pedido, que es la fuente de verdad.
+  const cambioHorarioRef = useRef(false);
+  useEffect(() => {
+    const instancia = conectarSocket();
+    const alCambiarSucursal = () => {
+      cambioHorarioRef.current = true;
+      setRefrescoDisponibilidad((n) => n + 1);
+    };
+    instancia.on(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarSucursal);
+    return () => {
+      instancia.off(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarSucursal);
+    };
+  }, []);
+
+  // Si el cambio vino por WebSocket y la re-consulta confirma que la sucursal
+  // cerró SIN alternativa, el pedido se cancela solo: el backend repone el
+  // stock y el cliente vuelve al carrito con los mismos productos.
+  const cancelandoPorCierreRef = useRef(false);
+  useEffect(() => {
+    if (!cambioHorarioRef.current || !pedidoId || !disponibilidadPedido) return;
+    // Un evento = una reacción. Si se recomienda reprogramar, vuelve a marcar.
+    cambioHorarioRef.current = false;
+    if (disponibilidadPedido.abierta || disponibilidadPedido.hayAlternativa) return;
+    if (paginando || cancelandoPorCierreRef.current) return;
+    cancelandoPorCierreRef.current = true;
+    (async () => {
+      const cancelado = await cambiarEstado(pedidoId, ESTADOS_PEDIDO.CANCELADO);
+      cancelandoPorCierreRef.current = false;
+      if (!cancelado) return;
+      notificar(
+        'La sucursal cerró.',
+        'warning',
+        7000
+      );
+      navigate('/cliente/carrito');
+    })();
+  }, [
+    pedidoId,
+    disponibilidadPedido,
+    paginando,
+    cambiarEstado,
+    notificar,
+    navigate,
+  ]);
 
   // El pedido debe existir y seguir PENDIENTE para poder pagarlo
   if (!pedido || pedido.estado !== ESTADOS_PEDIDO.PENDIENTE) {
@@ -73,12 +162,29 @@ const Pago = () => {
 
   const estadoLabel = ETIQUETAS_ESTADO_PEDIDO[pedido.estado] || pedido.estado;
   const { sucursal } = pedido;
+
+  /* Sucursal que va a preparar el pedido. Si la asignada cerró y hay otra
+     abierta con stock, el backend reasigna al pagar: se muestra directamente la
+     alternativa para que el cambio se vea sin recargar (la disponibilidad se
+     vuelve a consultar ante el evento `sucursal_estado`). */
+  const sucursalQuePrepara =
+    disponibilidadPedido &&
+    !disponibilidadPedido.abierta &&
+    disponibilidadPedido.hayAlternativa
+      ? disponibilidadPedido.alternativas[0] || sucursal
+      : sucursal;
+  const direccionSucursal = formatearDireccion(sucursalQuePrepara?.direccion);
+
   // El total del backend ya incluye el envío
   const montoTotal = pedido.total;
 
   // Aprueba el pago automáticamente y pasa el pedido de PENDIENTE a CONFIRMADO
   const handlePagar = async (metodo) => {
     if (paginando) return;
+    if (sucursalCerradaSinAlternativa) {
+      notificar('La sucursal cerró.', 'warning');
+      return;
+    }
 
     setPaginando(true);
     setMetodoElegido(metodo);
@@ -88,9 +194,19 @@ const Pago = () => {
 
     const medioPago = MAPA_MEDIO_PAGO[metodo];
     const confirmado = await confirmarPedido(pedido.id, medioPago);
-    if (!confirmado) {
-      // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE
+    if (confirmado?.cancelado) {
+      // El backend canceló el pedido (y repuso el stock) porque la sucursal
+      // cerró y no había otra abierta con stock. Se vuelve al carrito.
       setPaginando(false);
+      notificar('La sucursal cerró.', 'warning', 7000);
+      navigate('/cliente/carrito');
+      return;
+    }
+    if (!confirmado) {
+      // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE.
+      // Se revalida la disponibilidad por si el rechazo fue por horario.
+      setPaginando(false);
+      setRefrescoDisponibilidad((n) => n + 1);
       return;
     }
     vaciarCarrito();
@@ -166,6 +282,31 @@ const Pago = () => {
             </Card.Body>
           </Card>
 
+          {/* Único aviso de cierre: cuando NO hay otra sucursal a la que
+              reasignar. Si hay alternativa, el panel de "Tu pedido será
+              preparado en" se actualiza solo con la sucursal nueva. */}
+          {sucursalCerradaSinAlternativa && (
+            <Alert variant="danger" className="mb-4" role="status">
+              <strong>La sucursal cerró.</strong>
+            </Alert>
+          )}
+
+          {contadorSinAlternativa && (
+            <Alert variant="info" className="mb-4 text-center" role="status">
+              <FaClock aria-hidden="true" className="me-2" />
+              <strong>{disponibilidadPedido.sucursal?.nombre}</strong> toma
+              pedidos hasta las {disponibilidadPedido.cierrePedidos}.
+              <br />
+              Te quedan{' '}
+              <ContadorCierre
+                segundos={disponibilidadPedido.segundosRestantes}
+                onVencido={() => setRefrescoDisponibilidad((n) => n + 1)}
+                className="fw-bold"
+              />
+              .
+            </Alert>
+          )}
+
           {/* Opciones de pago */}
           <h2 className="h5 mb-3">Elegí cómo pagar</h2>
           {paginando ? (
@@ -177,6 +318,7 @@ const Pago = () => {
                   <Button
                     className={`pago-opcion w-100 ${opcion.clase}`}
                     onClick={() => handlePagar(opcion.metodo)}
+                    disabled={sucursalCerradaSinAlternativa}
                   >
                     <span className="pago-opcion-ico">{opcion.icono}</span>
                     <span className="d-block">{opcion.titulo}</span>
@@ -187,14 +329,17 @@ const Pago = () => {
             </Row>
           )}
 
-          {/* Sucursal asignada */}
-          {sucursal && (
+          {/* Sucursal que prepara el pedido. Cambia sola si la asignada cerró
+              y hay otra abierta con stock (el backend la reasigna al pagar). */}
+          {sucursalQuePrepara && (
             <div className="p-3 mb-3 panel-crema">
               <span className="panel-crema-etiqueta">
                 Tu pedido será preparado en
               </span>
-              <strong className="d-block fs-5">{sucursal.nombre}</strong>
-              <span className="text-muted">{formatearDireccion(sucursal.direccion)}</span>
+              <strong className="d-block fs-5">{sucursalQuePrepara.nombre}</strong>
+              {direccionSucursal && (
+                <span className="text-muted">{direccionSucursal}</span>
+              )}
             </div>
           )}
 
@@ -203,7 +348,7 @@ const Pago = () => {
             items={pedido.productos}
             total={pedido.total}
             costoEnvio={pedido.costoEnvio ?? 0}
-            sucursal={sucursal}
+            sucursal={sucursalQuePrepara}
             promociones={pedido.promociones}
           />
 
@@ -254,5 +399,10 @@ const AlertPaginando = ({ metodo, monto }) => (
     </Card.Body>
   </Card>
 );
+
+AlertPaginando.propTypes = {
+  metodo: PropTypes.string,
+  monto: PropTypes.number,
+};
 
 export default Pago;

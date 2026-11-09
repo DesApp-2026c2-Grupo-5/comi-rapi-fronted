@@ -21,7 +21,7 @@ const FiltrosPedidos = ({ filtros, onChange, estados, sucursales }) => {
   return (
     // `role="group"` + etiqueta: el bloque es un conjunto de filtros, no un
     // grupo de campos cualquiera.
-    <div className="mb-3 p-3 border rounded bg-light" role="group" aria-label="Filtros de pedidos">
+    <div className="mb-3 p-3 border rounded bg-body-secondary" role="group" aria-label="Filtros de pedidos">
       <Row className="g-2 align-items-end">
         <Col xs={6} md={3}>
           <Form.Label htmlFor={`${idBase}-desde`} className="small mb-1">Desde</Form.Label>

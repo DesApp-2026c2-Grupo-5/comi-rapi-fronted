@@ -1,19 +1,22 @@
 /**
  * Propósito: Componente de barra de navegación que cambia según el rol del usuario.
- * Contenido: Navbar naranja con marca Comi-Rapi y enlaces con íconos (react-icons),
- *            resaltado de la página activa y animación al hover.
- *            El acceso al perfil del cliente es el avatar con su nombre, junto al
- *            botón de cerrar sesión. Para el invitado (sin sesión) el mismo lugar
- *            lo ocupan los botones de iniciar sesión y registrarse.
- * Dependencias: react-bootstrap (Navbar, Nav, Container, Button, Dropdown),
- *               react-router-dom (NavLink, useLocation, useNavigate), react-icons/fa,
- *               useAuth hook, useIndicadoresNav, Avatar, Navbar.css.
+ * Contenido: Navbar naranja con la marca Comi-Rapi, enlaces con íconos
+ *            (react-icons), resaltado de la página activa y animación al hover.
+ *            Con sesión, el logo es un botón que abre el menú de cuenta
+ *            (identidad, direcciones, perfil y cerrar sesión). El CLIENTE tiene
+ *            además la campanita del centro de notificaciones con contador.
+ *            Para el invitado el logo sigue siendo el enlace al inicio y el
+ *            lugar de la derecha lo ocupan iniciar sesión y registrarse.
+ * Dependencias: react-bootstrap (Navbar, Nav, Container, Dropdown),
+ *               react-router-dom (NavLink, useLocation), react-icons/fa,
+ *               useAuth hook, useIndicadoresNav, MenuCuenta,
+ *               CampanaNotificaciones, CentroNotificaciones, Navbar.css.
  * Uso: <Navbar /> - Se renderiza en todas las páginas.
  */
 
 import { useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Navbar as BSNavbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Navbar as BSNavbar, Nav, Container, Dropdown } from 'react-bootstrap';
 import {
   FaHamburger,
   FaHome,
@@ -31,8 +34,7 @@ import {
   FaUserTie,
   FaCog,
   FaBriefcase,
-  FaUserCircle,
-  FaSignOutAlt,
+  FaExclamationCircle,
   FaSignInAlt,
   FaChevronDown,
 } from 'react-icons/fa';
@@ -43,14 +45,15 @@ import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { ROLES } from '../../utils/constants';
 import { esRutaDeAlguna, rutaActual } from '../../utils/rutas';
-import { nombreCompleto } from '../../utils/formatters';
-import Avatar from './Avatar';
+import SelectorTema from './SelectorTema';
+import MenuCuenta from './MenuCuenta';
+import CampanaNotificaciones from './CampanaNotificaciones';
+import CentroNotificaciones from './CentroNotificaciones';
 import './Navbar.css';
 
 // Menú del cliente (cada enlace lleva su ícono). El perfil NO va acá: se entra
-// desde el avatar de la derecha, junto al botón de cerrar sesión. Las
-// direcciones tampoco: se gestionan desde el perfil.
-// `badge` indica qué contador se dibuja junto al ícono.
+// desde el menú de cuenta del logo. Las direcciones tampoco: se gestionan desde
+// el perfil. `badge` indica qué contador se dibuja junto al ícono.
 const enlacesCliente = [
   { to: '/cliente/inicio', etiqueta: 'Inicio', icono: FaHome },
   { to: '/cliente/catalogo', etiqueta: 'Catálogo', icono: FaUtensils },
@@ -84,10 +87,12 @@ const enlacesInvitado = enlacesCliente.filter((enlace) => enlace.to !== '/client
  * imágenes) es corporativo y lo hace el SUPERADMINISTRADOR. El admin conserva
  * el acceso a "Catálogo", pero en SOLO LECTURA: ve los listados y, en
  * Productos, activa/desactiva la disponibilidad de cada ítem en su sucursal.
- * Además opera pedidos, stock y clientes. Sucursales quedó fuera del menú
- * admin por lo mismo: lo maneja el superadmin. Stock queda suelto a propósito:
- * es un solo destino, y meterlo en un desplegable obligaría a un clic de más
- * para llegar a un solo lugar. */
+ * Además opera pedidos, stock y reclamos. La cartera de clientes se abre desde
+ * el botón "Ver clientes" del panel de reportes, no desde la barra: la lista de
+ * clientes se consulta junto con sus métricas y no como destino diario.
+ * Sucursales quedó fuera del menú admin por lo mismo: lo maneja el superadmin.
+ * Stock queda suelto a propósito: es un solo destino, y meterlo en un
+ * desplegable obligaría a un clic de más para llegar a un solo lugar. */
 const menuAdmin = [
   { to: '/admin/dashboard', etiqueta: 'Dashboard', icono: FaTachometerAlt },
   {
@@ -95,6 +100,12 @@ const menuAdmin = [
     etiqueta: 'Pedidos',
     icono: FaReceipt,
     badge: 'pedidos',
+  },
+  {
+    to: '/admin/quejas',
+    etiqueta: 'Reclamos',
+    icono: FaExclamationCircle,
+    badge: 'quejas',
   },
   {
     etiqueta: 'Catálogo',
@@ -121,7 +132,6 @@ const menuAdmin = [
     ],
   },
   { to: '/admin/stock', etiqueta: 'Stock', icono: FaBoxes },
-  { to: '/admin/clientes', etiqueta: 'Clientes', icono: FaUsers, prefijo: '/admin/clientes' },
 ];
 
 /* Menú del superadministrador: su panel es global (métricas agregadas), la
@@ -132,6 +142,12 @@ const menuAdmin = [
    y no cada administrador; el admin sólo lo activa/desactiva en su sucursal. */
 const menuSuperadmin = [
   { to: '/superadmin/panel', etiqueta: 'Panel', icono: FaTachometerAlt },
+  {
+    to: '/admin/quejas',
+    etiqueta: 'Reclamos',
+    icono: FaExclamationCircle,
+    badge: 'quejas',
+  },
   {
     etiqueta: 'Catálogo',
     icono: FaUtensils,
@@ -201,7 +217,7 @@ const menuSuperadmin = [
 ];
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated, hydrated } = useAuth();
+  const { user, isAuthenticated, hydrated } = useAuth();
   const { notificar } = useNotificaciones();
   // La lista de sucursales (para el selector del superadmin) sale del
   // SucursalContext, que ya carga todas al montar la app.
@@ -217,11 +233,13 @@ const Navbar = () => {
   const {
     productosDistintos,
     pedidosActivos,
+    quejasPendientes,
     pulsoCarrito,
     pulsoPedido,
     pulsoPedidoBadge,
+    pulsoQueja,
+    pulsoQuejaBadge,
   } = useIndicadoresNav();
-  const navigate = useNavigate();
   const location = useLocation();
   const { pathname } = location;
   // Estado de los desplegables ("Catálogo" y "Negocio"). Se maneja acá en vez de
@@ -229,15 +247,10 @@ const Navbar = () => {
   // colgando abierto sobre la página nueva. `null` = ninguno abierto.
   const [grupoAbierto, setGrupoAbierto] = useState(null);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   /* Sin saber si hay sesión no se puede elegir la zona de la derecha: se
-     dibujaría el botón de acceso y un instante después el avatar. Se espera a
-     que /auth/me responda (lo hace AuthContext al montar) y recién ahí se
-     pinta la barra. */
+     dibujaría el botón de acceso y un instante después el menú de cuenta. Se
+     espera a que /auth/me responda (lo hace AuthContext al montar) y recién ahí
+     se pinta la barra. */
   if (!hydrated) return null;
 
   const isCliente = user?.rol === ROLES.CLIENTE;
@@ -274,7 +287,6 @@ const Navbar = () => {
       : isCliente
         ? enlacesCliente
         : enlacesInvitado;
-  const nombreUsuario = nombreCompleto(user?.nombre, user?.apellido);
   // La sucursal operativa sale de /auth/me (uniforme para admin y superadmin):
   // el admin ve su sucursal asignada; un admin sin sucursal asignada (no
   // debería existir) ve "Sin sucursal".
@@ -365,77 +377,81 @@ const Navbar = () => {
         </span>
       );
     }
+    if (clave === 'quejas' && quejasPendientes > 0) {
+      return (
+        <span className={`carrito-badge${pulsoQuejaBadge ? ' carrito-badge-pulso' : ''}`}>
+          <span aria-hidden="true">{quejasPendientes}</span>
+          <span className="visually-hidden">
+            {`${quejasPendientes} ${
+              quejasPendientes === 1 ? 'reclamo pendiente' : 'reclamos pendientes'
+            }`}
+          </span>
+        </span>
+      );
+    }
     return null;
   };
 
   const pulsoDeIcono = (clave) =>
-    (clave === 'carrito' && pulsoCarrito) || (clave === 'pedidos' && pulsoPedido)
+    (clave === 'carrito' && pulsoCarrito) ||
+    (clave === 'pedidos' && pulsoPedido) ||
+    (clave === 'quejas' && pulsoQueja)
       ? ' nav-enlace-ico-pulso'
       : '';
 
   return (
-    <BSNavbar
-      expand="lg"
-      sticky="top"
-      className="navbar-comirapi"
-      /* Con la barra inferior hay dos regiones <nav> en la misma pantalla. Sin
-         nombre cada una se anuncia sólo como "navegación" y no se sabe cuál es
-         cuál al tabular. */
-      aria-label="Navegación superior"
-    >
+    <>
+      <BSNavbar
+        expand="lg"
+        sticky="top"
+        className="navbar-comirapi"
+        /* Con la barra inferior hay dos regiones <nav> en la misma pantalla. Sin
+           nombre cada una se anuncia sólo como "navegación" y no se sabe cuál es
+           cuál al tabular. */
+        aria-label="Navegación superior"
+      >
       <Container>
-        <BSNavbar.Brand
-          as={NavLink}
-          to={destinoInicio}
-          className="navbar-brand-comirapi"
-        >
-          <img
-            src="/imagenes/logo-comirapi.svg"
-            alt=""
-            aria-hidden="true"
-            className="brand-ico"
-          />
-          <span translate="no">Comi-Rapi</span>
-        </BSNavbar.Brand>
-        {/* Avatar del cliente en la fila superior, fuera del colapsable: en móvil
-            el perfil quedaba escondido dentro del colapsable y había que abrir
-            la barra para llegar. Sólo se ve bajo `lg`, donde el colapsable está
-            plegado. */}
-        {isCliente && (
-          <NavLink
-            to="/cliente/perfil"
-            aria-label="Mi perfil"
-            className={({ isActive }) =>
-              `navbar-perfil navbar-perfil-movil${
-                isActive ? ' navbar-perfil-activo' : ''
-              }`
-            }
+        {isAuthenticated ? (
+          /* Con sesión, el logo es el botón que abre el menú de cuenta: la
+             identidad y el cierre de sesión se mudaron a la izquierda. */
+          <MenuCuenta />
+        ) : (
+          <BSNavbar.Brand
+            as={NavLink}
+            to={destinoInicio}
+            className="navbar-brand-comirapi"
           >
-            <Avatar
-              src={user?.fotoPerfilUrl}
-              nombre={user?.nombre}
-              apellido={user?.apellido}
-              size={38}
+            <img
+              src="/imagenes/logo-comirapi.svg"
+              alt=""
+              aria-hidden="true"
+              className="brand-ico"
             />
-          </NavLink>
+            <span translate="no">Comi-Rapi</span>
+          </BSNavbar.Brand>
         )}
-        {/* El invitado no tiene perfil ni sesión que cerrar, así que en su lugar
-            va el acceso. Va en la fila superior (no dentro del colapsable) por lo
-            mismo que el avatar: en móvil el colapsable está plegado y sería
-            inalcanzable. */}
-        {!isAuthenticated && accesoInvitado(true)}
-        {isAuthenticated && (
-          <Button
-            variant="outline-dark"
-            size="sm"
-            className="btn-logout-comirapi btn-logout-movil"
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-            onClick={handleLogout}
-          >
-            <FaSignOutAlt aria-hidden="true" />
-          </Button>
-        )}
+        {/* Controles de la fila superior en móvil: campanita del cliente,
+            acceso del invitado y, para el invitado, el interruptor de tema. Con
+            sesión el tema vive en el menú de cuenta del logo, así el header no
+            repite el control. El perfil y el cierre de sesión tampoco están
+            acá: se mudaron al menú del logo. */}
+        <div className="navbar-controles-movil">
+          {isCliente && (
+            <CampanaNotificaciones className="campana-movil" />
+          )}
+          {/* El invitado no tiene perfil ni sesión que cerrar, así que en su
+              lugar va el acceso. Va en la fila superior (no dentro del
+              colapsable) porque en móvil el colapsable está plegado y sería
+              inalcanzable. */}
+          {!isAuthenticated && accesoInvitado(true)}
+          {/* El invitado no tiene menú de cuenta donde elegir el tema, así que
+              conserva el interruptor en la fila superior. */}
+          {!isAuthenticated && (
+            <span className="selector-tema-movil">
+              <SelectorTema />
+            </span>
+          )}
+        </div>
         <BSNavbar.Collapse id="main-navbar" className="d-none d-lg-flex">
           <Nav className="me-auto align-items-center gap-lg-1">
             {menu.map((item) => {
@@ -591,10 +607,12 @@ const Navbar = () => {
                 </Dropdown.Menu>
               </Dropdown>
             ) : null}
-            {!isAuthenticated ? (
+            {!isAuthenticated && (
               /* El invitado llega acá desde el colapsable. Se le ofrece entrar y,
                  si no tiene cuenta, crearla: es el mismo par de acciones que la
-                 app pide al final del camino de compra. */
+                 app pide al final del camino de compra. La identidad del usuario
+                 con sesión ya no se repite en la barra: vive en el menú de
+                 cuenta del logo. */
               <>
                 {accesoInvitado(false)}
                 <NavLink
@@ -605,51 +623,24 @@ const Navbar = () => {
                   Registrate
                 </NavLink>
               </>
-            ) : isCliente ? (
-              /* Acceso al perfil con avatar + nombre. Se oculta en móvil porque
-                 ahí el mismo destino ya está en la fila superior
-                 (navbar-perfil-movil): dos accesos idénticos en pantalla
-                 obligan a elegir sin información. */
-              <NavLink
-                to="/cliente/perfil"
-                aria-label="Mi perfil"
-                className={({ isActive }) =>
-                  `navbar-perfil navbar-perfil-desplegado${
-                    isActive ? ' navbar-perfil-activo' : ''
-                  }`
-                }
-              >
-                <Avatar
-                  src={user?.fotoPerfilUrl}
-                  nombre={user?.nombre}
-                  apellido={user?.apellido}
-                  size={38}
-                />
-                <span className="navbar-perfil-nombre">{nombreUsuario}</span>
-              </NavLink>
-            ) : isSuperadmin ? null : (
-              <span className="navbar-user-nombre">
-                <FaUserCircle className="navbar-user-ico" aria-hidden="true" />
-                {user?.nombre}
-              </span>
             )}
-            {isAuthenticated && (
-              <Button
-                variant="outline-dark"
-                size="sm"
-                className="btn-logout-comirapi"
-                aria-label="Cerrar sesión"
-                title="Cerrar sesión"
-                onClick={handleLogout}
-              >
-                <FaSignOutAlt aria-hidden="true" />
-                <span className="btn-logout-texto">Cerrar sesión</span>
-              </Button>
+            {/* Campanita del centro de notificaciones (sólo CLIENTE). En móvil
+                se usa la copia de la fila superior. */}
+            {isCliente && (
+              <CampanaNotificaciones className="campana-escritorio" />
             )}
+            {/* Interruptor de tema del header de escritorio. En móvil el control
+                vive en el menú de cuenta del logo (el invitado lo tiene en la
+                fila superior). */}
+            <SelectorTema />
           </Nav>
         </BSNavbar.Collapse>
       </Container>
-    </BSNavbar>
+      </BSNavbar>
+      {/* El drawer se monta una sola vez; lo abre cualquiera de las dos copias
+          de la campanita a través del contexto. */}
+      {isCliente && <CentroNotificaciones />}
+    </>
   );
 };
 

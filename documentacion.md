@@ -1,8 +1,17 @@
 # Comi-Rapi Frontend — Documentación Completa
 
-> **Estado:** En desarrollo (funcional, datos mock, sin backend)
-> **Versión:** comi-rapi-fronted (React + Vite)
-> **Cobertura:** Parte de CLIENTE · Parte de ADMINISTRACIÓN (admin) · Infraestructura (rutas, autenticación, contextos, datos mock)
+> **Estado:** funcional e integrado al backend real (`comi-rapi-backend`, API en `/api`).
+> Las secciones que se refieren a datos mock son **históricas**: sólo quedan mockeados
+> `src/api/carrito.js` (el carrito real vive en `CarritoContext` + `localStorage`) y la
+> asignación de sucursal que recibe `pedidosPendientesMock` en `SucursalContext`.
+> **Versión:** comi-rapi-fronted (React 18 + Vite 5)
+> **Cobertura:** CLIENTE · ADMINISTRADOR · SUPERADMINISTRADOR · Infraestructura (rutas,
+> autenticación, contextos, capa API, horarios de atención)
+>
+> **Nota de actualización:** este documento nació cuando la app era sólo mock. Varias
+> secciones (§6, §8, §10) se reescribieron para reflejar el backend real; las pantallas
+> restantes pueden seguir describiendo detalles de UI válidos pero no el origen de datos.
+> Ante la duda, el código y el `README.md` mandan.
 
 ---
 
@@ -29,7 +38,10 @@ npm run build          # build de producción
 npm run lint           # ESLint — ver nota al final
 ```
 
-> **Sin backend:** todos los datos son MOCK (ver sección 6). Las llamadas a la API se simulan con delay y operan sobre copias en memoria de los datos semilla.
+> **Con backend:** la UI consume la API real del backend (`/api`, proxy de Vite a
+> `localhost:3000`). La sesión viaja en cookie y las mutaciones llevan el token CSRF de
+> doble envío que maneja `api/client.js`. No hay datos demo en pantalla salvo los dos
+> casos indicados en el encabezado.
 
 **Usuarios de prueba (seed):**
 
@@ -79,10 +91,12 @@ src/
       Navbar.jsx               Barra naranja con iconos y rol
       Navbar.css
       ProtectedRoute.jsx       Guarda rutas por rol
-      Footer.jsx               Pie de página oscuro
+      Footer.jsx               Pie de página con marca, contacto y redes
       IconoEstado.jsx          SVG de estados de pedido + IconoCheck
       HistorialStepper.jsx     Stepper de estados compartido (cliente + admin)
       HistorialStepper.css
+      ContadorCierre.jsx       Cuenta regresiva hasta el corte de pedidos
+      AvisoSucursalesCerradas.jsx  Banner global "todas cerradas" + próxima apertura
     cliente/
       ProductoCard.jsx         Tarjeta de producto del catálogo
       ItemCarrito.jsx          Ítem del carrito (imagen, cantidad, eliminar)
@@ -92,7 +106,8 @@ src/
       PanelAdmin.jsx           Tarjetas de estadísticas
       ListaProductos.jsx       Tabla de productos con acciones
       FormularioProducto.jsx   Formulario de producto
-      FormularioSucursal.jsx   Formulario de sucursal
+      FormularioSucursal.jsx   Formulario de sucursal (incluye el editor de horarios)
+      EditorHorarios.jsx       Editor de franjas por día (siete días, cruce de medianoche)
       PedidosPendientes.jsx    Stepper de estados de pedido (admin)
       PedidosPendientes.css
   context/
@@ -104,19 +119,29 @@ src/
   hooks/                       Envoltorios de `useContext`
     useAuth.js, useCarrito.js, useSucursal.js,
     usePedidos.js, useDirecciones.js
-  api/                         Capa de servicios mock
-    auth.js, carrito.js, categorias.js,
-    productos.js, pedidos.js, sucursales.js
+  api/                         Capa de API (fetch real al backend)
+    client.js                  fetch con cookies + token CSRF de doble envío
+    auth.js, carrito.js*, categorias.js, productos.js, pedidos.js,
+    sucursales.js, direcciones.js, geo.js, perfil.js, usuarios.js,
+    stock.js, insumos.js, promociones.js, personalizacion.js,
+    personalizacionCategorias.js, parametros.js, reportes.js,
+    resenas.js, superadmin.js, imagenes.js, health.js
   services/
-    seedData.js                Todos los datos semilla (MOCK)
+    seedData.js                Datos semilla que quedan mock (ver §6)
     estadosPedido.js           Lógica de transiciones válidas
-    asignacionSucursal.js      Sucursal óptima por carga de pedidos
+    asignacionSucursal.js      Sucursal "asignada" para mostrar (mock)
+    envio.js, simuladorPago.js, socket.js, personalizacionConfig.js
   utils/
     constants.js               Roles, estados, variantes de Badge, colores
     helpers.js                 delay(), generateId(), filterByProperty()
     formatters.js              formatPrice(), formatDate()
     validators.js              validateEmail(), validatePassword(), validateProducto()
+    horarios.js                Días, normalización, corte de pedidos, validación, textos
+    direccion.js, llegada.js, carritoStorage.js, calculoPromociones.js
 ```
+
+> `api/carrito.js` es el único módulo de API que sigue mockeado: el carrito real está en
+> `CarritoContext` y se persiste en `localStorage` (`utils/carritoStorage.js`).
 
 Archivos de estilo propios por página (además de los `.css` citados): `Inicio.css`, `Catalogo.css`, `Carrito.css`, `DetallePedido.css`, `ProductoCard.css`, `ItemCarrito.css`, `ResumenPedido.css`.
 
@@ -145,6 +170,8 @@ Archivos de estilo propios por página (además de los `.css` citados): `Inicio.
 | `/cliente/confirmacion` | `ConfirmacionPedido` |
 | `/cliente/mis-pedidos` | `MisPedidos` |
 | `/cliente/pedido/:id` | `DetallePedido` |
+| `/cliente/pago` | `Pago` |
+| `/cliente/sucursales` | `SucursalesCercanas` |
 | `/cliente/mis-direcciones` | `MisDirecciones` |
 
 **Protegidas ADMIN** (`ProtectedRoute requiredRole="ADMIN"`):
@@ -152,20 +179,26 @@ Archivos de estilo propios por página (además de los `.css` citados): `Inicio.
 | Ruta | Componente |
 |---|---|
 | `/admin/dashboard` | `Dashboard` |
-| `/admin/productos` | `GestionProductos` |
-| `/admin/producto/editar/:id` | `EditarProducto` |
-| `/admin/producto/nuevo` | `EditarProducto` (modo alta) |
-| `/admin/pedidos` | `GestionPedidos` |
-| `/admin/sucursales` | `GestionSucursales` |
-| `/admin/sucursal/nuevo` | `EditarSucursal` |
-| `/admin/sucursal/editar/:id` | `EditarSucursal` |
+| `/admin/pedidos` | `GestionPedidos` (compartida con el SUPERADMIN con contexto) |
+| `/admin/stock` | `GestionStock` (compartida con el SUPERADMIN con contexto) |
+| `/admin/clientes` · `/admin/clientes/:id` | `GestionClientes` · `DetalleCliente` |
+| `/admin/productos` | `GestionProductos` (solo lectura + disponibilidad por sucursal) |
+| `/admin/categorias`, `/admin/promociones` | listados en solo lectura |
+| `/admin/reportes` | `Reportes` |
 
 **Protegidas SUPERADMIN** (`ProtectedRoute requiredRole="SUPERADMINISTRADOR"`):
 
 | Ruta | Componente |
 |---|---|
 | `/superadmin/panel` | `PanelSuperadmin` (métricas globales vía `GET /api/superadmin/resumen`) |
+| `/superadmin/reportes` | `Reportes` |
 | `/superadmin/administradores` | `GestionAdministradores` (alta, edición y activación de administradores) |
+| `/superadmin/clientes` · `/superadmin/clientes/:id` | `GestionClientes` · `DetalleCliente` |
+| `/superadmin/sucursales` (+ `/sucursal/nuevo`, `/sucursal/editar/:id`) | `GestionSucursales` · `EditarSucursal` (incluye el editor de horarios) |
+| `/superadmin/parametros` | `Parametros` (incluye `margenCierreMinutos`) |
+| `/superadmin/productos`, `/superadmin/categorias` | CRUD de catálogo |
+| `/superadmin/personalizacion` (+ `/categorias`) | Grupos, opciones y plantillas de personalización |
+| `/superadmin/insumos`, `/superadmin/promociones` | Insumos y promociones |
 
 El SUPERADMINISTRADOR entra por el mismo login del panel (`/admin-login`): con el
 rol jerárquico el login es neutral por rol (`loginPanel` acepta ADMINISTRADOR y
@@ -238,9 +271,11 @@ PedidoProvider > DireccionProvider > (Navbar + AppRoutes + Footer)
 ### SucursalContext
 
 - **Estado:** `sucursales`, `sucursalAsignada`, `pedidosPendientes`, `loading`.
-- **Funciones:** `obtenerSucursales` (carga desde api), `cargarSucursales` (carga y asigna la óptima al montar), `asignarSucursalOptima`, `cambiarSucursal(id)`, `agregarSucursal`, `actualizarSucursal`, `eliminarSucursal`.
-- **Derivado:** `sucursalesCercanas` (solo activas).
-- Las sucursales tienen: `id, nombre, direccion, lat, lng, horario, telefono, estado ('activo'|'inactivo')`.
+- **Funciones:** `obtenerSucursales` (carga desde la API, incluidas las inactivas), `cargarSucursales` (carga y asigna la "óptima" para mostrar), `asignarSucursalOptima`, `cambiarSucursal(id)`, `agregarSucursal`, `actualizarSucursal`, `eliminarSucursal`.
+- **Derivados:** `sucursalesCercanas` (solo activas), `sucursalesAbiertas` (activas y con `abiertaAhora`), `todasCerradas` y `proximaApertura` (la más cercana en el tiempo entre las cerradas).
+- Las sucursales las serializa el backend con `id, nombre, direccion (objeto), latitud, longitud, telefono, horarios, horariosTexto, abiertaAhora, cierrePedidos, segundosRestantes, proximaApertura, activa`.
+- La lista se refresca al volver a la pestaña y cada 2 minutos (`visibilitychange` + intervalo): `abiertaAhora` y `segundosRestantes` son una foto del backend, que igual revalida al crear el pedido y al confirmar el pago.
+- **Ojo:** `sucursalAsignada` es sólo informativa para la UI (usa `services/asignacionSucursal.js` con `pedidosPendientesMock`). La sucursal real del pedido la decide el backend (más cercana abierta con stock dentro de cobertura).
 
 ### PedidoContext
 
@@ -256,34 +291,37 @@ PedidoProvider > DireccionProvider > (Navbar + AppRoutes + Footer)
 
 ---
 
-## 6. Datos mock y capa API
+## 6. Capa API y datos mock remanentes
 
-**`services/seedData.js` exporta:**
+**`api/client.js`** es la base de todas las llamadas reales:
+
+- `fetch` a `${VITE_API_URL || '/api'}` con `credentials: 'include'` (cookie de sesión).
+- En `POST/PUT/PATCH/DELETE` agrega el token CSRF de doble envío (se lee del endpoint de sesión y se manda en `x-csrf-token`).
+- Normaliza la respuesta a `{ success, data | error, opciones? }`.
+- Si el backend responde 401, limpia la sesión local.
+
+**Módulos de `api/`** (todos consumen el backend real salvo el indicado):
+
+| Módulo | Uso |
+|---|---|
+| `auth.js` | login de cliente y de panel (ADMIN/SUPERADMIN), registro, sesión, contexto de sucursal del superadmin |
+| `productos.js`, `categorias.js` | catálogo y CRUD (según rol) |
+| `pedidos.js` | alta, listado, detalle, cambio de estado, `consultarDisponibilidad` y `obtenerDisponibilidadPedido` |
+| `sucursales.js` | CRUD de sucursales; devuelve horarios estructurados y estado calculado |
+| `direcciones.js`, `geo.js` | direcciones del cliente y geocodificación |
+| `stock.js`, `insumos.js` | stock por sucursal y catálogo de insumos |
+| `promociones.js`, `personalizacion.js`, `personalizacionCategorias.js` | promociones y personalización |
+| `parametros.js` | parámetros del sistema (incluye `margenCierreMinutos`) |
+| `resenas.js` | reseñas de productos |
+| `reportes.js`, `superadmin.js`, `usuarios.js`, `perfil.js` | paneles de administración y perfil |
+| `carrito.js` | **MOCK**: el carrito real vive en `CarritoContext` + `localStorage` |
+
+**`services/seedData.js`** sólo conserva datos para las piezas mockeadas:
 
 | Export | Detalle |
 |---|---|
-| `productosMock` | 11 productos `{ id, nombre, precio, categoria, imagen, descripcion }` |
-| `categoriasMock` | 5 categorías `{ id, nombre, descripcion }` |
-| `sucursalesMock` | 3 sucursales `{ id, nombre, direccion, lat, lng, horario, telefono, estado }` |
-| `pedidosPendientesMock` | Pedidos `'pendiente'` por `sucursalId` (para asignación) |
-| `pedidosMock` | 3 pedidos con `historialEstados` completo |
-| `usuariosMock` | 2 usuarios `{ id, nombre, email, password, rol }` |
-| `direccionesMock` | 2 direcciones de `cliente@test.com` (Casa principal, Trabajo) |
-
-**`api/` (servicios mock, cada uno usa `delay()` y una copia mutable local):**
-
-| Módulo | Funciones |
-|---|---|
-| `auth.js` | `loginCliente`, `loginAdmin`, `registroCliente`, `registroAdmin` |
-| `carrito.js` | `agregarAlCarrito`, `obtenerCarrito`, `vaciarCarrito` |
-| `categorias.js` | `obtenerCategorias` |
-| `productos.js` | `obtenerProductos`, `obtenerProductoPorId`, `crearProducto`, `editarProducto`, `eliminarProducto` |
-| `pedidos.js` | `crearPedido`, `obtenerPedidos`, `obtenerPedidoPorId`, `confirmarPedido` |
-| `sucursales.js` | `obtenerSucursales`, `obtenerSucursalPorId`, `crearSucursal`, `actualizarSucursal`, `eliminarSucursal` |
-
-Todos devuelven `{ success, data|error }` con delays de 200-500ms.
-
-> **Observación:** algunos módulos (Carrito, `PedidoContext`, `ListaProductos`, `EditarProducto`) usan los datos mock de `seedData` directamente en lugar de la capa api. En producción se debe unificar todo detrás de la capa api.
+| `pedidosPendientesMock` | Pedidos por `sucursalId` que usa la asignación "informativa" de `SucursalContext` |
+| `sucursalesMock`, `productosMock`, `categoriasMock`, `pedidosMock`, `usuariosMock`, `direccionesMock` | Restos de la etapa mock; las pantallas reales ya no los usan |
 
 **`utils/`:**
 
@@ -293,6 +331,7 @@ Todos devuelven `{ success, data|error }` con delays de 200-500ms.
 | `helpers.js` | `delay(ms)`, `generateId()`, `filterByProperty(array, prop, valor)` |
 | `formatters.js` | `formatPrice` (ARS es-AR), `formatDate` (fecha larga es-AR) |
 | `validators.js` | `validateEmail`, `validatePassword` (>= 6), `validateProducto` |
+| `horarios.js` | `DIAS_SEMANA`, `normalizarHorarios`, `crearHorarioPorDefecto`, `cruzaMedianoche`, `corteDePedidos`, `validarHorarios`, `formatearHorarios`, `formatearProximaApertura`, `formatearCuentaRegresiva` |
 
 ---
 
@@ -337,19 +376,46 @@ pendiente -> confirmado -> en_preparacion -> listo_para_entregar
 
 ## 8. Asignación automática de sucursal
 
-Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
+La asignación **real** la hace el backend al crear el pedido (`POST /api/pedidos`): elige la sucursal más cercana por ruta con stock suficiente, dentro de la cobertura de la dirección y **abierta en ese momento**. Si la más cercana está cerrada, se saltea a la siguiente. El frontend ya no replica esa regla: no manda `sucursalId` y muestra la sucursal que devuelve el pedido creado.
 
-**Reglas:**
-1. Filtra las sucursales con estado `'activo'`.
-2. Ordena por `id` (para desempatar a favor de la de menor id).
-3. Elige la sucursal con MENOS pedidos pendientes. Si no se pasan pedidos, usa la propiedad `'pedidosPendientes'` de cada sucursal.
-4. Devuelve `null` si no hay sucursales.
+`services/asignacionSucursal.js` (`asignarSucursalOptima`) quedó **sólo para la UI**: `SucursalContext` la usa con `pedidosPendientesMock` para mostrar una "sucursal asignada" informativa en la página de sucursales. No interviene en la creación ni en el pago.
 
-**Usos:**
-- `SucursalContext.cargarSucursales` la asigna al cliente al montar.
-- `Carrito.jsx` la ejecuta al confirmar el pedido, usando las sucursales activas del contexto y los pedidos `'pendiente'`/`'confirmado'` de `PedidoContext.obtenerPedidosPendientes()`.
+> El cliente NO elige sucursal. En la confirmación, el detalle y el pago se muestra la sucursal que asignó el backend.
 
-> El cliente NO elige sucursal: la aplicación la asigna sola. En la confirmación y en Mis Pedidos se muestra que pedido quedó asignado a qué sucursal.
+---
+
+## 8.1 Horarios de atención (integración)
+
+Cada sucursal tiene franjas por día (`HorarioSucursal` en el backend). El frontend **no recalcula el estado**: usa lo que devuelve la API (`abiertaAhora`, `cierrePedidos`, `segundosRestantes`, `proximaApertura`, `horariosTexto`). La regla del backend: el local cierra a la hora real de la franja y la página corta pedidos `margenCierreMinutos` antes (default 30 → 23:00 cierra, 22:30 corta).
+
+**Dónde se ve:**
+
+| Pantalla | Comportamiento |
+|---|---|
+| Catálogo (`Catalogo.jsx`) e Inicio (`Inicio.jsx`) | `<AvisoSucursalesCerradas />`: un único banner cuando **todas** las sucursales activas están cerradas, con la próxima apertura. No hay estado por producto ni chequeo por dirección. |
+| Carrito (`Carrito.jsx`) | Consulta `POST /api/pedidos/disponibilidad` con la dirección elegida y los ítems. Si no hay sucursal viable, muestra el motivo y **deshabilita** confirmar. Si hay exactamente una (`unica`), muestra el contador con `ContadorCierre` (no hay a dónde reasignar) **sólo en los últimos 10 minutos** (`MINUTOS_AVISO_CIERRE`). Tras un alta rechazada, refresca la consulta. |
+| Pago (`Pago.jsx`) | Consulta `GET /api/pedidos/:id/disponibilidad`. Si la sucursal cerró y hay alternativa, el panel "Tu pedido será preparado en" pasa a mostrar la sucursal nueva (se reasigna al pagar) sin aviso extra. Si no hay alternativa, muestra "La sucursal cerró", bloquea el pago; al intentar pagar (o si el evento WebSocket `sucursal_estado` avisa el cierre) el backend cancela el pedido, repone el stock y la pantalla vuelve al carrito con la notificación "La sucursal cerró". |
+| Sucursales (`SucursalesCercanas.jsx`) | Muestra `horariosTexto` y el badge "Toma pedidos hasta HH:MM" / "Cerrada · abre …". |
+| Superadmin → Sucursales | `EditorHorarios` edita las franjas de los siete días; `GestionSucursales` muestra la columna Horario. |
+| Superadmin → Parámetros | `margenCierreMinutos` (grupo `horarios`, default 30) define el corte global. |
+
+**Reglas que el editor replica (espejo, no autoridad):**
+
+- `diaSemana` 1 = lunes … 7 = domingo; varias franjas por día y solapamientos permitidos.
+- `apertura === cierre` es inválido; `cierre <= apertura` cruza la medianoche (ej. 19:00–02:00).
+- Un día sin franjas está cerrado; para cerrar todo el local se desactiva la sucursal.
+- Una franja más corta que el margen de cierre no deja ventana de pedidos: el formulario lo advierte.
+
+**Componentes y utilidades nuevas:**
+
+- `utils/horarios.js` — normalización a los siete días, `corteDePedidos`, validación y textos.
+- `components/admin/EditorHorarios.jsx` — editor de franjas con "Copiar a todos los días".
+- `components/comunes/ContadorCierre.jsx` — cuenta regresiva basada en `segundosRestantes`; avisa una vez al vencer.
+- `components/comunes/AvisoSucursalesCerradas.jsx` — banner global del catálogo/inicio.
+
+**Tiempo real:** `SucursalContext` escucha el evento `sucursal_estado` (Socket.IO) y relee `GET /api/sucursales`; el backend lo emite al crear/editar/baja una sucursal, al cambiar `margenCierreMinutos` y desde el vigía `lib/services/horarios_vigia.js` cuando vence el próximo corte o apertura. `Pago.jsx` escucha el mismo evento para re-consultar la disponibilidad y auto-cancelar si corresponde.
+
+> Los contadores son avisos: el backend revalida el horario al crear el pedido y al confirmar el pago. Si el deadline venció, la próxima acción del cliente puede ser rechazada aunque la cuenta no haya llegado a cero.
 
 ---
 
@@ -362,12 +428,14 @@ Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
 - Sección "Nuestras Categorías": 5 círculos (Hamburguesas, Combos, Papas, Bebidas, Postres) usando placeholders de imagen.
 - "Favoritos de la semana": 3 productos reutilizando `<ProductoCard />`.
 - Sección "Envío a domicilio rápido": fondo naranja, texto blanco y botón "PIDE AHORA" con icono de bicicleta (SVG inline).
+- Banner global `<AvisoSucursalesCerradas />` arriba del contenido: sólo aparece si ninguna sucursal activa está tomando pedidos.
 - El footer oscuro lo provee el componente global `<Footer />`.
 
 ### 9.2 Catálogo (`/cliente/catalogo`) — `Catalogo.jsx` + `Catalogo.css`
 
 - Título grande "Nuestro Catálogo".
-- Filtros de categoría en pills (Todos + `categoriasMock`).
+- Banner global `<AvisoSucursalesCerradas />`: si ninguna sucursal activa está abierta, se avisa una sola vez (con la próxima apertura); el catálogo se sigue pudiendo recorrer.
+- Filtros de categoría en pills (Todos + categorías de la API).
 - Grid responsive de `<ProductoCard />` (md=3, lg=4 columnas).
 - Aviso si no hay productos en la categoría.
 
@@ -380,15 +448,17 @@ Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
 
 - Título "Tu Carrito". Estado vacío con card y botón al catálogo.
 - Lista de `<ItemCarrito />` más botón "Vaciar carrito".
-- `<ResumenPedido onConfirmar={handleConfirmarPedido} />`.
-- Si el cliente no tiene dirección principal: banner de alerta con link a `/cliente/mis-direcciones`, y al confirmar se bloquea con `alert('Agrega una direccion antes de confirmar')`.
-- Confirmación (flujo automático):
-  1. Filtra sucursales activas del `SucursalContext`.
-  2. Obtiene pedidos pendientes de `PedidoContext`.
-  3. `asignarSucursalOptima()` → sucursal con menos carga.
-  4. `crearPedido({ cliente, productos, total, direccion }, sucursal)` → estado `'pendiente'`.
-  5. `confirmarPedido(id)` → pasa a `'confirmado'` (pago simulado).
-  6. `vaciarCarrito()` y navega a `/cliente/confirmacion`.
+- `<ResumenPedido onConfirmar={handleConfirmarPedido} deshabilitado={...} />`.
+- Sin dirección: banner de alerta con link para agregarla y confirmar bloqueado.
+- **Disponibilidad** (aviso previo, no reserva): con la dirección elegida y los ítems consulta `POST /api/pedidos/disponibilidad`.
+  - `disponible: false` → `Alert` con el motivo (todas cerradas / sin stock), botón "Sin sucursal disponible" deshabilitado.
+  - `unica: true` → aviso con `ContadorCierre` y el corte de pedidos: es la única sucursal viable, no hay a dónde reasignar. El aviso aparece sólo en los últimos 10 minutos.
+  - Si el alta falla, refresca la consulta para que el aviso refleje la situación real.
+- Confirmación (flujo real):
+  1. `crearPedido({ direccionId, productos, medioPago?, ... })` → `POST /api/pedidos`; el backend asigna sucursal (más cercana abierta con stock y cobertura).
+  2. El pedido queda `pendiente`; se navega a la pantalla de pago (`/cliente/pago`).
+  3. `vaciarCarrito()` recién cuando el pago se confirma.
+- Si hay un pago pendiente y el carrito cambió, ofrece actualizar el pedido antes de pagar.
 
 ### 9.5 ItemCarrito — `components/cliente/ItemCarrito.jsx` + `ItemCarrito.css`
 
@@ -397,9 +467,9 @@ Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
 
 ### 9.6 ResumenPedido — `components/cliente/ResumenPedido.jsx` + `ResumenPedido.css`
 
-- Props: `onConfirmar`, `items`, `total`, `sucursal` (todos opcionales).
-- Sin props → usa el carrito (modo carrito). En modo lectura recibe `items/total/sucursal` (modo confirmación): no muestra botón.
-- Simula envío (MOCK): GRATIS a partir de $10.000, $350 si supera.
+- Props: `onConfirmar`, `items`, `total`, `costoEnvio`, `sucursal`, `botonTexto`, `descuento`, `detalleDescuento`, `promociones`, `fija`, `deshabilitado`.
+- Sin props → usa el carrito (modo carrito). En modo lectura recibe `items/total/sucursal` y el total del backend ya incluye el envío (no se recalcula).
+- `deshabilitado` apaga el botón de confirmar sin quitarlo: el carrito lo usa cuando la disponibilidad dijo que no hay sucursal que pueda tomar el pedido. El motivo se explica en un `Alert` de la página.
 - Si recibe `sucursal`, muestra el bloque "Sucursal asignada".
 
 ### 9.7 ConfirmacionPedido (`/cliente/confirmacion`) — `ConfirmacionPedido.jsx`
@@ -436,6 +506,21 @@ Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
 
 - Login/AdminLogin comparten `Login.css` (ver sección 4).
 - Registro (`/registro`) y AdminRegister (`/admin-registro`) mantienen el layout básico de Bootstrap (Container+Card). Tras registrarse, navegan a `/cliente/inicio` o `/admin/dashboard` según el rol.
+
+### 9.12 Pago (`/cliente/pago`) — `Pago.jsx` + `Pago.css`
+
+- Muestra el pedido `pendiente` (resumen en modo lectura) y las opciones de pago (Mercado Pago / Tarjeta); al elegir una, simula el cobro y llama a `confirmarPedido` (pendiente → confirmado).
+- **Disponibilidad del pago**: `GET /api/pedidos/:id/disponibilidad`.
+  - `abierta: false` + `hayAlternativa: true` → el panel de sucursal que prepara el pedido muestra directamente la alternativa (nombre y dirección): se reasigna sola al pagar, sin aviso adicional.
+  - `abierta: false` + `hayAlternativa: false` → aviso corto "La sucursal cerró" y botones de pago deshabilitados. Al intentar pagar, o cuando el evento `sucursal_estado` detecta el cierre, se cancela el pedido (el backend repone el stock) y se vuelve al carrito con los productos.
+  - `abierta: true` + sin alternativa → `ContadorCierre` ("última chance"), sólo en los últimos 10 minutos.
+- Si la confirmación falla por stock, se revalida la disponibilidad y el pedido sigue `pendiente`. Si el backend responde 409 con `cancelado: true`, el pedido ya quedó cancelado y se vuelve al carrito.
+
+### 9.13 Sucursales (`/cliente/sucursales`) — `SucursalesCercanas.jsx`
+
+- Tarjetas de sucursales activas con dirección, teléfono y `horariosTexto`.
+- Badge de estado calculado por el backend: "Toma pedidos hasta HH:MM" o "Cerrada · abre …" (`proximaApertura`).
+- Aclara que la asignación final la hace el sistema al confirmar el pedido (cercanía, cobertura, stock y horario).
 
 ---
 
@@ -475,30 +560,39 @@ Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
   - Usa `PedidoContext.cambiarEstado` y `PedidoContext.pedidos`.
 - NOTA: muestra todos los pedidos del seed (permite ver el flujo completo en un mismo admin). En una versión real debería listar solo los `'pendiente'`/`'confirmado'` de la sucursal del admin.
 
-### 10.6 GestionSucursales (`/admin/sucursales`) — `GestionSucursales.jsx`
+### 10.6 GestionSucursales (`/superadmin/sucursales`) — `GestionSucursales.jsx`
 
-- Tabla con ID, Nombre, Dirección, Teléfono, Estado (Badge Activo/Inactivo según `ESTADO_SUCURSAL`) y Acciones.
+- Tabla con ID, Nombre, Dirección, Teléfono, Horario y Estado (Badge según `activa`).
+- La columna **Horario** muestra `horariosTexto` y un badge de estado: "Abierta · hasta HH:MM" o "Cerrada", calculado por el backend (`abiertaAhora`, `cierrePedidos`).
 - Carga con `useSucursal().obtenerSucursales()` (contexto), con Spinner.
-- "Agregar nueva sucursal" → `/admin/sucursal/nuevo`.
-- "Eliminar" con `window.confirm` y mensaje de resultado (simulado).
+- "Agregar nueva sucursal" → `/superadmin/sucursal/nuevo`.
+- "Eliminar" con confirmación y mensaje de resultado.
 - Mensajes de éxito con `Alert` dismissible.
 
-### 10.7 EditarSucursal (`/admin/sucursal/nuevo` | `/admin/sucursal/editar/:id`)
+### 10.7 EditarSucursal (`/superadmin/sucursal/nuevo` | `/superadmin/sucursal/editar/:id`)
 
 - Obtiene la sucursal a editar del contexto (`useSucursal`) por id.
 - En modo creación o edición delega en `<FormularioSucursal />`.
-- Al guardar llama a `agregarSucursal` o `actualizarSucursal` del contexto y navega de vuelta a `/admin/sucursales`. Muestra errores con `Alert`.
+- Al guardar llama a `agregarSucursal` o `actualizarSucursal` del contexto y navega de vuelta a `/superadmin/sucursales`. Muestra errores con `Alert` (incluidas las opciones de desambiguación de dirección).
 
 ### 10.8 FormularioSucursal — `components/admin/FormularioSucursal.jsx`
 
-- Campos: Nombre\*, Dirección\*, Latitud\*, Longitud\* (con validación de rangos `LIMITES_LAT`/`LIMITES_LNG`), Horario, Teléfono y Estado (Activo/Inactivo).
+- Campos: Nombre\*, Dirección\* (con preview/geocodificación del backend), Horario, Teléfono y Estado (Activa/Inactiva). Ya no se cargan latitud/longitud a mano.
+- **Horario**: `<EditorHorarios />` con los siete días. Cada día tiene una o más franjas (`apertura`–`cierre`); "Agregar franja" y eliminar por franja. Al guardar se envía `horarios: [{ diaSemana, franjas: [{ apertura, cierre }] }]`.
+- `margenMinutos` (parámetro global) se usa para mostrar el corte de pedidos y validar que una franja no dure menos que el margen.
+- `normalizarHorarios` / `crearHorarioPorDefecto` (10:00–23:00) precargan el horario de una sucursal nueva.
 - Botones Guardar / Cancelar (cancelar vuelve a sucursales).
-- En modo creación, tras guardar limpia el formulario.
 
 ### 10.9 Auth admin
 
 - AdminLogin (`/admin-login`) con estilo Comi-Rapi (`Login.css`).
 - AdminRegister (`/admin-registro`) layout básico de Bootstrap.
+
+### 10.10 Parámetros del sistema (`/superadmin/parametros`) — `Parametros.jsx` + `FormularioParametros.jsx`
+
+- Edita el catálogo de parámetros globales (`GET /api/parametros` / `PUT /api/superadmin/parametros`).
+- `ParametrosContext` guarda los valores y expone `margenCierreMinutos` (default 30) para que las pantallas muestren el corte de pedidos sin duplicar la regla.
+- Grupo **Horarios**: `margenCierreMinutos` (0–120). Cambiarlo mueve el corte de todas las sucursales: el local cierra a la hora de la franja y la página deja de tomar pedidos esos minutos antes.
 
 ---
 
@@ -511,7 +605,9 @@ Servicio: `services/asignacionSucursal.js` → `asignarSucursalOptima()`.
 - Hover animado: pill translúcido, subrayado animado, icono que rota, leve elevación. Página activa: pill blanco con texto naranja oscuro (`#b55d00`) vía `NavLink.isActive`.
 - Zona de usuario: `FaUserCircle` + nombre, botón "Cerrar sesión" pill (`btn-logout-comirapi`) que hace logout y navega a `/login`.
 
-**Footer (`comunes/Footer.jsx`):** `bg-dark`, "© 2026 Comi-Rapi - Todos los derechos reservados".
+**Footer (`comunes/Footer.jsx`):** superficie crema de marca con logo, contacto y redes.
+No muestra horarios: el estado de atención vive en la ficha de cada sucursal y en los
+avisos del catálogo, carrito y pago.
 
 **Identidad de marca (paleta):**
 - Naranjas: `#f07f10`, `#ff9f1c`, `#ffb347`.

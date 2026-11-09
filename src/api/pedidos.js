@@ -40,6 +40,8 @@ export const mapearPedido = (p) => {
         sin: personalizacion?.sin || [],
         acompanamientos: personalizacion?.acompanamientos || [],
         condimentos: personalizacion?.condimentos || [],
+        // Nota libre para cocina (columna propia, separada de `observacion`).
+        nota: item.nota || null,
       };
     }),
     total: Number(p.total),
@@ -118,6 +120,8 @@ function payloadBackend(datosPedido, sucursal) {
     cantidad: prod.cantidad ?? 1,
     precio: prod.precio,
     personalizacion: personalizacionParaBackend(prod),
+    // Nota para cocina: se reenvía tal cual; el backend la normaliza y valida.
+    ...(prod.nota ? { nota: prod.nota } : {}),
   }));
   // T0 (plan maestro de pedidos): el frontend envía el `direccionId` de la
   // Dirección persistida del usuario — el backend resuelve el snapshot con
@@ -237,7 +241,12 @@ export const cambiarEstado = async (id, estado, medioPago) => {
     if (!result.success) return result;
     return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
-    return { success: false, error: error?.message || 'Pedido no encontrado' };
+    return {
+      success: false,
+      error: error?.message || 'Pedido no encontrado',
+      cancelado: Boolean(error?.cancelado),
+      pedidoId: error?.pedidoId ?? null,
+    };
   }
 };
 
@@ -266,6 +275,52 @@ export const reasignarSucursal = async (id, sucursalId) => {
     return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
     return { success: false, error: error?.message || 'No se pudo reasignar el pedido' };
+  }
+};
+
+/**
+ * Consulta la disponibilidad del CARRITO antes de confirmar (aviso, no
+ * reserva): si hay sucursal abierta con stock dentro de la cobertura de la
+ * dirección y, cuando hay exactamente una, cuánto le queda hasta el corte.
+ * El POST /pedidos revalida con las mismas reglas.
+ * @param {{direccionId: number, productos: Array}} datos
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ *   data: { disponible, unica, sucursal, sucursales, proximaApertura,
+ *           proximaAperturaTexto, margenCierreMinutos, mensaje }
+ */
+export const consultarDisponibilidad = async ({ direccionId, productos }) => {
+  try {
+    const result = await apiPost('/pedidos/disponibilidad', {
+      direccionId,
+      productos,
+    });
+    if (!result.success) return result;
+    return { success: true, data: result.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'No se pudo consultar la disponibilidad',
+    };
+  }
+};
+
+/**
+ * Disponibilidad de un pedido ya creado (pantalla de pago): si su sucursal
+ * sigue tomando pedidos, a qué hora corta, cuántos segundos quedan y si hay
+ * otra sucursal abierta con stock a la que el backend pueda reasignarlo.
+ * @param {number|string} id - ID del pedido.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const obtenerDisponibilidadPedido = async (id) => {
+  try {
+    const result = await apiGet(`/pedidos/${id}/disponibilidad`);
+    if (!result.success) return result;
+    return { success: true, data: result.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || 'No se pudo consultar la disponibilidad',
+    };
   }
 };
 

@@ -40,6 +40,7 @@ import {
   FaTags,
   FaBookOpen,
   FaBoxes,
+  FaClock,
 } from 'react-icons/fa';
 import { useParametros } from '../../hooks/useParametros';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
@@ -49,6 +50,7 @@ import './FormularioParametros.css';
 const TITULOS_GRUPO = {
   envio: 'Envío',
   cobertura: 'Cobertura',
+  horarios: 'Horarios',
   carrito: 'Carrito',
   pedido: 'Pedidos',
   promociones: 'Promociones',
@@ -60,6 +62,7 @@ const TITULOS_GRUPO = {
 const ICONOS_GRUPO = {
   envio: FaShippingFast,
   cobertura: FaMapMarkedAlt,
+  horarios: FaClock,
   carrito: FaShoppingCart,
   pedido: FaClipboardList,
   promociones: FaTags,
@@ -71,6 +74,7 @@ const ICONOS_GRUPO = {
 const ORDEN_GRUPOS = [
   'envio',
   'cobertura',
+  'horarios',
   'carrito',
   'pedido',
   'promociones',
@@ -227,7 +231,7 @@ const FormularioParametros = () => {
           >
             <Card.Header
               as="h2"
-              className="h5 bg-white parametros-grupo-header"
+              className="h5 parametros-grupo-header"
             >
               {IconoGrupo ? (
                 <span className="parametros-grupo-icono" aria-hidden="true">

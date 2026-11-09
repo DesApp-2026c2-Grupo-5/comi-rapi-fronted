@@ -42,6 +42,12 @@ export const obtenerSucursalPorId = async (id) => {
  * Crea una nueva sucursal.
  * La dirección se envía como objeto anidado (Sucursal 1:1 Direccion):
  * { nombre, direccion: { calle, altura, provincia, departamento?, localidad?, codigoPostal?, referencia? }, telefono?, horarios?, activa? }.
+ * `horarios` es el horario ESTRUCTURADO del local, agrupado por día:
+ *   [{ diaSemana: 1..7 (lunes=1), franjas: [{ apertura: 'HH:MM', cierre: 'HH:MM' }] }]
+ * Un día sin franjas está cerrado; `cierre <= apertura` cruza la medianoche
+ * (19:00–02:00). Si no se manda, el backend aplica 10:00–23:00 de lunes a
+ * domingo. El corte de pedidos lo deriva el backend restando el parámetro
+ * global `margenCierreMinutos`; el front no lo envía.
  * Iteración 1-geo: el partido (`departamento`) es obligatorio cuando la
  * provincia es Buenos Aires; localidad y CP opcionales (los normaliza el
  * backend con Georef; latitud/longitud nunca se ingresan manualmente).

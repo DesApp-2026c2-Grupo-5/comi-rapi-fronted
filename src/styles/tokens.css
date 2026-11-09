@@ -26,6 +26,12 @@
   --color-primary-dark: #a85400;
   --color-primary-deep: #f07f10; /* inicio del degradado de navbar */
   --color-primary-soft: #ffb347; /* fin del degradado de navbar */
+  /* CTA hero: se mantiene blanco con texto naranja sobre el hero naranja en
+     ambos temas, porque el fondo del hero no cambia. */
+  --color-hero-cta-bg: #ffffff;
+  --color-hero-cta-hover: #fff4e2;
+  --color-hero-cta-active: #ffe6c2;
+  --color-hero-cta-text: #a85400;
 
   /* Tinta sobre superficies de marca (naranja).
      Blanco sobre --color-primary daba 2.05:1, y sobre el extremo claro del
@@ -56,6 +62,12 @@
 
   /* Neutros */
   --color-white: #ffffff;
+  /* Superficie de componente (cards, tablas, pills): blanco en claro y
+     superficie elevada en oscuro. No es identidad de marca, es el "papel". */
+  --color-surface: #ffffff;
+  /* Tinta sobre rellenos profundos (success/danger fill): blanco en ambos
+     temas, porque esos rellenos conservan su tono oscuro. */
+  --color-on-fill: #ffffff;
   --color-text: #2b2b2b;
   --color-text-muted: #7a6a55; /* secundario cálido */
   --color-text-brown: #8a5a2b; /* texto de outline secundario */
@@ -103,6 +115,89 @@
      (entradas fuertes y movimientos sobre pantalla). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ============ Tema oscuro ============ */
+/* Se activa con data-bs-theme="dark" en <html> (lo resuelve TemaContext /
+   el script anti-flash de index.html). Aquí se remapean TODOS los tokens del
+   sistema a una paleta cálida oscura: las hojas de componentes siguen usando
+   var(--color-...) y no necesitan reglas propias.
+   Además se pisan las variables --bs-* de Bootstrap (superficies, texto,
+   bordes) para que cards, modales, tablas, dropdowns y formularios hereden el
+   tema sin reescribir cada componente. */
+:root[data-bs-theme='dark'] {
+  color-scheme: dark;
+
+  /* Naranja de marca: se aclara un punto para mantener contraste sobre fondo
+     oscuro. --color-on-primary sigue siendo tinta oscura sobre el naranja. */
+  --color-primary: #ffa733;
+  --color-primary-hover: #ffb95c;
+  --color-primary-active: #ffc978;
+  --color-primary-dark: #ffb347;
+  --color-primary-deep: #f07f10;
+  --color-primary-soft: #ffb347;
+
+  /* CTA hero: mismos valores que en claro (el hero naranja no cambia). */
+  --color-hero-cta-bg: #ffffff;
+  --color-hero-cta-hover: #fff4e2;
+  --color-hero-cta-active: #ffe6c2;
+  --color-hero-cta-text: #a85400;
+  --color-on-primary: #241505;
+  --color-focus: #ffb347;
+
+  /* Superficies: del fondo de página al elemento elevado. */
+  --color-cream: #241f19;
+  --color-cream-hover: #2e2820;
+  --color-cream-active: #383026;
+  --color-cream-light: #201b16;
+  --color-cream-soft: #1b1712;
+
+  --color-border-cream: #4a3a26;
+  --color-border-card: #352b20;
+  --color-border-strong: #6b4f2d;
+
+  /* En oscuro `--color-white` es el "papel" y la tinta de contraste: muchas
+     hojas lo usan como superficie de tarjeta o como texto sobre fondos claros.
+     El blanco puro de marca vive en `--color-hero-cta-*`, que no cambia. */
+  --color-white: #241f19;
+  --color-surface: #241f19;
+  --color-text: #f5ede2;
+  --color-text-muted: #c3b39d;
+  --color-text-brown: #e8bd8c;
+
+  /* Estados semánticos: tonos claros para texto/bordes; los rellenos de botón
+     conservan su tono profundo porque llevan texto blanco encima. */
+  --color-success: #4ade80;
+  --color-success-hover: #6ee7a0;
+  --color-success-active: #86efac;
+  --color-danger: #f87171;
+  --color-danger-hover: #fca5a5;
+  --color-danger-active: #fecaca;
+
+  --color-success-fill: #15803d;
+  --color-success-fill-hover: #166534;
+  --color-danger-fill: #b51e2d;
+  --color-danger-fill-hover: #9a1826;
+
+  --color-mp: #009ee3;
+  --color-mp-active: #0079b8;
+
+  /* Sombras: negro para profundidad y naranja para los CTA. */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 8px 18px rgba(0, 0, 0, 0.55);
+  --shadow-cta: 0 4px 12px rgba(255, 159, 28, 0.22);
+  --shadow-cta-hover: 0 8px 18px rgba(255, 159, 28, 0.32);
+
+  /* Puente con Bootstrap 5.3: sus componentes leen estas variables. */
+  --bs-body-bg: var(--color-cream-soft);
+  --bs-body-color: var(--color-text);
+  --bs-secondary-bg: var(--color-cream);
+  --bs-tertiary-bg: var(--color-cream-light);
+  --bs-border-color: var(--color-border-card);
+  --bs-secondary-color: rgba(245, 237, 226, 0.72);
+  --bs-emphasis-color: #ffffff;
+  --bs-heading-color: #ffffff;
+  --bs-light: var(--color-cream);
 }
 
 /* ============ Tipografía base ============ */
