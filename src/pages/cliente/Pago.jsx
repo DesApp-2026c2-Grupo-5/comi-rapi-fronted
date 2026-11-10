@@ -38,7 +38,7 @@ const MAPA_MEDIO_PAGO = {
 };
 
 const Pago = () => {
-  const { pedidoActual, pedidos, confirmarPedido, cambiarEstado } = usePedidos();
+  const { pedidoActual, pedidos, confirmarPedido, cambiarEstado, refrescarPedidos } = usePedidos();
   const { vaciarCarrito } = useCarrito();
   const { notificar } = useNotificaciones();
   const navigate = useNavigate();
@@ -47,6 +47,10 @@ const Pago = () => {
   const [mostrarConfirmarCancelar, setMostrarConfirmarCancelar] = useState(false);
   const [disponibilidadPedido, setDisponibilidadPedido] = useState(null);
   const [refrescoDisponibilidad, setRefrescoDisponibilidad] = useState(0);
+  // La cuenta de la reserva de stock llegó a cero (calculada en el cliente) o el
+  // backend ya la informó vencida. Bloquea el pago hasta que el vigía cancele el
+  // pedido y la pantalla vuelva al carrito.
+  const [reservaAgotada, setReservaAgotada] = useState(false);
 
   // Pedido a pagar. Normalmente es el que acaba de crear el carrito, pero si el
   // cliente recarga o navega y vuelve, `pedidoActual` (que vive sólo en
@@ -93,6 +97,62 @@ const Pago = () => {
     !disponibilidadPedido.hayAlternativa &&
     dentroDelAvisoDeCierre(disponibilidadPedido.segundosRestantes);
 
+  /* RESERVA DE STOCK: el pedido nace PENDIENTE y ya descontó el stock. El
+     backend da un plazo (`minutosReservaStock`, 15 por defecto) para pagar; al
+     vencer, cancela el pedido y las unidades vuelven al stock. La pantalla no
+     muestra la cuenta: solo bloquea el pago y espera la cancelación para volver
+     al carrito. */
+  const reservaVencida =
+    Boolean(disponibilidadPedido?.reservaVencida) || reservaAgotada;
+
+  useEffect(() => {
+    if (!disponibilidadPedido) return;
+    // Una respuesta nueva manda: si todavía trae segundos, la reserva sigue viva.
+    setReservaAgotada(Boolean(disponibilidadPedido.reservaVencida));
+  }, [disponibilidadPedido]);
+
+  // Temporizador silencioso: al agotarse el plazo se activa el sondeo aunque la
+  // cuenta no se muestre. El backend confirma la cancelación en los próximos
+  // segundos y la pantalla vuelve al carrito.
+  useEffect(() => {
+    const segundos = disponibilidadPedido?.segundosReserva;
+    if (!segundos || segundos <= 0) return undefined;
+    const temporizador = setTimeout(
+      () => setReservaAgotada(true),
+      segundos * 1000
+    );
+    return () => clearTimeout(temporizador);
+  }, [disponibilidadPedido]);
+
+  // Agotado el plazo, el pago queda bloqueado y el vigía del backend cancela el
+  // pedido en los próximos segundos. El socket avisa; este sondeo es el respaldo
+  // para que la vuelta al carrito no dependa de una conexión abierta.
+  useEffect(() => {
+    if (!reservaAgotada || !pedidoId) return undefined;
+    const intervalo = setInterval(() => {
+      refrescarPedidos();
+    }, 3000);
+    return () => clearInterval(intervalo);
+  }, [reservaAgotada, pedidoId, refrescarPedidos]);
+
+  /* VUELTA AL CARRITO: si el pedido que se estaba pagando deja de estar
+     PENDIENTE sin que el cliente haya pagado ni cancelado, lo canceló el
+     backend (venció la reserva de stock). Se muestra un único aviso simple y se
+     vuelve al carrito con los mismos productos, sin más mensajes. */
+  const pedidoEnPagoRef = useRef(null);
+  const saliendoRef = useRef(false);
+  useEffect(() => {
+    if (pedido?.estado === ESTADOS_PEDIDO.PENDIENTE) {
+      pedidoEnPagoRef.current = pedido.id;
+      return;
+    }
+    // Sin pedido visto antes no hay nada que devolver (carga inicial, recarga).
+    if (!pedidoEnPagoRef.current || saliendoRef.current) return;
+    pedidoEnPagoRef.current = null;
+    notificar('Tiempo de pago excedido.', 'warning', 5000);
+    navigate('/cliente/carrito');
+  }, [pedido, notificar, navigate]);
+
   // El vigía de horarios del backend emite `sucursal_estado` cuando una
   // sucursal abre o cierra. El evento no trae datos: se re-consulta la
   // disponibilidad de este pedido, que es la fuente de verdad.
@@ -120,10 +180,16 @@ const Pago = () => {
     if (disponibilidadPedido.abierta || disponibilidadPedido.hayAlternativa) return;
     if (paginando || cancelandoPorCierreRef.current) return;
     cancelandoPorCierreRef.current = true;
+    // La pantalla ya se está yendo al carrito: la vuelta automática por reserva
+    // vencida no debe dispararse por esta cancelación (la hizo el propio cliente).
+    saliendoRef.current = true;
     (async () => {
       const cancelado = await cambiarEstado(pedidoId, ESTADOS_PEDIDO.CANCELADO);
       cancelandoPorCierreRef.current = false;
-      if (!cancelado) return;
+      if (!cancelado) {
+        saliendoRef.current = false;
+        return;
+      }
       notificar(
         'La sucursal cerró.',
         'warning',
@@ -181,6 +247,7 @@ const Pago = () => {
   // Aprueba el pago automáticamente y pasa el pedido de PENDIENTE a CONFIRMADO
   const handlePagar = async (metodo) => {
     if (paginando) return;
+    if (reservaVencida) return;
     if (sucursalCerradaSinAlternativa) {
       notificar('La sucursal cerró.', 'warning');
       return;
@@ -192,19 +259,32 @@ const Pago = () => {
     // Simular el procesamiento del pago
     await simuladorPago({ total: montoTotal, metodo });
 
+    // Desde acá el resultado lo maneja esta pantalla (éxito, vuelta al carrito o
+    // reintento): la vuelta automática por reserva vencida no debe pisarlo.
+    saliendoRef.current = true;
     const medioPago = MAPA_MEDIO_PAGO[metodo];
     const confirmado = await confirmarPedido(pedido.id, medioPago);
     if (confirmado?.cancelado) {
-      // El backend canceló el pedido (y repuso el stock) porque la sucursal
-      // cerró y no había otra abierta con stock. Se vuelve al carrito.
+      // El backend canceló el pedido (y repuso el stock): venció la reserva de
+      // stock o la sucursal cerró y no había otra abierta con stock. Se vuelve
+      // al carrito con los mismos productos.
       setPaginando(false);
-      notificar('La sucursal cerró.', 'warning', 7000);
+      notificar(
+        confirmado.motivo === 'reserva_vencida'
+          ? 'Tiempo de pago excedido.'
+          : confirmado.motivo === 'sucursal_cerrada'
+            ? 'La sucursal cerró.'
+            : 'No se pudo completar el pago.',
+        'warning',
+        7000
+      );
       navigate('/cliente/carrito');
       return;
     }
     if (!confirmado) {
       // El contexto ya muestra el error del backend; el pedido sigue PENDIENTE.
       // Se revalida la disponibilidad por si el rechazo fue por horario.
+      saliendoRef.current = false;
       setPaginando(false);
       setRefrescoDisponibilidad((n) => n + 1);
       return;
@@ -219,10 +299,14 @@ const Pago = () => {
   const handleCancelarPedido = async () => {
     if (paginando) return;
     setPaginando(true);
+    // Cancelación pedida por el cliente: la vuelta automática no debe avisar
+    // que "venció el tiempo".
+    saliendoRef.current = true;
     try {
       const cancelado = await cambiarEstado(pedido.id, ESTADOS_PEDIDO.CANCELADO);
       if (!cancelado) {
         // El contexto ya muestra el error del backend
+        saliendoRef.current = false;
         setPaginando(false);
         return;
       }
@@ -234,6 +318,7 @@ const Pago = () => {
       // el pedido. El stock ya fue repuesto por el backend al cancelar.
       navigate('/cliente/carrito');
     } catch {
+      saliendoRef.current = false;
       setPaginando(false);
     }
   };
@@ -307,6 +392,10 @@ const Pago = () => {
             </Alert>
           )}
 
+          {/* La reserva de stock no muestra cuenta ni avisos: si vence, el
+              backend cancela el pedido y la pantalla vuelve al carrito con un
+              único mensaje simple ("Tiempo de pago excedido."). */}
+
           {/* Opciones de pago */}
           <h2 className="h5 mb-3">Elegí cómo pagar</h2>
           {paginando ? (
@@ -318,7 +407,7 @@ const Pago = () => {
                   <Button
                     className={`pago-opcion w-100 ${opcion.clase}`}
                     onClick={() => handlePagar(opcion.metodo)}
-                    disabled={sucursalCerradaSinAlternativa}
+                    disabled={sucursalCerradaSinAlternativa || reservaVencida}
                   >
                     <span className="pago-opcion-ico">{opcion.icono}</span>
                     <span className="d-block">{opcion.titulo}</span>
