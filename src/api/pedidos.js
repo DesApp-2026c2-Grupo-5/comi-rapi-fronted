@@ -33,6 +33,9 @@ async function requestJson(path, options = {}) {
     // decisión de negocio (p. ej. la cancelación automática por cierre).
     error.status = res.status;
     error.cancelado = Boolean(body.cancelado);
+    // Motivo de la cancelación automática: 'reserva_vencida' (no se pagó a
+    // tiempo) o 'sucursal_cerrada' (cerró y no había otra abierta con stock).
+    error.motivo = body.motivo ?? null;
     error.pedidoId = body.pedidoId ?? null;
     error.opciones = body.opciones || null;
     error.detalle = body.detalle || null;
@@ -261,6 +264,7 @@ export const cambiarEstado = async (id, estado, medioPago) => {
       success: false,
       error: error?.message || 'Pedido no encontrado',
       cancelado: Boolean(error?.cancelado),
+      motivo: error?.motivo ?? null,
       pedidoId: error?.pedidoId ?? null,
     };
   }
@@ -326,6 +330,10 @@ export const consultarDisponibilidad = async ({ direccionId, productos }) => {
  * Disponibilidad de un pedido ya creado (pantalla de pago): si su sucursal
  * sigue tomando pedidos, a qué hora corta, cuántos segundos quedan y si hay
  * otra sucursal abierta con stock a la que el backend pueda reasignarlo.
+ *
+ * También informa la reserva de stock: `reservaExpiraEn` (ISO), `segundosReserva`
+ * y `reservaVencida`. El cliente tiene ese plazo para pagar; si vence, el
+ * backend cancela el pedido y las unidades vuelven al stock.
  * @param {number|string} id - ID del pedido.
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */

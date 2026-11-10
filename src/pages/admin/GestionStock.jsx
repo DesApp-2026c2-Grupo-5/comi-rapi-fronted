@@ -204,12 +204,9 @@ const GestionStock = () => {
       }
 
       if (!tieneProductos) {
-        // Un evento sólo de insumos ya quedó resuelto arriba. Recargar todo acá
-        // haría parpadear la tabla y perdería el foco. Sólo se recarga si el
-        // payload no traía ningún id (aviso genérico).
-        if (tieneInsumos || tieneIngredientes) {
-          notificar('El stock se actualizó.', 'info');
-        }
+        // Un evento sólo de insumos o ingredientes ya quedó resuelto arriba.
+        // Recargar todo acá haría parpadear la tabla y perdería el foco. Sólo
+        // se recarga si el payload no traía ningún id (aviso genérico).
         if (!tieneInsumos && !tieneIngredientes) {
           await cargar();
         }
@@ -250,7 +247,6 @@ const GestionStock = () => {
         }
         return [...porClave.values()];
       });
-      notificar('El stock se actualizó.', 'info');
     };
     instancia.on('connect', alConectar);
     instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
