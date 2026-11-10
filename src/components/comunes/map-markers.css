@@ -1,0 +1,752 @@
+/* ==========================================================================
+   MAP MARKERS - Estilos unificados para marcadores de mapa
+   ========================================================================== */
+
+/* ==========================================================================
+   FLOATING PILL PIN - Sucursales (Carbon #252b32, icono blanco, SIN texto, punta)
+   ========================================================================== */
+
+.comi-pill-marker {
+  background: transparent;
+  border: none;
+}
+
+.comi-pill-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #252b32;
+  padding: 0;
+  border-radius: 9999px;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+  user-select: none;
+  position: relative;
+  width: 40px;
+  height: 36px;
+}
+
+.comi-pill-container::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #252b32;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+.comi-pill-container:hover,
+.comi-pill-container:active {
+  transform: scale(1.08);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+  z-index: 1000;
+}
+
+.comi-pill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: white;
+}
+
+.comi-pill-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* Animación de entrada */
+.comi-pill-container {
+  animation: pill-pop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes pill-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==========================================================================
+   DOT + PULSE AURA - Ubicación del Cliente (Color exacto #1683ed)
+   ========================================================================== */
+
+.comi-pulse-marker {
+  background: transparent;
+  border: none;
+}
+
+.pulse-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-core {
+  width: 16px;
+  height: 16px;
+  background-color: #1683ed;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 
+    0 0 0 3px rgba(22, 131, 237, 0.3),
+    0 2px 8px rgba(22, 131, 237, 0.4);
+  z-index: 2;
+  animation: core-pulse 2s ease-in-out infinite;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(22, 131, 237, 0.25);
+  animation: pulse-ring-wave 2s infinite ease-out;
+}
+
+.pulse-ring:nth-child(2) { animation-delay: 0s; }
+.pulse-ring:nth-child(3) { animation-delay: 0.66s; }
+.pulse-ring:nth-child(4) { animation-delay: 1.33s; }
+
+@keyframes pulse-ring-wave {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes core-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 0 3px rgba(22, 131, 237, 0.3),
+      0 2px 8px rgba(22, 131, 237, 0.4);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 
+      0 0 0 6px rgba(22, 131, 237, 0.15),
+      0 4px 16px rgba(22, 131, 237, 0.5);
+  }
+}
+
+/* Respeta prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .pulse-core,
+  .pulse-ring {
+    animation: none !important;
+  }
+  
+  .comi-pill-container,
+  .comi-pulse-marker {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   ETA BADGE - Tiempo estimado de entrega (Blanco, icono moto negro, solo "15 min")
+   ========================================================================== */
+
+.comi-eta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: #1f2937;
+  padding: 6px 14px 6px 8px;
+  border-radius: 9999px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.comi-eta-badge:hover {
+  transform: scale(1.02);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* Variante compacta para mapas/popups */
+.comi-eta-badge.variant-map {
+  padding: 4px 10px 4px 6px;
+  gap: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.comi-eta-badge.variant-map .comi-eta-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-time {
+  font-size: 13px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-label {
+  display: none;
+}
+
+.comi-eta-badge.variant-map .comi-eta-store {
+  display: none;
+}
+
+.comi-eta-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #1f2937;
+}
+
+.comi-eta-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.comi-eta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comi-eta-label {
+  display: none;
+}
+
+.comi-eta-time {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.comi-eta-store {
+  display: none;
+}
+
+.comi-eta-arrival {
+  display: none;
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+  .comi-eta-badge {
+    background-color: #1e1e2e;
+    color: #e8e8e8;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* Variante compacta para mapas */
+.comi-eta-badge.variant-map {
+  padding: 4px 10px 4px 6px;
+  gap: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.comi-eta-badge.variant-map .comi-eta-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-time {
+  font-size: 13px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-label {
+  display: none;
+}
+
+.comi-eta-badge.variant-map .comi-eta-store {
+  display: none;
+}
+
+.comi-eta-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #1f2937;
+}
+
+.comi-eta-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.comi-eta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comi-eta-label {
+  display: none;
+}
+
+.comi-eta-time {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.comi-eta-store {
+  display: none;
+}
+
+.comi-eta-arrival {
+  display: none;
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+  .comi-eta-badge {
+    background-color: #1e1e2e;
+    color: #e8e8e8;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* Variante compacta para mapas */
+.comi-eta-badge.variant-map {
+  padding: 4px 10px 4px 6px;
+  gap: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.comi-eta-badge.variant-map .comi-eta-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-time {
+  font-size: 13px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-label {
+  display: none;
+}
+
+.comi-eta-badge.variant-map .comi-eta-store {
+  display: none;
+}
+
+.comi-eta-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #1f2937;
+}
+
+.comi-eta-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.comi-eta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comi-eta-label {
+  display: none;
+}
+
+.comi-eta-time {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.comi-eta-store {
+  display: none;
+}
+
+.comi-eta-arrival {
+  display: none;
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+  .comi-eta-badge {
+    background-color: #1e1e2e;
+    color: #e8e8e8;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  
+  .comi-eta-badge .comi-eta-icon {
+    background-color: transparent;
+    color: #fbbf24;
+  }
+  
+  .comi-eta-label {
+    color: #9ca3af;
+  }
+  
+  .comi-eta-store {
+    color: #9ca3af;
+  }
+}
+
+/* Variante compacta para mapas */
+.comi-eta-badge.variant-map {
+  padding: 4px 10px 4px 6px;
+  gap: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.comi-eta-badge.variant-map .comi-eta-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-time {
+  font-size: 13px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-label {
+  display: none;
+}
+
+.comi-eta-badge.variant-map .comi-eta-store {
+  display: none;
+}
+
+/* Animación de entrada */
+.comi-eta-badge {
+  animation: eta-pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes eta-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Pulso sutil para ETA en vivo */
+.comi-eta-badge.live {
+  animation: eta-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes eta-live-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    box-shadow: 
+      0 4px 12px rgba(234, 88, 12, 0.2),
+      0 0 0 2px rgba(234, 88, 12, 0.15);
+  }
+}
+
+/* ==========================================================================
+   ZOOM HINT
+   ========================================================================== */
+
+.comi-zoom-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 10px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.map-container:hover .comi-zoom-hint {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .comi-zoom-hint {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   MAP CONTAINER BASE
+   ========================================================================== */
+
+.map-container {
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.map-container .leaflet-container {
+  border-radius: 12px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+}
+
+.map-container .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 0;
+}
+
+.map-container .leaflet-popup-content {
+  margin: 12px 16px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+  line-height: 1.5;
+}
+
+.map-container .leaflet-popup-tip {
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Popup personalizado */
+.comi-popup {
+  min-width: 220px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+}
+
+.comi-popup strong {
+  color: #1f2937;
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.comi-popup-row {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+/* Tema oscuro para popup */
+@media (prefers-color-scheme: dark) {
+  .map-container .leaflet-popup-content-wrapper {
+    background: #1e1e2e;
+    color: #e8e8e8;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+  
+  .map-container .leaflet-popup-tip {
+    background: #1e1e2e;
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .comi-popup strong {
+    color: #e8e8e8;
+  }
+  
+  .comi-popup .comi-popup-row {
+    color: #9ca3af;
+  }
+}
+
+/* ==========================================================================
+   ZOOM HINT
+   ========================================================================== */
+
+.map-container {
+  position: relative;
+}
+
+.comi-zoom-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 10px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.map-container:hover .comi-zoom-hint {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .comi-zoom-hint {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   MAP BASE STYLES
+   ========================================================================== */
+
+.comi-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+.comi-map .leaflet-container {
+  border-radius: 12px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+}
+
+/* ==========================================================================
+   ANIMACIONES BASE
+   ========================================================================== */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* ==========================================================================
+   VARIABLES CSS PERSONALIZADAS (fallback)
+   ========================================================================== */
+
+:root {
+  --comi-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --comi-primary: #2563eb;
+  --comi-primary-light: #3b82f6;
+  --comi-primary-dark: #1d4ed8;
+  --comi-eta-color: #ea580c;
+  --comi-eta-bg: #ffedd5;
+  --comi-surface: #ffffff;
+  --comi-surface-dark: #1e1e2e;
+  --comi-text: #1f2937;
+  --comi-text-dark: #e8e8e8;
+  --comi-text-muted: #6b7280;
+  --comi-text-muted-dark: #9ca3af;
+  --comi-border: #e0e0e0;
+  --comi-surface: #ffffff;
+  --comi-surface-dark: #1e1e2e;
+  --comi-text: #1f2937;
+  --comi-text-dark: #e8e8e8;
+  --comi-text-muted: #6b7280;
+  --comi-text-muted-dark: #9ca3af;
+  --comi-border: #e0e0e0;
+  --comi-surface: #ffffff;
+  --comi-surface-dark: #1e1e2e;
+  --comi-text: #1f2937;
+  --comi-text-dark: #e8e8e8;
+  --comi-text-muted: #6b7280;
+  --comi-text-muted-dark: #9ca3af;
+  --comi-border: #e0e0e0;
+  --comi-primary: #2563eb;
+  --comi-primary-light: #3b82f6;
+  --comi-primary-dark: #1d4ed8;
+  --comi-eta-color: #ea580c;
+  --comi-eta-bg: #ffedd5;
+  --comi-pill-bg: #252b32;
+  --comi-pill-icon: #ffffff;
+  --comi-pill-text: #f9fafb;

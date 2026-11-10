@@ -55,6 +55,7 @@ import {
   mensajeNoRepetible,
 } from "../../utils/avisoRepetir";
 import { textoLlegada } from "../../utils/llegada";
+import EtaPillBadge from "../../components/comunes/EtaPillBadge";
 import "./DetallePedido.css";
 
 const DetallePedido = () => {
@@ -296,25 +297,35 @@ const DetallePedido = () => {
         </Card.Header>
 
         <Card.Body className="p-4">
-          {/* A6: alert prominente cuando el pedido sale en camino. La hora
+{/* A6: alert prominente cuando el pedido sale en camino. La hora
               es fija (persistida al pasar a en_camino), no un countdown. */}
-          {textoLlegadaEnCamino && (
-            <Alert
-              variant="success"
-              className="d-flex align-items-center gap-3 mb-4"
-              role="status"
-            >
-              <FaShippingFast
-                size={28}
-                aria-hidden="true"
-                className="flex-shrink-0"
-              />
-              <div>
-                <strong className="d-block">Tu pedido está en camino</strong>
-                <span className="small">{textoLlegadaEnCamino}</span>
-              </div>
-            </Alert>
-          )}
+           {textoLlegadaEnCamino && (
+             <Alert
+               variant="success"
+               className="d-flex align-items-center gap-3 mb-4"
+               role="status"
+             >
+               <FaShippingFast
+                 size={28}
+                 aria-hidden="true"
+                 className="flex-shrink-0"
+               />
+               <div className="flex-grow-1">
+                 <strong className="d-block">Tu pedido está en camino</strong>
+                 <div className="d-flex align-items-center gap-2 flex-wrap mt-1">
+                   <span className="small">{textoLlegadaEnCamino}</span>
+                   {pedido.etaMinutos && (
+                     <EtaPillBadge
+                       variant="map"
+                       minutes={pedido.etaMinutos}
+                       storeName={pedido.sucursal?.nombre || 'Comi-Rapi'}
+                       arrivalTime={pedido.horaEstimadaLlegada}
+                     />
+                   )}
+                 </div>
+               </div>
+             </Alert>
+           )}
           {/* T4: aviso de reasignación de sucursal */}
           {reasignado && (
             <Alert variant="warning" className="mb-4">

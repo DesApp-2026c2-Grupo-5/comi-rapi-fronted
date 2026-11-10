@@ -1,25 +1,233 @@
-/* ============ Mapa de sucursales (A5) ============ */
+/* ============ Mapa de Sucursales Styles ============ */
+
 /* Contenedor del mapa dentro de la ficha de dirección. */
 .mapa-sucursales {
   overflow: hidden;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-border, #e0e0e0);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-/* La librería Leaflet inyecta sus propios estilos; el reset del borde
-   interno evita doble borde con el rounded-3 del contenedor. */
 .mapa-sucursales .leaflet-container {
   border-radius: 0.75rem;
   font-family: inherit;
 }
 
-/* Reset de los divIcon (sin fondo ni borde default de Leaflet). */
-.mapa-sucursal-normal {
+/* ============ Floating Pill Pin (Sucursales) ============ */
+
+.pill-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 12px;
+  border-radius: 50px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #1a1a2e);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition: 
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.pill-pin:hover,
+.pill-pin:active,
+.leaflet-marker-icon:hover .pill-pin {
+  transform: scale(1.08);
+  box-shadow: 
+    0 8px 28px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+}
+
+.pill-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.pill-label {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tema oscuro - ajustes automáticos via CSS vars */
+@media (prefers-color-scheme: dark) {
+  .pill-pin {
+    background: var(--color-surface-dark, #1e1e2e);
+    color: var(--color-text-dark, #e8e8e8);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  
+  .pill-pin:hover,
+  .pill-pin:active,
+  .leaflet-marker-icon:hover .pill-pin {
+    box-shadow: 
+      0 8px 28px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Animación de entrada suave */
+.leaflet-marker-icon {
+  animation: pill-pop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes pill-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ============ Dot + Pulse Aura (Dirección Cliente) ============ */
+
+.mapa-dot-pulse {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.dot-pulse {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dot-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 
+    0 0 0 3px rgba(37, 99, 235, 0.3),
+    0 2px 8px rgba(37, 99, 235, 0.4);
+  z-index: 10;
+  animation: core-pulse 2s ease-in-out infinite;
+}
+
+.dot-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(37, 99, 235, 0.5);
+  animation: ring-expand 2s ease-out infinite;
+}
+
+.ring-1 {
+  width: 24px;
+  height: 24px;
+  animation-delay: 0s;
+}
+
+.ring-2 {
+  width: 24px;
+  height: 24px;
+  animation-delay: 0.66s;
+}
+
+.ring-3 {
+  width: 24px;
+  height: 24px;
+  animation-delay: 1.33s;
+}
+
+@keyframes core-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 
+      0 0 0 3px rgba(37, 99, 235, 0.3),
+      0 2px 8px rgba(37, 99, 235, 0.4);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 
+      0 0 0 6px rgba(37, 99, 235, 0.2),
+      0 4px 16px rgba(37, 99, 235, 0.5);
+  }
+}
+
+@keyframes ring-expand {
+  0% {
+    width: 24px;
+    height: 24px;
+    opacity: 0.6;
+    border-width: 2px;
+  }
+  100% {
+    width: 56px;
+    height: 56px;
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Tema oscuro para Dot Pulse */
+@media (prefers-color-scheme: dark) {
+  .dot-core {
+    background: #3b82f6;
+    box-shadow: 
+      0 0 0 3px rgba(59, 130, 246, 0.4),
+      0 2px 8px rgba(59, 130, 246, 0.5);
+  }
+  
+  .dot-ring {
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* Animación de entrada para Dot Pulse */
+.mapa-dot-pulse {
+  animation: dot-pop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes dot-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Reset de los divIcon (sin fondo ni borde default de Leaflet) */
+.mapa-sucursal-normal,
+.mapa-pill-pin,
+.mapa-dot-pulse {
   background: transparent;
   border: none;
 }
 
-/* Pin de sucursal: emoji grande con sombra marcada para que se vea
-   claramente sobre el mapa (incluso en zoom bajo). */
+/* Pin legacy (compatibilidad) */
 .mapa-sucursal-pin {
   display: inline-flex;
   align-items: center;
@@ -29,4 +237,49 @@
   font-size: 30px;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4))
     drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Zoom hint */
+.mapa-sucursales::before {
+  content: 'Mantené Ctrl + ruedita para zoom';
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: var(--color-text-muted, #9ca3af);
+  background: var(--color-surface, rgba(255, 255, 255, 0.9));
+  padding: 3px 8px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.mapa-sucursales:hover::before {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .mapa-sucursales::before {
+    display: none;
+  }
+  
+  .pill-pin {
+    padding: 5px 10px 5px 8px;
+    font-size: 12px;
+  }
+  
+  .pill-icon {
+    font-size: 16px;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .pill-label {
+    font-size: 12px;
+    max-width: 100px;
+  }
 }

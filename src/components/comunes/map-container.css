@@ -1,0 +1,195 @@
+/* ==========================================================================
+   MAP CONTAINER - Estilos base para contenedores de mapa
+   ========================================================================== */
+
+.map-container {
+  position: relative;
+  border: 1px solid var(--comi-border, #e0e0e0);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.map-container .leaflet-container {
+  border-radius: 12px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+}
+
+.map-container .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 0;
+}
+
+.map-container .leaflet-popup-content {
+  margin: 12px 16px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+  line-height: 1.5;
+}
+
+.map-container .leaflet-popup-tip {
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Popup personalizado */
+.comi-popup {
+  min-width: 220px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+}
+
+.comi-popup strong {
+  color: var(--comi-text, #1f2937);
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.comi-popup-row {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--comi-text-muted, #6b7280);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+/* Tema oscuro para popup */
+@media (prefers-color-scheme: dark) {
+  .map-container .leaflet-popup-content-wrapper {
+    background: var(--comi-surface-dark, #1e1e2e);
+    color: var(--comi-text-dark, #e8e8e8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+  
+  .map-container .leaflet-popup-tip {
+    background: var(--comi-surface-dark, #1e1e2e);
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .comi-popup strong {
+    color: var(--comi-text-dark, #e8e8e8);
+  }
+  
+  .comi-popup-row {
+    color: var(--comi-text-muted-dark, #9ca3af);
+  }
+}
+
+/* ==========================================================================
+   ZOOM HINT
+   ========================================================================== */
+
+.comi-map-wrapper {
+  position: relative;
+}
+
+.comi-zoom-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--comi-text-muted, #9ca3af);
+  background: var(--comi-surface, rgba(255, 255, 255, 0.9));
+  padding: 4px 10px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.comi-map-wrapper:hover .comi-zoom-hint {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .comi-zoom-hint {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   MAP BASE STYLES
+   ========================================================================== */
+
+.comi-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+.comi-map .leaflet-container {
+  border-radius: 12px;
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+}
+
+/* ==========================================================================
+   ANIMACIONES BASE
+   ========================================================================== */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* ==========================================================================
+   VARIABLES CSS PERSONALIZADAS (fallback)
+   ========================================================================== */
+
+:root {
+  --comi-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --comi-primary: #2563eb;
+  --comi-primary-light: #3b82f6;
+  --comi-primary-dark: #1d4ed8;
+  --comi-eta-color: #ea580c;
+  --comi-eta-bg: #ffedd5;
+  --comi-surface: #ffffff;
+  --comi-surface-dark: #1e1e2e;
+  --comi-text: #1f2937;
+  --comi-text-dark: #e8e8e8;
+  --comi-text-muted: #6b7280;
+  --comi-text-muted-dark: #9ca3af;
+  --comi-border: #e0e0e0;
+  --comi-surface: #ffffff;
+  --comi-surface-dark: #1e1e2e;
+  --comi-text: #1f2937;
+  --comi-text-dark: #e8e8e8;
+  --comi-text-muted: #6b7280;
+  --comi-text-muted-dark: #9ca3af.
+  --comi-border: #e0e0e0.
+  --comi-primary: #2563eb.
+  --comi-primary-light: #3b82f6.
+  --comi-primary-dark: #1d4ed8.
+  --comi-eta-color: #ea580c.
+  --comi-eta-bg: #ffedd5.
+}

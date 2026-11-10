@@ -1,0 +1,218 @@
+/* ==========================================================================
+   ETA BADGE - Tiempo estimado de entrega
+   ========================================================================== */
+
+.comi-eta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--comi-surface, #ffffff);
+  color: var(--comi-text, #1f2937);
+  padding: 8px 16px 8px 8px;
+  border-radius: 9999px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-family: var(--comi-font, system-ui, -apple-system, sans-serif);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.comi-eta-badge:hover {
+  transform: scale(1.02);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* Variante compacta para mapas/popups */
+.comi-eta-badge.variant-map {
+  padding: 4px 10px 4px 6px;
+  gap: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.comi-eta-badge.variant-map .comi-eta-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-time {
+  font-size: 13px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-label {
+  font-size: 9px;
+}
+
+.comi-eta-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: var(--comi-eta-bg, #ffedd5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--comi-eta-color, #ea580c);
+}
+
+.comi-eta-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.comi-eta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comi-eta-label {
+  font-size: 10px;
+  color: var(--comi-text-muted, #6b7280);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.comi-eta-time {
+  font-size: 14px;
+  color: var(--comi-text, #1f2937);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.comi-eta-store {
+  font-size: 11px;
+  color: var(--comi-text-muted, #6b7280);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.comi-eta-arrival {
+  font-size: 11px;
+  color: var(--comi-primary, #2563eb);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+  .comi-eta-badge {
+    background-color: var(--comi-surface-dark, #1e1e2e);
+    color: var(--comi-text-dark, #e8e8e8);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  
+  .comi-eta-badge .comi-eta-icon {
+    background-color: var(--comi-eta-bg-dark, #7c2d12);
+    color: var(--comi-eta-color-dark, #fbbf24);
+  }
+  
+  .comi-eta-label {
+    color: var(--comi-text-muted-dark, #9ca3af);
+  }
+  
+  .comi-eta-store {
+    color: var(--comi-text-muted-dark, #9ca3af);
+  }
+}
+
+/* Variante compacta para mapas */
+.comi-eta-badge.variant-map {
+  padding: 4px 10px 4px 6px;
+  gap: 6px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.comi-eta-badge.variant-map .comi-eta-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-time {
+  font-size: 13px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-label {
+  font-size: 9px;
+}
+
+.comi-eta-badge.variant-map .comi-eta-store {
+  display: none;
+}
+
+/* Animación de entrada */
+.comi-eta-badge {
+  animation: eta-pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes eta-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Pulso sutil para ETA en vivo */
+.comi-eta-badge.live {
+  animation: eta-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes eta-live-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    box-shadow: 
+      0 4px 12px rgba(234, 88, 12, 0.2),
+      0 0 0 2px rgba(234, 88, 12, 0.15);
+  }
+}
+
+/* Clock icon for arrival time */
+.comi-eta-clock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: transparent;
+  color: #1f2937;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.comi-eta-clock svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .comi-eta-clock {
+    color: #e8e8e8;
+  }
+}
