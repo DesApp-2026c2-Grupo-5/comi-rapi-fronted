@@ -37,9 +37,11 @@ import {
   obtenerStock,
   obtenerStockDeProducto,
   obtenerStockInsumos,
+  obtenerStockIngredientes,
   crearStock,
   actualizarStock,
   actualizarStockInsumo,
+  actualizarStockIngrediente,
   eliminarStock,
 } from '../../api/stock';
 import { obtenerProductos } from '../../api/productos';
@@ -77,6 +79,7 @@ const FILTROS_PRINCIPALES = [
   { clave: 'productos', etiqueta: 'Productos' },
   { clave: 'combos', etiqueta: 'Combos' },
   { clave: 'insumos', etiqueta: 'Insumos' },
+  { clave: 'ingredientes', etiqueta: 'Ingredientes' },
 ];
 
 const ETIQUETA_TIPO_INSUMO = {
@@ -95,11 +98,12 @@ const GestionStock = () => {
   // elegido del superadmin. El backend además acota el stock a ella, así que
   // no hay nada que elegir en la pantalla. Sin sucursal operativa (superadmin
   // sin contexto) no se carga nada: el aviso pide elegir una sucursal.
-  const { sucursalOperativa, sucursalOperativaId } = useSucursalOperativa();
+  const { sucursalOperativa, sucursalOperativaId, versionSocket } = useSucursalOperativa();
   const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
   const [stocks, setStocks] = useState([]);
   const [stocksInsumos, setStocksInsumos] = useState([]);
+  const [stocksIngredientes, setStocksIngredientes] = useState([]);
   const [productos, setProductos] = useState([]);
   const [productoId, setProductoId] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -135,11 +139,12 @@ const GestionStock = () => {
     setError('');
     try {
       const filtros = productoId ? { productoId } : {};
-      const [resultadoStock, resultadoProductos, resultadoInsumos] =
+      const [resultadoStock, resultadoProductos, resultadoInsumos, resultadoIngredientes] =
         await Promise.all([
           obtenerStock(filtros),
           obtenerProductos(),
           obtenerStockInsumos(),
+          obtenerStockIngredientes(),
         ]);
       if (resultadoStock.success) setStocks(resultadoStock.data || []);
       else setError(resultadoStock.error || 'No se pudo cargar el stock.');
@@ -148,6 +153,9 @@ const GestionStock = () => {
         setStocksInsumos(resultadoInsumos.data || []);
       } else if (!resultadoStock.success) {
         setError(resultadoInsumos.error || 'No se pudo cargar el stock de insumos.');
+      }
+      if (resultadoIngredientes.success) {
+        setStocksIngredientes(resultadoIngredientes.data || []);
       }
     } finally {
       setCargando(false);
@@ -187,11 +195,24 @@ const GestionStock = () => {
         }
       }
 
+      const tieneIngredientes = Array.isArray(payload?.ingredienteIds);
+      if (tieneIngredientes) {
+        const resultadoIngredientes = await obtenerStockIngredientes();
+        if (resultadoIngredientes.success) {
+          setStocksIngredientes(resultadoIngredientes.data || []);
+        }
+      }
+
       if (!tieneProductos) {
         // Un evento sólo de insumos ya quedó resuelto arriba. Recargar todo acá
         // haría parpadear la tabla y perdería el foco. Sólo se recarga si el
         // payload no traía ningún id (aviso genérico).
-        if (!tieneInsumos) await cargar();
+        if (tieneInsumos || tieneIngredientes) {
+          notificar('El stock se actualizó.', 'info');
+        }
+        if (!tieneInsumos && !tieneIngredientes) {
+          await cargar();
+        }
         return;
       }
       // Con un filtro activo la tabla sólo muestra ese producto: si el cambio no
@@ -203,17 +224,33 @@ const GestionStock = () => {
       const resultados = await Promise.all(
         ids.map((id) => obtenerStockDeProducto(sucursalId, id))
       );
-      const filas = resultados
-        .filter((r) => r.success && r.data)
-        .map((r) => r.data);
-      if (filas.length === 0) return;
+      const filasActualizadas = new Map();
+      const idsSinFila = new Set();
+      resultados.forEach((r, i) => {
+        if (r.success && r.data) {
+          filasActualizadas.set(
+            `${r.data.sucursalId}-${r.data.productoId}`,
+            r.data
+          );
+        } else {
+          idsSinFila.add(ids[i]);
+        }
+      });
+      if (filasActualizadas.size === 0 && idsSinFila.size === 0) return;
       setStocks((prev) => {
         const porClave = new Map(
           prev.map((f) => [`${f.sucursalId}-${f.productoId}`, f])
         );
-        filas.forEach((f) => porClave.set(`${f.sucursalId}-${f.productoId}`, f));
+        filasActualizadas.forEach((f, clave) => porClave.set(clave, f));
+        for (const id of idsSinFila) {
+          // Elimina la fila si el producto se sacó de la sucursal.
+          for (const clave of [...porClave.keys()]) {
+            if (clave.endsWith(`-${id}`)) porClave.delete(clave);
+          }
+        }
         return [...porClave.values()];
       });
+      notificar('El stock se actualizó.', 'info');
     };
     instancia.on('connect', alConectar);
     instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
@@ -226,7 +263,7 @@ const GestionStock = () => {
     // también: al cambiar el contexto del superadmin, el filtro de defensa y
     // las refencias de las filas tienen que apuntar a la sucursal nueva.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, user, productoId, sucursalId]);
+  }, [hydrated, user, productoId, sucursalId, versionSocket]);
 
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
@@ -256,8 +293,13 @@ const GestionStock = () => {
         clase: 'insumo',
         estado: estadoDeStock(fila, umbral),
       })),
+      ...stocksIngredientes.map((fila) => ({
+        ...fila,
+        clase: 'ingrediente',
+        estado: estadoDeStock(fila, umbral),
+      })),
     ],
-    [stocks, stocksInsumos, umbral]
+    [stocks, stocksInsumos, stocksIngredientes, umbral]
   );
 
   const conteos = useMemo(
@@ -266,6 +308,7 @@ const GestionStock = () => {
       productos: stocks.filter((f) => f.tipo !== 'COMBO').length,
       combos: stocks.filter((f) => f.tipo === 'COMBO').length,
       insumos: stocksInsumos.length,
+      ingredientes: stocksIngredientes.length,
     }),
     [filasConEstado.length, stocks, stocksInsumos.length]
   );
@@ -297,6 +340,9 @@ const GestionStock = () => {
       }
       if (filtroPrincipal === 'combos') {
         return fila.clase === 'producto' && fila.tipo === 'COMBO';
+      }
+      if (filtroPrincipal === 'ingredientes') {
+        return fila.clase === 'ingrediente';
       }
       if (filtroPrincipal === 'insumos') {
         return (
@@ -399,8 +445,11 @@ const GestionStock = () => {
   const guardarFila = async (fila, cambios) => {
     setGuardando(true);
     const esInsumo = fila.clase === 'insumo';
+    const esIngrediente = fila.clase === 'ingrediente';
     const resultado = esInsumo
       ? await actualizarStockInsumo(fila.insumoId, cambios)
+      : esIngrediente
+      ? await actualizarStockIngrediente(fila.ingredienteId, cambios)
       : await actualizarStock(fila.sucursalId, fila.productoId, cambios);
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
@@ -411,6 +460,15 @@ const GestionStock = () => {
             prev.map((f) =>
               Number(f.sucursalId) === Number(actualizada.sucursalId) &&
               Number(f.insumoId) === Number(actualizada.insumoId)
+                ? actualizada
+                : f
+            )
+          );
+        } else if (esIngrediente) {
+          setStocksIngredientes((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.ingredienteId) === Number(actualizada.ingredienteId)
                 ? actualizada
                 : f
             )
@@ -701,14 +759,27 @@ const GestionStock = () => {
                 )}
                 {filasVisibles.map((fila) => {
                   const esInsumo = fila.clase === 'insumo';
-                  const esCombo = !esInsumo && fila.tipo === 'COMBO';
-                  const idFila = esInsumo ? fila.insumoId : fila.productoId;
-                  const clave = esInsumo ? `insumo-${idFila}` : idFila;
-                  const nombre = esInsumo ? fila.insumo : fila.producto;
+                  const esIngrediente = fila.clase === 'ingrediente';
+                  const esCombo = !esInsumo && !esIngrediente && fila.tipo === 'COMBO';
+                  const idFila = esInsumo
+                    ? fila.insumoId
+                    : esIngrediente
+                    ? fila.ingredienteId
+                    : fila.productoId;
+                  const clave = esInsumo
+                    ? `insumo-${idFila}`
+                    : esIngrediente
+                    ? `ingrediente-${idFila}`
+                    : idFila;
+                  const nombre = esInsumo
+                    ? fila.insumo
+                    : esIngrediente
+                    ? `${fila.ingrediente} (${fila.unidadMedida})`
+                    : fila.producto;
                   return (
                     <tr
                       key={`${fila.sucursalId}-${clave}`}
-                      className={CLASE_FILA[fila.estado]}
+                      className={undefined}
                     >
                       <td data-label="Sucursal">{fila.sucursal}</td>
                       <td data-label="Ítem">
@@ -728,24 +799,11 @@ const GestionStock = () => {
                         )}
                       </td>
                       <td data-label="Cantidad" className="stock-cantidad">
-                        {esCombo ? (
-                          // En un combo el número no se toca: el backend lo deriva
-                          // de la receta, así que no hay input editable. Se muestra
-                          // como texto plano con el mismo estilo que los inputs de
-                          // las demás filas (plaintext + size sm comparten tipografía
-                          // y alturas) para que la columna se lea uniforme.
-                          <Form.Control
-                            plaintext
-                            readOnly
-                            size="sm"
-                            value={fila.cantidad}
-                            aria-label="Cantidad del combo (calculada con el stock de sus componentes)"
-                          />
-                        ) : (
+                        {esInsumo || esIngrediente ? (
                           <Form.Control
                             type="number"
                             min="0"
-                            step="1"
+                            step={esIngrediente ? '0.001' : '1'}
                             size="sm"
                             defaultValue={fila.cantidad}
                             key={`${clave}-${fila.cantidad}-${fila.sucursalId}`}
@@ -766,6 +824,24 @@ const GestionStock = () => {
                                 guardarFila(fila, { cantidad: valor });
                               }
                             }}
+                          />
+                        ) : (
+                          // En productos y combos el número no se toca: el backend
+                          // lo deriva del stock de ingredientes y la receta (o, en
+                          // un combo, del stock de sus componentes). Se muestra
+                          // como texto plano con el mismo estilo que los inputs de
+                          // las demás filas (plaintext + size sm comparten tipografía
+                          // y alturas) para que la columna se lea uniforme.
+                          <Form.Control
+                            plaintext
+                            readOnly
+                            size="sm"
+                            value={fila.cantidad}
+                            aria-label={
+                              esCombo
+                                ? 'Cantidad del combo (calculada con el stock de sus componentes)'
+                                : 'Cantidad del producto (calculada con el stock de ingredientes y la receta)'
+                            }
                           />
                         )}
                       </td>

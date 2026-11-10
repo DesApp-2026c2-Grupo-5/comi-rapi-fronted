@@ -122,3 +122,9 @@ export const obtenerStockInsumos = async (filtros = {}) => {
  */
 export const actualizarStockInsumo = async (insumoId, cambios) =>
   envolver(await apiPut(`/stock/insumos/${insumoId}`, cambios));
+
+export const obtenerStockIngredientes = async () =>
+  envolver(await apiGet('/stock/ingredientes'));
+
+export const actualizarStockIngrediente = async (ingredienteId, cambios) =>
+  envolver(await apiPut(`/stock/ingredientes/${ingredienteId}`, cambios));

@@ -33,7 +33,7 @@ const ListaProductos = ({ soloLectura = false }) => {
   const { user, hydrated } = useAuth();
   // Sucursal operativa de la sesión (asignada del admin o contexto del
   // superadmin): define sobre qué local se lee/escribe la disponibilidad.
-  const { sucursalOperativaId } = useSucursalOperativa();
+  const { sucursalOperativaId, versionSocket } = useSucursalOperativa();
   const [productos, setProductos] = useState([]);
   // [soloLectura] Disponibilidad por sucursal: productoId → { disponible, sucursalId }
   const [stock, setStock] = useState({});
@@ -150,7 +150,7 @@ const ListaProductos = ({ soloLectura = false }) => {
       instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
       instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
     };
-  }, [hydrated, user, soloLectura, sucursalOperativaId]);
+  }, [hydrated, user, soloLectura, sucursalOperativaId, versionSocket]);
 
   const handleEditar = (id) => {
     navigate(`/superadmin/producto/editar/${id}`);

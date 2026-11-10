@@ -211,7 +211,6 @@ const FormularioPersonalizacion = ({
   };
 
   const esAcompanar = tipo === TIPO_PERSONALIZACION.ACOMPANAR;
-  const esPersonalizarOCondimento = tipo === TIPO_PERSONALIZACION.PERSONALIZAR || tipo === TIPO_PERSONALIZACION.CONDIMENTO;
 
   return (
     <Card className="shadow-sm formulario-admin-card formulario-admin-card-personalizacion">
@@ -251,19 +250,17 @@ const FormularioPersonalizacion = ({
             <Form.Select name="tipo" value={tipo} onChange={handleTipoChange}>
               <option value="">— Elegí categoría —</option>
               <option value={TIPO_PERSONALIZACION.EXTRA}>Extra — Agregar ingrediente (cobra)</option>
-              <option value={TIPO_PERSONALIZACION.PERSONALIZAR}>Personalizar — Quitar ingrediente (no cobra)</option>
               <option value={TIPO_PERSONALIZACION.ACOMPANAR}>Acompaña tu orden con — Upsell (cobra)</option>
               <option value={TIPO_PERSONALIZACION.CONDIMENTO}>Condimentos adicionales — Sobre (no cobra)</option>
             </Form.Select>
           </Form.Group>
 
-          {esModoCategoria &&
-            tipo === TIPO_PERSONALIZACION.PERSONALIZAR && (
-              <Form.Text className="text-muted d-block mb-3">
-                Los ingredientes ya no se heredan por categoría: cargalos en el
-                campo &quot;Ingredientes&quot; del formulario de cada producto.
-              </Form.Text>
-            )}
+          {esModoCategoria && false && (
+            <Form.Text className="text-muted d-block mb-3">
+              Los ingredientes ya no se heredan por categoría: cargalos en el
+              campo &quot;Ingredientes&quot; del formulario de cada producto.
+            </Form.Text>
+          )}
 
           {!esAcompanar && esExtraOCondimento && (
             <Form.Group className="mb-3" controlId="personalizacion-insumo">
@@ -341,7 +338,7 @@ const FormularioPersonalizacion = ({
             </Form.Group>
           )}
 
-          {!esPersonalizarOCondimento && (
+          {esExtraOCondimento && (
             <Form.Group className="mb-3" controlId="personalizacion-precio">
               <Form.Label>Precio $ *</Form.Label>
               <InputGroup>
