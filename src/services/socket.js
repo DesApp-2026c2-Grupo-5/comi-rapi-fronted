@@ -67,6 +67,8 @@ export const EVENTOS_SOCKET = {
   SUCURSAL_ESTADO: 'sucursal_estado',
   QUEJA_ACTUALIZADA: 'queja_actualizada',
   NOTIFICACION_CREADA: 'notificacion_creada',
+  PERSONALIZACION_ACTUALIZADO: 'personalizacion_actualizado',
+  PERSONALIZACION_CATEGORIA_ACTUALIZADA: 'personalizacion_categoria_actualizada',
 };
 
 /**
@@ -75,6 +77,23 @@ export const EVENTOS_SOCKET = {
  * monte no abra ni cierre conexiones duplicadas.
  */
 let socket = null;
+
+/**
+ * Marca la próxima conexión como INTENCIONAL (cambio de contexto de sucursal),
+ * no como una recuperación tras una caída del canal. Los listeners registrados
+ * con `alReconectar` la ignoran: al cambiar de contexto los datos que dependen
+ * de la sucursal se recargan por sus propias claves y no hace falta invalidar
+ * toda la caché ni repetir consultas globales.
+ */
+let reconexionIntencional = false;
+
+/**
+ * Indica si la reconexión que se está procesando fue forzada por un cambio de
+ * contexto. Sólo tiene sentido consultarlo dentro de un handler registrado con
+ * `alReconectar`.
+ * @returns {boolean}
+ */
+export const esReconexionIntencional = () => reconexionIntencional;
 
 /**
  * Abre (o reutiliza) la conexión con el backend.
@@ -131,6 +150,16 @@ export const forzarReconexion = () => {
     console.log('[DIAG] forzarReconexion: no hay instancia, creando nueva...');
     return conectarSocket();
   }
+  reconexionIntencional = true;
+  const limpiarMarca = () => {
+    reconexionIntencional = false;
+    socket.off('connect', limpiarMarca);
+    socket.off('connect_error', limpiarMarca);
+  };
+  // Se registran al final para que los listeners de `alReconectar` ya
+  // registrados vean la marca durante este mismo evento `connect`.
+  socket.once('connect', limpiarMarca);
+  socket.once('connect_error', limpiarMarca);
   if (socket.connected) {
     console.log('[DIAG] forzarReconexion: desconectando para renegociar handshake...');
     socket.disconnect();
@@ -194,13 +223,15 @@ export const onPedidoEvento = (evento, handler) => {
 
 /**
  * Registra un handler para las RECONEXIONES del socket, ignorando la primera
- * conexión de la sesión.
+ * conexión de la sesión y las reconexiones INTENCIONALES (cambio de contexto
+ * de sucursal) disparadas con `forzarReconexion`.
  *
  * Las pantallas ya cargan sus datos al montar; el evento `connect` también se
  * emite en la primera conexión, así que sin este guard se duplicaba cada carga
- * completa de página. Solo las reconexiones (red caída, reinicio del backend)
- * necesitan resincronizar por REST, porque el aviso se perdió mientras no había
- * canal.
+ * completa de página. Solo las reconexiones reales (red caída, reinicio del
+ * backend) necesitan resincronizar por REST, porque el aviso se perdió mientras
+ * no había canal. El cambio de contexto renegocia el handshake pero no pierde
+ * avisos: no debe invalidar toda la caché.
  *
  * @param {import('socket.io-client').Socket} instancia - Socket ya conectado o en curso.
  * @param {() => void} handler - Acción a ejecutar al reconectar.
@@ -217,6 +248,7 @@ export const alReconectar = (instancia, handler) => {
       primeraConexion = false;
       return;
     }
+    if (reconexionIntencional) return;
     handler();
   };
   instancia.on('connect', listener);

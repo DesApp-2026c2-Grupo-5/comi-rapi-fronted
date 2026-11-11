@@ -75,6 +75,97 @@ export const CarritoProvider = ({ children }) => {
     return () => window.removeEventListener('storage', alExterno);
   }, [clave]);
 
+  // Recalcular precios del carrito cuando cambia la personalización (Socket.IO).
+  // Marca items con opciones eliminadas/desactivadas para bloquear confirmación.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const alCambioPersonalizacion = (evento) => {
+      const { tipo, id, accion, data } = evento.detail || {};
+      if (!data) return;
+
+      setItems((prevItems) =>
+        prevItems.map((item) => {
+          const producto = item.producto;
+          const pers = item.personalizacion || personalizacionVacia();
+          let afectado = false;
+
+          // Elemento por producto: coincide si el productoId del evento coincide
+          if (tipo === 'personalizacion' && data.productoId === producto.id) {
+            afectado = true;
+          }
+          // Plantilla por categoría: coincide si el producto usa esa categoría
+          // y no tiene elementos propios de ese tipo (usa fallback de plantilla)
+          if (tipo === 'personalizacion_categoria' && data.categoriaId === producto.categoriaId) {
+            // Verificar si el producto tiene elementos propios de ese tipo
+            const tienePropios = (tipoElem) =>
+              (pers[tipoElem] || []).some((e) => e.id && String(e.id).startsWith('elem-'));
+            // Si no tiene propios de ese tipo, usa plantilla -> afectado
+            if (data.tipo === 'extra' && !tienePropios('extra')) afectado = true;
+            if (data.tipo === 'acompanar' && !tienePropios('acompanar')) afectado = true;
+            if (data.tipo === 'condimento' && !tienePropios('condimento')) afectado = true;
+            // 'personalizar' nunca usa plantillas de categoría
+          }
+          if (!afectado) return item;
+
+          // Recalcular precio con config vigente
+          const extras = pers.extras || [];
+          const acomp = pers.acompanamientos || [];
+          const precioUnitarioPersonalizado = calcularPrecioUnitario(
+            producto.precio,
+            extras,
+            acomp
+          );
+
+          // Verificar opciones seleccionadas que ya no existen o están desactivadas
+          const opcionesEliminadas = [];
+          const tiposARevisar = ['extras', 'acompanamientos', 'condimentos'];
+          for (const t of tiposARevisar) {
+            const seleccionados = pers[t] || [];
+            for (const sel of seleccionados) {
+              // Buscar en config vigente (viene en data del evento, pero no tenemos la lista completa aquí)
+              // Se marca genéricamente: si el elemento fue eliminado o desactivado
+              if (
+                accion === 'eliminado' &&
+                String(sel.id) === String(id)
+              ) {
+                opcionesEliminadas.push({ tipo: t, nombre: sel.nombre, id: sel.id });
+              } else if (
+                accion === 'actualizado' &&
+                data.activo === false &&
+                String(sel.id) === String(id)
+              ) {
+                opcionesEliminadas.push({ tipo: t, nombre: sel.nombre, id: sel.id });
+              }
+            }
+          }
+          // 'sin' (personalizar) no tiene precio pero puede tener mínimo
+          const sinSeleccionados = pers.sin || [];
+          for (const sel of sinSeleccionados) {
+            if (
+              (accion === 'eliminado' || (accion === 'actualizado' && data.activo === false)) &&
+              String(sel.id) === String(id)
+            ) {
+              opcionesEliminadas.push({ tipo: 'sin', nombre: sel.nombre, id: sel.id });
+            }
+          }
+
+          const itemActualizado = {
+            ...item,
+            precioUnitarioPersonalizado,
+            personalizacion: {
+              ...pers,
+              _requiereRevision: opcionesEliminadas.length > 0,
+              _opcionesEliminadas: opcionesEliminadas,
+            },
+          };
+          return itemActualizado;
+        })
+      );
+    };
+    window.addEventListener('personalizacion-cambio', alCambioPersonalizacion);
+    return () => window.removeEventListener('personalizacion-cambio', alCambioPersonalizacion);
+  }, []);
+
   const agregarAlCarrito = useCallback((producto, cantidad = 1, personalizacion = null, nota = null) => {
     const pers = personalizacion || personalizacionVacia();
     const extras = pers.extras || [];
@@ -154,6 +245,32 @@ export const CarritoProvider = ({ children }) => {
     );
   }, []);
 
+  // Actualiza la personalización de una línea existente y recalcula su precio.
+  const actualizarPersonalizacion = useCallback((idLineaOrProductoId, personalizacion, cantidad) => {
+    const pers = personalizacion || personalizacionVacia();
+    const extras = pers.extras || [];
+    const acomp = pers.acompanamientos || [];
+
+    setItems((prevItems) =>
+      prevItems.map((item) => {
+        const coincide =
+          item.idLinea === idLineaOrProductoId ||
+          String(item.producto.id) === String(idLineaOrProductoId);
+        if (!coincide) return item;
+        return {
+          ...item,
+          cantidad: cantidad ?? item.cantidad,
+          personalizacion: pers,
+          precioUnitarioPersonalizado: calcularPrecioUnitario(
+            item.producto.precio,
+            extras,
+            acomp
+          ),
+        };
+      })
+    );
+  }, []);
+
   const vaciarCarrito = useCallback(() => {
     setItems([]);
     limpiarCarrito(clave);
@@ -182,9 +299,10 @@ export const CarritoProvider = ({ children }) => {
       eliminarDelCarrito,
       actualizarCantidad,
       actualizarNota,
+      actualizarPersonalizacion,
       vaciarCarrito,
     }),
-    [items, totalItems, productosDistintos, total, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, actualizarNota, vaciarCarrito]
+    [items, totalItems, productosDistintos, total, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, actualizarNota, actualizarPersonalizacion, vaciarCarrito]
   );
 
   return <CarritoContext.Provider value={value}>{children}</CarritoContext.Provider>;

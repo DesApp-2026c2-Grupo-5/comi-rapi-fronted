@@ -3,21 +3,23 @@
  *            SUPERADMINISTRADOR: lista de conversaciones + hilo + compositor.
  * Contenido: BandejaQuejas, que orquesta datos, filtros, socket y envío.
  * Dependencias: react, react-bootstrap (Button), react-icons/fa, api/quejas,
- *               api/sucursales, useAuth, services/socket, utils/constants,
- *               ListaConversaciones, ConversacionQueja y BandejaQuejas.css.
+ *               useAuth, services/socket, hooks/queries, hooks/useSucursal,
+ *               utils/constants, ListaConversaciones, ConversacionQueja,
+ *               BandejaQuejas.css.
  * Uso: <BandejaQuejas /> - Se renderiza en GestionQuejas.
  */
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from 'react-bootstrap';
 import { FaComments, FaSyncAlt } from 'react-icons/fa';
 import {
   actualizarQueja,
   enviarMensajeQueja,
-  obtenerQuejas,
 } from '../../api/quejas';
-import { obtenerSucursales } from '../../api/sucursales';
 import { useAuth } from '../../hooks/useAuth';
+import { useSucursal } from '../../hooks/useSucursal';
+import { useQuejasQuery } from '../../hooks/queries';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { ROLES } from '../../utils/constants';
 import ListaConversaciones from './quejas/ListaConversaciones';
@@ -28,38 +30,49 @@ import './quejas/BandejaQuejas.css';
 const BandejaQuejas = () => {
   const { user } = useAuth();
   const esSuperadmin = user?.rol === ROLES.SUPERADMIN;
+  // La lista de sucursales sale del contexto (una sola consulta/caché para toda
+  // la app). Antes esta pantalla hacía su propio GET al montar, duplicando la
+  // lectura que ya hace SucursalProvider.
+  const { sucursalesCercanas: sucursales } = useSucursal();
+  const queryClient = useQueryClient();
   const campoBusquedaId = useId();
   const campoSucursalId = useId();
-
-  const [quejas, setQuejas] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [paginas, setPaginas] = useState(0);
-  const [pagina, setPagina] = useState(1);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
 
   const [texto, setTexto] = useState('');
   const [q, setQ] = useState('');
   const [estado, setEstado] = useState('');
   const [sucursalId, setSucursalId] = useState('');
-  const [sucursales, setSucursales] = useState([]);
-  const [recarga, setRecarga] = useState(0);
-
+  const [pagina, setPagina] = useState(1);
   const [seleccionada, setSeleccionada] = useState(null);
 
-  useEffect(() => {
-    if (!esSuperadmin) return;
-    obtenerSucursales().then((res) => {
-      if (res.success) setSucursales(res.data);
-    });
-  }, [esSuperadmin]);
+  // TanStack Query hook para la bandeja de quejas
+  const {
+    data: quejasData,
+    isLoading: cargando,
+    error: errorQuery,
+  } = useQuejasQuery({
+    estado,
+    q,
+    sucursalId: esSuperadmin ? sucursalId : undefined,
+    pagina,
+    limite: LIMITE_CONVERSACIONES,
+    enabled: true,
+  });
 
+  const quejas = quejasData?.items || [];
+  const total = quejasData?.meta?.total || 0;
+  const paginas = quejasData?.meta?.paginas || 0;
+  const error = errorQuery?.message || '';
+
+  // Socket para actualizaciones en tiempo real
   useEffect(() => {
     const socket = conectarSocket();
-    const alActualizar = () => setRecarga((valor) => valor + 1);
+    const alActualizar = () => {
+      queryClient.invalidateQueries({ queryKey: ['private', 'quejas'] });
+    };
     socket.on(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
     return () => socket.off(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
-  }, []);
+  }, [queryClient]);
 
   // Búsqueda con debounce: escribir no dispara una petición por tecla.
   useEffect(() => {
@@ -72,49 +85,18 @@ const BandejaQuejas = () => {
     return () => clearTimeout(timeout);
   }, [texto, q]);
 
-  useEffect(() => {
-    let vivo = true;
-    setCargando(true);
-    setError('');
-    obtenerQuejas({
-      estado,
-      q,
-      sucursalId: esSuperadmin ? sucursalId : undefined,
-      pagina,
-      limite: LIMITE_CONVERSACIONES,
-    }).then((res) => {
-      if (!vivo) return;
-      setCargando(false);
-      if (!res.success) {
-        setError(res.error || 'No se pudieron cargar los reclamos.');
-        return;
-      }
-      setQuejas(res.data.items);
-      setTotal(res.data.total);
-      setPaginas(res.data.paginas);
-      // La conversación abierta se actualiza con los datos frescos, aunque
-      // haya quedado fuera de la página o del filtro actual.
-      setSeleccionada((actual) =>
-        actual
-          ? res.data.items.find((queja) => queja.id === actual.id) || actual
-          : actual,
-      );
-    });
-    return () => {
-      vivo = false;
-    };
-  }, [estado, q, sucursalId, pagina, esSuperadmin, recarga]);
+  // Recargar al cambiar filtros/página: la queryKey cambia y TanStack Query lo hace automáticamente.
+  // El `recarga` manual ya no es necesario; se usa invalidateQueries en el socket.
 
-  const limpiarFiltros = () => {
+  const limpiarFiltros = useCallback(() => {
     setTexto('');
     setQ('');
     setEstado('');
     setSucursalId('');
     setPagina(1);
-    setRecarga((valor) => valor + 1);
-  };
+  }, []);
 
-  const enviar = async ({ contenido, estado: estadoNuevo }) => {
+  const enviar = useCallback(async ({ contenido, estado: estadoNuevo }) => {
     if (!seleccionada) return { ok: false, error: 'No hay un reclamo abierto.' };
 
     const res = estadoNuevo
@@ -131,15 +113,23 @@ const BandejaQuejas = () => {
       };
     }
 
-    setSeleccionada(res.data);
-    setQuejas((actual) =>
-      actual.some((queja) => queja.id === res.data.id)
-        ? actual.map((queja) => (queja.id === res.data.id ? res.data : queja))
-        : actual,
+    // Actualización optimista en caché
+    queryClient.setQueryData(
+      ['private', 'quejas', 'bandeja'],
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((queja) =>
+            queja.id === res.data.id ? res.data : queja
+          ),
+        };
+      }
     );
-    setRecarga((valor) => valor + 1);
+
+    setSeleccionada(res.data);
     return { ok: true };
-  };
+  }, [seleccionada, queryClient]);
 
   const sinResponderPagina = quejas.reduce(
     (totalParcial, queja) => totalParcial + contarSinResponder(queja),
@@ -160,7 +150,7 @@ const BandejaQuejas = () => {
         <Button
           variant="outline-secondary"
           size="sm"
-          onClick={() => setRecarga((valor) => valor + 1)}
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['private', 'quejas'] })}
           disabled={cargando}
           aria-label="Actualizar reclamos"
           title="Actualizar"
@@ -203,7 +193,7 @@ const BandejaQuejas = () => {
             sucursales={sucursales}
             esSuperadmin={esSuperadmin}
             onLimpiarFiltros={limpiarFiltros}
-            onReintentar={() => setRecarga((valor) => valor + 1)}
+            onReintentar={() => queryClient.invalidateQueries({ queryKey: ['private', 'quejas'] })}
             onPaginaChange={setPagina}
             sinResponderPagina={sinResponderPagina}
             campoBusquedaId={campoBusquedaId}

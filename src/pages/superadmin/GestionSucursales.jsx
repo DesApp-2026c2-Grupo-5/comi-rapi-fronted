@@ -21,12 +21,13 @@ import { SkeletonTabla } from '../../components/comunes/Skeleton';
 const GestionSucursales = () => {
   const navigate = useNavigate();
   const { notificar } = useNotificaciones();
+  // La lista (incluidas inactivas) ya la carga SucursalProvider para el
+  // superadmin: se consume de la caché compartida y sólo se relee si venció.
   const { sucursales, loading, obtenerSucursales, eliminarSucursal } = useSucursal();
   // Sucursal { id, nombre } que espera confirmación en el modal
   const [sucursalAEliminar, setSucursalAEliminar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
 
-  // Recarga las sucursales al montar
   useEffect(() => {
     obtenerSucursales();
   }, [obtenerSucursales]);

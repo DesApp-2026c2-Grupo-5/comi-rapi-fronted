@@ -34,9 +34,17 @@ import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
 import {
+<<<<<<< HEAD
+=======
+  obtenerStock,
+  obtenerStockDeProducto,
+  obtenerStockInsumos,
+  obtenerStockIngredientes,
+>>>>>>> origin/dev
   crearStock,
   actualizarStock,
   actualizarStockInsumo,
+  actualizarStockIngrediente,
   eliminarStock,
 } from '../../api/stock';
 import { queryKeys, useProductos, useStockQuery } from '../../hooks/queries';
@@ -73,6 +81,7 @@ const FILTROS_PRINCIPALES = [
   { clave: 'productos', etiqueta: 'Productos' },
   { clave: 'combos', etiqueta: 'Combos' },
   { clave: 'insumos', etiqueta: 'Insumos' },
+  { clave: 'ingredientes', etiqueta: 'Ingredientes' },
 ];
 
 const ETIQUETA_TIPO_INSUMO = {
@@ -90,7 +99,7 @@ const GestionStock = () => {
   // elegido del superadmin. El backend además acota el stock a ella, así que
   // no hay nada que elegir en la pantalla. Sin sucursal operativa (superadmin
   // sin contexto) no se carga nada: el aviso pide elegir una sucursal.
-  const { sucursalOperativa, sucursalOperativaId } = useSucursalOperativa();
+  const { sucursalOperativa, sucursalOperativaId, versionSocket } = useSucursalOperativa();
   const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
   // Filtro de producto: va al backend (`GET /api/stock?productoId=`), por eso
@@ -114,55 +123,6 @@ const GestionStock = () => {
   // tienen además su sub-filtro por tipo (extras/condimentos).
   const [filtroPrincipal, setFiltroPrincipal] = useState('todos');
   const [filtroTipoInsumo, setFiltroTipoInsumo] = useState('todos');
-
-  // Lecturas con TanStack Query: la clave incluye el producto filtrado y la
-  // consulta sólo se ejecuta con sucursal operativa (sin ella el backend
-  // responde 403 y la pantalla muestra el aviso). `useProductos` comparte la
-  // caché pública del catálogo con el resto de la app.
-  const queryClient = useQueryClient();
-  const stockQuery = useStockQuery({
-    sucursalId,
-    productoId: productoId || null,
-    enabled: Boolean(sucursalId),
-  });
-  const { data: productos = [] } = useProductos();
-
-  const stocks = useMemo(() => stockQuery.data?.filas ?? [], [stockQuery.data]);
-  const stocksInsumos = useMemo(
-    () => stockQuery.data?.insumos ?? [],
-    [stockQuery.data]
-  );
-  const cargando = stockQuery.isPending;
-  const error = stockQuery.error?.message || '';
-
-  // Recarga el stock de la sucursal. Se usa tras las mutaciones que cambian la
-  // composición de la tabla (alta/baja de producto) y en el botón "Recargar".
-  const refrescar = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.private.stock });
-
-  // Reemplaza una fila ya guardada por la que devolvió el backend (la
-  // autoridad), sin recargar toda la tabla: la edición en línea no parpadea y
-  // el foco no se pierde.
-  const reemplazarFilaEnCache = (tipo, actualizada) => {
-    const clave = queryKeys.private.stockLista({
-      sucursalId,
-      productoId: productoId || null,
-    });
-    const campo = tipo === 'insumo' ? 'insumoId' : 'productoId';
-    const lista = tipo === 'insumo' ? 'insumos' : 'filas';
-    queryClient.setQueryData(clave, (previo) => {
-      if (!previo) return previo;
-      return {
-        ...previo,
-        [lista]: (previo[lista] || []).map((fila) =>
-          Number(fila.sucursalId) === Number(actualizada.sucursalId) &&
-          Number(fila[campo]) === Number(actualizada[campo])
-            ? actualizada
-            : fila
-        ),
-      };
-    });
-  };
 
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
@@ -192,8 +152,13 @@ const GestionStock = () => {
         clase: 'insumo',
         estado: estadoDeStock(fila, umbral),
       })),
+      ...stocksIngredientes.map((fila) => ({
+        ...fila,
+        clase: 'ingrediente',
+        estado: estadoDeStock(fila, umbral),
+      })),
     ],
-    [stocks, stocksInsumos, umbral]
+    [stocks, stocksInsumos, stocksIngredientes, umbral]
   );
 
   const conteos = useMemo(
@@ -202,6 +167,7 @@ const GestionStock = () => {
       productos: stocks.filter((f) => f.tipo !== 'COMBO').length,
       combos: stocks.filter((f) => f.tipo === 'COMBO').length,
       insumos: stocksInsumos.length,
+      ingredientes: stocksIngredientes.length,
     }),
     [filasConEstado.length, stocks, stocksInsumos.length]
   );
@@ -233,6 +199,9 @@ const GestionStock = () => {
       }
       if (filtroPrincipal === 'combos') {
         return fila.clase === 'producto' && fila.tipo === 'COMBO';
+      }
+      if (filtroPrincipal === 'ingredientes') {
+        return fila.clase === 'ingrediente';
       }
       if (filtroPrincipal === 'insumos') {
         return (
@@ -335,13 +304,48 @@ const GestionStock = () => {
   const guardarFila = async (fila, cambios) => {
     setGuardando(true);
     const esInsumo = fila.clase === 'insumo';
+    const esIngrediente = fila.clase === 'ingrediente';
     const resultado = esInsumo
       ? await actualizarStockInsumo(fila.insumoId, cambios)
+      : esIngrediente
+      ? await actualizarStockIngrediente(fila.ingredienteId, cambios)
       : await actualizarStock(fila.sucursalId, fila.productoId, cambios);
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
       if (resultado.data) {
+<<<<<<< HEAD
         reemplazarFilaEnCache(esInsumo ? 'insumo' : 'producto', resultado.data);
+=======
+        const actualizada = resultado.data;
+        if (esInsumo) {
+          setStocksInsumos((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.insumoId) === Number(actualizada.insumoId)
+                ? actualizada
+                : f
+            )
+          );
+        } else if (esIngrediente) {
+          setStocksIngredientes((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.ingredienteId) === Number(actualizada.ingredienteId)
+                ? actualizada
+                : f
+            )
+          );
+        } else {
+          setStocks((prev) =>
+            prev.map((f) =>
+              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
+              Number(f.productoId) === Number(actualizada.productoId)
+                ? actualizada
+                : f
+            )
+          );
+        }
+>>>>>>> origin/dev
       }
     } else {
       notificar(resultado.error || 'No se pudo actualizar.', 'danger');
@@ -614,14 +618,27 @@ const GestionStock = () => {
                 )}
                 {filasVisibles.map((fila) => {
                   const esInsumo = fila.clase === 'insumo';
-                  const esCombo = !esInsumo && fila.tipo === 'COMBO';
-                  const idFila = esInsumo ? fila.insumoId : fila.productoId;
-                  const clave = esInsumo ? `insumo-${idFila}` : idFila;
-                  const nombre = esInsumo ? fila.insumo : fila.producto;
+                  const esIngrediente = fila.clase === 'ingrediente';
+                  const esCombo = !esInsumo && !esIngrediente && fila.tipo === 'COMBO';
+                  const idFila = esInsumo
+                    ? fila.insumoId
+                    : esIngrediente
+                    ? fila.ingredienteId
+                    : fila.productoId;
+                  const clave = esInsumo
+                    ? `insumo-${idFila}`
+                    : esIngrediente
+                    ? `ingrediente-${idFila}`
+                    : idFila;
+                  const nombre = esInsumo
+                    ? fila.insumo
+                    : esIngrediente
+                    ? `${fila.ingrediente} (${fila.unidadMedida})`
+                    : fila.producto;
                   return (
                     <tr
                       key={`${fila.sucursalId}-${clave}`}
-                      className={CLASE_FILA[fila.estado]}
+                      className={undefined}
                     >
                       <td data-label="Sucursal">{fila.sucursal}</td>
                       <td data-label="Ítem">
@@ -641,24 +658,11 @@ const GestionStock = () => {
                         )}
                       </td>
                       <td data-label="Cantidad" className="stock-cantidad">
-                        {esCombo ? (
-                          // En un combo el número no se toca: el backend lo deriva
-                          // de la receta, así que no hay input editable. Se muestra
-                          // como texto plano con el mismo estilo que los inputs de
-                          // las demás filas (plaintext + size sm comparten tipografía
-                          // y alturas) para que la columna se lea uniforme.
-                          <Form.Control
-                            plaintext
-                            readOnly
-                            size="sm"
-                            value={fila.cantidad}
-                            aria-label="Cantidad del combo (calculada con el stock de sus componentes)"
-                          />
-                        ) : (
+                        {esInsumo || esIngrediente ? (
                           <Form.Control
                             type="number"
                             min="0"
-                            step="1"
+                            step={esIngrediente ? '0.001' : '1'}
                             size="sm"
                             defaultValue={fila.cantidad}
                             key={`${clave}-${fila.cantidad}-${fila.sucursalId}`}
@@ -679,6 +683,24 @@ const GestionStock = () => {
                                 guardarFila(fila, { cantidad: valor });
                               }
                             }}
+                          />
+                        ) : (
+                          // En productos y combos el número no se toca: el backend
+                          // lo deriva del stock de ingredientes y la receta (o, en
+                          // un combo, del stock de sus componentes). Se muestra
+                          // como texto plano con el mismo estilo que los inputs de
+                          // las demás filas (plaintext + size sm comparten tipografía
+                          // y alturas) para que la columna se lea uniforme.
+                          <Form.Control
+                            plaintext
+                            readOnly
+                            size="sm"
+                            value={fila.cantidad}
+                            aria-label={
+                              esCombo
+                                ? 'Cantidad del combo (calculada con el stock de sus componentes)'
+                                : 'Cantidad del producto (calculada con el stock de ingredientes y la receta)'
+                            }
                           />
                         )}
                       </td>
@@ -847,3 +869,4 @@ const GestionStock = () => {
 };
 
 export default GestionStock;
+

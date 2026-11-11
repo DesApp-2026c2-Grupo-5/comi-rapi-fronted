@@ -8,12 +8,13 @@
  * TanStack Query y las claves están namespaced.
  *
  * El stock depende de la sesión y de la sucursal operativa, así que vive bajo
- * ['private', 'stock'] y RealtimeBridge lo invalida cuando el backend avisa un
- * cambio. Las lecturas de catálogo de gestión (productos, categorías,
- * promociones) reutilizan los hooks públicos de useCatalogo.
+ * ['private', 'stock'] y RealtimeBridge parchea las filas que el backend avisa
+ * como cambiadas, sin releer la lista completa. Las lecturas de catálogo de
+ * gestión (productos, categorías, promociones) reutilizan los hooks públicos de
+ * useCatalogo.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TIEMPO_CACHE_QUERY_MS } from '../../utils/constants';
 import { queryKeys } from './queryKeys';
 import {
@@ -39,10 +40,10 @@ export const useStockQuery = ({
     queryKey: queryKeys.private.stockLista({ sucursalId, productoId }),
     queryFn: ({ signal }) => fetchStock({ productoId, signal }),
     enabled,
-    // El stock cambia con cada compra o edición, pero el socket invalida por
-    // evento cuando hay un cambio real. La sucursal forma parte de la clave:
-    // al cambiar el contexto operativo del superadmin no se reutiliza el stock
-    // de la sucursal anterior.
+    // El stock cambia con cada compra o edición; el socket parchea en la caché
+    // sólo las filas avisadas. La sucursal forma parte de la clave: al cambiar
+    // el contexto operativo del superadmin no se reutiliza el stock de la
+    // sucursal anterior.
     staleTime: TIEMPO_CACHE_QUERY_MS,
   });
 
@@ -125,14 +126,34 @@ export const useElementoPersonalizacionQuery = ({ id, enabled = true } = {}) =>
 export const usePlantillasPersonalizacionQuery = (
   categoriaId = null,
   { enabled = true } = {}
-) =>
-  useQuery({
+) => {
+  const queryClient = useQueryClient();
+
+  return useQuery({
     queryKey: queryKeys.public.plantillasCategoria(categoriaId),
-    queryFn: ({ signal }) =>
-      fetchPlantillasPersonalizacion({ categoriaId, signal }),
+    queryFn: async ({ signal }) => {
+      // Si ya tenemos la categoría en caché (incluyendo inactivas),
+      // verificamos su estado ANTES de hacer el GET a plantillas.
+      // Esto evita un request redundante cuando la categoría es inactiva
+      // (el dato ya viene en useCategorias con incluirInactivas: true).
+      const claveTodas = queryKeys.public.categorias(true);
+      const categoriasCache = queryClient.getQueryData(claveTodas);
+      if (categoriasCache) {
+        const categoria = categoriasCache.find(
+          (c) => String(c.id) === String(categoriaId)
+        );
+        // Categoría en caché e inactiva: no hay plantillas válidas.
+        if (categoria && categoria.activa === false) {
+          return [];
+        }
+      }
+      // Categoría no está en caché, o está activa: procedemos al fetch normal.
+      return fetchPlantillasPersonalizacion({ categoriaId, signal });
+    },
     enabled: enabled && categoriaId !== null && categoriaId !== undefined,
     staleTime: TIEMPO_CACHE_QUERY_MS,
   });
+};
 
 export const usePlantillasTodasQuery = ({ enabled = true } = {}) =>
   useQuery({

@@ -26,6 +26,11 @@ export {
   useResenasProducto,
 } from './useResenas';
 export {
+  useMisQuejasQuery,
+  useQuejaQuery,
+  useQuejasQuery,
+} from './useQuejas';
+export {
   usePedidosQuery,
   usePerfilQuery,
   useDireccionesQuery,

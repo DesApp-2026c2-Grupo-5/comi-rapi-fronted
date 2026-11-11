@@ -2,7 +2,7 @@
  * Propósito: Servicio de stock por sucursal para el administrador.
  * Contenido: obtenerStock, obtenerStockDeProducto, crearStock, actualizarStock,
  *            eliminarStock, obtenerDisponibilidad, obtenerMaximosDeCombos,
- *            obtenerStockInsumos, actualizarStockInsumo.
+ *            obtenerStockInsumos, obtenerStockInsumo, actualizarStockInsumo.
  * Dependencias: client.js (apiGet/apiPost/apiPut/apiDelete).
  * Uso: import { obtenerStock, actualizarStock } from '../api/stock';
  *
@@ -19,6 +19,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
 const envolver = (resultado) => ({
   success: resultado.success,
+  status: resultado.status,
   data: resultado.data,
   error: resultado.error,
 });
@@ -123,6 +124,17 @@ export const obtenerStockInsumos = async (filtros = {}) => {
 };
 
 /**
+ * Stock de un insumo en la sucursal operativa de la sesión.
+ * Se usa para refrescar en la caché sólo el insumo afectado por un aviso de
+ * tiempo real, sin volver a pedir la lista completa. La respuesta conserva
+ * `status` para distinguir un 404 (insumo dado de baja) de un error transitorio.
+ * @param {number|string} insumoId
+ * @returns {Promise<{success: boolean, status?: number, data?: object, error?: string}>}
+ */
+export const obtenerStockInsumo = async (insumoId) =>
+  envolver(await apiGet(`/stock/insumos/${insumoId}`));
+
+/**
  * Ajusta cantidad y/o disponibilidad de un insumo en la sucursal operativa.
  * El `sucursalId` no viaja: sale de la sesión.
  * @param {number|string} insumoId
@@ -131,3 +143,9 @@ export const obtenerStockInsumos = async (filtros = {}) => {
  */
 export const actualizarStockInsumo = async (insumoId, cambios) =>
   envolver(await apiPut(`/stock/insumos/${insumoId}`, cambios));
+
+export const obtenerStockIngredientes = async () =>
+  envolver(await apiGet('/stock/ingredientes'));
+
+export const actualizarStockIngrediente = async (ingredienteId, cambios) =>
+  envolver(await apiPut(`/stock/ingredientes/${ingredienteId}`, cambios));
