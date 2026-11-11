@@ -231,8 +231,8 @@ const ConversacionQueja = ({ queja, rol, onEnviar, onVolver }) => {
             {queja.estado === ESTADOS_QUEJA.CERRADA
               ? 'El cliente cerró el reclamo. No admite más mensajes.'
               : queja.estado === ESTADOS_QUEJA.RESUELTA
-                ? 'El reclamo está resuelto. Si el cliente vuelve a escribir, pasa a Pendiente.'
-                : 'El reclamo está rechazado. Si el cliente vuelve a escribir, pasa a Pendiente.'}
+                ? 'El reclamo está resuelto. No admite más mensajes del cliente ni del negocio.'
+                : 'El reclamo está rechazado. No admite más mensajes del cliente ni del negocio.'}
           </p>
         </div>
       ) : (

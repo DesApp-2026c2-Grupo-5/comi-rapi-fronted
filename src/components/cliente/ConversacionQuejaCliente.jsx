@@ -14,7 +14,7 @@
  * />
  */
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Badge, Button, Form } from 'react-bootstrap';
 import { FaPaperPlane, FaLock } from 'react-icons/fa';
@@ -49,8 +49,13 @@ const ConversacionQuejaCliente = ({
   if (!queja) return null;
 
   const esCerrada = queja.estado === ESTADOS_QUEJA.CERRADA;
+  const esResuelta = queja.estado === ESTADOS_QUEJA.RESUELTA;
+  const esRechazada = queja.estado === ESTADOS_QUEJA.RECHAZADA;
+  // Cuando el negocio resuelve o rechaza, la conversación queda cerrada:
+  // el cliente ya no puede enviar más mensajes.
+  const bloqueada = esCerrada || esResuelta || esRechazada;
   const restantes = Math.max(0, (queja.maxRespuestasCliente ?? 5) - (queja.respuestasCliente ?? 0));
-  const puedeResponder = !esCerrada && restantes > 0;
+  const puedeResponder = !bloqueada && restantes > 0;
 
   // El primer mensaje es el detalle de la queja original
   const mensajes = [
@@ -75,7 +80,7 @@ const ConversacionQuejaCliente = ({
             {ETIQUETAS_MOTIVO_QUEJA[queja.motivo] || queja.motivo}
           </strong>
         </div>
-        {esCerrada && (
+        {bloqueada && (
           <span className="text-muted small d-flex align-items-center gap-1">
             <FaLock size={10} /> Finalizado
           </span>
@@ -103,6 +108,13 @@ const ConversacionQuejaCliente = ({
         {esCerrada && (
           <div className="cliente-queja-sistema">
             El reclamo fue cerrado el {formatDateTime(queja.cerradaEn)}
+          </div>
+        )}
+
+        {(esResuelta || esRechazada) && (
+          <div className="cliente-queja-sistema">
+            El reclamo fue {esResuelta ? 'resuelto' : 'rechazado'} y no admite
+            más mensajes.
           </div>
         )}
       </div>
@@ -147,7 +159,11 @@ const ConversacionQuejaCliente = ({
           ) : (
             <div className="text-center">
               <p className="text-muted small mb-2">
-                Llegaste al máximo de respuestas permitidas.
+                {esResuelta
+                  ? 'El reclamo fue resuelto y no admite más mensajes.'
+                  : esRechazada
+                    ? 'El reclamo fue rechazado y no admite más mensajes.'
+                    : 'Llegaste al máximo de respuestas permitidas.'}
               </p>
               <Button 
                 variant="link" 
