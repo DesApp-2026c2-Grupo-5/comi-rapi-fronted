@@ -130,7 +130,14 @@ const DetalleProducto = () => {
     if (producto.tipo === 'COMBO' && Array.isArray(producto.componentes)) {
       return producto.componentes.map((c) => c.nombre || `producto ${c.productoId}`);
     }
+<<<<<<< HEAD
     return personalizacion
+=======
+    if (Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0) {
+      return producto.recetaIngredientes.map((r) => r.nombre || `ingrediente ${r.ingredienteId}`);
+    }
+    return (personalizacion || [])
+>>>>>>> origin/dev
       .filter((e) => e.tipo === 'personalizar' && e.activo !== false)
       .map((e) => e.nombre);
   }, [producto, personalizacion]);

@@ -43,6 +43,7 @@ export const PARAMETROS_POR_DEFECTO = {
   montoMaximoPedido: 500000,
   cantidadMaximaItemsPedido: 50,
   cantidadMaximaUnidadesProducto: 20,
+  minutosReservaStock: 15,
   porcentajeMaximoDescuento: 50,
   cantidadMaximaPromocionesAplicables: 3,
   stockCriticoUmbral: 5,

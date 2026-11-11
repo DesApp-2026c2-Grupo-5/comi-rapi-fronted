@@ -176,6 +176,11 @@ const menuSuperadmin = [
         icono: FaBoxOpen,
       },
       {
+        to: '/superadmin/ingredientes',
+        etiqueta: 'Ingredientes',
+        icono: FaBoxOpen,
+      },
+      {
         to: '/superadmin/promociones',
         etiqueta: 'Promociones',
         icono: FaPercent,

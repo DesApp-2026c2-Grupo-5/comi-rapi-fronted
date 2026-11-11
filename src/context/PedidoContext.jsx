@@ -162,6 +162,11 @@ export const PedidoProvider = ({ children }) => {
             Boolean(registroCancelacion?.usuarioId) &&
             registroCancelacion.usuarioId === user?.id;
           if (esCancelacionPropia) return; // la hizo este usuario: no se auto-avisa
+          // Cancelación automática del sistema (venció el plazo para pagar): el
+          // historial no tiene usuario. Si el cliente estaba pagando, la propia
+          // pantalla de pago lo devuelve al carrito con un único mensaje simple.
+          // No se agrega ningún banner extra acá.
+          if (!registroCancelacion?.usuarioId && !esOperativo) return;
           if (esOperativo) {
             // Si el pedido seguía en PENDIENTE no se informa: no estaba pagado y
             // cancelarlo no requiere atención del admin. Solo avisa a partir de
@@ -339,6 +344,10 @@ export const PedidoProvider = ({ children }) => {
           insertarPrimero(Array.isArray(prev) ? prev : [], res.data)
         );
         setPedidoActual(res.data);
+        // El pedido nace PENDIENTE: se registra su estado para que una
+        // cancelación posterior (p. ej. el vencimiento de la reserva de stock)
+        // se detecte como transición y no como "primera vez que se ve".
+        estadosPreviosRef.current[res.data.id] = res.data.estado;
         return res.data;
       }
     // El backend ya devuelve un mensaje escrito para el cliente (por ejemplo,
@@ -352,8 +361,9 @@ export const PedidoProvider = ({ children }) => {
    * Confirma el pago: PENDIENTE → CONFIRMADO en la API real, persistiendo el
    * medio de pago elegido en el pedido.
    * Si la API falla, muestra el error y devuelve null (no se simula nada).
-   * Si el backend canceló el pedido por cierre de sucursal, devuelve
-   * `{ cancelado: true }` (el stock ya fue repuesto por el backend).
+   * Si el backend canceló el pedido automáticamente, devuelve
+   * `{ cancelado: true, motivo }` (el stock ya fue repuesto por el backend). El
+   * motivo distingue `reserva_vencida` de `sucursal_cerrada`.
    * @param {number} pedidoId - ID del pedido a confirmar.
    * @param {string} [medioPago] - Medio de pago ('MERCADO_PAGO' | 'TARJETA').
    * @returns {Promise<object|null>} Pedido confirmado, señal de cancelación o null.
@@ -369,15 +379,17 @@ export const PedidoProvider = ({ children }) => {
       setPedidoActual((current) =>
         current && current.id === pedidoId ? res.data : current
       );
+      estadosPreviosRef.current[pedidoId] = res.data.estado;
       setSenalPedido((n) => n + 1);
       return res.data;
     }
-    // El backend cancela el pedido cuando la sucursal cerró y no hay otra
-    // abierta con stock: repone el stock y responde 409 con `cancelado`. No es
-    // un error para mostrar como fallo, sino una señal para volver al carrito.
+    // El backend cancela el pedido automáticamente cuando venció la reserva de
+    // stock o cuando la sucursal cerró y no hay otra abierta con stock: repone
+    // el stock y responde 409 con `cancelado`. No es un error para mostrar como
+    // fallo, sino una señal para volver al carrito con el motivo real.
     if (res.cancelado) {
       await refrescarPedidos();
-      return { cancelado: true };
+      return { cancelado: true, motivo: res.motivo || null };
     }
     // Igual que en `crearPedido`: el backend ya devuelve un mensaje para el
     // cliente y este wrapper sólo lo pisaría con el prefijo y el id del pedido.

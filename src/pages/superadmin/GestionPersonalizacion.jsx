@@ -118,11 +118,10 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
   }, [elementos, productoSeleccionado, filtroTipo]);
 
   const counts = useMemo(() => {
-    if (!productoSeleccionado) return { extra: 0, personalizar: 0, acompanar: 0, condimento: 0, total: 0 };
+    if (!productoSeleccionado) return { extra: 0, acompanar: 0, condimento: 0, total: 0 };
     const porProd = elementos.filter((e) => String(e.productoId) === String(productoSeleccionado));
     return {
       extra: porProd.filter((e) => e.tipo === 'extra').length,
-      personalizar: porProd.filter((e) => e.tipo === 'personalizar').length,
       acompanar: porProd.filter((e) => e.tipo === 'acompanar').length,
       condimento: porProd.filter((e) => e.tipo === 'condimento').length,
       total: porProd.length,
@@ -179,7 +178,7 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
             {productoActual ? (
               <>
                 <strong>{productoActual.nombre}</strong> <Badge bg="warning" text="dark">{productoActual.categoria}</Badge> — {formatPrice(productoActual.precio)} base{' '}
-                <span className="ms-2">{counts.total} elementos: Extra {counts.extra} · Personalizar {counts.personalizar} · Acompaña {counts.acompanar} · Condimentos {counts.condimento}</span>
+                <span className='ms-2'>{counts.total} elementos: Extra {counts.extra} ? Acompa�a {counts.acompanar} ? Condimentos {counts.condimento}</span>
               </>
             ) : (
               'Seleccioná un producto para gestionar sus 4 categorías. Los elementos varían por producto.'
@@ -192,7 +191,6 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
         {[
           { id: 'todos', label: 'Todos' },
           { id: TIPO_PERSONALIZACION.EXTRA, label: 'Extra' },
-          { id: TIPO_PERSONALIZACION.PERSONALIZAR, label: 'Personalizar' },
           { id: TIPO_PERSONALIZACION.ACOMPANAR, label: 'Acompaña' },
           { id: TIPO_PERSONALIZACION.CONDIMENTO, label: 'Condimentos' },
         ].map((f) => (

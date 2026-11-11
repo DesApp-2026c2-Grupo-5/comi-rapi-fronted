@@ -77,7 +77,7 @@ async function obtenerTokenCsrf() {
  */
 async function ejecutar(method, path, datos, { signal } = {}) {
   const url = BASE_URL + path;
-  const opciones = { method, credentials: 'include', headers: {} };
+  const opciones = { method, credentials: 'include', headers: {}, cache: 'no-store' };
   if (signal) opciones.signal = signal;
 
   if (datos !== undefined) {
@@ -94,6 +94,10 @@ async function ejecutar(method, path, datos, { signal } = {}) {
   }
 
   const res = await fetch(url, opciones);
+  // 304 Not Modified: el recurso no cambió. Se trata como éxito sin body.
+  if (res.status === 304) {
+    return { success: true, status: res.status, data: null };
+  }
   let body = null;
   try {
     body = await res.json();
