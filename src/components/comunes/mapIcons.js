@@ -1,16 +1,7 @@
 import L from 'leaflet';
-
-/**
- * Genera nombre corto para el pin (máx 2 palabras, máx 16 chars)
- * Limpia prefijo "Sucursal " si existe
- */
-export const getShortNameForPin = (nombre) => {
-  if (!nombre) return 'Local';
-  const clean = String(nombre).replace(/^sucursal\s+/i, '').trim();
-  const palabras = clean.split(/\s+/);
-  if (palabras.length === 1) return palabras[0].substring(0, 16);
-  return (palabras[0] + ' ' + palabras[1]).substring(0, 16);
-};
+// Diseño de la tienda provisto como asset (se inyecta inline en el pin;
+// el asset ya no incluye el texto "SHOP").
+import storeSvg from '../../assets/icons/store.svg?raw';
 
 /**
  * Mapea categoría a icono SVG (inline, stroke currentColor, 16x16)
@@ -78,54 +69,34 @@ export const getCategoryIcon = (categoria) => {
 };
 
 /**
- * Floating Pill Pin - Pin carbón #252b32, icono blanco genérico, SIN texto, punta inferior
- * Tamaño fijo 40x36, anclaje en la punta (iconAnchor: [20, 36])
+ * Floating Pill Pin - Cápsula carbón #252b32 con el dibujo de la tienda
+ * (store.svg, sin texto), SIN texto y con punta inferior.
+ *
+ * La cápsula mide 40x36 y la punta (`::after`, 8px) cuelga por debajo: el
+ * ícono declara 40x44 para que la punta quede DENTRO de la caja y el anclaje
+ * (la punta) coincida con la coordenada real de la sucursal.
  */
 export const createStorePillIcon = () => {
-  // Icono genérico de local/comercio - stroke white
-  const iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6"/><path d="M9 9h6"/></svg>`;
-  
   const html = `
     <div class="comi-pill-container">
-      <span class="comi-pill-icon">${iconSvg}</span>
+      <span class="comi-pill-icon">${storeSvg}</span>
     </div>
   `;
 
-  // Tamaño fijo 40x36, anclaje en la punta inferior
   return L.divIcon({
     className: 'custom-pill-marker',
     html,
-    iconSize: [40, 36],
-    iconAnchor: [20, 36],  // Anclaje en la punta inferior
-    popupAnchor: [0, -36],
+    iconSize: [40, 44],
+    iconAnchor: [20, 44], // anclaje en el extremo de la punta inferior
+    popupAnchor: [0, -44],
   });
 };
 
 /**
  * Dot + Pulse Aura - Punto central #1683ed + 3 anillos expansivos
- * Color exacto #1683ed, respeta prefers-reduced-motion
- */
-export const createClientPulseIcon = () => {
-  const html = `
-    <div class="pulse-wrapper">
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-core"></div>
-    </div>
-  `;
-
-  return L.divIcon({
-    className: 'custom-pulse-marker',
-    html,
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
-    popupAnchor: [0, -20],
-  });
-}
-
-/**
- * Cliente Pulse Icon - Versión singleton para reutilizar
+ * Color exacto #1683ed, respeta prefers-reduced-motion.
+ * Singleton: el icono es idéntico para todas las instancias, no hace falta
+ * fabricar uno por render.
  */
 export const clientPulseIcon = L.divIcon({
   className: 'custom-pulse-marker',

@@ -431,11 +431,11 @@ const Inicio = () => {
           <p className="text-center text-muted mb-4">
             Encontrá la sucursal más cercana a tu zona. Todas con envío a domicilio.
           </p>
+          {/* Se pasan las sucursales tal cual las serializa el backend: el
+              popup usa `horariosTexto` (ya formateado), sin aplanar el array
+              estructurado de `horarios`. */}
           <MapaHome
-            sucursales={sucursales.map(s => ({
-              ...s,
-              horarios: Array.isArray(s.horarios) ? s.horarios.join(', ') : s.horarios
-            }))}
+            sucursales={sucursales}
             alturaPx={420}
           />
         </Container>

@@ -315,12 +315,11 @@ const DetallePedido = () => {
                  <div className="d-flex align-items-center gap-2 flex-wrap mt-1">
                    <span className="small">{textoLlegadaEnCamino}</span>
                    {pedido.etaMinutos && (
-                     <EtaPillBadge
-                       variant="map"
-                       minutes={pedido.etaMinutos}
-                       storeName={pedido.sucursal?.nombre || 'Comi-Rapi'}
-                       arrivalTime={pedido.horaEstimadaLlegada}
-                     />
+                      <EtaPillBadge
+                        variant="map"
+                        minutes={pedido.etaMinutos}
+                        arrivalTime={pedido.horaEstimadaLlegada}
+                      />
                    )}
                  </div>
                </div>

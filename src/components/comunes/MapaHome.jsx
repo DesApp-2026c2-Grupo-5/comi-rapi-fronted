@@ -7,11 +7,10 @@ import {
   Popup,
   LayerGroup,
 } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTema } from '../../hooks/useTema';
-import { createStorePillIcon, getShortNameForPin } from './mapIcons';
-import { setupCtrlZoom, formatearHorarios } from './mapUtils';
+import { createStorePillIcon } from './mapIcons';
+import { setupCtrlZoom } from './mapUtils';
 import MapErrorBoundary from './MapErrorBoundary';
 import './map-markers.css';
 import './map-container.css';
@@ -123,7 +122,7 @@ const MapaHome = ({
                 <Marker
                   key={s.id || s.nombre}
                   position={[s.latitud, s.longitud]}
-                  icon={createStorePillIcon(getShortNameForPin(s.nombre))}
+                  icon={createStorePillIcon()}
                   zIndexOffset={1000}
                 >
                   <Popup>
@@ -131,7 +130,7 @@ const MapaHome = ({
                       <strong>{s.nombre}</strong>
                       {s.direccion && <div className="comi-popup-row">{formatearDireccion(s.direccion)}</div>}
                       {s.telefono && <div className="comi-popup-row">{s.telefono}</div>}
-                      {s.horarios && <div className="comi-popup-row">{formatearHorarios(s.horarios)}</div>}
+                      {s.horariosTexto && <div className="comi-popup-row">{s.horariosTexto}</div>}
                     </div>
                   </Popup>
                 </Marker>
@@ -165,7 +164,7 @@ MapaHome.propTypes = {
         referencia: PropTypes.string,
       }),
       telefono: PropTypes.string,
-      horarios: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
+      horariosTexto: PropTypes.string,
       latitud: PropTypes.number,
       longitud: PropTypes.number,
       activa: PropTypes.bool,

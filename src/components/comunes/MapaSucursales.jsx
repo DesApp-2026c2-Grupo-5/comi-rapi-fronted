@@ -7,10 +7,9 @@ import {
   Popup,
   LayerGroup,
 } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTema } from '../../hooks/useTema';
-import { createStorePillIcon, clientPulseIcon, getShortNameForPin } from './mapIcons';
+import { createStorePillIcon, clientPulseIcon } from './mapIcons';
 import { setupCtrlZoom, formatearDireccion } from './mapUtils';
 import MapErrorBoundary from './MapErrorBoundary';
 import './map-markers.css';
@@ -105,7 +104,7 @@ const MapaSucursales = ({
                 <Marker
                   key={s.id || s.nombre}
                   position={[s.latitud, s.longitud]}
-                  icon={createStorePillIcon(getShortNameForPin(s.nombre))}
+                  icon={createStorePillIcon()}
                   zIndexOffset={1000}
                 >
                   <Popup>

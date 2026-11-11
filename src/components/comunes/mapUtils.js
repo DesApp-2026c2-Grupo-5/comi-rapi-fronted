@@ -3,8 +3,6 @@
  * Funciones puras y reutilizables
  */
 
-import L from 'leaflet';
-
 /**
  * Formatea la dirección anidada del backend como string legible
  * El backend devuelve: { calle, altura, provincia, departamento?, localidad?, codigoPostal?, referencia? }
@@ -182,27 +180,4 @@ export const formatDistance = (metros) => {
   if (!metros || metros < 0) return '';
   if (metros < 1000) return `${Math.round(metros)} m`;
   return `${(metros / 1000).toFixed(1)} km`;
-}
-
-/**
- * Formatea horarios de sucursal para mostrar en popup
- * Acepta array de objetos o string
- */
-export const formatearHorarios = (horarios) => {
-  if (!horarios) return '';
-  if (typeof horarios === 'string') return horarios;
-  if (!Array.isArray(horarios)) return '';
-  
-  return horarios
-    .map(h => {
-      if (!h || typeof h !== 'object') return '';
-      const partes = [];
-      if (h.dia) partes.push(h.dia);
-      if (h.apertura && h.cierre) partes.push(`${h.apertura} - ${h.cierre}`);
-      else if (h.apertura) partes.push(`Abre ${h.apertura}`);
-      else if (h.cierre) partes.push(`Cierra ${h.cierre}`);
-      return partes.join(' ');
-    })
-    .filter(Boolean)
-    .join(' · ');
 };
