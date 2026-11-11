@@ -130,16 +130,15 @@ const DetalleProducto = () => {
     if (producto.tipo === 'COMBO' && Array.isArray(producto.componentes)) {
       return producto.componentes.map((c) => c.nombre || `producto ${c.productoId}`);
     }
-<<<<<<< HEAD
-    return personalizacion
-=======
-    if (Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0) {
-      return producto.recetaIngredientes.map((r) => r.nombre || `ingrediente ${r.ingredienteId}`);
-    }
-    return (personalizacion || [])
->>>>>>> origin/dev
+    // Para PRODUCTO: mostrar ingredientes de la receta (origin/dev) y también
+    // los elementos de personalización tipo "personalizar" (HEAD).
+    const deReceta = Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0
+      ? producto.recetaIngredientes.map((r) => r.nombre || `ingrediente ${r.ingredienteId}`)
+      : [];
+    const dePersonalizar = (personalizacion || [])
       .filter((e) => e.tipo === 'personalizar' && e.activo !== false)
       .map((e) => e.nombre);
+    return [...deReceta, ...dePersonalizar];
   }, [producto, personalizacion]);
 
   // Mismo criterio de siempre: productos de la misma categoría, sin el actual.

@@ -31,7 +31,6 @@ const ListaProductos = ({ soloLectura = false }) => {
   const { notificar } = useNotificaciones();
   // Sucursal operativa de la sesión (asignada del admin o contexto del
   // superadmin): define sobre qué local se lee/escribe la disponibilidad.
-<<<<<<< HEAD
   const { sucursalOperativaId } = useSucursalOperativa();
   const queryClient = useQueryClient();
   // Catálogo público compartido: cualquier alta/edición/baja se invalida desde
@@ -60,13 +59,6 @@ const ListaProductos = ({ soloLectura = false }) => {
   }, [stockQuery.data]);
   const cargando =
     cargandoProductos || (soloLectura && stockQuery.isPending);
-=======
-  const { sucursalOperativaId, versionSocket } = useSucursalOperativa();
-  const [productos, setProductos] = useState([]);
-  // [soloLectura] Disponibilidad por sucursal: productoId → { disponible, sucursalId }
-  const [stock, setStock] = useState({});
-  const [cargando, setCargando] = useState(true);
->>>>>>> origin/dev
   const [guardando, setGuardando] = useState(false);
   const [errorLocal, setErrorLocal] = useState('');
   const error =

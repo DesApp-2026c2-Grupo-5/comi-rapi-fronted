@@ -34,13 +34,6 @@ import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
 import {
-<<<<<<< HEAD
-=======
-  obtenerStock,
-  obtenerStockDeProducto,
-  obtenerStockInsumos,
-  obtenerStockIngredientes,
->>>>>>> origin/dev
   crearStock,
   actualizarStock,
   actualizarStockInsumo,
@@ -313,39 +306,7 @@ const GestionStock = () => {
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
       if (resultado.data) {
-<<<<<<< HEAD
         reemplazarFilaEnCache(esInsumo ? 'insumo' : 'producto', resultado.data);
-=======
-        const actualizada = resultado.data;
-        if (esInsumo) {
-          setStocksInsumos((prev) =>
-            prev.map((f) =>
-              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-              Number(f.insumoId) === Number(actualizada.insumoId)
-                ? actualizada
-                : f
-            )
-          );
-        } else if (esIngrediente) {
-          setStocksIngredientes((prev) =>
-            prev.map((f) =>
-              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-              Number(f.ingredienteId) === Number(actualizada.ingredienteId)
-                ? actualizada
-                : f
-            )
-          );
-        } else {
-          setStocks((prev) =>
-            prev.map((f) =>
-              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-              Number(f.productoId) === Number(actualizada.productoId)
-                ? actualizada
-                : f
-            )
-          );
-        }
->>>>>>> origin/dev
       }
     } else {
       notificar(resultado.error || 'No se pudo actualizar.', 'danger');
