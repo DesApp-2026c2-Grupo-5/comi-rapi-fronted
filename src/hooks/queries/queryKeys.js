@@ -66,6 +66,7 @@ export const queryKeys = {
       activo === false ? 'todos' : 'activos',
       tipo || 'todos',
     ],
+    ingredientes: ['public', 'ingredientes'],
     personalizacionElemento: (id) => ['public', 'personalizacion', 'elemento', String(id)],
     plantillas: ['public', 'personalizacion', 'plantillas'],
     plantilla: (id) => ['public', 'personalizacion', 'plantillas', String(id)],
@@ -106,6 +107,7 @@ export const queryKeys = {
         ? 'todos'
         : String(productoId),
     ],
+    stockIngredientes: ['private', 'stock', 'ingredientes'],
     reportes: ({ desde = '', hasta = '', sucursalId = '' } = {}) => [
       'private',
       'reportes',

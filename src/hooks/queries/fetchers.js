@@ -174,6 +174,36 @@ export const fetchStock = async ({ productoId = null, signal } = {}) => {
 };
 
 /**
+ * Stock de ingredientes (materias primas) de la sucursal operativa.
+ * Endpoint separado: GET /api/stock/ingredientes
+ */
+export const fetchStockIngredientes = async ({ signal } = {}) => {
+  const resultado = await apiGet('/stock/ingredientes', { signal });
+  if (!resultado.success) {
+    throw new ApiError(
+      resultado.error || 'No se pudo cargar el stock de ingredientes.',
+      resultado.status
+    );
+  }
+  return Array.isArray(resultado.data) ? resultado.data : [];
+};
+
+/**
+ * Catálogo de ingredientes (materias primas) para el formulario de receta.
+ * Endpoint: GET /api/ingredientes
+ */
+export const fetchIngredientes = async ({ signal } = {}) => {
+  const resultado = await apiGet('/ingredientes', { signal });
+  if (!resultado.success) {
+    throw new ApiError(
+      resultado.error || 'No se pudo cargar los ingredientes.',
+      resultado.status
+    );
+  }
+  return Array.isArray(resultado.data) ? resultado.data : [];
+};
+
+/**
  * Catálogo de insumos (extras y condimentos). Sin sesión de gestión sólo
  * devuelve los activos; con `activo: false` un usuario de gestión ve también
  * los dados de baja.

@@ -18,6 +18,7 @@ export {
   usePromocion,
   usePromociones,
   useSucursalesQuery,
+  useIngredientesQuery,
 } from './useCatalogo';
 export {
   useElegiblesParaResenar,
@@ -48,5 +49,6 @@ export {
   useReportesQuery,
   useResumenClienteQuery,
   useResumenSuperadminQuery,
+  useStockIngredientesQuery,
   useStockQuery,
 } from './useGestion';

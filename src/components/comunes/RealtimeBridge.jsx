@@ -728,10 +728,15 @@ const actualizarStockEnCache = async (queryClient, payload) => {
 
   const productoIds = idsUnicos(payload?.productoIds);
   const insumoIds = idsUnicos(payload?.insumoIds);
+  const ingredienteIds = idsUnicos(payload?.ingredienteIds);
 
   // Aviso sin detalle (contrato anterior): no hay forma de actualizar filas
   // puntuales, así que se conserva el comportamiento de resincronizar.
-  if (productoIds.length === 0 && insumoIds.length === 0) {
+  if (
+    productoIds.length === 0 &&
+    insumoIds.length === 0 &&
+    ingredienteIds.length === 0
+  ) {
     invalidarStock(queryClient);
     return;
   }
@@ -770,6 +775,12 @@ const actualizarStockEnCache = async (queryClient, payload) => {
     queryClient.setQueryData(clave, (previo) =>
       aplicarFilasEnStock(previo, datos, { filtrarProductoId })
     );
+  }
+
+  // Ingredientes: invalida la consulta de stock de ingredientes para que se
+  // resincronice por REST con los valores actuales del backend.
+  if (ingredienteIds.length > 0) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.private.stockIngredientes });
   }
 };
 

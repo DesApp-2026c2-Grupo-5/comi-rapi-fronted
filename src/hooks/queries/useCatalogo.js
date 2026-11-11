@@ -13,6 +13,7 @@ import { queryKeys } from './queryKeys';
 import {
   fetchCategoria,
   fetchCategorias,
+  fetchIngredientes,
   fetchMasVendidos,
   fetchParametros,
   fetchPersonalizacion,
@@ -73,7 +74,7 @@ export const useProducto = (id, { enabled = true, staleTime = TIEMPO_CACHE_QUERY
   );
 
   // 3. Dato completo disponible sin fetch individual: lista base > bootstrap > null
-  const datoCompletoCache = productoDeLista ?? productoBootstrap ?? null;
+  const datoCompletoCache = productoDeLista ?? productoBootstrap ?? undefined;
 
   const queryKey = queryKeys.public.producto(id);
 
@@ -263,3 +264,20 @@ export const useSucursalesQuery = (
     enabled,
     staleTime,
   });
+
+export const useIngredientesQuery = ({ enabled = true } = {}) => {
+  const queryClient = useQueryClient();
+  const clave = queryKeys.public.ingredientes;
+  const datosExistentes = queryClient.getQueryData(clave);
+  return useQuery({
+    queryKey: clave,
+    queryFn: ({ signal }) => fetchIngredientes({ signal }),
+    initialData: () => datosExistentes,
+    initialDataUpdatedAt: () => Date.now(),
+    enabled,
+    staleTime: TIEMPO_CACHE_QUERY_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+};

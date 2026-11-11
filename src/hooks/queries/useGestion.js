@@ -29,6 +29,7 @@ import {
   fetchResumenCliente,
   fetchResumenSuperadmin,
   fetchStock,
+  fetchStockIngredientes,
 } from './fetchers';
 
 export const useStockQuery = ({
@@ -46,6 +47,25 @@ export const useStockQuery = ({
     // sucursal anterior.
     staleTime: TIEMPO_CACHE_QUERY_MS,
   });
+
+export const useStockIngredientesQuery = ({ enabled = true } = {}) => {
+  const queryClient = useQueryClient();
+  const clave = queryKeys.private.stockIngredientes;
+  const datosExistentes = queryClient.getQueryData(clave);
+  return useQuery({
+    queryKey: clave,
+    queryFn: ({ signal }) => fetchStockIngredientes({ signal }),
+    initialData: () => datosExistentes,
+    initialDataUpdatedAt: () => Date.now(),
+    enabled,
+    staleTime: TIEMPO_CACHE_QUERY_MS,
+    // Evitar refetch al montar si ya hay datos en caché: los cambios
+    // llegan por invalidación (socket o mutación), no por recarga completa.
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+};
 
 export const useInsumosQuery = ({ activo, tipo, enabled = true } = {}) =>
   useQuery({

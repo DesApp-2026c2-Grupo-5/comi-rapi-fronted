@@ -40,7 +40,7 @@ import {
   actualizarStockIngrediente,
   eliminarStock,
 } from '../../api/stock';
-import { queryKeys, useProductos, useStockQuery } from '../../hooks/queries';
+import { queryKeys, useProductos, useStockIngredientesQuery, useStockQuery } from '../../hooks/queries';
 import { ESTADOS_STOCK, estadoDeStock } from '../../utils/estadoStock';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
@@ -98,6 +98,98 @@ const GestionStock = () => {
   // Filtro de producto: va al backend (`GET /api/stock?productoId=`), por eso
   // forma parte de la clave de la consulta.
   const [productoId, setProductoId] = useState('');
+
+  // Hooks de TanStack Query: stock de productos + insumos (una sola consulta)
+  // y stock de ingredientes (consulta separada), ambas acotadas a la sucursal
+  // operativa de la sesión.
+  const stockQuery = useStockQuery({
+    sucursalId,
+    productoId: productoId || null,
+    enabled: Boolean(sucursalId),
+  });
+  const stockIngredientesQuery = useStockIngredientesQuery({
+    enabled: Boolean(sucursalId),
+  });
+
+  // Catálogo de productos para la pestaña "Por agregar" y el selector de filtro.
+  const { data: productos = [] } = useProductos();
+
+  const queryClient = useQueryClient();
+
+  const stockData = stockQuery.data;
+  const stocks = stockData?.filas ?? [];
+  const stocksInsumos = stockData?.insumos ?? [];
+  const stocksIngredientes = stockIngredientesQuery.data ?? [];
+
+  const cargando = stockQuery.isPending || stockIngredientesQuery.isPending;
+  const error = stockQuery.error?.message || stockIngredientesQuery.error?.message || '';
+
+  const refrescar = async () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.private.stock });
+    queryClient.invalidateQueries({ queryKey: queryKeys.private.stockIngredientes });
+  };
+
+  // Reemplaza la fila afectada en la caché de TanStack Query sin volver a
+  // solicitar la lista completa. `data` trae la fila serializada por el backend.
+  const reemplazarFilaEnCache = (tipo, data) => {
+    if (!data) return;
+    const sucursalIdNum = Number(data.sucursalId || sucursalId);
+
+    if (tipo === 'producto') {
+      queryClient.setQueryData(
+        queryKeys.private.stockLista({ sucursalId: sucursalIdNum, productoId: 'todos' }),
+        (prev) => {
+          if (!prev) return prev;
+          const filas = [...(prev.filas || [])];
+          const idx = filas.findIndex((f) => Number(f.productoId) === Number(data.productoId));
+          if (idx >= 0) filas[idx] = { ...filas[idx], ...data };
+          else filas.push(data);
+          return { ...prev, filas };
+        }
+      );
+      if (productoId) {
+        queryClient.setQueryData(
+          queryKeys.private.stockLista({ sucursalId: sucursalIdNum, productoId }),
+          (prev) => {
+            if (!prev) return prev;
+            const filas = [...(prev.filas || [])];
+            const idx = filas.findIndex((f) => Number(f.productoId) === Number(data.productoId));
+            if (idx >= 0) filas[idx] = { ...filas[idx], ...data };
+            return { ...prev, filas };
+          }
+        );
+      }
+    } else if (tipo === 'insumo') {
+      queryClient.setQueryData(
+        queryKeys.private.stockLista({ sucursalId: sucursalIdNum, productoId: 'todos' }),
+        (prev) => {
+          if (!prev) return prev;
+          const insumos = [...(prev.insumos || [])];
+          const idx = insumos.findIndex((f) => Number(f.insumoId) === Number(data.insumoId));
+          if (idx >= 0) insumos[idx] = { ...insumos[idx], ...data };
+          else insumos.push(data);
+          return { ...prev, insumos };
+        }
+      );
+    } else if (tipo === 'ingrediente') {
+      queryClient.setQueryData(
+        queryKeys.private.stockIngredientes,
+        (prev) => {
+          if (!Array.isArray(prev)) return prev;
+          const idx = prev.findIndex((f) => Number(f.ingredienteId) === Number(data.ingredienteId));
+          if (idx >= 0) {
+            const nueva = [...prev];
+            nueva[idx] = { ...nueva[idx], ...data };
+            return nueva;
+          }
+          return [...prev, data];
+        }
+      );
+    }
+  };
+
+  // Filtro de producto: va al backend (`GET /api/stock?productoId=`), por eso
+  // forma parte de la clave de la consulta.
   const [guardando, setGuardando] = useState(false);
   // Avance del alta masiva (0 de N) mientras recorre los faltantes. Null cuando
   // no hay un alta masiva en curso.
