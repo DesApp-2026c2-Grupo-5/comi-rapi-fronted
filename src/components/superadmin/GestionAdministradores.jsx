@@ -6,7 +6,7 @@
  *            de alta/edición (selector de rol y de sucursal). Carga desde el
  *            backend (roles ADMINISTRADOR y SUPERADMINISTRADOR).
  * Dependencias: react-bootstrap, api/usuarios, api/sucursales, react-icons,
- *               components/comunes/Skeleton (SkeletonTabla).
+ *               components/comunes/Skeleton (SkeletonTabla), ModalFormulario.
  * Uso: <GestionAdministradores /> - Se renderiza en GestionAdministradoresPage.
  */
 
@@ -20,7 +20,6 @@ import {
   Form,
   Row,
   Col,
-  Modal,
 } from 'react-bootstrap';
 import { FaUserTie, FaPlus, FaEdit, FaStore } from 'react-icons/fa';
 import {
@@ -30,6 +29,7 @@ import {
 } from '../../api/usuarios';
 import { obtenerSucursales } from '../../api/sucursales';
 import { SkeletonTabla } from '../comunes/Skeleton';
+import ModalFormulario from '../comunes/ModalFormulario';
 
 const inicialesDe = (admin) => {
   const nombre = (admin.nombre || '').trim();
@@ -311,133 +311,134 @@ const GestionAdministradores = () => {
         </Table>
       )}
 
-      <Modal show={modalAbierto} onHide={() => setModalAbierto(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title as="h2" className="h5">
-            {editando ? 'Editar usuario' : 'Nuevo usuario'}
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={guardarAdministrador} noValidate>
-          <Modal.Body>
-            {errorFormulario && (
-              <Alert variant="warning" role="alert">
-                {errorFormulario}
-              </Alert>
-            )}
-            <Row>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-nombre">
-                  <Form.Label>Nombre</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formulario.nombre}
-                    onChange={(e) => cambiarCampo('nombre', e.target.value)}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-apellido">
-                  <Form.Label>Apellido</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formulario.apellido}
-                    onChange={(e) => cambiarCampo('apellido', e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-email">
-                  <Form.Label>Email</Form.Label>
-                  <Form.Control
-                    type="email"
-                    value={formulario.email}
-                    onChange={(e) => cambiarCampo('email', e.target.value)}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-rol">
-                  <Form.Label>Rol</Form.Label>
-                  <Form.Select
-                    value={formulario.rol}
-                    onChange={(e) => cambiarCampo('rol', e.target.value)}
-                  >
-                    <option value="ADMINISTRADOR">Administrador</option>
-                    <option value="SUPERADMINISTRADOR">Superadmin</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              {formulario.rol === 'ADMINISTRADOR' ? (
-                <Col md={6} className="mb-3">
-                  <Form.Group controlId="admin-sucursal">
-                    <Form.Label>Sucursal asignada</Form.Label>
-                    <Form.Select
-                      value={formulario.sucursalId}
-                      onChange={(e) => cambiarCampo('sucursalId', e.target.value)}
-                      required
-                    >
-                      <option value="">Seleccioná una sucursal…</option>
-                      {sucursales.map((sucursal) => (
-                        <option key={sucursal.id} value={sucursal.id}>
-                          {sucursal.nombre}
-                          {sucursal.activa ? '' : ' (inactiva)'}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              ) : (
-                <Col md={6} className="mb-3 d-flex align-items-end">
-                  <p className="text-muted mb-0 small">
-                    El superadmin no lleva sucursal asignada.
-                  </p>
-                </Col>
-              )}
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-password">
-                  <Form.Label>
-                    Contraseña{editando ? ' (nueva, opcional)' : ''}
-                  </Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={formulario.password}
-                    onChange={(e) => cambiarCampo('password', e.target.value)}
-                    placeholder={editando ? 'Dejar vacío para no cambiarla' : 'Mínimo 6 caracteres'}
-                    required={!editando}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-telefono">
-                  <Form.Label>Teléfono</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formulario.telefono}
-                    onChange={(e) => cambiarCampo('telefono', e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Form.Check
-              type="switch"
-              id="admin-activo"
-              label="Cuenta activa"
-              checked={formulario.activo}
-              onChange={(e) => cambiarCampo('activo', e.target.checked)}
-            />
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setModalAbierto(false)}>
+      <ModalFormulario
+        mostrar={modalAbierto}
+        onCerrar={() => setModalAbierto(false)}
+        titulo={editando ? 'Editar usuario' : 'Nuevo usuario'}
+        onSubmit={guardarAdministrador}
+        error={errorFormulario}
+        cargando={guardando}
+        tamano="lg"
+        noValidate
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setModalAbierto(false)}
+              disabled={guardando}
+            >
               Cancelar
             </Button>
             <Button type="submit" variant="warning" disabled={guardando}>
               {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear usuario'}
             </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+          </>
+        }
+      >
+        <Row>
+          <Col md={6} className="mb-3">
+            <Form.Group controlId="admin-nombre">
+              <Form.Label>Nombre</Form.Label>
+              <Form.Control
+                type="text"
+                value={formulario.nombre}
+                onChange={(e) => cambiarCampo('nombre', e.target.value)}
+                required
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Group controlId="admin-apellido">
+              <Form.Label>Apellido</Form.Label>
+              <Form.Control
+                type="text"
+                value={formulario.apellido}
+                onChange={(e) => cambiarCampo('apellido', e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Group controlId="admin-email">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                value={formulario.email}
+                onChange={(e) => cambiarCampo('email', e.target.value)}
+                required
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Group controlId="admin-rol">
+              <Form.Label>Rol</Form.Label>
+              <Form.Select
+                value={formulario.rol}
+                onChange={(e) => cambiarCampo('rol', e.target.value)}
+              >
+                <option value="ADMINISTRADOR">Administrador</option>
+                <option value="SUPERADMINISTRADOR">Superadmin</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          {formulario.rol === 'ADMINISTRADOR' ? (
+            <Col md={6} className="mb-3">
+              <Form.Group controlId="admin-sucursal">
+                <Form.Label>Sucursal asignada</Form.Label>
+                <Form.Select
+                  value={formulario.sucursalId}
+                  onChange={(e) => cambiarCampo('sucursalId', e.target.value)}
+                  required
+                >
+                  <option value="">Seleccioná una sucursal…</option>
+                  {sucursales.map((sucursal) => (
+                    <option key={sucursal.id} value={sucursal.id}>
+                      {sucursal.nombre}
+                      {sucursal.activa ? '' : ' (inactiva)'}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          ) : (
+            <Col md={6} className="mb-3 d-flex align-items-end">
+              <p className="text-muted mb-0 small">
+                El superadmin no lleva sucursal asignada.
+              </p>
+            </Col>
+          )}
+          <Col md={6} className="mb-3">
+            <Form.Group controlId="admin-password">
+              <Form.Label>
+                Contraseña{editando ? ' (nueva, opcional)' : ''}
+              </Form.Label>
+              <Form.Control
+                type="password"
+                value={formulario.password}
+                onChange={(e) => cambiarCampo('password', e.target.value)}
+                placeholder={editando ? 'Dejar vacío para no cambiarla' : 'Mínimo 6 caracteres'}
+                required={!editando}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Group controlId="admin-telefono">
+              <Form.Label>Teléfono</Form.Label>
+              <Form.Control
+                type="text"
+                value={formulario.telefono}
+                onChange={(e) => cambiarCampo('telefono', e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+        <Form.Check
+          type="switch"
+          id="admin-activo"
+          label="Cuenta activa"
+          checked={formulario.activo}
+          onChange={(e) => cambiarCampo('activo', e.target.checked)}
+        />
+      </ModalFormulario>
     </Container>
   );
 };

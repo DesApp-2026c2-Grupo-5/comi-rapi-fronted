@@ -8,7 +8,8 @@
  *            con esa edición.
  * Dependencias: react-bootstrap (Container, Card, Form, Button, Row, Col, Spinner),
  *               react-icons/fa, api/perfil.js, useAuth, useNotificaciones,
- *               ConfirmarModal, Avatar, validators, formatters, Perfil.css.
+ *               ConfirmarModal, ModalBase, Avatar, validators, formatters,
+ *               Perfil.css.
  * Uso: Ruta "/cliente/perfil" → <Perfil />
  *
  * El backend resuelve siempre el usuario desde la sesión: esta pantalla nunca
@@ -19,7 +20,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Container, Card, Form, Button, Row, Col, Spinner, Modal, Alert } from 'react-bootstrap';
+import { Container, Card, Form, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import {
   FaUserCircle,
   FaCamera,
@@ -54,6 +55,7 @@ import Avatar from '../../components/comunes/Avatar';
 import CampoPassword from '../../components/comunes/CampoPassword';
 import FormularioDireccion from '../../components/cliente/FormularioDireccion';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import ModalBase from '../../components/comunes/ModalBase';
 import './Perfil.css';
 
 // Solo se envían estos campos: nombre y apellido no se modifican desde acá.
@@ -801,101 +803,101 @@ const Perfil = () => {
       )}
 
       {/* ============ Gestor de direcciones (edición aparte) ============ */}
-      <Modal show={modalDirecciones} onHide={cerrarGestorDirecciones} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Mis direcciones</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {direccionEnEdicion !== null ? (
-            <FormularioDireccion
-              direccion={direccionEnEdicion === 'nueva' ? null : direccionEnEdicion}
-              onGuardar={handleGuardarDireccion}
-              onCancelar={() => setDireccionEnEdicion(null)}
-            />
-          ) : direcciones.length === 0 ? (
-            <>
-              <p className="text-muted">
-                Todavía no cargaste ninguna dirección. Agregá una para poder confirmar tus pedidos.
-              </p>
-              <Button variant="primary" onClick={() => setDireccionEnEdicion('nueva')}>
-                <FaPlus aria-hidden="true" />
-                Agregar dirección
-              </Button>
-            </>
-          ) : (
-            <>
-              <ul className="perfil-direcciones mb-3">
-                {direcciones.map((direccion) => (
-                  <li key={direccion.id} className="perfil-direccion">
-                    <span className="perfil-direccion-alias">
-                      {direccion.alias || direccion.calle}
+      <ModalBase
+        mostrar={modalDirecciones}
+        onCerrar={cerrarGestorDirecciones}
+        titulo="Mis direcciones"
+        tamano="lg"
+      >
+        {direccionEnEdicion !== null ? (
+          <FormularioDireccion
+            direccion={direccionEnEdicion === 'nueva' ? null : direccionEnEdicion}
+            onGuardar={handleGuardarDireccion}
+            onCancelar={() => setDireccionEnEdicion(null)}
+          />
+        ) : direcciones.length === 0 ? (
+          <>
+            <p className="text-muted">
+              Todavía no cargaste ninguna dirección. Agregá una para poder confirmar tus pedidos.
+            </p>
+            <Button variant="primary" onClick={() => setDireccionEnEdicion('nueva')}>
+              <FaPlus aria-hidden="true" />
+              Agregar dirección
+            </Button>
+          </>
+        ) : (
+          <>
+            <ul className="perfil-direcciones mb-3">
+              {direcciones.map((direccion) => (
+                <li key={direccion.id} className="perfil-direccion">
+                  <span className="perfil-direccion-alias">
+                    {direccion.alias || direccion.calle}
+                  </span>
+                  <span className="perfil-direccion-detalle">
+                    {lineasDireccion(direccion)}
+                  </span>
+                  {direccion.referencia && (
+                    <span className="perfil-direccion-referencia">
+                      {direccion.referencia}
                     </span>
-                    <span className="perfil-direccion-detalle">
-                      {lineasDireccion(direccion)}
-                    </span>
-                    {direccion.referencia && (
-                      <span className="perfil-direccion-referencia">
-                        {direccion.referencia}
-                      </span>
-                    )}
-                    {/* Fix bug C (iteración 3): confirmación INLINE en lugar
-                        de un modal apilado sobre este modal (el backdrop
-                        trabado dejaba la pantalla congelada). */}
-                    {direccionAEliminar && direccionAEliminar.id === direccion.id ? (
-                      <Alert variant="danger" className="mt-2 mb-0 py-2">
-                        <div className="mb-2 fw-semibold">
-                          ¿Seguro que querés eliminar esta dirección?
-                        </div>
-                        <div className="d-flex gap-2">
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={confirmarEliminarDireccion}
-                            disabled={eliminandoDireccion}
-                          >
-                            {eliminandoDireccion ? 'Eliminando…' : 'Sí, eliminar'}
-                          </Button>
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            onClick={() => setDireccionAEliminar(null)}
-                            disabled={eliminandoDireccion}
-                          >
-                            Volver
-                          </Button>
-                        </div>
-                      </Alert>
-                    ) : (
-                      <div className="perfil-acciones mt-2">
+                  )}
+                  {/* Fix bug C (iteración 3): confirmación INLINE en lugar
+                      de un modal apilado sobre este modal (el backdrop
+                      trabado dejaba la pantalla congelada). */}
+                  {direccionAEliminar && direccionAEliminar.id === direccion.id ? (
+                    <Alert variant="danger" className="mt-2 mb-0 py-2">
+                      <div className="mb-2 fw-semibold">
+                        ¿Seguro que querés eliminar esta dirección?
+                      </div>
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={confirmarEliminarDireccion}
+                          disabled={eliminandoDireccion}
+                        >
+                          {eliminandoDireccion ? 'Eliminando…' : 'Sí, eliminar'}
+                        </Button>
                         <Button
                           variant="outline-secondary"
                           size="sm"
-                          onClick={() => setDireccionEnEdicion(direccion)}
+                          onClick={() => setDireccionAEliminar(null)}
+                          disabled={eliminandoDireccion}
                         >
-                          <FaEdit aria-hidden="true" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => setDireccionAEliminar(direccion)}
-                        >
-                          <FaTrashAlt aria-hidden="true" />
-                          Eliminar
+                          Volver
                         </Button>
                       </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <Button variant="primary" onClick={() => setDireccionEnEdicion('nueva')}>
-                <FaPlus aria-hidden="true" />
-                Agregar dirección
-              </Button>
-            </>
-          )}
-        </Modal.Body>
-      </Modal>
+                    </Alert>
+                  ) : (
+                    <div className="perfil-acciones mt-2">
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => setDireccionEnEdicion(direccion)}
+                      >
+                        <FaEdit aria-hidden="true" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => setDireccionAEliminar(direccion)}
+                      >
+                        <FaTrashAlt aria-hidden="true" />
+                        Eliminar
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <Button variant="primary" onClick={() => setDireccionEnEdicion('nueva')}>
+              <FaPlus aria-hidden="true" />
+              Agregar dirección
+            </Button>
+          </>
+        )}
+      </ModalBase>
 
       <ConfirmarModal
         mostrar={confirmandoGuardado}
