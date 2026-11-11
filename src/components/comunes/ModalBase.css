@@ -1,0 +1,73 @@
+/**
+ * Propósito: Estilos del shell compartido de modales.
+ * Contenido: Altura máxima, scroll del body, header/footer fijos y adaptación
+ *            fullscreen en mobile.
+ * Dependencias: Se importa desde ModalBase.jsx.
+ * Uso: Importado por ModalBase.jsx.
+ */
+
+.modal-base-dialog {
+  max-height: calc(100vh - 3.5rem);
+  max-height: calc(100dvh - 3.5rem);
+}
+
+.modal-base-content {
+  max-height: inherit;
+  border-radius: var(--radius-card-lg);
+  overflow: hidden;
+}
+
+.modal-base-header,
+.modal-base-footer {
+  flex-shrink: 0;
+}
+
+.modal-base-heading {
+  min-width: 0;
+}
+
+.modal-base-descripcion {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.modal-base-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Único contenedor de scroll: el header y el footer no se desplazan. */
+.modal-base-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-base-footer {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 575.98px) {
+  .modal-base-footer .btn {
+    flex: 1 1 100%;
+  }
+
+  .modal-base-dialog.modal-fullscreen-sm-down {
+    max-height: none;
+    height: 100%;
+  }
+
+  .modal-base-dialog.modal-fullscreen-sm-down .modal-base-content {
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .modal-base-dialog.modal-fullscreen-sm-down .modal-base-footer {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}

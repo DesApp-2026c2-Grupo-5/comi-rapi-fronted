@@ -115,6 +115,17 @@
      (entradas fuertes y movimientos sobre pantalla). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* ============ Capas (z-index) ============ */
+  /* Orden de apilado de la app. Bootstrap ubica backdrop/dialog en 1050/1055;
+     estos tokens documentan la intención para componentes nuevos. No remapean
+     valores existentes: las hojas que ya tienen un z-index fijo lo conservan. */
+  --z-nav: 1020;
+  --z-floating: 1050;
+  --z-backdrop: 1050;
+  --z-dialog: 1055;
+  --z-menu: 1056;
+  --z-toast: 2000;
 }
 
 /* ============ Tema oscuro ============ */

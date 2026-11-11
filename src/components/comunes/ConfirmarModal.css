@@ -1,0 +1,12 @@
+/**
+ * Propósito: Ajustes mobile del modal de confirmación.
+ * Contenido: Botones a ancho completo en pantallas chicas.
+ * Dependencias: Se importa desde ConfirmarModal.jsx.
+ * Uso: Importado por ConfirmarModal.jsx.
+ */
+
+@media (max-width: 575.98px) {
+  .confirmar-modal-acciones .btn {
+    width: 100%;
+  }
+}
