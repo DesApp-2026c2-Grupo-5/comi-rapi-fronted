@@ -7,12 +7,12 @@
  *            sucursales se leen con TanStack Query; las mutaciones invalidan
  *            la clave de administradores.
  * Dependencias: react-bootstrap, api/usuarios, hooks/queries
- *               (useAdministradoresQuery, useSucursalesQuery), react-icons,
+ *               (useAdministradoresQuery), react-icons, hooks/useSucursal,
  *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <GestionAdministradores /> - Se renderiza en GestionAdministradoresPage.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -30,10 +30,8 @@ import {
   crearUsuarioPanel,
   actualizarUsuarioPanel,
 } from '../../api/usuarios';
-import {
-  useAdministradoresQuery,
-  useSucursalesQuery,
-} from '../../hooks/queries';
+import { useAdministradoresQuery } from '../../hooks/queries';
+import { useSucursal } from '../../hooks/useSucursal';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
 const inicialesDe = (admin) => {
@@ -75,8 +73,13 @@ const GestionAdministradores = () => {
     () => dataAdministradores?.items || [],
     [dataAdministradores]
   );
-  const { data: dataSucursales } = useSucursalesQuery({ incluirInactivas: true });
-  const sucursales = dataSucursales || [];
+  // La lista (incluidas inactivas) la carga SucursalProvider para el superadmin:
+  // esta pantalla la consume del contexto y sólo relee si la caché está vencida.
+  const { sucursales = [], obtenerSucursales } = useSucursal();
+
+  useEffect(() => {
+    obtenerSucursales();
+  }, [obtenerSucursales]);
 
   const [errorAccion, setErrorAccion] = useState('');
   const [buscar, setBuscar] = useState('');

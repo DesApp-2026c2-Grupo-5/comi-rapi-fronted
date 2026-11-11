@@ -122,7 +122,9 @@ export const SucursalProvider = ({ children }) => {
     if (!habilitadaRef.current) return sucursalesRef.current;
     if (fetchingRef.current) return sucursalesRef.current;
     if (!staleRef.current) return sucursalesRef.current;
-    const resultado = await refetch();
+    // `cancelRefetch: false` reutiliza la lectura en curso en vez de abortarla
+    // y repetirla si otro efecto la disparó casi al mismo tiempo.
+    const resultado = await refetch({ cancelRefetch: false });
     return resultado.data || LISTA_VACIA;
   }, [refetch]);
 
@@ -131,15 +133,15 @@ export const SucursalProvider = ({ children }) => {
   const [asignacionPendiente, setAsignacionPendiente] = useState(false);
 
   /**
-   * Refresco en segundo plano (socket, pestaña visible, intervalo). Sólo actúa
-   * si la lista ya fue solicitada alguna vez: nunca habilita la consulta por sí
-   * solo, para no romper la carga perezosa del cliente ni sumar GETs
-   * innecesarios. A diferencia de `obtenerSucursalesFn`, fuerza la relectura
-   * porque estos eventos indican que el estado del backend cambió.
+   * Refresco en segundo plano (socket y pestaña visible). Sólo actúa si la
+   * lista ya fue solicitada alguna vez: nunca habilita la consulta por sí solo,
+   * para no romper la carga perezosa del cliente ni sumar GETs innecesarios. A
+   * diferencia de `obtenerSucursalesFn`, fuerza la relectura porque estos
+   * eventos indican que el estado del backend cambió.
    */
   const refrescarSucursalesEnSegundoPlano = useCallback(async () => {
     if (!habilitadaRef.current) return;
-    await refetch();
+    await refetch({ cancelRefetch: false });
   }, [refetch]);
 
   /**
@@ -289,8 +291,10 @@ export const SucursalProvider = ({ children }) => {
   // superadmin). Cuando viene de un alta/edición/baja trae `sucursalId` y el
   // evento `sucursal_actualizado` ya actualiza la caché con el objeto completo:
   // no hace falta otra lectura. El resto (vigía, cambio de margen) no trae
-  // datos y sí obliga a releer para refrescar `abiertaAhora`. Al reconectar
-  // también se refresca, porque los cambios ocurridos sin conexión no llegaron.
+  // datos y sí obliga a releer para refrescar `abiertaAhora`.
+  // Las RECONEXIONES reales las revalida RealtimeBridge (invalida
+  // ['public', 'sucursales']): acá no se registra otro listener de `connect`
+  // para no duplicar ese GET.
   useEffect(() => {
     if (!hydrated || !emailSesion) return undefined;
     const instancia = conectarSocket();
@@ -298,30 +302,15 @@ export const SucursalProvider = ({ children }) => {
       if (payload && payload.sucursalId) return;
       refrescarSucursalesEnSegundoPlano();
     };
-    instancia.on('connect', alCambiarEstado);
     instancia.on(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarEstado);
-    return () => {
-      instancia.off('connect', alCambiarEstado);
+    return () =>
       instancia.off(EVENTOS_SOCKET.SUCURSAL_ESTADO, alCambiarEstado);
-    };
   }, [hydrated, emailSesion, refrescarSucursalesEnSegundoPlano]);
 
   // `abiertaAhora`, `cierrePedidos` y `proximaApertura` son una foto del
-  // backend al momento de la consulta. Se refrescan al volver a la pestaña y
-  // cada dos minutos, sin polling agresivo: el backend revalida igual al crear
-  // el pedido y al confirmar el pago, y los contadores de las pantallas usan el
-  // deadline (`segundosRestantes`) que ya vino en esa foto.
-  useEffect(() => {
-    const alVolver = () => {
-      if (!document.hidden) refrescarSucursalesEnSegundoPlano();
-    };
-    document.addEventListener('visibilitychange', alVolver);
-    const intervalo = setInterval(alVolver, 120000);
-    return () => {
-      document.removeEventListener('visibilitychange', alVolver);
-      clearInterval(intervalo);
-    };
-  }, [refrescarSucursalesEnSegundoPlano]);
+  // backend al momento de la consulta. Al volver a la pestaña, TanStack Query
+  // ya revalida las consultas vencidas (`refetchOnWindowFocus`): no hace falta
+  // un segundo listener de `visibilitychange`, que duplicaba ese GET.
 
   // Sucursales cercanas (solo activas) calculadas para el cliente
   const sucursalesCercanas = useMemo(

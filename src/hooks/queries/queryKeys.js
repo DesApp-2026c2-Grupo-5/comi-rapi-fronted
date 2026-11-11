@@ -142,5 +142,23 @@ export const queryKeys = {
       'elegibles',
       pedidoId === null || pedidoId === undefined ? 'todas' : String(pedidoId),
     ],
+    // Quejas: bandeja paginada para ADMIN/SUPERADMIN y mis quejas para CLIENTE
+    quejas: ({ estado = '', q = '', sucursalId = '', pagina = 1, limite = 20 } = {}) => [
+      'private',
+      'quejas',
+      'bandeja',
+      estado || 'sin-estado',
+      q || 'sin-busqueda',
+      sucursalId ? String(sucursalId) : 'todas',
+      String(pagina),
+      String(limite),
+    ],
+    misQuejas: (pedidoId = null) => [
+      'private',
+      'quejas',
+      'mias',
+      pedidoId ? String(pedidoId) : 'todas',
+    ],
+    queja: (id) => ['private', 'quejas', 'detalle', String(id)],
   },
 };

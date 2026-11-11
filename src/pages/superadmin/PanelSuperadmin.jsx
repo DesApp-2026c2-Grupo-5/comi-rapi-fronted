@@ -7,11 +7,14 @@
 
 import { Container } from 'react-bootstrap';
 import ReporteNegocio from '../../components/reportes/ReporteNegocio';
+import ErrorBoundary from '../../components/comunes/ErrorBoundary';
 
 const PanelSuperadminPage = () => {
   return (
     <Container fluid className="py-4">
-      <ReporteNegocio />
+      <ErrorBoundary>
+        <ReporteNegocio />
+      </ErrorBoundary>
     </Container>
   );
 };

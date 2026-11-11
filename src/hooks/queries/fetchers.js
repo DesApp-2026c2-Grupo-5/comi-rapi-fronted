@@ -310,3 +310,70 @@ export const fetchPlantillaPersonalizacion = ({ id, signal } = {}) =>
   apiGet(`/personalizacion/categorias/${encodeURIComponent(id)}`, {
     signal,
   }).then(desenvolver);
+
+/**
+ * Bandeja de quejas paginada (ADMIN/SUPERADMIN) o mis quejas (CLIENTE).
+ * Normaliza la respuesta paginada del backend a { items, meta }.
+ * @param {{ estado?: string, q?: string, sucursalId?: number|string,
+ *   pagina?: number, limite?: number, pedidoId?: number|string }} [opciones]
+ */
+export const fetchQuejas = async ({
+  estado = '',
+  q = '',
+  sucursalId = '',
+  pagina = 1,
+  limite = 20,
+  signal,
+} = {}) => {
+  const params = new URLSearchParams();
+  if (estado) params.set('estado', estado);
+  if (q) params.set('q', q);
+  if (sucursalId) params.set('sucursalId', sucursalId);
+  if (pagina) params.set('pagina', String(pagina));
+  if (limite) params.set('limite', String(limite));
+  const query = params.toString();
+  const resultado = await apiGet(
+    `/quejas${query ? `?${query}` : ''}`,
+    { signal }
+  );
+  if (!resultado.success) {
+    throw new ApiError(resultado.error || 'No se pudieron cargar los reclamos.', resultado.status);
+  }
+  if (Array.isArray(resultado.data)) {
+    return { items: resultado.data, meta: null };
+  }
+  return {
+    items: resultado.data?.items || [],
+    meta: {
+      total: resultado.data?.total,
+      pagina: resultado.data?.pagina,
+      limite: resultado.data?.limite,
+      paginas: resultado.data?.paginas,
+    },
+  };
+};
+
+/**
+ * Mis quejas (CLIENTE). Opcionalmente acotadas a un pedido.
+ * @param {number|string} [pedidoId]
+ */
+export const fetchMisQuejas = async ({ pedidoId = null, signal } = {}) => {
+  const query = pedidoId ? `?pedidoId=${pedidoId}` : '';
+  const resultado = await apiGet(`/quejas/mias${query}`, { signal });
+  if (!resultado.success) {
+    throw new ApiError(resultado.error || 'No se pudieron cargar tus reclamos.', resultado.status);
+  }
+  return Array.isArray(resultado.data) ? resultado.data : [];
+};
+
+/**
+ * Detalle de una queja por ID.
+ * @param {number|string} id
+ */
+export const fetchQueja = async ({ id, signal } = {}) => {
+  const resultado = await apiGet(`/quejas/${encodeURIComponent(id)}`, { signal });
+  if (!resultado.success) {
+    throw new ApiError(resultado.error || 'No se pudo cargar el reclamo.', resultado.status);
+  }
+  return resultado.data;
+};

@@ -256,6 +256,23 @@ const Carrito = () => {
       return;
     }
 
+    // Verificar items con opciones eliminadas/desactivadas
+    const itemsConRevision = items.filter(
+      (item) => item.personalizacion?._requiereRevision
+    );
+    if (itemsConRevision.length > 0) {
+      const opciones = itemsConRevision.flatMap((item) =>
+        (item.personalizacion._opcionesEliminadas || []).map(
+          (o) => `${o.tipo}: ${o.nombre}`
+        )
+      );
+      notificar(
+        `Hay opciones eliminadas o desactivadas en tu carrito: ${opciones.join(', ')}. Revisá el carrito antes de confirmar.`,
+        'warning'
+      );
+      return;
+    }
+
     // Sin dirección: el cliente no puede confirmar
     const direccion = direccionSeleccionada;
     if (!direccion) {
@@ -299,6 +316,24 @@ const Carrito = () => {
       navigate("/login", { state: { from: origen } });
       return;
     }
+
+    // Verificar items con opciones eliminadas/desactivadas
+    const itemsConRevision = items.filter(
+      (item) => item.personalizacion?._requiereRevision
+    );
+    if (itemsConRevision.length > 0) {
+      const opciones = itemsConRevision.flatMap((item) =>
+        (item.personalizacion._opcionesEliminadas || []).map(
+          (o) => `${o.tipo}: ${o.nombre}`
+        )
+      );
+      notificar(
+        `Hay opciones eliminadas o desactivadas en tu carrito: ${opciones.join(', ')}. Revisá el carrito antes de pagar.`,
+        'warning'
+      );
+      return;
+    }
+
     if (!pendienteObsoleto) {
       navigate("/cliente/pago");
       return;
@@ -397,10 +432,29 @@ const Carrito = () => {
             </Col>
           )}
 
+          {/* Aviso: items con opciones eliminadas/desactivadas */}
+          {(() => {
+            const itemsConRevision = items.filter(
+              (item) => item.personalizacion?._requiereRevision
+            );
+            if (itemsConRevision.length === 0) return null;
+            const opciones = itemsConRevision.flatMap((item) =>
+              (item.personalizacion._opcionesEliminadas || []).map(
+                (o) => `${o.tipo}: ${o.nombre}`
+              )
+            );
+            return (
+              <Col xs={12} className="mb-3">
+                <Alert variant="warning" className="mb-0" role="status">
+                  <strong>Atención:</strong> Hay opciones eliminadas o desactivadas
+                  en tu carrito: {opciones.join(', ')}.{" "}
+                  Revisá los productos afectados antes de confirmar.
+                </Alert>
+              </Col>
+            );
+          })()}
+
           {/* Aviso de disponibilidad: ninguna sucursal puede tomar el pedido
-              desde esta dirección (cerradas o sin stock). El motivo lo escribe
-              el backend, incluida la próxima apertura. */}
-          {sinSucursalViable && (
             <Col xs={12} className="mb-3">
               <Alert variant="danger" className="mb-0" role="status">
                 <strong>No podemos tomar tu pedido ahora.</strong>{" "}

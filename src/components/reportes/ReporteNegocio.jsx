@@ -59,7 +59,8 @@ import { SkeletonPagina } from '../comunes/Skeleton';
 import { formatDateOnly, formatPrice } from '../../utils/formatters';
 import { ROLES } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
-import { useReportesQuery, useSucursalesQuery } from '../../hooks/queries';
+import { useReportesQuery } from '../../hooks/queries';
+import { useSucursal } from '../../hooks/useSucursal';
 import { conectarSocket, alReconectar, EVENTOS_SOCKET } from '../../services/socket';
 import {
   BarraComparativa,
@@ -300,6 +301,9 @@ const ReporteNegocio = () => {
   // inicial (skeleton) e `isFetching` el refresco silencioso (spinner del
   // botón), igual que antes.
   const queryClient = useQueryClient();
+  // Para SUPERADMIN la consulta SIEMPRE está habilitada: sucursalId vacío
+  // significa "todas las sucursales" (consolidado). El backend lo resuelve.
+  const sucursalIdParaQuery = sucursalId || undefined;
   const {
     data: datos,
     isPending: cargando,
@@ -309,8 +313,8 @@ const ReporteNegocio = () => {
   } = useReportesQuery({
     desde,
     hasta,
-    sucursalId: sucursalId || undefined,
-    enabled: !rangoInvalido,
+    sucursalId: sucursalIdParaQuery,
+    enabled: hydrated && !rangoInvalido,
   });
   const error = rangoInvalido
     ? 'La fecha desde no puede ser posterior a la hasta.'
@@ -318,10 +322,7 @@ const ReporteNegocio = () => {
 
   // El selector de sucursales sólo lo usa el superadministrador; la clave es
   // pública y la comparte con el resto de la app.
-  const { data: sucursales = [] } = useSucursalesQuery({
-    incluirInactivas: true,
-    enabled: esSuperadmin,
-  });
+  const { sucursales = [] } = useSucursal();
 
   // Las métricas dependen de pedidos, catálogo, parámetros y stock. El socket
   // es sólo un aviso: se invalida la consulta con un pequeño debounce para
@@ -382,21 +383,24 @@ const ReporteNegocio = () => {
     );
 
   const productos = useMemo(() => {
+    if (!datos?.productos) {
+      return { masVendidos: [], mayorFacturacion: [], menosVendidos: [] };
+    }
     const texto = busquedaProductos.trim().toLowerCase();
     const coincide = (fila) =>
       !texto ||
       `${fila.nombre} ${fila.categoria || ''}`.toLowerCase().includes(texto);
     return {
       masVendidos: ordenarFilas(
-        (datos?.productos.masVendidos || []).filter(coincide),
+        (datos.productos.masVendidos || []).filter(coincide),
         ordenVendidos
       ),
       mayorFacturacion: ordenarFilas(
-        (datos?.productos.mayorFacturacion || []).filter(coincide),
+        (datos.productos.mayorFacturacion || []).filter(coincide),
         ordenFacturacion
       ),
       menosVendidos: ordenarFilas(
-        (datos?.productos.menosVendidos || []).filter(coincide),
+        (datos.productos.menosVendidos || []).filter(coincide),
         ordenMenosVendidos
       ),
     };
@@ -433,7 +437,8 @@ const ReporteNegocio = () => {
     );
   }
 
-  if (error && !datos) {
+  if (error) {
+    // Siempre mostramos el error aunque haya datos previos (stale-while-revalidate)
     return (
       <Alert variant="danger" role="alert">
         <p className="mb-2">{error}</p>
@@ -444,7 +449,14 @@ const ReporteNegocio = () => {
     );
   }
 
-  if (!datos) return null;
+  if (!datos) {
+    // Sin datos y sin error: la query no se disparó o aún no responde.
+    // Devolvemos null para no romper el layout, pero logueamos para diagnóstico.
+    if (import.meta.env.DEV) {
+      console.warn('[ReporteNegocio] Sin datos ni error. rangoInvalido:', rangoInvalido, 'cargando:', cargando);
+    }
+    return null;
+  }
 
   const { resumen, porDia, porSucursal, cancelaciones } = datos;
   const anterior = resumen.anterior;

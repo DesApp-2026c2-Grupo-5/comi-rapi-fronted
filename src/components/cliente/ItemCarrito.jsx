@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, Row, Col, Form, Button } from "react-bootstrap";
 import { FaTrash, FaMinus, FaPlus, FaPen, FaStickyNote } from "react-icons/fa";
 import { useCarrito } from "../../hooks/useCarrito";
@@ -7,6 +7,11 @@ import { formatPrice } from "../../utils/formatters";
 import { resolverImagen } from "../../utils/imagenes";
 import { NOTA_MAX_CARACTERES } from "../../utils/notaHelpers";
 import "./ItemCarrito.css";
+
+// Lazy-load del modal para evitar dependencia circular
+const ProductoPersonalizarModal = React.lazy(() =>
+  import("./ProductoPersonalizarModal")
+);
 
 const ItemCarrito = ({ item }) => {
   const {
@@ -28,6 +33,9 @@ const ItemCarrito = ({ item }) => {
   const [borradorNota, setBorradorNota] = useState(nota || "");
   const [notaAlAbrir, setNotaAlAbrir] = useState(nota || "");
 
+  // Modal de edición de personalización
+  const [editandoPersonalizacion, setEditandoPersonalizacion] = useState(false);
+
   const precioUnitario = precioUnitarioPersonalizado ?? producto.precio;
   const subtotal = precioUnitario * cantidad;
   const tienePersonalizacion =
@@ -39,6 +47,10 @@ const ItemCarrito = ({ item }) => {
       (personalizacion.condimentos && personalizacion.condimentos.length > 0));
 
   const idItem = idLinea || producto.id;
+
+  const abrirEdicionPersonalizacion = () => {
+    setEditandoPersonalizacion(true);
+  };
 
   const handleIncrementar = () => {
     if (cantidad < maxUnidades) {
@@ -75,8 +87,9 @@ const ItemCarrito = ({ item }) => {
   };
 
   return (
-    <Card className="item-carrito">
-      <Card.Body className="p-3">
+    <>
+      <Card className="item-carrito">
+        <Card.Body className="p-3">
         <Row className="align-items-center g-3">
           <Col xs={3} md={2}>
             {/* alt vacío: el nombre del producto está en la columna de al lado y
@@ -251,8 +264,37 @@ const ItemCarrito = ({ item }) => {
             </Button>
           )}
         </div>
-      </Card.Body>
-    </Card>
+
+        {/* Botón editar personalización (visible si hay personalización, independiente de la nota) */}
+        {tienePersonalizacion && (
+          <div className="item-carrito-personalizacion-editar mt-2">
+            <Button
+              variant="link"
+              size="sm"
+              className="item-carrito-nota-editar"
+              onClick={abrirEdicionPersonalizacion}
+              aria-label={`Editar personalización de ${producto.nombre}`}
+            >
+              <FaPen aria-hidden="true" size={12} />
+              Editar personalización
+            </Button>
+          </div>
+        )}
+
+        </Card.Body>
+      </Card>
+
+      {editandoPersonalizacion && (
+        <React.Suspense fallback={<div className="text-center py-3">Cargando editor…</div>}>
+          <ProductoPersonalizarModal
+            show={editandoPersonalizacion}
+            onHide={() => setEditandoPersonalizacion(false)}
+            producto={producto}
+            itemEditando={item}
+          />
+        </React.Suspense>
+      )}
+    </>
   );
 };
 

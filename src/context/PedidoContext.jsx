@@ -89,7 +89,7 @@ export const PedidoProvider = ({ children }) => {
   // La caché guarda la respuesta cruda del backend; el filtro por rol es un
   // derivado de la vista y se recalcula sin volver a pedir la lista.
   const pedidos = useMemo(
-    () => filtrarPorRol(pedidosQuery.data),
+    () => filtrarPorRol(Array.isArray(pedidosQuery.data) ? pedidosQuery.data : []),
     [filtrarPorRol, pedidosQuery.data]
   );
 

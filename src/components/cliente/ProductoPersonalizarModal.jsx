@@ -14,10 +14,23 @@ import GrupoOpciones from './GrupoOpciones';
 import Contador from './Contador';
 import './ProductoPersonalizarModal.css';
 
-const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
-  const { agregarAlCarrito } = useCarrito();
+const ProductoPersonalizarModal = ({ show, onHide, producto, promocion, itemEditando = null }) => {
+  const { agregarAlCarrito, items, actualizarPersonalizacion } = useCarrito();
   const { parametros } = useParametros();
   const { notificar } = useNotificaciones();
+
+  // Verificar si hay items en el carrito para este producto con opciones eliminadas/desactivadas.
+  // En modo edición se excluye la línea que se está corrigiendo: si no, sería
+  // imposible guardar justamente la personalización que quedó desactualizada.
+  const itemsConRevision = useMemo(() => {
+    if (!producto) return [];
+    return items.filter(
+      (item) =>
+        item.producto.id === producto.id &&
+        item.personalizacion?._requiereRevision &&
+        (!itemEditando || item.idLinea !== itemEditando.idLinea)
+    );
+  }, [items, producto, itemEditando]);
 
   // Lectura específica por producto y su categoría: solo se trae lo que se va
   // a mostrar, no el catálogo entero de personalización. Se habilita solo cuando
@@ -150,6 +163,44 @@ const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
   const [acompCant, setAcompCant] = useState({});
   const [condCant, setCondCant] = useState({});
 
+  // Inicializar estado desde itemEditando (modo edición)
+  useEffect(() => {
+    if (itemEditando?.personalizacion) {
+      const pers = itemEditando.personalizacion;
+      const extraMap = {};
+      (pers.extras || []).forEach((e) => {
+        extraMap[e.id] = e.cantidad;
+      });
+      const acompMap = {};
+      (pers.acompanamientos || []).forEach((a) => {
+        acompMap[a.id] = a.cantidad;
+      });
+      const condMap = {};
+      (pers.condimentos || []).forEach((c) => {
+        condMap[c.id] = c.cantidad;
+      });
+      const sinArr = pers.sin || [];
+      const sinMap = {};
+      sinArr.forEach((s) => {
+        sinMap[s] = 1;
+      });
+
+      setExtraCant(extraMap);
+      setAcompCant(acompMap);
+      setCondCant(condMap);
+      setSinCant(sinMap);
+      setUnidades(itemEditando.cantidad || 1);
+    } else {
+      // Reset al abrir en modo nuevo
+      setExtraCant({});
+      setAcompCant({});
+      setCondCant({});
+      setSinCant({});
+      setUnidades(1);
+    }
+    setVista('principal');
+  }, [itemEditando]);
+
   const reset = () => {
     setVista('principal');
     setUnidades(1);
@@ -255,19 +306,51 @@ const cambiarUnidades = (d) =>
       return;
     }
 
-    // El mínimo de cada elemento es obligatorio: si alguno pide (por ejemplo)
-    // al menos 2, no se puede agregar con menos.
-    const incumplidos = [
+    // Verificar si hay items en el carrito para este producto que requieren revisión
+    if (itemsConRevision.length > 0) {
+      const opciones = itemsConRevision.flatMap((item) =>
+        (item.personalizacion._opcionesEliminadas || []).map(
+          (o) => `${o.tipo}: ${o.nombre}`
+        )
+      );
+      if (opciones.length > 0) {
+        notificar(
+          `Hay opciones eliminadas o desactivadas en tu carrito para este producto: ${opciones.join(', ')}. Revisá el carrito antes de continuar.`,
+          'warning'
+        );
+        return;
+      }
+    }
+
+    // Validar mínimos
+    const incumplidosMin = [
       ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0 })),
       ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0 })),
       ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0 })),
       ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.id] || 0 })),
     ].filter(({ op, valor }) => valor < (op.minimo || 0));
 
-    if (incumplidos.length > 0) {
-      const { op, valor } = incumplidos[0];
+    if (incumplidosMin.length > 0) {
+      const { op, valor } = incumplidosMin[0];
       notificar(
         `Debés elegir al menos ${op.minimo} de "${op.nombre}" (llevás ${valor}).`,
+        'warning'
+      );
+      return;
+    }
+
+    // Validar máximos (límites vigentes)
+    const incumplidosMax = [
+      ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0, max: op.maximo })),
+      ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0, max: op.maximo })),
+      ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0, max: op.maximo })),
+      ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.id] || 0, max: op.maximo })),
+    ].filter(({ op, valor, max }) => max !== undefined && max !== null && valor > max);
+
+    if (incumplidosMax.length > 0) {
+      const { op, valor, max } = incumplidosMax[0];
+      notificar(
+        `No podés elegir más de ${max} de "${op.nombre}" (llevás ${valor}).`,
         'warning'
       );
       return;
@@ -279,7 +362,16 @@ const cambiarUnidades = (d) =>
       acompanamientos: acompLista,
       condimentos: condLista,
     };
-    agregarAlCarrito(producto, unidades, personalizacion);
+
+    if (itemEditando) {
+      actualizarPersonalizacion(
+        itemEditando.idLinea ?? itemEditando.producto?.id,
+        personalizacion,
+        unidades
+      );
+    } else {
+      agregarAlCarrito(producto, unidades, personalizacion);
+    }
     handleClose();
   };
 
@@ -340,7 +432,7 @@ const cambiarUnidades = (d) =>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
           <Button className="btn-primary" onClick={handleAgregar}>
-            Agregar — {formatPrice(producto.precio * unidades)}
+            {itemEditando ? 'Guardar cambios' : 'Agregar'} — {formatPrice(producto.precio * unidades)}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -457,13 +549,19 @@ const cambiarUnidades = (d) =>
                   es obligatorio.
                 </div>
               )}
+              {itemsConRevision.length > 0 && (
+                <div className="alert alert-warning small mb-2" role="alert">
+                  <strong>Atención:</strong> Hay opciones eliminadas o desactivadas en tu carrito
+                  para este producto. Revisá el carrito antes de continuar.
+                </div>
+              )}
               <Button
                 className="btn-primary w-100 py-3 fw-bold d-flex justify-content-between align-items-center btn-agregar"
                 onClick={handleAgregar}
                 disabled={hayObligatorioAgotado}
               >
                 <span className="badge bg-white btn-agregar-cantidad">{unidades}</span>
-                <span>Agregar a mi pedido</span>
+                <span>{itemEditando ? 'Guardar cambios' : 'Agregar a mi pedido'}</span>
                 <span className="ms-auto">{formatPrice(total)}</span>
               </Button>
             </div>
