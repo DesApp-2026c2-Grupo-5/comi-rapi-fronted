@@ -2,17 +2,19 @@
  * Propósito: Alta y edición de un insumo (extra o condimento) en un modal.
  * Contenido: formulario con nombre, tipo, precio (sólo extra) y estado; valida
  *            localmente antes de avisar al padre.
- * Dependencias: react-bootstrap (Modal, Form, Button, InputGroup), react-icons.
+ * Dependencias: react-bootstrap (Form, Button, InputGroup), react-icons,
+ *               ModalFormulario.
  * Uso: <FormularioInsumo mostrar insumo={...} onGuardar={fn} onCancelar={fn} />
  *
  * El insumo es una entidad propia del catálogo: no es un producto. El alta
  * crea sus filas de stock en 0; las cantidades se cargan desde Stock.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Modal, Form, Button, InputGroup } from 'react-bootstrap';
+import { Form, Button, InputGroup } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
+import ModalFormulario from '../comunes/ModalFormulario';
 
 const VACIO = { nombre: '', tipo: 'extra', precio: '', activo: true };
 
@@ -25,6 +27,7 @@ const FormularioInsumo = ({
 }) => {
   const [datos, setDatos] = useState(VACIO);
   const [errores, setErrores] = useState({});
+  const nombreRef = useRef(null);
 
   // Cada vez que se abre el modal se sincroniza con el insumo recibido. Se
   // compara por id para no pisar lo que el usuario está escribiendo si el
@@ -86,89 +89,94 @@ const FormularioInsumo = ({
   const esEdicion = Boolean(insumo);
 
   return (
-    <Modal show={mostrar} onHide={onCancelar} centered aria-labelledby="titulo-form-insumo">
-      <Form onSubmit={enviar}>
-        <Modal.Header closeButton>
-          <Modal.Title id="titulo-form-insumo" className="h5">
-            {esEdicion ? 'Editar insumo' : 'Nuevo insumo'}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group className="mb-3" controlId="insumo-nombre">
-            <Form.Label>Nombre</Form.Label>
-            <Form.Control
-              value={datos.nombre}
-              onChange={(e) => cambiar('nombre', e.target.value)}
-              isInvalid={Boolean(errores.nombre)}
-              placeholder="Ej.: Queso extra, Mayonesa"
-              autoFocus
-            />
-            <Form.Control.Feedback type="invalid">
-              {errores.nombre}
-            </Form.Control.Feedback>
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="insumo-tipo">
-            <Form.Label>Tipo</Form.Label>
-            <Form.Select
-              value={datos.tipo}
-              onChange={(e) => cambiar('tipo', e.target.value)}
-              isInvalid={Boolean(errores.tipo)}
-            >
-              <option value="extra">Extra</option>
-              <option value="condimento">Condimento</option>
-            </Form.Select>
-            <Form.Control.Feedback type="invalid">
-              {errores.tipo}
-            </Form.Control.Feedback>
-          </Form.Group>
-
-          {datos.tipo === 'extra' && (
-            <Form.Group className="mb-3" controlId="insumo-precio">
-              <Form.Label>Precio</Form.Label>
-              <InputGroup hasValidation>
-                <InputGroup.Text>$</InputGroup.Text>
-                <Form.Control
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={datos.precio}
-                  onChange={(e) => cambiar('precio', e.target.value)}
-                  isInvalid={Boolean(errores.precio)}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errores.precio}
-                </Form.Control.Feedback>
-              </InputGroup>
-            </Form.Group>
-          )}
-
-          {esEdicion && (
-            <Form.Group controlId="insumo-activo">
-              <Form.Check
-                type="switch"
-                label="Disponible en el catálogo"
-                checked={datos.activo}
-                onChange={(e) => cambiar('activo', e.target.checked)}
-              />
-              <Form.Text className="text-muted">
-                Si lo desactivás, deja de ofrecerse pero conserva el stock y el
-                histórico de los pedidos.
-              </Form.Text>
-            </Form.Group>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={onCancelar} disabled={cargando}>
+    <ModalFormulario
+      mostrar={mostrar}
+      onCerrar={onCancelar}
+      titulo={esEdicion ? 'Editar insumo' : 'Nuevo insumo'}
+      onSubmit={enviar}
+      cargando={cargando}
+      initialFocusRef={nombreRef}
+      noValidate
+      footer={
+        <>
+          <Button
+            variant="outline-secondary"
+            onClick={onCancelar}
+            disabled={cargando}
+          >
             Cancelar
           </Button>
           <Button variant="primary" type="submit" disabled={cargando}>
             <FaSave className="me-1" aria-hidden="true" />
             {cargando ? 'Guardando…' : 'Guardar'}
           </Button>
-        </Modal.Footer>
-      </Form>
-    </Modal>
+        </>
+      }
+    >
+      <Form.Group className="mb-3" controlId="insumo-nombre">
+        <Form.Label>Nombre</Form.Label>
+        <Form.Control
+          ref={nombreRef}
+          value={datos.nombre}
+          onChange={(e) => cambiar('nombre', e.target.value)}
+          isInvalid={Boolean(errores.nombre)}
+          placeholder="Ej.: Queso extra, Mayonesa"
+        />
+        <Form.Control.Feedback type="invalid">
+          {errores.nombre}
+        </Form.Control.Feedback>
+      </Form.Group>
+
+      <Form.Group className="mb-3" controlId="insumo-tipo">
+        <Form.Label>Tipo</Form.Label>
+        <Form.Select
+          value={datos.tipo}
+          onChange={(e) => cambiar('tipo', e.target.value)}
+          isInvalid={Boolean(errores.tipo)}
+        >
+          <option value="extra">Extra</option>
+          <option value="condimento">Condimento</option>
+        </Form.Select>
+        <Form.Control.Feedback type="invalid">
+          {errores.tipo}
+        </Form.Control.Feedback>
+      </Form.Group>
+
+      {datos.tipo === 'extra' && (
+        <Form.Group className="mb-3" controlId="insumo-precio">
+          <Form.Label>Precio</Form.Label>
+          <InputGroup hasValidation>
+            <InputGroup.Text>$</InputGroup.Text>
+            <Form.Control
+              type="number"
+              min="0"
+              step="0.01"
+              value={datos.precio}
+              onChange={(e) => cambiar('precio', e.target.value)}
+              isInvalid={Boolean(errores.precio)}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errores.precio}
+            </Form.Control.Feedback>
+          </InputGroup>
+        </Form.Group>
+      )}
+
+      {esEdicion && (
+        <Form.Group controlId="insumo-activo">
+          <Form.Check
+            type="switch"
+            label="Disponible en el catálogo"
+            checked={datos.activo}
+            onChange={(e) => cambiar('activo', e.target.checked)}
+          />
+          <Form.Text className="text-muted">
+            Si lo desactivás, deja de ofrecerse pero conserva el stock y el
+            histórico de los pedidos.
+          </Form.Text>
+        </Form.Group>
+      )}
+    </ModalFormulario>
   );
 };
 

@@ -4,9 +4,10 @@
  *            estados con iconos de react-icons (los futuros quedan oscurecidos y se
  *            encienden al avanzar) y acciones de un clic para cambiar el estado
  *            (validadas por la lógica de transiciones).
- * Dependencias: react-bootstrap (Card, Badge, Button, Container),
- *               react-icons/fa, hooks/usePedidos, services/estadosPedido.js,
- *               utils/constants.js, DetalleItemsPedido, PedidosPendientes.css.
+ * Dependencias: react-bootstrap (Card, Badge, Button, Container, Form, Spinner,
+ *               Alert), react-icons/fa, hooks/usePedidos,
+ *               services/estadosPedido.js, utils/constants.js,
+ *               DetalleItemsPedido, ModalBase, PedidosPendientes.css.
  * Uso: <PedidosPendientes /> - Se renderiza en GestionPedidos.
  *
  * NOTA: El cambio de estado se persiste en la API real (PATCH /pedidos/:id/estado).
@@ -14,7 +15,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Card, Badge, Button, Container, Modal, Form, Spinner, Alert } from 'react-bootstrap';
+import { Card, Badge, Button, Container, Form, Spinner, Alert } from 'react-bootstrap';
 import { FaTimesCircle, FaArrowRight, FaTimes, FaStore } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
@@ -34,6 +35,7 @@ import {
 import { formatPrice } from '../../utils/formatters';
 import HistorialStepper from '../comunes/HistorialStepper';
 import DetalleItemsPedido from '../comunes/DetalleItemsPedido';
+import ModalBase from '../comunes/ModalBase';
 import './PedidosPendientes.css';
 
 const FLUJO_ESTADOS = ESTADOS_VISIBLES_CLIENTE.filter((e) => e !== ESTADOS_PEDIDO.CANCELADO);
@@ -349,66 +351,74 @@ const PedidosPendientes = () => {
 
       {/* Modal de reasignación (solo superadmin con contexto). Las candidatas
           salen del backend: sucursales en cobertura con stock suficiente. */}
-      <Modal show={Boolean(pedidoAReasignar)} onHide={() => setPedidoAReasignar(null)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Reasignar pedido #{pedidoAReasignar?.id}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p className="text-muted">
-            Solo se ofrecen sucursales con cobertura de la dirección del cliente
-            y stock suficiente.
-          </p>
-          {cargandoCandidatas ? (
-            <div className="text-center py-3">
-              <Spinner animation="border" role="status" aria-label="Buscando sucursales" />
-              <p className="text-muted mt-2 mb-0">
-                Buscando sucursales con cobertura y stock…
-              </p>
-            </div>
-          ) : candidatas.length === 0 ? (
-            <Alert variant="info" className="mb-0">
-              No hay otras sucursales con cobertura y stock para este pedido.
-            </Alert>
-          ) : (
-            <Form.Group>
-              <Form.Select
-                value={sucursalDestino}
-                onChange={(e) => setSucursalDestino(e.target.value)}
-                disabled={reasignando}
-                aria-label="Sucursal destino"
-              >
-                <option value="">Seleccioná una sucursal…</option>
-                {candidatas.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} ({(s.distanciaMetros / 1000).toFixed(1)} km)
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setPedidoAReasignar(null)} disabled={reasignando}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleReasignar}
-            disabled={!sucursalDestino || reasignando || cargandoCandidatas || candidatas.length === 0}
-          >
-            {reasignando ? (
-              <>
-                <Spinner size="sm" className="me-1" animation="border" />
-                Reasignando…
-              </>
-            ) : (
-              'Reasignar'
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <ModalBase
+        mostrar={Boolean(pedidoAReasignar)}
+        onCerrar={() => setPedidoAReasignar(null)}
+        titulo={
+          pedidoAReasignar
+            ? `Reasignar pedido #${pedidoAReasignar.id}`
+            : 'Reasignar pedido'
+        }
+        cargando={reasignando}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setPedidoAReasignar(null)}
+              disabled={reasignando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleReasignar}
+              disabled={!sucursalDestino || reasignando || cargandoCandidatas || candidatas.length === 0}
+            >
+              {reasignando ? (
+                <>
+                  <Spinner size="sm" className="me-1" animation="border" />
+                  Reasignando…
+                </>
+              ) : (
+                'Reasignar'
+              )}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-muted">
+          Solo se ofrecen sucursales con cobertura de la dirección del cliente
+          y stock suficiente.
+        </p>
+        {cargandoCandidatas ? (
+          <div className="text-center py-3">
+            <Spinner animation="border" role="status" aria-label="Buscando sucursales" />
+            <p className="text-muted mt-2 mb-0">
+              Buscando sucursales con cobertura y stock…
+            </p>
+          </div>
+        ) : candidatas.length === 0 ? (
+          <Alert variant="info" className="mb-0">
+            No hay otras sucursales con cobertura y stock para este pedido.
+          </Alert>
+        ) : (
+          <Form.Group>
+            <Form.Select
+              value={sucursalDestino}
+              onChange={(e) => setSucursalDestino(e.target.value)}
+              disabled={reasignando}
+              aria-label="Sucursal destino"
+            >
+              <option value="">Seleccioná una sucursal…</option>
+              {candidatas.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre} ({(s.distanciaMetros / 1000).toFixed(1)} km)
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        )}
+      </ModalBase>
     </Container>
   );
 };
