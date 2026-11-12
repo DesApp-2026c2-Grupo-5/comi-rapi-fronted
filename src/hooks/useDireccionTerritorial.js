@@ -161,7 +161,7 @@ export const useDireccionTerritorial = ({
   // normalizada por el backend, y este select usa localidades BAHRA (la
   // semántica del filtro `localidad` de Georef). Precargarla reintroduciría
   // el bug A.
-  useEffect(() => {
+  const reiniciar = useCallback(() => {
     setCalle(inicial?.calle || '');
     setAltura(inicial?.altura ?? '');
     setProvincia(inicial?.provincia || '');
@@ -172,9 +172,17 @@ export const useDireccionTerritorial = ({
     setResultado(null);
     setSugerencias([]);
     setErrorSugerencias(null);
-    calleSeleccionadaRef.current = null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inicial?.id]);
+    calleSeleccionadaRef.current = inicial?.calle || null;
+  }, [
+    inicial?.calle,
+    inicial?.altura,
+    inicial?.provincia,
+    inicial?.departamento,
+  ]);
+
+  useEffect(() => {
+    reiniciar();
+  }, [reiniciar]);
 
   // ---- Zonas de operación (una sola vez) -------------------------------------
   useEffect(() => {
@@ -657,6 +665,7 @@ export const useDireccionTerritorial = ({
     elegirOpcion,
     confirmar,
     editarDatos,
+    reiniciar,
     mostrarOpcionesExternas,
     mostrarError,
     // utilidades

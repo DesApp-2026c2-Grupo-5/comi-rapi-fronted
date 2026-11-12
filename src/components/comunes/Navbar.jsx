@@ -212,10 +212,10 @@ const menuSuperadmin = [
         prefijo: '/superadmin/clientes',
       },
       {
-        to: '/superadmin/administradores',
+        to: '/superadmin/administrador',
         etiqueta: 'Administradores',
         icono: FaUserTie,
-        prefijo: '/superadmin/administradores',
+        prefijo: '/superadmin/administrador',
       },
     ],
   },

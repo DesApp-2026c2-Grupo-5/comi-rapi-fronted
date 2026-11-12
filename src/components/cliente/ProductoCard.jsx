@@ -109,8 +109,8 @@ const ProductoCard = ({ producto, rank, promocion }) => {
         </Card.Body>
       </Card>
       <ProductoPersonalizarModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
+        mostrar={showModal}
+        onCerrar={() => setShowModal(false)}
         producto={producto}
         promocion={promocion}
       />
@@ -143,9 +143,4 @@ ProductoCard.propTypes = {
     tipo: PropTypes.string.isRequired,
     valor: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   }),
-};
-
-ProductoCard.defaultProps = {
-  rank: undefined,
-  promocion: undefined,
 };

@@ -63,16 +63,27 @@
   }
 }
 
-/* ============ Buscador y filtro de precio ============ */
+/* ============ Filtros del catálogo ============ */
+.catalogo-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
 .catalogo-busqueda {
-  max-width: 520px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  max-width: none;
+  margin-bottom: 0;
 }
 
 .catalogo-busqueda .form-control {
   border: 2px solid var(--color-border-cream);
   border-radius: 12px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.9375rem;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -81,15 +92,77 @@
   box-shadow: 0 0 0 0.2rem rgba(168, 84, 0, 0.2);
 }
 
-/* Grupos de precio: cada uno envuelve input + feedback para que el mensaje
-   de error no desplace ni cambie el ancho del input vecino. */
-.precio-filtros .precio-grupo {
-  flex: 1 1 0;
+.catalogo-filtros-secundarios {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+/* Dropdown ordenar por precio */
+.filtro-orden-precio-contenedor {
   min-width: 0;
 }
 
-.precio-filtros .precio-grupo .form-control {
+.filtro-orden-precio-select {
   width: 100%;
+  min-width: 0;
+  border: 2px solid var(--color-border-cream);
+  border-radius: 50px;
+  padding: 0.5rem 2.25rem 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a85400' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 14px 10px;
+  appearance: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.filtro-orden-precio-select:hover {
+  border-color: var(--color-primary);
+}
+
+.filtro-orden-precio-select:focus {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 0.2rem rgba(168, 84, 0, 0.2);
+  outline: none;
+}
+
+.filtro-orden-precio-select:disabled {
+  opacity: 0.65;
+  background-color: var(--color-surface-muted);
+}
+
+/* Slider de precio */
+.precio-slider-corto {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+  .catalogo-filtros-secundarios {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 0.5rem;
+  }
+
+  .filtro-orden-precio-select {
+    padding: 0.45rem 2rem 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+    background-position: right 0.7rem center;
+  }
+}
+
+@media (max-width: 360px) {
+  .catalogo-filtros-secundarios {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ============ Aviso de categoría vacía / invitado ============ */

@@ -89,21 +89,33 @@
 }
 
 @media (max-height: 760px), (max-width: 30rem) {
+  .direccion-wizard-dialog .modal-base-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .direccion-wizard-dialog .modal-base-descripcion {
+    display: none;
+  }
+
+  .direccion-wizard-dialog .modal-base-footer {
+    padding: 0.5rem 0.75rem;
+  }
+
   .direccion-wizard-modal-body {
-    padding: 0.75rem !important;
+    padding: 0.65rem !important;
   }
 
   .direccion-wizard-pasos {
-    margin-bottom: 0.5rem;
-  }
-
-  .direccion-wizard-cuerpo .dir-form-seccion {
-    margin-top: 0.5rem;
     margin-bottom: 0.35rem;
   }
 
+  .direccion-wizard-cuerpo .dir-form-seccion {
+    margin-top: 0.35rem;
+    margin-bottom: 0.25rem;
+  }
+
   .direccion-wizard-modal-body .mb-3 {
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.35rem !important;
   }
 
   .direccion-wizard-modal-body .form-label {

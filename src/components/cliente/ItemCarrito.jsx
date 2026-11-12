@@ -287,8 +287,8 @@ const ItemCarrito = ({ item }) => {
       {editandoPersonalizacion && (
         <React.Suspense fallback={<div className="text-center py-3">Cargando editor…</div>}>
           <ProductoPersonalizarModal
-            show={editandoPersonalizacion}
-            onHide={() => setEditandoPersonalizacion(false)}
+            mostrar={editandoPersonalizacion}
+            onCerrar={() => setEditandoPersonalizacion(false)}
             producto={producto}
             itemEditando={item}
           />

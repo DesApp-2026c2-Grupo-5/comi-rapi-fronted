@@ -16,27 +16,53 @@ import Contador from './Contador';
 import ModalBase from '../comunes/ModalBase';
 import './ProductoPersonalizarModal.css';
 
+const CONFIG_VACIA = {
+  extra: [],
+  personalizar: [],
+  acompanar: [],
+  condimento: [],
+};
+
+const normalizarElemento = (e) => ({
+  id: String(e.id),
+  nombre: e.nombre,
+  precio:
+    e.precio !== null && e.precio !== undefined ? Number(e.precio) : undefined,
+  productoReferenciaId: e.productoReferenciaId,
+  minimo: e.minimo ?? 0,
+  maximo: e.maximo ?? 1,
+  insumoId: e.insumoId ?? null,
+  stockTotal: e.stockTotal ?? null,
+  agotado: Boolean(e.agotado),
+});
+
+const normalizarElementoPersonalizar = (e) => ({
+  id: String(e.id),
+  nombre: e.nombre,
+  minimo: e.minimo ?? 0,
+  maximo: e.maximo ?? 1,
+});
+
+const normalizarPlantilla = (p) => ({
+  id: String(p.id),
+  nombre: p.nombre,
+  precio:
+    p.precio !== null && p.precio !== undefined ? Number(p.precio) : undefined,
+  productoReferenciaId: p.productoReferenciaId,
+  minimo: p.minimo ?? 0,
+  maximo: p.maximo ?? 1,
+  insumoId: p.insumoId ?? null,
+  stockTotal: p.stockTotal ?? null,
+  agotado: Boolean(p.agotado),
+});
+
 const ProductoPersonalizarModal = ({
   mostrar,
   onCerrar,
-  producto,
-  promocion,
+  producto = null,
+  promocion = null,
   itemEditando = null,
-  // Deprecated props (compatibilidad con ProductoCard.jsx)
-  show,
-  onHide,
 }) => {
-  // Compatibilidad temporal con props deprecated (show/onHide)
-  // ProductoCard.jsx usa show/onHide; mapeamos a mostrar/onCerrar
-  const propMostrar = mostrar ?? show;
-  const propOnCerrar = onCerrar ?? onHide;
-
-  if (import.meta.env.DEV && (show !== undefined || onHide !== undefined)) {
-    console.warn(
-      'ProductoPersonalizarModal: props "show" y "onHide" están deprecadas. Usá "mostrar" y "onCerrar".'
-    );
-  }
-
   const { agregarAlCarrito, items, actualizarPersonalizacion } = useCarrito();
   const { parametros } = useParametros();
   const { notificar } = useNotificaciones();
@@ -64,57 +90,16 @@ const ProductoPersonalizarModal = ({
   const categoriaIdValida =
     categoriaId !== null && categoriaId !== undefined && Number.isFinite(categoriaId);
   const elementosQuery = usePersonalizacionProducto(producto?.id ?? null, {
-    enabled: Boolean(producto) && propMostrar,
+    enabled: Boolean(producto) && mostrar,
   });
   const plantillasQuery = usePlantillasPersonalizacionQuery(categoriaId, {
-    enabled: categoriaIdValida && propMostrar,
-  });
-
-  const elementos = elementosQuery.data || [];
-  const plantillasCategoria = plantillasQuery.data || [];
-
-  const CONFIG_VACIA = {
-    extra: [],
-    personalizar: [],
-    acompanar: [],
-    condimento: [],
-  };
-
-  const normalizarElemento = (e) => ({
-    id: String(e.id),
-    nombre: e.nombre,
-    precio:
-      e.precio !== null && e.precio !== undefined ? Number(e.precio) : undefined,
-    productoReferenciaId: e.productoReferenciaId,
-    minimo: e.minimo ?? 0,
-    maximo: e.maximo ?? 1,
-    insumoId: e.insumoId ?? null,
-    stockTotal: e.stockTotal ?? null,
-    agotado: Boolean(e.agotado),
-  });
-
-  const normalizarElementoPersonalizar = (e) => ({
-    id: String(e.id),
-    nombre: e.nombre,
-    minimo: e.minimo ?? 0,
-    maximo: e.maximo ?? 1,
-  });
-
-  const normalizarPlantilla = (p) => ({
-    id: String(p.id),
-    nombre: p.nombre,
-    precio:
-      p.precio !== null && p.precio !== undefined ? Number(p.precio) : undefined,
-    productoReferenciaId: p.productoReferenciaId,
-    minimo: p.minimo ?? 0,
-    maximo: p.maximo ?? 1,
-    insumoId: p.insumoId ?? null,
-    stockTotal: p.stockTotal ?? null,
-    agotado: Boolean(p.agotado),
+    enabled: categoriaIdValida && mostrar,
   });
 
   const config = useMemo(() => {
     if (!producto) return CONFIG_VACIA;
+    const elementos = elementosQuery.data || [];
+    const plantillasCategoria = plantillasQuery.data || [];
     const todosPorProducto = elementos.filter(
       (e) => String(e.productoId) === String(producto.id)
     );
@@ -168,7 +153,7 @@ const ProductoPersonalizarModal = ({
               .map(normalizarPlantilla)
           : activosPorTipo('condimento').map(normalizarElemento),
     };
-  }, [elementos, plantillasCategoria, producto]);
+  }, [elementosQuery.data, plantillasQuery.data, producto, categoriaId]);
 
   const [vista, setVista] = useState('principal');
   const [unidades, setUnidades] = useState(1);
@@ -234,7 +219,7 @@ const ProductoPersonalizarModal = ({
 
   const handleClose = () => {
     reset();
-    propOnCerrar?.();
+    onCerrar();
   };
 
   const cambiar = (grupo, key, delta, minimo, maximo) => {
@@ -419,7 +404,7 @@ const ProductoPersonalizarModal = ({
   if (!tienePersonalizacion) {
     return (
 <ModalBase
-      mostrar={propMostrar}
+      mostrar={mostrar}
       onCerrar={handleClose}
       titulo={producto.nombre}
       centered
@@ -490,24 +475,20 @@ const ProductoPersonalizarModal = ({
 
   return (
     <ModalBase
-      mostrar={propMostrar}
+      mostrar={mostrar}
       onCerrar={handleClose}
+      titulo={producto.nombre}
+      sinHeader
+      ariaLabel={producto.nombre}
       centered
-      fullscreen="sm-down"
+      variante="fullscreen-mobile"
       dialogClassName="modal-personalizar"
       contentClassName="modal-personalizar-content"
-      aria-labelledby="personalizar-titulo"
       aria-describedby="personalizar-total-desc"
       footer={footer}
+      bodyClassName="p-0"
     >
-      <ModalBase.Header closeButton>
-        <ModalBase.Title id="personalizar-titulo" className="h5 mb-0">
-          {producto.nombre}
-        </ModalBase.Title>
-      </ModalBase.Header>
-
-      <ModalBase.Body className="p-0">
-        {vista === 'principal' && (
+      {vista === 'principal' && (
           <div className="personalizar-principal" ref={vistaPrincipalRef}>
             <div className="text-center p-3 position-relative">
               <Button className="btn-cerrar" onClick={handleClose} aria-label="Cerrar">
@@ -743,8 +724,7 @@ const ProductoPersonalizarModal = ({
             />
           </div>
         )}
-      </ModalBase.Body>
-    </ModalBase>
+      </ModalBase>
   );
 };
 
@@ -764,15 +744,6 @@ ProductoPersonalizarModal.propTypes = {
     personalizacion: PropTypes.object,
     producto: PropTypes.object,
   }),
-  // Deprecated (compatibilidad temporal)
-  show: PropTypes.bool,
-  onHide: PropTypes.func,
-};
-
-ProductoPersonalizarModal.defaultProps = {
-  producto: null,
-  promocion: null,
-  itemEditando: null,
 };
 
 export default ProductoPersonalizarModal;

@@ -24,7 +24,15 @@ import { FaSave } from 'react-icons/fa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
 import { useProductos } from '../../hooks/queries';
+import useMediaQuery from '../../hooks/useMediaQuery';
+import FormularioPasos from './FormularioPasos';
 import './FormularioAdmin.css';
+import './FormularioABM.css';
+
+const PASOS_PROMOCION = [
+  { id: 'datos', etiqueta: 'Datos y vigencia' },
+  { id: 'productos', etiqueta: 'Productos alcanzados' },
+];
 
 const TIPOS = [
   { valor: 'DESCUENTO_PORCENTUAL', etiqueta: 'Porcentual (%)' },
@@ -53,7 +61,9 @@ const nombreCategoria = (producto) => {
 const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => {
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
+  const esMobile = useMediaQuery('(max-width: 575.98px)');
   const porcentajeMaximo = parametros.porcentajeMaximoDescuento;
+  const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('DESCUENTO_PORCENTUAL');
@@ -90,6 +100,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
       );
       setActiva(promocion.activa !== false);
     }
+    setPaso(1);
   }, [promocion]);
 
   useEffect(() => {
@@ -133,34 +144,42 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
     setSeleccionados((prev) => prev.filter((x) => !ids.has(x)));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const validarDatos = () => {
     if (!nombre.trim()) {
       notificar('El nombre es obligatorio.', 'warning');
-      return;
+      return false;
     }
     if (!TIPOS.some((t) => t.valor === tipo)) {
       notificar('Tipo de promoción inválido.', 'warning');
-      return;
+      return false;
     }
     const valorNumero = Number(valor);
     if (Number.isNaN(valorNumero) || valorNumero < 0) {
       notificar('El valor debe ser un número mayor o igual a 0.', 'warning');
-      return;
+      return false;
     }
     if (tipo === 'DESCUENTO_PORCENTUAL' && valorNumero > porcentajeMaximo) {
       notificar(
         `El descuento porcentual no puede superar ${porcentajeMaximo}.`,
         'warning'
       );
-      return;
+      return false;
     }
     if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
       notificar(
         'La fecha de fin no puede ser anterior a la de inicio.',
         'warning'
       );
+      return false;
+    }
+
+    return true;
+  };
+
+  const irAPaso = (nuevoPaso) => setPaso(nuevoPaso);
+
+  const guardarPromocion = () => {
+    if (!validarDatos()) {
       return;
     }
 
@@ -169,7 +188,7 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
         tipo,
-        valor: valorNumero,
+        valor: Number(valor),
         fechaInicio: fechaInicio || null,
         fechaFin: fechaFin || null,
         activa,
@@ -178,6 +197,24 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
           .map((id) => Number(id)),
       });
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!esMobile) {
+      guardarPromocion();
+      return;
+    }
+
+    if (paso === 1) {
+      if (validarDatos()) {
+        irAPaso(2);
+      }
+      return;
+    }
+
+    guardarPromocion();
   };
 
   const esDosPorUno = tipo === 'DOS_POR_UNO';
@@ -205,178 +242,249 @@ const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => 
     );
   }, [productosAlcanzables, categoriaSeleccionada]);
 
+  const footerPasos = (
+    <div className="w-100">
+      <span className="abm-stepper-footer-paso">
+        Paso {paso} de {PASOS_PROMOCION.length}
+      </span>
+      <div className="abm-stepper-footer-acciones mt-2">
+        {paso > 1 && (
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => irAPaso(paso - 1)}
+          >
+            Atrás
+          </Button>
+        )}
+        <Button variant="primary" type="submit">
+          {paso === 2 ? (
+            <>
+              <FaSave className="me-1" aria-hidden="true" />
+              Guardar cambios
+            </>
+          ) : (
+            'Siguiente'
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <Card className="shadow-sm formulario-admin-card formulario-admin-card-ancho">
+    <Card className="shadow-sm formulario-admin-card">
       <Card.Body>
         <Form onSubmit={handleSubmit} noValidate>
-          <Form.Group className="mb-3" controlId="promocion-nombre">
-            <Form.Label>Nombre *</Form.Label>
-            <Form.Control
-              type="text"
-              name="nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Nombre de la promoción"
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-descripcion">
-            <Form.Label>Descripción</Form.Label>
-            <Form.Control
-              as="textarea"
-              name="descripcion"
-              rows={2}
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Descripción de la promoción"
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-tipo">
-            <Form.Label>Tipo *</Form.Label>
-            <Form.Select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-              {TIPOS.map((t) => (
-                <option key={t.valor} value={t.valor}>
-                  {t.etiqueta}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-valor">
-            <Form.Label>Valor *</Form.Label>
-            <Form.Control
-              type="number"
-              name="valor"
-              min="0"
-              max={esDosPorUno ? undefined : porcentajeMaximo}
-              value={esDosPorUno ? 50 : valor}
-              disabled={esDosPorUno}
-              onChange={(e) => setValor(e.target.value)}
-              inputMode="numeric"
-              required
-            />
-            <Form.Text className="text-muted">
-              {esDosPorUno
-                ? '2x1 literal: llevás 2 y pagás 1. Se guarda 50 por convención y se ignora en el cálculo.'
-                : `Porcentaje de descuento (0–${porcentajeMaximo}).`}
-            </Form.Text>
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-fecha-inicio">
-            <Form.Label>Vigente desde</Form.Label>
-            <Form.Control
-              type="date"
-              name="fechaInicio"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-fecha-fin">
-            <Form.Label>Vigente hasta</Form.Label>
-            <Form.Control
-              type="date"
-              name="fechaFin"
-              value={fechaFin}
-              min={fechaInicio || undefined}
-              onChange={(e) => setFechaFin(e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-activa">
-            <Form.Check
-              type="switch"
-              id="promocion-activa"
-              name="activa"
-              label="Promoción activa"
-              checked={activa}
-              onChange={(e) => setActiva(e.target.checked)}
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="promocion-categoria">
-            <Form.Label>Seleccionar por categoría</Form.Label>
-            <div className="d-flex flex-wrap gap-2">
-              <Form.Select
-                className="flex-grow-1"
-                style={{ maxWidth: '320px' }}
-                value={categoriaSeleccionada}
-                onChange={(e) => setCategoriaSeleccionada(e.target.value)}
-              >
-                <option value="">Elegir categoría</option>
-                {categorias.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </Form.Select>
-              <Button
-                variant="outline-primary"
-                type="button"
-                onClick={seleccionarCategoria}
-                disabled={!categoriaSeleccionada}
-              >
-                Marcar todos de esta categoría
-              </Button>
-              <Button
-                variant="outline-secondary"
-                type="button"
-                onClick={deseleccionarCategoria}
-                disabled={!categoriaSeleccionada}
-              >
-                Desmarcar todos de esta categoría
-              </Button>
-            </div>
-            <Form.Text className="text-muted">
-              Esto marca/desmarca todos los productos de esa categoría.
-            </Form.Text>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Productos alcanzados ({seleccionados.length} seleccionados)
-            </Form.Label>
-            <Form.Control
-              type="search"
-              name="busquedaProducto"
-              className="mb-2"
-              placeholder="Buscar producto…"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-            {cargandoProductos ? (
-              <div className="text-center py-3">
-                <Spinner animation="border" size="sm" variant="danger" />
-              </div>
-            ) : errorProductos ? (
-              <Alert variant="danger" role="alert" className="py-2">
-                {errorProductos}
-              </Alert>
-            ) : (
-              /* fieldset/legend: la lista de checkboxes comparte un mismo rótulo
-                 ("Productos alcanzados"), no son campos independientes sueltos. */
-              <fieldset className="promocion-lista-productos">
-                <legend className="visually-hidden">
-                  Productos alcanzados por la promoción
-                </legend>
-                {productosFiltrados.map((producto) => (
-                  <Form.Check
-                    key={producto.id}
-                    type="checkbox"
-                    id={`promo-prod-${producto.id}`}
-                    name="productosAlcanzados"
-                    value={producto.id}
-                    label={`${producto.nombre} — $${producto.precio}`}
-                    checked={seleccionados.includes(String(producto.id))}
-                    onChange={() => toggleProducto(producto.id)}
-                  />
-                ))}
-                {productosFiltrados.length === 0 && (
-                  <span className="text-muted small">
-                    No hay productos que coincidan.
-                  </span>
-                )}
-              </fieldset>
+          <FormularioPasos
+            pasos={PASOS_PROMOCION}
+            paso={paso}
+            onPaso={irAPaso}
+            esMobile={esMobile}
+            footer={footerPasos}
+          >
+            {(!esMobile || paso === 1) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">Datos y vigencia</h4>
+                <div className="abm-form-grid">
+                  <Form.Group
+                    className="mb-3 abm-full"
+                    controlId="promocion-nombre"
+                  >
+                    <Form.Label>Nombre *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="nombre"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Nombre de la promoción"
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group
+                    className="mb-3 abm-full"
+                    controlId="promocion-descripcion"
+                  >
+                    <Form.Label>Descripción</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      name="descripcion"
+                      rows={2}
+                      value={descripcion}
+                      onChange={(e) => setDescripcion(e.target.value)}
+                      placeholder="Descripción de la promoción"
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="promocion-tipo">
+                    <Form.Label>Tipo *</Form.Label>
+                    <Form.Select
+                      name="tipo"
+                      value={tipo}
+                      onChange={(e) => setTipo(e.target.value)}
+                    >
+                      {TIPOS.map((t) => (
+                        <option key={t.valor} value={t.valor}>
+                          {t.etiqueta}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="promocion-valor">
+                    <Form.Label>Valor *</Form.Label>
+                    <Form.Control
+                      type="number"
+                      name="valor"
+                      min="0"
+                      max={esDosPorUno ? undefined : porcentajeMaximo}
+                      value={esDosPorUno ? 50 : valor}
+                      disabled={esDosPorUno}
+                      onChange={(e) => setValor(e.target.value)}
+                      inputMode="numeric"
+                      required
+                    />
+                    <Form.Text className="text-muted">
+                      {esDosPorUno
+                        ? '2x1 literal: llevás 2 y pagás 1. Se guarda 50 por convención y se ignora en el cálculo.'
+                        : `Porcentaje de descuento (0–${porcentajeMaximo}).`}
+                    </Form.Text>
+                  </Form.Group>
+                  <Form.Group
+                    className="mb-3"
+                    controlId="promocion-fecha-inicio"
+                  >
+                    <Form.Label>Vigente desde</Form.Label>
+                    <Form.Control
+                      type="date"
+                      name="fechaInicio"
+                      value={fechaInicio}
+                      onChange={(e) => setFechaInicio(e.target.value)}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="promocion-fecha-fin">
+                    <Form.Label>Vigente hasta</Form.Label>
+                    <Form.Control
+                      type="date"
+                      name="fechaFin"
+                      value={fechaFin}
+                      min={fechaInicio || undefined}
+                      onChange={(e) => setFechaFin(e.target.value)}
+                    />
+                  </Form.Group>
+                  <Form.Group
+                    className="mb-3 abm-full"
+                    controlId="promocion-activa"
+                  >
+                    <Form.Check
+                      type="switch"
+                      id="promocion-activa"
+                      name="activa"
+                      label="Promoción activa"
+                      checked={activa}
+                      onChange={(e) => setActiva(e.target.checked)}
+                    />
+                  </Form.Group>
+                </div>
+              </section>
             )}
-          </Form.Group>
-          <Button variant="primary" type="submit" className="w-100">
-            <FaSave className="me-1" aria-hidden="true" />
-            Guardar cambios
-          </Button>
+
+            {(!esMobile || paso === 2) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">Productos alcanzados</h4>
+                <Form.Group className="mb-3" controlId="promocion-categoria">
+                  <Form.Label>Seleccionar por categoría</Form.Label>
+                  <div className="d-flex flex-wrap gap-2">
+                    <Form.Select
+                      className="flex-grow-1"
+                      style={{ maxWidth: '320px' }}
+                      value={categoriaSeleccionada}
+                      onChange={(e) =>
+                        setCategoriaSeleccionada(e.target.value)
+                      }
+                    >
+                      <option value="">Elegir categoría</option>
+                      {categorias.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Button
+                      variant="outline-primary"
+                      type="button"
+                      onClick={seleccionarCategoria}
+                      disabled={!categoriaSeleccionada}
+                    >
+                      Marcar todos de esta categoría
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      type="button"
+                      onClick={deseleccionarCategoria}
+                      disabled={!categoriaSeleccionada}
+                    >
+                      Desmarcar todos de esta categoría
+                    </Button>
+                  </div>
+                  <Form.Text className="text-muted">
+                    Esto marca/desmarca todos los productos de esa categoría.
+                  </Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Productos alcanzados ({seleccionados.length} seleccionados)
+                  </Form.Label>
+                  <Form.Control
+                    type="search"
+                    name="busquedaProducto"
+                    className="mb-2"
+                    placeholder="Buscar producto…"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                  />
+                  {cargandoProductos ? (
+                    <div className="text-center py-3">
+                      <Spinner animation="border" size="sm" variant="danger" />
+                    </div>
+                  ) : errorProductos ? (
+                    <Alert variant="danger" role="alert" className="py-2">
+                      {errorProductos}
+                    </Alert>
+                  ) : (
+                    <fieldset className="promocion-lista-productos">
+                      <legend className="visually-hidden">
+                        Productos alcanzados por la promoción
+                      </legend>
+                      {productosFiltrados.map((producto) => (
+                        <Form.Check
+                          key={producto.id}
+                          type="checkbox"
+                          id={`promo-prod-${producto.id}`}
+                          name="productosAlcanzados"
+                          value={producto.id}
+                          label={`${producto.nombre} — $${producto.precio}`}
+                          checked={seleccionados.includes(
+                            String(producto.id),
+                          )}
+                          onChange={() => toggleProducto(producto.id)}
+                        />
+                      ))}
+                      {productosFiltrados.length === 0 && (
+                        <span className="text-muted small">
+                          No hay productos que coincidan.
+                        </span>
+                      )}
+                    </fieldset>
+                  )}
+                </Form.Group>
+              </section>
+            )}
+
+            {!esMobile && (
+              <Button variant="primary" type="submit" className="w-100">
+                <FaSave className="me-1" aria-hidden="true" />
+                Guardar cambios
+              </Button>
+            )}
+          </FormularioPasos>
         </Form>
       </Card.Body>
     </Card>

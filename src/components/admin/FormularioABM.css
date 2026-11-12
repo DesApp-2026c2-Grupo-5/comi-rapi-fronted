@@ -1,0 +1,215 @@
+.abm-page {
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.abm-page-header {
+  margin-bottom: 1.25rem;
+}
+
+.abm-page-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-primary-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.abm-page-volver:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.abm-page-titulo {
+  margin: 0;
+  font-size: clamp(1.45rem, 1.2rem + 0.8vw, 2rem);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.abm-page-descripcion {
+  max-width: 62ch;
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+}
+
+.abm-page-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.abm-page-contenido {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.abm-page-aside {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.abm-page .formulario-admin-card {
+  max-width: none;
+}
+
+.abm-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 1rem;
+}
+
+.abm-form-grid > .abm-full {
+  grid-column: 1 / -1;
+}
+
+.abm-seccion {
+  margin-bottom: 1.25rem;
+}
+
+.abm-seccion-titulo {
+  margin: 0 0 0.75rem;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.abm-stepper-pasos {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.abm-stepper-paso {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.abm-stepper-paso-boton {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.abm-stepper-paso-boton:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.abm-stepper-paso-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 1px solid var(--color-border-card);
+  border-radius: 50%;
+  background: var(--color-cream-soft);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.abm-stepper-paso.activo .abm-stepper-paso-boton {
+  color: var(--color-text);
+}
+
+.abm-stepper-paso.activo .abm-stepper-paso-numero {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.abm-stepper-paso.completado .abm-stepper-paso-numero {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.abm-stepper-paso-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abm-stepper-footer {
+  position: sticky;
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.65rem;
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  background: var(--color-cream-soft);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.abm-stepper-footer-paso {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.abm-stepper-footer-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.abm-stepper-footer-acciones .btn {
+  flex: 1 1 0;
+}
+
+@media (min-width: 576px) {
+  .abm-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .abm-page-contenido--dos-columnas {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 23rem);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .abm-stepper-pasos {
+    gap: 0.25rem;
+  }
+
+  .abm-stepper-paso-texto {
+    display: none;
+  }
+
+  .abm-stepper-footer-acciones .btn {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abm-stepper-paso-boton {
+    transition: none;
+  }
+}

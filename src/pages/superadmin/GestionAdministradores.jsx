@@ -2,7 +2,7 @@
  * Propósito: Página de gestión de administradores del superadministrador.
  * Contenido: Componente GestionAdministradores con Container de Bootstrap.
  * Dependencias: react-bootstrap (Container), components/superadmin/GestionAdministradores.
- * Uso: Ruta "/superadmin/administradores" → <GestionAdministradores />
+ * Uso: Ruta "/superadmin/administrador" → <GestionAdministradores />
  */
 
 import { Container } from 'react-bootstrap';

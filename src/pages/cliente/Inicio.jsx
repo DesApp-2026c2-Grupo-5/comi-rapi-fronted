@@ -27,7 +27,7 @@
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { FaShoppingCart } from 'react-icons/fa';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   useCategorias,
   useMasVendidos,
@@ -36,6 +36,7 @@ import {
 import ProductoCard from '../../components/cliente/ProductoCard';
 import PromocionCard from '../../components/cliente/PromocionCard';
 import AvisoSucursalesCerradas from '../../components/comunes/AvisoSucursalesCerradas';
+import { useSucursal } from '../../hooks/useSucursal';
 import MapaHome from '../../components/comunes/MapaHome';
 import {
   IMAGEN_CATEGORIA_POR_DEFECTO,
@@ -79,6 +80,11 @@ const Inicio = () => {
   const categoriasQuery = useCategorias();
   const masVendidosQuery = useMasVendidos();
   const promocionesQuery = usePromociones();
+  const { sucursales, cargarSucursales } = useSucursal();
+
+  useEffect(() => {
+    cargarSucursales();
+  }, [cargarSucursales]);
 
   const categorias = useMemo(
     () => (categoriasQuery.data || []).map(aCategoriaVista),

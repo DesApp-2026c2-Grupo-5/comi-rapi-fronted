@@ -92,6 +92,14 @@ const FormularioDireccion = ({
     validarCobertura: true,
     filtrarPorSucursales: true,
   });
+  const reiniciarDireccion = direccionApi.reiniciar;
+
+  useEffect(() => {
+    if (!mostrar) return;
+    setPaso(1);
+    setErroresPaso([]);
+    reiniciarDireccion();
+  }, [mostrar, direccion?.id, reiniciarDireccion]);
 
   const direccionVerificada =
     direccionApi.preview?.estado === "unica" &&
@@ -266,6 +274,7 @@ const FormularioDireccion = ({
       descripcion="Completá los datos en dos pasos."
       variante="fullscreen-mobile"
       tamano="lg"
+      dialogClassName="direccion-wizard-dialog"
       cargando={direccionApi.guardando}
       onSubmit={handleSubmit}
       noValidate

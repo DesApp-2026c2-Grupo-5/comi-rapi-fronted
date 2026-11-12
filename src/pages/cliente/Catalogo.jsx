@@ -147,15 +147,13 @@ const Catalogo = () => {
     setSearchParams(next, { replace: true });
   };
 
-  // Cambiar orden de precio: cicla null → 'asc' → 'desc' → null
-  const cambiarOrdenPrecio = () => {
+  // Cambiar orden de precio: solo asc o desc
+  const cambiarOrdenPrecio = (nuevoOrden) => {
     const next = new URLSearchParams(searchParams);
-    if (!ordenPrecio || ordenPrecio === 'desc') {
-      next.delete('ordenPrecio');
-    } else if (ordenPrecio === 'asc') {
-      next.set('ordenPrecio', 'desc');
+    if (nuevoOrden) {
+      next.set('ordenPrecio', nuevoOrden);
     } else {
-      next.set('ordenPrecio', 'asc');
+      next.delete('ordenPrecio');
     }
     setSearchParams(next, { replace: true });
   };
@@ -303,118 +301,86 @@ const Catalogo = () => {
         </Alert>
       )}
 
-      {/* Filtros / categorías en forma de pills.
+{/* Filtros / categorías en forma de pills.
           Van en un `role="group"` con etiqueta, y cada pill lleva `aria-pressed`
           para que se anuncie cuál está activa en vez de deducirlo por el color. */}
-      <div
-        className="d-flex flex-wrap justify-content-center gap-2 mb-4"
-        role="group"
-        aria-label="Filtrar por categoría"
-      >
-        <Button
-          className={
-            categoriaSeleccionada === "Todos"
-              ? "filtro-pill filtro-activo"
-              : "filtro-pill filtro-inactivo"
-          }
-          aria-pressed={categoriaSeleccionada === "Todos"}
-          onClick={() => seleccionarCategoria(null)}
-        >
-          Todos
-        </Button>
-        {categorias.map((cat) => {
-          const activo = categoriaSeleccionada === cat.nombre;
-          return (
-            <Button
-              key={cat.id}
-              className={
-                activo
-                  ? "filtro-pill filtro-activo"
-                  : "filtro-pill filtro-inactivo"
-              }
-              aria-pressed={activo}
-              onClick={() => seleccionarCategoria(cat.id)}
-            >
-              {cat.nombre}
-            </Button>
-          );
-        })}
-      </div>
+       <div
+         className="d-flex flex-wrap justify-content-center gap-2 mb-4"
+         role="group"
+         aria-label="Filtrar por categoría"
+       >
+         <Button
+           className={
+             categoriaSeleccionada === "Todos"
+               ? "filtro-pill filtro-activo"
+               : "filtro-pill filtro-inactivo"
+           }
+           aria-pressed={categoriaSeleccionada === "Todos"}
+           onClick={() => seleccionarCategoria(null)}
+         >
+           Todos
+         </Button>
+         {categorias.map((cat) => {
+           const activo = categoriaSeleccionada === cat.nombre;
+           return (
+             <Button
+               key={cat.id}
+               className={
+                 activo
+                   ? "filtro-pill filtro-activo"
+                   : "filtro-pill filtro-inactivo"
+               }
+               aria-pressed={activo}
+               onClick={() => seleccionarCategoria(cat.id)}
+             >
+               {cat.nombre}
+             </Button>
+           );
+         })}
+       </div>
 
-      {/* Ordenar por precio: un solo botón que cicla null → asc → desc → null */}
-      <div className="d-flex justify-content-center mb-4" role="group" aria-label="Ordenar por precio">
-        <Button
-          variant={
-            ordenPrecio === 'asc' || ordenPrecio === 'desc'
-              ? 'primary'
-              : 'outline-secondary'
-          }
-          size="sm"
-          onClick={cambiarOrdenPrecio}
-          aria-pressed={ordenPrecio !== null}
-          aria-label={`Ordenar por precio: ${ordenPrecio === 'asc' ? 'menor a mayor' : ordenPrecio === 'desc' ? 'mayor a menor' : 'sin orden'}`}
-          className="filtro-orden-precio"
-        >
-          <span className="d-flex align-items-center gap-1">
-            {ordenPrecio === 'asc' && (
-              <>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                  <path d="M4.5 11H12a.5.5 0 0 0 0-1H5.586l1.293-1.293a.5.5 0 0 0-.708-.708L2 7.5 7.5 2a.5.5 0 0 0 .708.708L3.707 6H11.5a.5.5 0 0 1 0 1H3.707l1.293 1.293a.5.5 0 0 0 .708.708L2 10.5 7.5 16a.5.5 0 0 0 .708-.708L3.707 11H12a.5.5 0 0 0 0-1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
-                </svg>
-                Menor a mayor
-              </>
-            )}
-            {ordenPrecio === 'desc' && (
-              <>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                  <path d="M4.5 5H12a.5.5 0 0 1 0 1H5.586l1.293 1.293a.5.5 0 0 1-.708.708L2 8.5l-5.5 5.5a.5.5 0 0 1-.708-.708L8.293 6H2.5a.5.5 0 0 1 0-1H8.293l-1.293-1.293a.5.5 0 0 1 .708-.708L14 7.5l5.5-5.5a.5.5 0 0 1 .708.708L8.293 11H12a.5.5 0 0 1 0 1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
-                </svg>
-                Mayor a menor
-              </>
-            )}
-            {!ordenPrecio && (
-              <>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                  <path d="M4.5 5H12a.5.5 0 0 1 0 1H5.586l1.293 1.293a.5.5 0 0 1-.708.708L2 8.5l-5.5 5.5a.5.5 0 0 1-.708-.708L8.293 6H2.5a.5.5 0 0 1 0-1H8.293l-1.293-1.293a.5.5 0 0 1 .708-.708L14 7.5l5.5-5.5a.5.5 0 0 1 .708.708L8.293 11H12a.5.5 0 0 1 0 1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
-                  <path d="M4.5 11H12a.5.5 0 0 0 0-1H5.586l1.293-1.293a.5.5 0 0 0-.708-.708L2 7.5 7.5 2a.5.5 0 0 0 .708.708L3.707 6H11.5a.5.5 0 0 1 0 1H3.707l1.293 1.293a.5.5 0 0 0 .708.708L2 10.5 7.5 16a.5.5 0 0 0 .708-.708L3.707 11H12a.5.5 0 0 0 0-1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
-                </svg>
-                Ordenar por precio
-              </>
-            )}
-          </span>
-        </Button>
-      </div>
+        <div className="catalogo-filtros mb-4">
+          <Form.Group
+            controlId="catalogo-busqueda"
+            className="catalogo-busqueda mb-0"
+          >
+            <Form.Label className="visually-hidden">
+              Buscar producto por nombre
+            </Form.Label>
+            <Form.Control
+              type="search"
+              name="busqueda"
+              placeholder="Buscar producto por nombre…"
+              value={busqueda}
+              onChange={(e) => setParam("busqueda", e.target.value)}
+            />
+          </Form.Group>
 
-      {/* Buscador por nombre y filtro por rango de precio.
-          `type="search"` ya expone un botón de limpiar en varios navegadores;
-          los inputs de precio van con label propio porque el placeholder no
-          sobrevive a que el usuario escriba. */}
-      <div className="catalogo-busqueda mb-4">
-        <Form.Group controlId="catalogo-busqueda" className="mb-2">
-          <Form.Label className="visually-hidden">
-            Buscar producto por nombre
-          </Form.Label>
-          <Form.Control
-            type="search"
-            name="busqueda"
-            placeholder="Buscar producto por nombre…"
-            value={busqueda}
-            onChange={(e) => setParam("busqueda", e.target.value)}
-          />
-        </Form.Group>
-        {/* C1: deslizador doble de precio — reemplaza los inputs numéricos.
-            Mantiene precioMin/precioMax en la URL (mismos params que antes).
-            Ancho reducido al 50% para dejar espacio a otros filtros. */}
-        <div className="w-100 w-md-50 mx-auto mx-md-0">
-          <RangoPrecio
-            min={precioPiso}
-            max={precioTecho}
-            valorMin={precioMin}
-            valorMax={precioMax}
-            onChange={cambiarRangoPrecio}
-          />
+          <div className="catalogo-filtros-secundarios">
+            <div className="filtro-orden-precio-contenedor">
+              <Form.Select
+                value={ordenPrecio || ''}
+                onChange={(e) => cambiarOrdenPrecio(e.target.value || null)}
+                aria-label="Ordenar por precio"
+                className="filtro-orden-precio-select"
+              >
+                <option value="">Ordenar por precio</option>
+                <option value="asc">Menor a mayor</option>
+                <option value="desc">Mayor a menor</option>
+              </Form.Select>
+            </div>
+
+            <div className="precio-slider-corto">
+              <RangoPrecio
+                min={precioPiso}
+                max={precioTecho}
+                valorMin={precioMin}
+                valorMax={precioMax}
+                onChange={cambiarRangoPrecio}
+              />
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Grid de productos */}
       {cargando ? (

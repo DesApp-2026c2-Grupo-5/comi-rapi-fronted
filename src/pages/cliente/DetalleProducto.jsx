@@ -486,8 +486,8 @@ const DetalleProducto = () => {
       )}
 
       <ProductoPersonalizarModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
+        mostrar={showModal}
+        onCerrar={() => setShowModal(false)}
         producto={producto}
       />
 

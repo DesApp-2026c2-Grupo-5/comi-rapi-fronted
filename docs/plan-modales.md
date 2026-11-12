@@ -6,7 +6,7 @@
 - Mantener el alta y la edición en un wizard de 2 pasos dentro de un modal.
 - Confirmar la eliminación con `ConfirmarModal`, sin confirmaciones inline.
 - No tocar notificaciones, quejas ni reseñas.
-- No modificar `ProductoPersonalizarModal` en esta iteración.
+- El flujo de direcciones no requiere cambios en `ProductoPersonalizarModal` en esta iteración.
 
 ## Decisión
 
@@ -74,4 +74,4 @@ Se adopta el flujo con modal:
 - La lista de direcciones ambiguas es lo único que puede tener scroll interno.
 - El guardado revalida la dirección en el backend.
 - La eliminación usa `ConfirmarModal`, sin confirmación inline.
-- `ProductoPersonalizarModal` queda intacto.
+- Al reabrir el wizard, vuelve al paso 1 y limpia el estado previo.
