@@ -14,8 +14,7 @@ const BASE = '/personalizacion/categorias';
 // cuando la sesión es de gestión; para clientes sigue devolviendo sólo activas.
 export const obtenerPlantillas = async () => apiGet(`${BASE}?activa=false`);
 
-export const obtenerPlantillaPorId = async (id) =>
-  apiGet(`${BASE}/${id}`);
+export const obtenerPlantillaPorId = async (id) => apiGet(`${BASE}/${id}`);
 
 export const crearPlantilla = async (datos) => apiPost(BASE, datos);
 

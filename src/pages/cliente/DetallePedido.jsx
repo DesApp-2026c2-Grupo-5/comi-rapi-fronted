@@ -10,6 +10,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Container,
   Card,
@@ -25,9 +26,10 @@ import { usePedidos } from "../../hooks/usePedidos";
 import { useRepetirPedido } from "../../hooks/useRepetirPedido";
 import { useParametros } from "../../hooks/useParametros";
 import {
-  obtenerMisResenas,
-  obtenerProductosElegiblesParaResenar,
-} from "../../api/resenas";
+  queryKeys,
+  useElegiblesParaResenar,
+  useMisResenasQuery,
+} from "../../hooks/queries";
 import { obtenerMisQuejas, responderQueja, cerrarQueja } from "../../api/quejas";
 import {
   ESTADOS_PEDIDO,
@@ -73,6 +75,23 @@ const DetallePedido = () => {
   } = useRepetirPedido();
   const pedido = pedidos.find((p) => p.id === Number(id));
 
+  // Reseñas: solo se consultan si el pedido está entregado. `elegibles` son los
+  // productos de ESTE pedido que el cliente todavía no reseñó; `misResenas`
+  // permite ofrecer "Editar" en los que ya tienen reseña.
+  const esEntregado = pedido?.estado === ESTADOS_PEDIDO.ENTREGADO;
+  const pedidoId = pedido?.id;
+  const queryClient = useQueryClient();
+  const { data: elegiblesData } = useElegiblesParaResenar({
+    pedidoId,
+    enabled: Boolean(esEntregado && pedidoId),
+  });
+  const { data: misResenasData } = useMisResenasQuery({
+    enabled: Boolean(esEntregado && pedidoId),
+  });
+  const elegibles = elegiblesData || [];
+  const misResenas = misResenasData || [];
+  const [productoAResenar, setProductoAResenar] = useState(null);
+
   // Anuncio accesible de cambios de estado (WebSocket → refetch): solo en
   // transiciones, no en el tick de minutos, para no spamear al lector.
   const [anuncioEstado, setAnuncioEstado] = useState("");
@@ -89,12 +108,6 @@ const DetallePedido = () => {
     estadoAnterior.current = pedido.estado;
   }, [pedido]);
 
-  // Reseñas: solo se consultan si el pedido está entregado. `elegibles` son los
-  // productos de ESTE pedido que el cliente todavía no reseñó; `misResenas`
-  // permite ofrecer "Editar" en los que ya tienen reseña.
-  const [elegibles, setElegibles] = useState([]);
-  const [misResenas, setMisResenas] = useState([]);
-  const [productoAResenar, setProductoAResenar] = useState(null);
   const [queja, setQueja] = useState(null);
   const [cargandoQueja, setCargandoQueja] = useState(false);
   const [mostrarQuejaModal, setMostrarQuejaModal] = useState(false);
@@ -104,8 +117,6 @@ const DetallePedido = () => {
   const [errorQueja, setErrorQueja] = useState("");
   const [mostrarCerrarQueja, setMostrarCerrarQueja] = useState(false);
   const [cerrandoQueja, setCerrandoQueja] = useState(false);
-  const esEntregado = pedido?.estado === ESTADOS_PEDIDO.ENTREGADO;
-  const pedidoId = pedido?.id;
 
   // Reclamos: un pedido entregado admite una sola queja. Se consulta solo en
   // ese estado para no pedir datos que no se van a mostrar.
@@ -149,27 +160,6 @@ const DetallePedido = () => {
       socket.off(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
       socket.off('connect', onConnect);
       desuscribirPedido(pedidoId);
-    };
-  }, [esEntregado, pedidoId]);
-
-  useEffect(() => {
-    if (!esEntregado || !pedidoId) {
-      setElegibles([]);
-      setMisResenas([]);
-      return undefined;
-    }
-    let vivo = true;
-    (async () => {
-      const [resElegibles, resMias] = await Promise.all([
-        obtenerProductosElegiblesParaResenar(pedidoId),
-        obtenerMisResenas(),
-      ]);
-      if (!vivo) return;
-      if (resElegibles.success) setElegibles(resElegibles.data);
-      if (resMias.success) setMisResenas(resMias.data);
-    })();
-    return () => {
-      vivo = false;
     };
   }, [esEntregado, pedidoId]);
 
@@ -228,14 +218,31 @@ const DetallePedido = () => {
   const esElegible = (productoId) =>
     elegibles.some((p) => String(p.productoId) === String(productoId));
 
-  const alGuardarResena = async () => {
+  const alGuardarResena = (resenaGuardada) => {
+    const productoId = productoAResenar?.id;
     setProductoAResenar(null);
-    const [resElegibles, resMias] = await Promise.all([
-      obtenerProductosElegiblesParaResenar(pedido.id),
-      obtenerMisResenas(),
-    ]);
-    if (resElegibles.success) setElegibles(resElegibles.data);
-    if (resMias.success) setMisResenas(resMias.data);
+    if (!resenaGuardada || productoId === undefined) return;
+    // La respuesta del POST/PUT ya trae la reseña: se escribe en la caché de
+    // TanStack Query en lugar de repetir los dos GET después de guardar.
+    queryClient.setQueryData(
+      queryKeys.private.elegibles(pedidoId),
+      (prev) =>
+        Array.isArray(prev)
+          ? prev.filter((p) => String(p.productoId) !== String(productoId))
+          : prev
+    );
+    queryClient.setQueryData(queryKeys.private.misResenas, (prev) => {
+      const lista = Array.isArray(prev) ? prev : [];
+      const nueva = { productoId, ...resenaGuardada };
+      const existe = lista.some(
+        (r) => String(r.productoId) === String(productoId)
+      );
+      return existe
+        ? lista.map((r) =>
+            String(r.productoId) === String(productoId) ? { ...r, ...nueva } : r
+          )
+        : [...lista, nueva];
+    });
   };
 
   const alGuardarQueja = (nuevaQueja) => {

@@ -2,51 +2,42 @@
  * Propósito: Preview de promociones aplicables al carrito actual.
  * Carga las promociones activas con sus productos y estima el descuento
  * con utils/calculoPromociones (espejo del backend; el backend revalida).
+ *
+ * Las promociones viven en la caché pública de TanStack Query, así que abrir
+ * el carrito después del catálogo no vuelve a pedirlas. Con el carrito vacío la
+ * consulta queda deshabilitada (no hay descuento que calcular).
+ *
  * Uso: const { descuentoTotal, promocionIds, promosAplicadas, cargandoPromos } = usePromocionesCarrito(items);
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import {
-  obtenerPromociones,
-  obtenerProductosDePromocion,
-} from '../api/promociones';
+import { useMemo } from 'react';
+import { usePromociones } from './queries';
 import { calcularDescuentoCarrito } from '../utils/calculoPromociones';
 
 export const usePromocionesCarrito = (items) => {
-  const [promos, setPromos] = useState([]);
-  const [cargandoPromos, setCargandoPromos] = useState(true);
+  const hayItems = Array.isArray(items) && items.length > 0;
+  const promocionesQuery = usePromociones({
+    incluirProductos: true,
+    enabled: hayItems,
+  });
 
-  useEffect(() => {
-    let vivo = true;
-    (async () => {
-      setCargandoPromos(true);
-      try {
-        const res = await obtenerPromociones();
-        if (!vivo || !res.success) return;
-        const activas = (res.data || []).filter((p) => p.activa !== false);
-        const conProductos = await Promise.all(
-          activas.map(async (promo) => {
-            const r = await obtenerProductosDePromocion(promo.id);
-            return {
-              id: promo.id,
-              nombre: promo.nombre,
-              tipo: promo.tipo,
-              valor: Number(promo.valor),
-              productoIds: r.success
-                ? (r.data || []).map((producto) => producto.id)
-                : [],
-            };
-          })
-        );
-        if (vivo) setPromos(conProductos);
-      } finally {
-        if (vivo) setCargandoPromos(false);
-      }
-    })();
-    return () => {
-      vivo = false;
-    };
-  }, []);
+  // Se normaliza al shape que espera el cálculo: id/nombre/tipo/valor y la
+  // lista de productos alcanzados. El backend la resuelve en la misma respuesta
+  // (?include=productos), sin una llamada por promoción.
+  const promos = useMemo(() => {
+    if (!hayItems) return [];
+    return (promocionesQuery.data || [])
+      .filter((promo) => promo.activa !== false)
+      .map((promo) => ({
+        id: promo.id,
+        nombre: promo.nombre,
+        tipo: promo.tipo,
+        valor: Number(promo.valor),
+        productoIds: (Array.isArray(promo.productos) ? promo.productos : []).map(
+          (producto) => producto.id
+        ),
+      }));
+  }, [hayItems, promocionesQuery.data]);
 
   const preview = useMemo(
     () => calcularDescuentoCarrito(items, promos),
@@ -72,6 +63,6 @@ export const usePromocionesCarrito = (items) => {
     descuentoTotal: preview.descuentoTotal,
     promocionIds: preview.promocionIds,
     promosAplicadas,
-    cargandoPromos,
+    cargandoPromos: hayItems && promocionesQuery.isLoading,
   };
 };

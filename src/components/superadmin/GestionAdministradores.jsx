@@ -3,14 +3,17 @@
  *            listado, alta, edición y activación/desactivación de
  *            ADMINISTRADOR y SUPERADMINISTRADOR.
  * Contenido: Componente GestionAdministradores con buscador, tabla y un modal
- *            de alta/edición (selector de rol y de sucursal). Carga desde el
- *            backend (roles ADMINISTRADOR y SUPERADMINISTRADOR).
- * Dependencias: react-bootstrap, api/usuarios, api/sucursales, react-icons,
+ *            de alta/edición (selector de rol y de sucursal). El listado y las
+ *            sucursales se leen con TanStack Query; las mutaciones invalidan
+ *            la clave de administradores.
+ * Dependencias: react-bootstrap, api/usuarios, hooks/queries
+ *               (useAdministradoresQuery), react-icons, hooks/useSucursal,
  *               components/comunes/Skeleton (SkeletonTabla).
  * Uso: <GestionAdministradores /> - Se renderiza en GestionAdministradoresPage.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Table,
   Button,
@@ -24,11 +27,11 @@ import {
 } from 'react-bootstrap';
 import { FaUserTie, FaPlus, FaEdit, FaStore } from 'react-icons/fa';
 import {
-  obtenerAdministradores,
   crearUsuarioPanel,
   actualizarUsuarioPanel,
 } from '../../api/usuarios';
-import { obtenerSucursales } from '../../api/sucursales';
+import { useAdministradoresQuery } from '../../hooks/queries';
+import { useSucursal } from '../../hooks/useSucursal';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
 const inicialesDe = (admin) => {
@@ -56,12 +59,30 @@ const ETIQUETA_ROL = {
   SUPERADMINISTRADOR: 'Superadmin',
 };
 
+// Prefijo que cubre cualquier variante de búsqueda/paginación del listado.
+const CLAVE_ADMINISTRADORES = ['private', 'administradores'];
+
 const GestionAdministradores = () => {
-  const [administradores, setAdministradores] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const {
+    data: dataAdministradores,
+    isPending: cargando,
+    error: errorQuery,
+  } = useAdministradoresQuery();
+  const administradores = useMemo(
+    () => dataAdministradores?.items || [],
+    [dataAdministradores]
+  );
+  // La lista (incluidas inactivas) la carga SucursalProvider para el superadmin:
+  // esta pantalla la consume del contexto y sólo relee si la caché está vencida.
+  const { sucursales = [], obtenerSucursales } = useSucursal();
+
+  useEffect(() => {
+    obtenerSucursales();
+  }, [obtenerSucursales]);
+
+  const [errorAccion, setErrorAccion] = useState('');
   const [buscar, setBuscar] = useState('');
-  const [sucursales, setSucursales] = useState([]);
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -69,24 +90,12 @@ const GestionAdministradores = () => {
   const [guardando, setGuardando] = useState(false);
   const [errorFormulario, setErrorFormulario] = useState('');
 
-  const cargar = async () => {
-    setCargando(true);
-    setError('');
-    const result = await obtenerAdministradores();
-    if (result.success) {
-      setAdministradores(result.data);
-    } else {
-      setError(result.error || 'No se pudieron cargar los administradores.');
-    }
-    setCargando(false);
-  };
+  const error = errorAccion || errorQuery?.message || '';
 
-  useEffect(() => {
-    cargar();
-    obtenerSucursales({ incluirInactivas: true }).then((result) => {
-      if (result.success) setSucursales(result.data);
+  const refrescarAdministradores = () =>
+    queryClient.invalidateQueries({
+      queryKey: CLAVE_ADMINISTRADORES,
     });
-  }, []);
 
   const nombreSucursal = (sucursalId) => {
     const sucursal = sucursales.find((s) => s.id === Number(sucursalId));
@@ -181,18 +190,19 @@ const GestionAdministradores = () => {
     }
     setGuardando(false);
     setModalAbierto(false);
-    await cargar();
+    await refrescarAdministradores();
   };
 
   const alternarActivo = async (admin) => {
+    setErrorAccion('');
     const result = await actualizarUsuarioPanel(admin.id, {
       activo: !admin.activo,
     });
     if (!result.success) {
-      setError(result.error || 'No se pudo actualizar el estado.');
+      setErrorAccion(result.error || 'No se pudo actualizar el estado.');
       return;
     }
-    await cargar();
+    await refrescarAdministradores();
   };
 
   return (

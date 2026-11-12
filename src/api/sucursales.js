@@ -81,13 +81,15 @@ export const actualizarSucursal = async (id, datos) => {
 
 /**
  * Elimina (baja lógica) una sucursal: activa pasa a false.
- * @param {number|string} id - ID de la sucursal.
- * @returns {Promise<{success: boolean, error?: string}>}
+ * El backend devuelve la sucursal actualizada para poder reflejarla en la
+ * caché local sin volver a pedir la lista.
+ * @param {number|string} id - ID de la sucursal a eliminar.
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const eliminarSucursal = async (id) => {
   const result = await apiDelete(`/sucursales/${id}`);
   if (result.success) {
-    return { success: true };
+    return { success: true, data: result.data };
   }
   return { success: false, error: result.error };
 };

@@ -2,7 +2,7 @@
  * Propósito: Servicio de stock por sucursal para el administrador.
  * Contenido: obtenerStock, obtenerStockDeProducto, crearStock, actualizarStock,
  *            eliminarStock, obtenerDisponibilidad, obtenerMaximosDeCombos,
- *            obtenerStockInsumos, actualizarStockInsumo.
+ *            obtenerStockInsumos, obtenerStockInsumo, actualizarStockInsumo.
  * Dependencias: client.js (apiGet/apiPost/apiPut/apiDelete).
  * Uso: import { obtenerStock, actualizarStock } from '../api/stock';
  *
@@ -19,21 +19,31 @@ import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
 const envolver = (resultado) => ({
   success: resultado.success,
+  status: resultado.status,
   data: resultado.data,
   error: resultado.error,
 });
 
 /**
  * Lista el stock. Sin filtros devuelve la matriz completa.
- * @param {{sucursalId?: number|string, productoId?: number|string}} [filtros]
- * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ * Con `incluirInsumos` el backend agrega `insumos` en la misma respuesta.
+ * @param {{sucursalId?: number|string, productoId?: number|string,
+ *   incluirInsumos?: boolean}} [filtros]
+ * @returns {Promise<{success: boolean, data?: Array, insumos?: Array, error?: string}>}
  */
 export const obtenerStock = async (filtros = {}) => {
   const params = new URLSearchParams();
   if (filtros.sucursalId) params.append('sucursalId', filtros.sucursalId);
   if (filtros.productoId) params.append('productoId', filtros.productoId);
+  if (filtros.incluirInsumos) params.append('include', 'insumos');
   const query = params.toString();
-  return envolver(await apiGet(`/stock${query ? `?${query}` : ''}`));
+  const resultado = await apiGet(`/stock${query ? `?${query}` : ''}`);
+  return {
+    success: resultado.success,
+    data: resultado.data,
+    insumos: resultado.insumos,
+    error: resultado.error,
+  };
 };
 
 /**
@@ -112,6 +122,17 @@ export const obtenerStockInsumos = async (filtros = {}) => {
     await apiGet(`/stock/insumos${query ? `?${query}` : ''}`)
   );
 };
+
+/**
+ * Stock de un insumo en la sucursal operativa de la sesión.
+ * Se usa para refrescar en la caché sólo el insumo afectado por un aviso de
+ * tiempo real, sin volver a pedir la lista completa. La respuesta conserva
+ * `status` para distinguir un 404 (insumo dado de baja) de un error transitorio.
+ * @param {number|string} insumoId
+ * @returns {Promise<{success: boolean, status?: number, data?: object, error?: string}>}
+ */
+export const obtenerStockInsumo = async (insumoId) =>
+  envolver(await apiGet(`/stock/insumos/${insumoId}`));
 
 /**
  * Ajusta cantidad y/o disponibilidad de un insumo en la sucursal operativa.

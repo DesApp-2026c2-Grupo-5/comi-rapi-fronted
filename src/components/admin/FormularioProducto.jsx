@@ -12,10 +12,10 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { FaSave } from 'react-icons/fa';
-import { obtenerCategorias } from '../../api/categorias';
-import { obtenerProductos } from '../../api/productos';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
+import { useCategorias, useProductos } from '../../hooks/queries';
+import { IMAGEN_PRODUCTO_POR_DEFECTO } from '../../utils/imagenes';
 import { SkeletonTarjeta } from '../comunes/Skeleton';
 import SubirImagen from './SubirImagen';
 import EditarComponentes from './EditarComponentes';
@@ -53,52 +53,32 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   const [categoriaId, setCategoriaId] = useState('');
   const [imagen, setImagen] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  // Ingredientes propios del producto (opcional). Se guardan como elementos de
-  // Receta de ingredientes del producto (obligatoria).
+  // Receta de ingredientes del producto (obligatoria para PRODUCTO).
   const [recetaIngredientes, setRecetaIngredientes] = useState([]);
-
-
-  const [cargandoCategorias, setCargandoCategorias] = useState(true);
-  const [categorias, setCategorias] = useState([]);
   // Receta del combo: [{ productoId, cantidad }]
   const [componentes, setComponentes] = useState([]);
-  // Catálogo para elegir los productos de la receta.
-  const [productos, setProductos] = useState([]);
 
   // El tipo se deduce solo de la pantalla: /superadmin/producto/nuevo crea un
   // PRODUCTO y /superadmin/producto/nuevo-combo crea un COMBO. En la edición es el
   // que ya tiene el producto. No se le pregunta al superadministrador.
   const tipoEfectivo = forzarTipo || producto?.tipo || 'PRODUCTO';
+  const esCombo = tipoEfectivo === 'COMBO';
+
+  // Catálogo compartido con la caché pública: RealtimeBridge invalida estas
+  // claves cuando cambia una categoría o un producto.
+  const { data: categorias = [], isPending: cargandoCategorias } =
+    useCategorias();
+  // Los productos posibles de una receta; se mantiene la query siempre activa
+  // para recibir actualizaciones en tiempo real (RealtimeBridge → setQueryData).
+  const { data: productos = [] } = useProductos();
 
   // Un combo se guarda siempre en la categoría "Combos": el admin no la elige.
   const categoriaCombos = categorias.find(esCategoriaCombos);
-  const esCombo = tipoEfectivo === 'COMBO';
 
   // En un producto normal la categoría "Combos" queda fuera del desplegable.
   const categoriasVisibles = categorias.filter(
     (cat) => esCombo || !esCategoriaCombos(cat)
   );
-
-  useEffect(() => {
-    const cargar = async () => {
-      const result = await obtenerCategorias();
-      if (result.success) {
-        setCategorias(result.data);
-      }
-      setCargandoCategorias(false);
-    };
-    cargar();
-  }, []);
-
-  // Los productos posibles de una receta; se piden sólo si el producto es combo.
-  useEffect(() => {
-    if (forzarTipo !== 'COMBO' && producto?.tipo !== 'COMBO') return;
-    const cargar = async () => {
-      const result = await obtenerProductos();
-      if (result.success) setProductos(result.data);
-    };
-    cargar();
-  }, [forzarTipo, producto]);
 
   useEffect(() => {
     if (producto) {
@@ -162,8 +142,7 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
       // Viaja siempre: el backend lo exige y el admin no lo elige.
       tipo: tipoEfectivo,
       descripcion: descripcion.trim(),
-      imagen:
-        imagen.trim() || 'https://via.placeholder.com/300x200?text=Producto',
+      imagen: imagen.trim() || IMAGEN_PRODUCTO_POR_DEFECTO,
     };
 
     if (!esCombo) {
@@ -293,7 +272,7 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
               name="imagen"
               value={imagen}
               onChange={(e) => setImagen(e.target.value)}
-              placeholder="/imagenes/productos/tu-imagen.jpg"
+              placeholder="/api/imagenes/productos/tu-imagen.jpg"
             />
             <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
               <SubirImagen imagen={imagen} onImagenSubida={setImagen} />

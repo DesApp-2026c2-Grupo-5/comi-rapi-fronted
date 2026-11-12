@@ -1,76 +1,92 @@
 /**
  * Propósito: Página para editar o crear una categoría usando Container de Bootstrap.
- * Contenido: Componente EditarCategoria con carga de datos por ID, recarga ante
- *            `catalogo_actualizado` de ESTA categoría y FormularioCategoria.
+ * Contenido: Componente EditarCategoria con carga de datos por ID vía TanStack
+ *            Query y FormularioCategoria.
  * Dependencias: react-bootstrap (Container, Alert, Button), react-router-dom,
- *               FormularioCategoria, api/categorias.js, hooks/useAuth, services/socket,
+ *               FormularioCategoria, api/categorias.js, hooks/queries,
  *               components/comunes/Skeleton (SkeletonTarjeta).
  * Uso: Ruta "/superadmin/categoria/editar/:id" o "/superadmin/categoria/nuevo" → <EditarCategoria />
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioCategoria from '../../components/admin/FormularioCategoria';
-import { obtenerCategoriaPorId, crearCategoria, editarCategoria } from '../../api/categorias';
-import { useAuth } from '../../hooks/useAuth';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
+import { crearCategoria, editarCategoria } from '../../api/categorias';
+import { useCategoria } from '../../hooks/queries';
+import { queryKeys } from '../../hooks/queries';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
 
 const EditarCategoria = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, hydrated } = useAuth();
-  const [categoria, setCategoria] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    if (id) {
-      const result = await obtenerCategoriaPorId(id);
-      if (result.success) {
-        setCategoria(result.data);
-      } else {
-        setCategoria(null);
-        setError(result.error || 'No se pudo cargar la categoría.');
-      }
-    }
-    setCargando(false);
-  }, [id]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
-
-  // Si cambia ESTA categoría (la que se está editando), se recarga para mostrar
-  // los datos vigentes. Eventos de otras entidades se ignoran a propósito:
-  // resetear el formulario por cambios ajenos perdería la edición en curso.
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    const alEvento = (payload) => {
-      if (payload?.tipo !== 'categoria') return;
-      if (Number(payload?.id) !== Number(id)) return;
-      cargar();
-    };
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
-    return () => {
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alEvento);
-    };
-  }, [hydrated, user, id, cargar]);
+  const queryClient = useQueryClient();
+  // `staleTime: Infinity` evita que un refetch al volver a la pestaña pise la
+  // edición en curso. La clave se invalida cuando el backend avisa un cambio.
+  const {
+    data: categoria = null,
+    isPending,
+    error: errorQuery,
+  } = useCategoria(id, { enabled: Boolean(id), staleTime: Infinity });
+  const [errorLocal, setErrorLocal] = useState('');
+  const error = errorLocal || errorQuery?.message || '';
+  const cargando = Boolean(id) && isPending;
 
   const handleGuardar = async (datosCategoria) => {
-    setError('');
+    setErrorLocal('');
     const result = id
       ? await editarCategoria(id, datosCategoria)
       : await crearCategoria(datosCategoria);
     if (result.success) {
+      // Actualizar caché directamente para evitar refetch innecesario
+      const categoriaActualizada = result.data;
+      // 1. Actualizar detalle individual
+      queryClient.setQueryData(queryKeys.public.categoria(categoriaActualizada.id), categoriaActualizada);
+      // 2. Actualizar lista de todas las categorías (incluyendo inactivas)
+      const claveListaTodas = queryKeys.public.categorias(true);
+      const listaTodas = queryClient.getQueryData(claveListaTodas);
+      if (Array.isArray(listaTodas)) {
+        if (id) {
+          // Edición: reemplazar en la lista
+          const idx = listaTodas.findIndex((c) => String(c.id) === String(id));
+          if (idx >= 0) {
+            const nuevaLista = [...listaTodas];
+            nuevaLista[idx] = categoriaActualizada;
+            queryClient.setQueryData(queryKeys.public.categorias(true), nuevaLista);
+          }
+        } else {
+          // Creación: agregar ordenado por nombre
+          const nuevaLista = [...listaTodas, categoriaActualizada].sort((a, b) =>
+            String(a.nombre).localeCompare(String(b.nombre), 'es')
+          );
+          queryClient.setQueryData(queryKeys.public.categorias(true), nuevaLista);
+        }
+      }
+      // 3. Actualizar lista de activas
+      const claveListaActivas = queryKeys.public.categorias(false);
+      const listaActivas = queryClient.getQueryData(claveListaActivas);
+      if (Array.isArray(listaActivas)) {
+        if (id) {
+          // Edición
+          const idx = listaActivas.findIndex((c) => String(c.id) === String(id));
+          if (idx >= 0) {
+            const nuevaLista = [...listaActivas];
+            nuevaLista[idx] = categoriaActualizada;
+            queryClient.setQueryData(queryKeys.public.categorias(false), nuevaLista);
+          }
+        } else if (categoriaActualizada.activa) {
+          // Creación activa: agregar ordenado
+          const nuevaLista = [...listaActivas, categoriaActualizada].sort((a, b) =>
+            String(a.nombre).localeCompare(String(b.nombre), 'es')
+          );
+          queryClient.setQueryData(queryKeys.public.categorias(false), nuevaLista);
+        }
+      }
       navigate('/superadmin/categorias');
     } else {
-      setError(result.error || 'No se pudo guardar la categoría.');
+      setErrorLocal(result.error || 'No se pudo guardar la categoría.');
     }
   };
 

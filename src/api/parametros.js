@@ -37,3 +37,19 @@ export const actualizarParametros = async (cambios) => {
   }
   return { success: false, error: result.error };
 };
+
+/**
+ * Actualiza un único parámetro.
+ * Solo lo puede ejecutar el SUPERADMINISTRADOR (el backend lo exige).
+ * @param {string} clave - Clave del parámetro a actualizar.
+ * @param {number} valor - Nuevo valor del parámetro.
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ *   data: catálogo completo actualizado.
+ */
+export const actualizarParametro = async (clave, valor) => {
+  const result = await apiPut('/superadmin/parametros', { [clave]: valor });
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
+};

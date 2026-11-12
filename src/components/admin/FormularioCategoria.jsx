@@ -84,7 +84,7 @@ const FormularioCategoria = ({ categoria, onGuardar }) => {
               name="imagen"
               value={imagen}
               onChange={(e) => setImagen(e.target.value)}
-              placeholder="/imagenes/categorias/tu-imagen.jpg"
+              placeholder="/api/imagenes/categorias/tu-imagen.jpg"
             />
             <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
               <SubirImagen tipo="categoria" imagen={imagen} onImagenSubida={setImagen} />

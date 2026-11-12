@@ -11,9 +11,14 @@
  * - Reintentar una única vez si el backend responde 403 por CSRF (token rotado/expirado).
  * - Subir archivos (multipart) con apiPostFormData: envía un FormData sin fijar
  *   Content-Type para que el navegador agregue el boundary correcto.
+ * - Aceptar un AbortSignal en GET para que TanStack Query pueda cancelar la
+ *   petición al desmontar o al cambiar de clave.
  *
- * Dependencias: Ninguna (usa fetch nativo).
- * Uso: import { apiGet, apiPost, apiPut, apiDelete, apiPostFormData } from './client';
+ * La caché, deduplicación e invalidación de lecturas viven en TanStack Query;
+ * este cliente sólo transporta y normaliza las respuestas.
+ *
+ * Dependencias: ninguna externa (usa fetch nativo y cookies del navegador).
+ * Uso: import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiPostFormData } from './client';
  */
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -66,11 +71,14 @@ async function obtenerTokenCsrf() {
  * @param {string} method - Método HTTP (GET, POST, PUT, DELETE...).
  * @param {string} path - Ruta relativa a la API (p. ej. "/auth/login").
  * @param {object|FormData} [datos] - Cuerpo JSON o FormData (multipart).
+ * @param {object} [opciones]
+ * @param {AbortSignal} [opciones.signal] - Permite cancelar la petición.
  * @returns {Promise<{success: boolean, data?: any, error?: string, status?: number}>}
  */
-async function ejecutar(method, path, datos) {
+async function ejecutar(method, path, datos, { signal } = {}) {
   const url = BASE_URL + path;
   const opciones = { method, credentials: 'include', headers: {}, cache: 'no-store' };
+  if (signal) opciones.signal = signal;
 
   if (datos !== undefined) {
     if (datos instanceof FormData) {
@@ -120,24 +128,42 @@ async function ejecutar(method, path, datos) {
       pedidoId: (body && body.pedidoId) || null,
     };
   }
-  return { success: true, status: res.status, data: body ? body.data : null };
+  if (!body) return { success: true, status: res.status, data: null };
+  const extra = { ...body };
+  delete extra.success;
+  delete extra.data;
+  return { success: true, status: res.status, data: body.data ?? null, ...extra };
 }
 
 /**
  * Punto de entrada público: ejecuta la petición y reintenta una vez si el
  * backend responde 403 (probable CSRF inválido por token rotado).
  */
-async function request(method, path, datos) {
-  let respuesta = await ejecutar(method, path, datos);
+async function request(method, path, datos, opciones = {}) {
+  let respuesta = await ejecutar(method, path, datos, opciones);
   if (!respuesta.success && respuesta.status === 403) {
-    respuesta = await ejecutar(method, path, datos);
+    respuesta = await ejecutar(method, path, datos, opciones);
   }
   return respuesta;
 }
 
-export const apiGet = (path) => request('GET', path);
-export const apiPost = (path, datos) => request('POST', path, datos);
-export const apiPut = (path, datos) => request('PUT', path, datos);
-export const apiDelete = (path) => request('DELETE', path);
-export const apiPostFormData = (path, formData) =>
-  request('POST', path, formData);
+/**
+ * GET sin caché propia: TanStack Query es quien decide cuándo repetir la
+ * lectura, deduplicar y cancelar (a través del `signal`).
+ *
+ * @param {string} path
+ * @param {object} [opciones]
+ * @param {AbortSignal} [opciones.signal] - Cancela la petición (TanStack Query).
+ */
+export const apiGet = (path, { signal } = {}) =>
+  request('GET', path, undefined, { signal });
+
+export const apiPost = (path, datos, opciones) =>
+  request('POST', path, datos, opciones);
+export const apiPut = (path, datos, opciones) =>
+  request('PUT', path, datos, opciones);
+export const apiPatch = (path, datos, opciones) =>
+  request('PATCH', path, datos, opciones);
+export const apiDelete = (path, opciones) => request('DELETE', path, undefined, opciones);
+export const apiPostFormData = (path, formData, opciones) =>
+  request('POST', path, formData, opciones);
