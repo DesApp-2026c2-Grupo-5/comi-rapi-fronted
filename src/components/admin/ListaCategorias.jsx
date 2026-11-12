@@ -9,78 +9,95 @@
  * Uso: <ListaCategorias /> (superadmin) o <ListaCategorias soloLectura /> (admin).
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Container, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrashAlt, FaUndoAlt } from 'react-icons/fa';
-import { obtenerCategorias, obtenerCategoriaPorId, eliminarCategoria, editarCategoria } from '../../api/categorias';
-import { fusionarPorId } from '../../utils/catalogoRealtime';
+import { eliminarCategoria, editarCategoria } from '../../api/categorias';
+import { useCategorias } from '../../hooks/queries';
+import { queryKeys } from '../../hooks/queries';
 import ConfirmarModal from '../comunes/ConfirmarModal';
-import { useAuth } from '../../hooks/useAuth';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { SkeletonTabla } from '../comunes/Skeleton';
 
 const ListaCategorias = ({ soloLectura = false }) => {
   const navigate = useNavigate();
-  const { user, hydrated } = useAuth();
-  const [categorias, setCategorias] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  // Los roles de gestión ven también las inactivas (baja lógica). La clave
+  // ['public','categorias','todas'] la invalida RealtimeBridge cuando hay un
+  // cambio de catálogo.
+  const {
+    data: categorias = [],
+    isPending: cargando,
+    error: errorQuery,
+  } = useCategorias({ incluirInactivas: true });
+  const [errorLocal, setErrorLocal] = useState('');
+  const error = errorLocal || errorQuery?.message || '';
   // Objetos { id, nombre } que esperan confirmación en el modal
   const [categoriaAEliminar, setCategoriaAEliminar] = useState(null);
   const [categoriaAReactivar, setCategoriaAReactivar] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
 
-  const cargarCategorias = async () => {
-    setCargando(true);
-    setError('');
-    const result = await obtenerCategorias({ incluirInactivas: true });
+  const confirmarEliminar = async () => {
+    if (!categoriaAEliminar) return;
+    setConfirmando(true);
+    const result = await eliminarCategoria(categoriaAEliminar.id);
     if (result.success) {
-      setCategorias(result.data);
+      const categoriaId = categoriaAEliminar.id;
+      setCategoriaAEliminar(null);
+      // Actualizar caché directamente en lugar de invalidar
+      // 1. Lista de todas (incluye inactivas)
+      const claveTodas = queryKeys.public.categorias(true);
+      const listaTodas = queryClient.getQueryData(claveTodas);
+      if (Array.isArray(listaTodas)) {
+        queryClient.setQueryData(claveTodas, listaTodas.filter((c) => c.id !== categoriaId));
+      }
+      // 2. Lista de activas
+      const claveActivas = queryKeys.public.categorias(false);
+      const listaActivas = queryClient.getQueryData(claveActivas);
+      if (Array.isArray(listaActivas)) {
+        queryClient.setQueryData(claveActivas, listaActivas.filter((c) => c.id !== categoriaId));
+      }
     } else {
-      setError(result.error || 'No se pudieron cargar las categorías.');
+      setErrorLocal(result.error || 'No se pudo eliminar la categoría.');
     }
-    setCargando(false);
+    setConfirmando(false);
   };
 
-  useEffect(() => {
-    cargarCategorias();
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => cargarCategorias();
-    // catalogo_actualizado trae {tipo, id, accion}. Sólo interesan las
-    // categorías: se relee esa y se fusiona sin recargar la tabla. La baja es
-    // lógica, así que la fila se queda marcada como inactiva.
-    const alCat = async (payload) => {
-      if (payload?.tipo !== 'categoria') return;
-      const id = Number(payload.id);
-      if (payload.accion === 'eliminado') {
-        setCategorias((prev) =>
-          prev.map((categoria) =>
-            Number(categoria.id) === id ? { ...categoria, activa: false } : categoria
-          )
+  const confirmarReactivar = async () => {
+    if (!categoriaAReactivar) return;
+    setConfirmando(true);
+    const result = await editarCategoria(categoriaAReactivar.id, { activa: true });
+    if (result.success) {
+      const categoriaActualizada = result.data;
+      setCategoriaAReactivar(null);
+      // Actualizar caché directamente
+      // 1. Lista de todas
+      const claveTodas = queryKeys.public.categorias(true);
+      const listaTodas = queryClient.getQueryData(claveTodas);
+      if (Array.isArray(listaTodas)) {
+        const idx = listaTodas.findIndex((c) => c.id === categoriaActualizada.id);
+        if (idx >= 0) {
+          const nuevaLista = [...listaTodas];
+          nuevaLista[idx] = categoriaActualizada;
+          queryClient.setQueryData(claveTodas, nuevaLista);
+        }
+      }
+      // 2. Lista de activas - agregar la reactivada
+      const claveActivas = queryKeys.public.categorias(false);
+      const listaActivas = queryClient.getQueryData(claveActivas);
+      if (Array.isArray(listaActivas)) {
+        const nuevaLista = [...listaActivas, categoriaActualizada].sort((a, b) =>
+          String(a.nombre).localeCompare(String(b.nombre), 'es')
         );
-        return;
+        queryClient.setQueryData(claveActivas, nuevaLista);
       }
-      const result = await obtenerCategoriaPorId(id);
-      if (result.success && result.data) {
-        setCategorias((prev) => fusionarPorId(prev, result.data));
-      }
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    };
-  }, [hydrated, user]);
+    } else {
+      setErrorLocal(result.error || 'No se pudo reactivar la categoría.');
+    }
+    setConfirmando(false);
+  };
 
   const handleEditar = (id) => {
     navigate(`/superadmin/categoria/editar/${id}`);
@@ -92,33 +109,7 @@ const ListaCategorias = ({ soloLectura = false }) => {
 
   const handleEliminar = (id, nombre) => setCategoriaAEliminar({ id, nombre });
 
-  const confirmarEliminar = async () => {
-    if (!categoriaAEliminar) return;
-    setConfirmando(true);
-    const result = await eliminarCategoria(categoriaAEliminar.id);
-    if (result.success) {
-      setCategoriaAEliminar(null);
-      cargarCategorias();
-    } else {
-      setError(result.error || 'No se pudo eliminar la categoría.');
-    }
-    setConfirmando(false);
-  };
-
   const handleReactivar = (id, nombre) => setCategoriaAReactivar({ id, nombre });
-
-  const confirmarReactivar = async () => {
-    if (!categoriaAReactivar) return;
-    setConfirmando(true);
-    const result = await editarCategoria(categoriaAReactivar.id, { activa: true });
-    if (result.success) {
-      setCategoriaAReactivar(null);
-      cargarCategorias();
-    } else {
-      setError(result.error || 'No se pudo reactivar la categoría.');
-    }
-    setConfirmando(false);
-  };
 
   return (
     <Container>

@@ -75,8 +75,18 @@ export const NotificacionesCentroProvider = ({ children }) => {
   const recargar = useCallback(() => setVersion((v) => v + 1), []);
 
   const refrescarContador = useCallback(async () => {
-    const res = await obtenerNoLeidas();
-    if (res.success) setNoLeidas(res.data?.noLeidas ?? 0);
+    try {
+      const res = await obtenerNoLeidas();
+      if (res.success) {
+        setNoLeidas(res.data?.noLeidas ?? 0);
+      } else {
+        // Log del error para diagnóstico, no rompemos el badge
+        console.warn('[NotificacionesCentro] Error al obtener no-leidas:', res.error);
+      }
+    } catch (e) {
+      // Fallback defensivo: si la capa api/ lanza en vez de devolver { success: false }
+      console.error('[NotificacionesCentro] Excepción al obtener no-leidas:', e);
+    }
   }, []);
 
   // Contador inicial (y al cambiar de cuenta). Es lo que dibuja el badge.

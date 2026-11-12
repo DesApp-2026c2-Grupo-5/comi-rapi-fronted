@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Button, Form, Table } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt } from 'react-icons/fa';
-import { obtenerIngredientes } from '../../api/ingredientes';
+import { useIngredientesQuery } from '../../hooks/queries';
 
 const EditarRecetaIngredientes = ({ receta = [], onChange }) => {
   const [ingredientes, setIngredientes] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  const { data: ingredientesCache = [], isPending: cargandoCache } =
+    useIngredientesQuery();
 
   useEffect(() => {
-    const cargar = async () => {
-      const result = await obtenerIngredientes();
-      if (result.success) setIngredientes(result.data || []);
-      setCargando(false);
-    };
-    cargar();
-  }, []);
+    if (ingredientesCache.length > 0) {
+      setIngredientes(ingredientesCache);
+    }
+  }, [ingredientesCache]);
+
+  const cargando = cargandoCache && ingredientes.length === 0;
 
   const cambiar = (indice, campo, valor) => {
     const siguiente = receta.map((fila, i) =>

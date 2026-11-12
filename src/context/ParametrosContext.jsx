@@ -5,27 +5,29 @@
  *            backend expone en GET /api/parametros.
  * Contenido: ParametrosProvider, ParametrosContext, con el mapa { clave: valor },
  *            el catálogo completo y funciones de recarga/actualización.
- * Dependencias: React (createContext, useState, useCallback, useMemo, useEffect),
- *               api/parametros.js.
+ * Dependencias: React, @tanstack/react-query, api/parametros.js, hooks/queries.
  * Uso: <ParametrosProvider> envuelve la app en App.jsx. Consumir con useParametros().
  *
  * El backend es la autoridad: acá solo se leen los valores para no duplicar
  * reglas. Los valores por defecto de `PARAMETROS_POR_DEFECTO` son el respaldo
  * para el primer render (antes de que responda el backend) y para que la app
  * siga siendo usable si la API no responde.
+ *
+ * La lectura vive en la caché pública de TanStack Query. RealtimeBridge invalida
+ * ['public', 'parametros'] cuando el backend avisa un cambio y el contexto se
+ * re-renderiza con los datos frescos.
  */
 
-import {
-  createContext,
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-} from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { obtenerParametros, actualizarParametros } from '../api/parametros';
-import { conectarSocket, desconectarSocket, EVENTOS_SOCKET } from '../services/socket';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  actualizarParametros as actualizarParametrosApi,
+  actualizarParametro as actualizarParametroApi,
+} from '../api/parametros';
+import { desconectarSocket } from '../services/socket';
 import { useAuth } from '../hooks/useAuth';
+import { queryKeys, useParametrosQuery } from '../hooks/queries';
 
 export const ParametrosContext = createContext(null);
 
@@ -67,10 +69,11 @@ const aMapa = (lista) => {
  * @param {React.ReactNode} children - Componentes hijos.
  */
 export const ParametrosProvider = ({ children }) => {
-  const [lista, setLista] = useState([]);
-  const [parametros, setParametros] = useState(PARAMETROS_POR_DEFECTO);
-  const [loading, setLoading] = useState(false);
   const { user, hydrated } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: lista = [], isLoading: loading, refetch } = useParametrosQuery();
+
+  const parametros = useMemo(() => aMapa(lista), [lista]);
 
   /**
    * Recarga el catálogo desde el backend. Si falla, conserva los valores que ya
@@ -78,67 +81,63 @@ export const ParametrosProvider = ({ children }) => {
    * @returns {Promise<Array>} Catálogo vigente.
    */
   const recargar = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await obtenerParametros();
-      if (result.success) {
-        setLista(result.data);
-        setParametros(aMapa(result.data));
-        return result.data;
-      }
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    const resultado = await refetch();
+    return resultado.data || [];
+  }, [refetch]);
 
   /**
-   * Actualiza parámetros (solo superadmin) y sincroniza el estado local con el
+   * Actualiza parámetros (solo superadmin) y sincroniza la caché con el
    * catálogo que devuelve el backend.
    * @param {Object} cambios - { clave: valor }.
    * @returns {Promise<{success: boolean, error?: string}>}
    */
-  const actualizar = useCallback(async (cambios) => {
-    const result = await actualizarParametros(cambios);
-    if (result.success) {
-      setLista(result.data);
-      setParametros(aMapa(result.data));
-      return { success: true };
+  const actualizar = useCallback(
+    async (cambios) => {
+      const result = await actualizarParametrosApi(cambios);
+      if (result.success) {
+        queryClient.setQueryData(queryKeys.public.parametros, result.data);
+        return { success: true };
+      }
+      return { success: false, error: result.error };
+    },
+    [queryClient]
+  );
+
+  /**
+   * Actualiza un único parámetro (solo superadmin) y sincroniza la caché.
+   * @param {string} clave - Clave del parámetro.
+   * @param {number} valor - Nuevo valor.
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  const actualizarParametro = useCallback(
+    async (clave, valor) => {
+      const result = await actualizarParametroApi(clave, valor);
+      if (result.success) {
+        queryClient.setQueryData(queryKeys.public.parametros, result.data);
+        return { success: true };
+      }
+      return { success: false, error: result.error };
+    },
+    [queryClient]
+  );
+
+  // Track if we ever had a user session to avoid disconnecting on initial load for guests
+  const hadUserRef = useRef(false);
+  useEffect(() => {
+    if (user) hadUserRef.current = true;
+  }, [user]);
+
+  // El socket se cierra al cerrar sesión: solo si HABÍA usuario antes y ahora no hay.
+  // Esto evita desconectar el socket en la carga inicial para invitados (sin sesión).
+  useEffect(() => {
+    if (hydrated && hadUserRef.current && !user) {
+      desconectarSocket();
     }
-    return { success: false, error: result.error };
-  }, []);
-
-  useEffect(() => {
-    recargar();
-  }, [recargar]);
-
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => {
-      recargar();
-    };
-    const alParam = () => {
-      recargar();
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.PARAMETROS_ACTUALIZADOS, alParam);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.PARAMETROS_ACTUALIZADOS, alParam);
-    };
-  }, [hydrated, user, recargar]);
-
-  useEffect(() => {
-    if (hydrated && !user) desconectarSocket();
   }, [hydrated, user]);
 
   const value = useMemo(
-    () => ({ parametros, lista, loading, recargar, actualizar }),
-    [parametros, lista, loading, recargar, actualizar]
+    () => ({ parametros, lista, loading, recargar, actualizar, actualizarParametro }),
+    [parametros, lista, loading, recargar, actualizar, actualizarParametro]
   );
 
   return (

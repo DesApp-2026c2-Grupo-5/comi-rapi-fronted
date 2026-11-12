@@ -25,9 +25,9 @@ export function calcularPrecioUnitario(
   extras,
   acompanamientos
 ) {
-  const extraTotal = extras.reduce((s, e) => s + e.precio * e.cantidad, 0);
-  const acompTotal = acompanamientos.reduce(
-    (s, e) => s + e.precio * e.cantidad,
+  const extraTotal = (extras || []).reduce((s, e) => s + (e.precio ?? 0) * (e.cantidad ?? 1), 0);
+  const acompTotal = (acompanamientos || []).reduce(
+    (s, e) => s + (e.precio ?? 0) * (e.cantidad ?? 1),
     0
   );
   return precioBase + extraTotal + acompTotal;

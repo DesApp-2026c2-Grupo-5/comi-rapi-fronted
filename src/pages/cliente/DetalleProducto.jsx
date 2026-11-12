@@ -1,20 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Badge, Button, Alert } from 'react-bootstrap';
 import { FaCartPlus, FaSlidersH, FaTag, FaTruck } from 'react-icons/fa';
-import { obtenerProductoPorId, obtenerProductos } from '../../api/productos';
-import { obtenerPorProducto } from '../../api/personalizacion';
-import { obtenerPromociones, obtenerProductosDePromocion } from '../../api/promociones';
+import { eliminarResena } from '../../api/resenas';
 import {
-  eliminarResena,
-  obtenerMisResenas,
-  obtenerProductosElegiblesParaResenar,
-  obtenerResenasDeProducto,
-} from '../../api/resenas';
+  queryKeys,
+  useEstadoResenaProducto,
+  usePersonalizacionProducto,
+  useProducto,
+  useProductos,
+  usePromociones,
+  useResenasProducto,
+} from '../../hooks/queries';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
 import { useAuth } from '../../hooks/useAuth';
 import { formatPrice } from '../../utils/formatters';
+import { resolverImagen } from '../../utils/imagenes';
 import { calcularCostoEnvio } from '../../services/envio';
 import ProductoCard from '../../components/cliente/ProductoCard';
 import { SkeletonDetalleProducto } from '../../components/comunes/Skeleton';
@@ -24,7 +27,6 @@ import ListaResenas from '../../components/cliente/ListaResenas';
 import ResenaModal from '../../components/cliente/ResenaModal';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import './DetalleProducto.css';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 
 // En la ficha se ven sólo las primeras reseñas: el resto vive en la página
 // completa de opiniones (/producto/:id/resenas).
@@ -32,30 +34,15 @@ const RESENAS_EN_DETALLE = 4;
 
 const DetalleProducto = () => {
   const { id } = useParams();
-  const {
-    agregarAlCarrito,
-    total: totalCarrito,
-    items: itemsCarrito,
-  } = useCarrito();
+  const { agregarAlCarrito, total: totalCarrito, items: itemsCarrito } = useCarrito();
   const { parametros } = useParametros();
   const { hydrated, isAuthenticated, isCliente } = useAuth();
-  const [producto, setProducto] = useState(null);
-  const [personalizacion, setPersonalizacion] = useState([]);
-  // Catálogo completo: de acá salen los relacionados y los combos que incluyen
-  // este producto. Se guarda entero para no pedirlo dos veces.
-  const [catalogo, setCatalogo] = useState([]);
-  const [promocion, setPromocion] = useState(undefined);
+  const queryClient = useQueryClient();
   const [cantidad, setCantidad] = useState(1);
   const [showModal, setShowModal] = useState(false);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
 
   // Reseñas: listado público paginado, resumen, la reseña propia (si existe) y
   // si este cliente puede escribir una (compró y recibió el producto).
-  const [resenas, setResenas] = useState(null);
-  const [cargandoResenas, setCargandoResenas] = useState(true);
-  const [miResena, setMiResena] = useState(null);
-  const [puedeResenar, setPuedeResenar] = useState(false);
   const [modalResena, setModalResena] = useState(false);
   const [resenaAEditar, setResenaAEditar] = useState(null);
   const [resenaABorrar, setResenaABorrar] = useState(null);
@@ -63,138 +50,95 @@ const DetalleProducto = () => {
   const [mensajeResenas, setMensajeResenas] = useState('');
   const [errorResenas, setErrorResenas] = useState('');
 
-  // `conIndicador` enciende el spinner y reinicia la cantidad: es para la carga
-  // visible (entrada a la página o cambio de producto). Un refresco silencioso
-  // (conIndicador=false) actualiza el contenido en el lugar, sin spinner ni
-  // resetear la cantidad que el cliente ya eligió.
-  const cargar = useCallback(async (conIndicador = true) => {
-    if (conIndicador) {
-      setCargando(true);
-      setError('');
-      setCantidad(1);
-    }
-    const [resProducto, resProductos, resPromos] = await Promise.all([
-      obtenerProductoPorId(id),
-      obtenerProductos(),
-      obtenerPromociones(),
-    ]);
-    if (!resProducto.success) {
-      // En silencio no se pisa la vista buena con un error de red transitorio.
-      if (conIndicador) {
-        setError(resProducto.error || 'Producto no encontrado.');
-        setCargando(false);
-      }
-      return;
-    }
-    const prod = resProducto.data;
-    setError('');
-    setProducto(prod);
-    // El show ya trae la personalización activa; solo se consulta aparte
-    // si viniera sin ella (compatibilidad).
-    if (Array.isArray(prod.personalizacion)) {
-      setPersonalizacion(prod.personalizacion);
-    } else {
-      const resPers = await obtenerPorProducto(id);
-      if (resPers.success) setPersonalizacion(resPers.data);
-    }
-    if (resProductos.success) setCatalogo(resProductos.data);
-    // Mejor promoción activa que alcanza a este producto (misma regla que
-    // el catálogo: mayor descuento; 2x1 equivale a 50%).
-    if (resPromos.success) {
-      const equiv = (promo) => (promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor));
-      const listas = await Promise.all(
-        resPromos.data.map(async (promo) => {
-          const r = await obtenerProductosDePromocion(promo.id);
-          return r.success && r.data.some((p) => String(p.id) === String(prod.id)) ? promo : null;
-        })
-      );
-      const mejor = listas.filter(Boolean).sort((a, b) => equiv(b) - equiv(a))[0];
-      setPromocion(mejor);
-    }
-    if (conIndicador) setCargando(false);
+  // Catálogo completo: de acá salen el producto, los relacionados y los combos
+  // que incluyen este producto. Comparte la caché con el bootstrap, así que
+  // si el snapshot inicial ya cargó no hay ninguna petición HTTP al entrar al
+  // detalle del producto.
+  const catalogoQuery = useProductos();
+  const productoDeCatalogo = useMemo(
+    () => catalogoQuery.data?.find((p) => String(p.id) === String(id)),
+    [catalogoQuery.data, id]
+  );
+  // Fallback: solo se consulta el detalle por ID si el producto no está en el
+  // catálogo (dado de baja, o el bootstrap no llegó a tiempo).
+  const productoQuery = useProducto(id, {
+    enabled: !productoDeCatalogo,
+  });
+
+  const promocionesQuery = usePromociones({ incluirProductos: true });
+  const resenasQuery = useResenasProducto(id, {
+    pagina: 1,
+    limite: RESENAS_EN_DETALLE,
+  });
+  const puedeConsultarPropias = hydrated && isAuthenticated && isCliente;
+  // Una sola consulta acotada a este producto: si puede reseñarlo y cuál es su
+  // reseña. Antes se pedían los listados globales de elegibles y mías.
+  const estadoResenaQuery = useEstadoResenaProducto(id, {
+    enabled: puedeConsultarPropias,
+  });
+  // La personalización va por separado (igual que las reseñas), pero solo se
+  // consulta si el producto vino del fallback de detalle y no trae ya su
+  // personalización. Si viene del catálogo/bootstrap, no hay llamada extra.
+  const personalizacionQuery = usePersonalizacionProducto(id, {
+    enabled: productoQuery.isSuccess && !Array.isArray(productoQuery.data?.personalizacion),
+  });
+
+  const producto = productoDeCatalogo || productoQuery.data || null;
+  const catalogo = useMemo(() => catalogoQuery.data || [], [catalogoQuery.data]);
+  const personalizacion = useMemo(
+    () => (Array.isArray(personalizacionQuery.data) ? personalizacionQuery.data : []),
+    [personalizacionQuery.data]
+  );
+
+  // Mejor promoción activa que alcanza a este producto (misma regla que el
+  // catálogo: mayor descuento; 2x1 equivale a 50%).
+  const promocion = useMemo(() => {
+    const equiv = (promo) => (promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor));
+    return (promocionesQuery.data || [])
+      .filter((promo) => promo.activa !== false)
+      .filter((promo) =>
+        (Array.isArray(promo.productos) ? promo.productos : []).some(
+          (p) => String(p.id) === String(id)
+        )
+      )
+      .sort((a, b) => equiv(b) - equiv(a))[0];
+  }, [promocionesQuery.data, id]);
+
+  const resenas = resenasQuery.data;
+  const cargandoResenas = resenasQuery.isLoading;
+  const puedeResenar = Boolean(estadoResenaQuery.data?.puedeResenar);
+  const miResena = estadoResenaQuery.data?.miResena || null;
+
+  const cargando = productoQuery.isLoading;
+  const error = productoQuery.error ? productoQuery.error.message || 'Producto no encontrado.' : '';
+
+  // Al cambiar de producto, la cantidad vuelve a 1.
+  useEffect(() => {
+    setCantidad(1);
   }, [id]);
 
-  const cargarResenas = useCallback(async () => {
-    setCargandoResenas(true);
-    setMensajeResenas('');
-    setErrorResenas('');
-    // Al cambiar de producto no se muestran las reseñas del anterior mientras
-    // llega la respuesta.
-    setResenas(null);
-    const res = await obtenerResenasDeProducto(id, {
-      pagina: 1,
-      limite: RESENAS_EN_DETALLE,
-    });
-    if (res.success) setResenas(res.data);
-    setCargandoResenas(false);
-  }, [id]);
-
-  // Elegibilidad y reseña propia: solo para CLIENTE con sesión. El backend es
-  // el que manda (403 si no compró), esto solo decide qué botones mostrar.
-  const cargarElegibilidad = useCallback(async () => {
-    if (!hydrated || !isAuthenticated || !isCliente) {
-      setPuedeResenar(false);
-      setMiResena(null);
-      return;
-    }
-    const [resElegibles, resMias] = await Promise.all([
-      obtenerProductosElegiblesParaResenar(),
-      obtenerMisResenas(),
+  const refrescarResenas = () =>
+    Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.public.resenasProducto(id, 1, RESENAS_EN_DETALLE),
+      }),
+      queryClient.invalidateQueries({ queryKey: ['private', 'resenas'] }),
     ]);
-    if (resElegibles.success) {
-      setPuedeResenar(
-        resElegibles.data.some((p) => String(p.productoId) === String(id))
-      );
-    }
-    if (resMias.success) {
-      setMiResena(
-        resMias.data.find((r) => String(r.productoId) === String(id)) || null
-      );
-    }
-  }, [hydrated, isAuthenticated, isCliente, id]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
-
-  useEffect(() => {
-    cargarResenas();
-  }, [cargarResenas]);
-
-  useEffect(() => {
-    cargarElegibilidad();
-  }, [cargarElegibilidad]);
-
-  useEffect(() => {
-    if (!hydrated || !isAuthenticated) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar y al cambiar de producto (id): si se
-    // perdió un cambio durante una desconexión, el aviso no llegó. La carga
-    // inicial la hace el useEffect de arriba, por eso no se pide aquí.
-    const alConectar = () => cargar();
-    // catalogo_actualizado sólo avisa {tipo, id, accion}: se relee el producto
-    // (y sus relacionados/promoción) en silencio, sin spinner y sin tocar la
-    // cantidad elegida.
-    const alCat = () => cargar(false);
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCat);
-    };
-  }, [hydrated, isAuthenticated, cargar]);
 
   const ingredientes = useMemo(() => {
     if (!producto) return [];
     if (producto.tipo === 'COMBO' && Array.isArray(producto.componentes)) {
       return producto.componentes.map((c) => c.nombre || `producto ${c.productoId}`);
     }
-    if (Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0) {
-      return producto.recetaIngredientes.map((r) => r.nombre || `ingrediente ${r.ingredienteId}`);
-    }
-    return (personalizacion || [])
+    // Para PRODUCTO: mostrar ingredientes de la receta (origin/dev) y también
+    // los elementos de personalización tipo "personalizar" (HEAD).
+    const deReceta = Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0
+      ? producto.recetaIngredientes.map((r) => r.nombre || `ingrediente ${r.ingredienteId}`)
+      : [];
+    const dePersonalizar = (personalizacion || [])
       .filter((e) => e.tipo === 'personalizar' && e.activo !== false)
       .map((e) => e.nombre);
+    return [...deReceta, ...dePersonalizar];
   }, [producto, personalizacion]);
 
   // Mismo criterio de siempre: productos de la misma categoría, sin el actual.
@@ -218,9 +162,7 @@ const DetalleProducto = () => {
       catalogo.filter(
         (p) =>
           p.tipo === 'COMBO' &&
-          (p.componentes || []).some(
-            (c) => String(c.productoId) === String(id)
-          )
+          (p.componentes || []).some((c) => String(c.productoId) === String(id))
       ),
     [catalogo, id]
   );
@@ -232,8 +174,7 @@ const DetalleProducto = () => {
     promocion && promocion.tipo === 'DESCUENTO_PORCENTUAL'
       ? Number(producto?.precio) * (1 - Number(promocion.valor) / 100)
       : null;
-  const precioFinalProducto =
-    precioConDescuento ?? Number(producto?.precio ?? 0);
+  const precioFinalProducto = precioConDescuento ?? Number(producto?.precio ?? 0);
 
   // "Tu pedido": un solo estado de envío. Manda el carrito cuando tiene algo;
   // si está vacío, se responde por este producto solo.
@@ -247,9 +188,7 @@ const DetalleProducto = () => {
     envioGratisDesde - (hayCarrito ? totalCarrito : precioFinalProducto)
   );
   const progresoEnvio =
-    envioGratisDesde > 0
-      ? Math.min(100, Math.round((totalCarrito / envioGratisDesde) * 100))
-      : 100;
+    envioGratisDesde > 0 ? Math.min(100, Math.round((totalCarrito / envioGratisDesde) * 100)) : 100;
 
   // Unidades de este producto ya en el carrito: con el 2x1 sirve para saber si
   // está a mitad de camino.
@@ -266,10 +205,8 @@ const DetalleProducto = () => {
     setModalResena(false);
     setResenaAEditar(null);
     setErrorResenas('');
-    setMensajeResenas(
-      editando ? 'Tu reseña se actualizó.' : 'Tu reseña se publicó.'
-    );
-    await Promise.all([cargarResenas(), cargarElegibilidad()]);
+    setMensajeResenas(editando ? 'Tu reseña se actualizó.' : 'Tu reseña se publicó.');
+    await refrescarResenas();
   };
 
   const confirmarBorradoResena = async () => {
@@ -284,7 +221,7 @@ const DetalleProducto = () => {
       return;
     }
     setMensajeResenas('Tu reseña se eliminó.');
-    await Promise.all([cargarResenas(), cargarElegibilidad()]);
+    await refrescarResenas();
   };
 
   if (cargando) {
@@ -300,7 +237,9 @@ const DetalleProducto = () => {
     return (
       <Container className="py-5 text-center">
         <Alert variant="danger">{error || 'Producto no encontrado.'}</Alert>
-        <Link to="/cliente/catalogo" className="boton-volver">← Volver al catálogo</Link>
+        <Link to="/cliente/catalogo" className="boton-volver">
+          ← Volver al catálogo
+        </Link>
       </Container>
     );
   }
@@ -308,22 +247,34 @@ const DetalleProducto = () => {
   return (
     <Container className="py-4 detalle-producto">
       <div className="mb-3">
-        <Link to="/cliente/catalogo" className="boton-volver">← Volver al catálogo</Link>
+        <Link to="/cliente/catalogo" className="boton-volver">
+          ← Volver al catálogo
+        </Link>
       </div>
 
       <Card className="detalle-card mb-4">
         <Row className="g-0">
           <Col md={5} className="position-relative">
-            <Card.Img src={producto.imagen} alt={producto.nombre} className="detalle-hero-img" />
+            <Card.Img
+              src={resolverImagen(producto.imagen)}
+              alt={producto.nombre}
+              className="detalle-hero-img"
+            />
             {promocion && (
               <span className="promo-badge position-absolute" style={{ top: 12, right: 12 }}>
-                {promocion.tipo === 'DOS_POR_UNO' ? '2x1' : `-${Math.round(Number(promocion.valor))}%`}
+                {promocion.tipo === 'DOS_POR_UNO'
+                  ? '2x1'
+                  : `-${Math.round(Number(promocion.valor))}%`}
               </span>
             )}
           </Col>
           <Col md={7}>
             <Card.Body className="p-4 d-flex flex-column h-100">
-              {producto.categoria && <Badge className="badge-comi align-self-start mb-2">{producto.categoria}</Badge>}
+              {producto.categoria && (
+                <Badge bg="light" text="dark" className="badge-comi align-self-start mb-2">
+                  {producto.categoria}
+                </Badge>
+              )}
               <Card.Title as="h1">{producto.nombre}</Card.Title>
               <div className="mb-2 d-flex align-items-center gap-2 flex-wrap">
                 {resenas && resenas.cantidad > 0 ? (
@@ -331,14 +282,11 @@ const DetalleProducto = () => {
                     <Estrellas valor={resenas.promedio} tamano={16} />
                     <strong>{Number(resenas.promedio).toFixed(1)}</strong>
                     <span className="text-muted small">
-                      ({resenas.cantidad}{' '}
-                      {resenas.cantidad === 1 ? 'reseña' : 'reseñas'})
+                      ({resenas.cantidad} {resenas.cantidad === 1 ? 'reseña' : 'reseñas'})
                     </span>
                   </>
                 ) : (
-                  <span className="text-muted small">
-                    Todavía no hay reseñas de este producto.
-                  </span>
+                  <span className="text-muted small">Todavía no hay reseñas de este producto.</span>
                 )}
               </div>
               <Card.Text className="text-muted flex-grow-1">{producto.descripcion}</Card.Text>
@@ -346,18 +294,39 @@ const DetalleProducto = () => {
                 {precioConDescuento !== null && (
                   <span className="precio-tachado me-2">{formatPrice(producto.precio)}</span>
                 )}
-                <span className="precio-destacado">{formatPrice(precioConDescuento ?? producto.precio)}</span>
+                <span className="precio-destacado">
+                  {formatPrice(precioConDescuento ?? producto.precio)}
+                </span>
               </div>
               <div className="d-flex gap-2 align-items-center flex-wrap">
                 <span className="pill-control">
-                  <button type="button" onClick={() => setCantidad((c) => Math.max(1, c - 1))} aria-label="Quitar uno">−</button>
+                  <button
+                    type="button"
+                    onClick={() => setCantidad((c) => Math.max(1, c - 1))}
+                    aria-label="Quitar uno"
+                  >
+                    −
+                  </button>
                   <span>{cantidad}</span>
-                  <button type="button" onClick={() => setCantidad((c) => Math.min(9, c + 1))} aria-label="Agregar uno">+</button>
+                  <button
+                    type="button"
+                    onClick={() => setCantidad((c) => Math.min(9, c + 1))}
+                    aria-label="Agregar uno"
+                  >
+                    +
+                  </button>
                 </span>
-                <Button className="producto-boton" onClick={() => agregarAlCarrito(producto, cantidad)}>
+                <Button
+                  className="producto-boton"
+                  onClick={() => agregarAlCarrito(producto, cantidad)}
+                >
                   <FaCartPlus aria-hidden="true" /> Añadir
                 </Button>
-                <Button variant="success" className="rounded-pill" onClick={() => setShowModal(true)}>
+                <Button
+                  variant="success"
+                  className="rounded-pill"
+                  onClick={() => setShowModal(true)}
+                >
                   <FaSlidersH aria-hidden="true" /> Personalizar
                 </Button>
               </div>
@@ -373,7 +342,9 @@ const DetalleProducto = () => {
             {ingredientes.length > 0 ? (
               <div className="d-flex flex-wrap gap-2">
                 {ingredientes.map((nombre) => (
-                  <span key={nombre} className="ing-chip">{nombre}</span>
+                  <span key={nombre} className="ing-chip">
+                    {nombre}
+                  </span>
                 ))}
               </div>
             ) : (
@@ -422,14 +393,10 @@ const DetalleProducto = () => {
                     aria-valuenow={Math.min(totalCarrito, envioGratisDesde)}
                     aria-label={`Progreso hacia el envío gratis: ${progresoEnvio}%`}
                   >
-                    <span
-                      className="envio-barra-fill"
-                      style={{ width: `${progresoEnvio}%` }}
-                    />
+                    <span className="envio-barra-fill" style={{ width: `${progresoEnvio}%` }} />
                   </div>
                   <p className="tu-pedido-linea mb-0">
-                    Te faltan {formatPrice(faltaParaEnvioGratis)} para el envío
-                    gratis.
+                    Te faltan {formatPrice(faltaParaEnvioGratis)} para el envío gratis.
                   </p>
                 </>
               )}
@@ -470,12 +437,7 @@ const DetalleProducto = () => {
           </Alert>
         )}
         {errorResenas && (
-          <Alert
-            variant="danger"
-            dismissible
-            onClose={() => setErrorResenas('')}
-            className="py-2"
-          >
+          <Alert variant="danger" dismissible onClose={() => setErrorResenas('')} className="py-2">
             {errorResenas}
           </Alert>
         )}
@@ -523,7 +485,11 @@ const DetalleProducto = () => {
         </>
       )}
 
-      <ProductoPersonalizarModal show={showModal} onHide={() => setShowModal(false)} producto={producto} />
+      <ProductoPersonalizarModal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        producto={producto}
+      />
 
       <ResenaModal
         mostrar={modalResena}

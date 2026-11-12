@@ -46,7 +46,9 @@ export const obtenerDepartamentos = async (provincia) => {
  * @returns {Promise<{success: boolean, data?: Array<{id, nombre}>, error?: string}>}
  */
 export const obtenerLocalidades = async (datos) => {
-  const result = await apiGet(`/geo/localidades${construirQuery(datos)}`);
+  const result = await apiGet(
+    `/geo/localidades${construirQuery(datos)}`
+  );
   return result.success
     ? { success: true, data: result.data }
     : { success: false, error: result.error };

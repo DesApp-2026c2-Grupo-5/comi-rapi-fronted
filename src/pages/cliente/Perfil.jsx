@@ -20,6 +20,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Container, Card, Form, Button, Row, Col, Spinner } from 'react-bootstrap';
 import {
   FaUserCircle,
@@ -40,12 +41,12 @@ import {
   FaCheckCircle,
 } from 'react-icons/fa';
 import {
-  obtenerPerfil,
   actualizarPerfil,
   subirFotoPerfil,
   eliminarFotoPerfil,
   cambiarPasswordPerfil,
 } from '../../api/perfil';
+import { queryKeys, usePerfilQuery } from '../../hooks/queries';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useDirecciones } from '../../hooks/useDirecciones';
@@ -89,6 +90,14 @@ const Perfil = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { hash } = location;
+
+  const queryClient = useQueryClient();
+  // El perfil vive en la caché privada: al volver a esta pantalla se reutiliza
+  // la última lectura (30 s) en lugar de repetir la petición.
+  const perfilQuery = usePerfilQuery();
+  const perfil = perfilQuery.data || null;
+  const cargando = perfilQuery.isLoading;
+
   const {
     direcciones,
     loading: cargandoDirecciones,
@@ -97,9 +106,6 @@ const Perfil = () => {
     editarDireccion,
     eliminarDireccion,
   } = useDirecciones();
-
-  const [perfil, setPerfil] = useState(null);
-  const [cargando, setCargando] = useState(true);
 
   // Modo lectura por defecto: la edición se habilita a pedido del cliente.
   const [editando, setEditando] = useState(false);
@@ -134,21 +140,25 @@ const Perfil = () => {
     fechaNacimiento: datos.fechaNacimiento || '',
   });
 
-  // Carga el perfil y deja el formulario listo para una eventual edición
-  const cargarPerfil = async () => {
-    setCargando(true);
-    const result = await obtenerPerfil();
-    if (result.success) {
-      setPerfil(result.data);
-      setForm(datosFormulario(result.data));
-    } else {
-      notificar(result.error || 'No se pudo cargar el perfil.', 'danger');
-    }
-    setCargando(false);
-  };
+  // Copia los datos del backend al formulario cuando llegan. Si el cliente ya
+  // está editando, no se pisa lo que escribió con un refresco de fondo.
+  useEffect(() => {
+    if (!perfilQuery.data) return;
+    if (editando) return;
+    setForm(datosFormulario(perfilQuery.data));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfilQuery.data, editando]);
+
+  // Error de carga: se avisa una sola vez por respuesta fallida del backend.
+  useEffect(() => {
+    if (!perfilQuery.error) return;
+    notificar(
+      perfilQuery.error.message || 'No se pudo cargar el perfil.',
+      'danger'
+    );
+  }, [perfilQuery.error, notificar]);
 
   useEffect(() => {
-    cargarPerfil();
     cargarDirecciones();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -221,7 +231,7 @@ const Perfil = () => {
       return;
     }
 
-    setPerfil(result.data);
+    queryClient.setQueryData(queryKeys.private.perfil, result.data);
     setForm(datosFormulario(result.data));
     setEditando(false);
     setMostrarFormPassword(false);
@@ -246,7 +256,9 @@ const Perfil = () => {
       notificar(result.error || 'No se pudo subir la foto.', 'danger');
       return;
     }
-    setPerfil((actual) => ({ ...actual, fotoPerfilUrl: result.url }));
+    queryClient.setQueryData(queryKeys.private.perfil, (actual) =>
+      actual ? { ...actual, fotoPerfilUrl: result.url } : actual
+    );
     // El avatar del navbar usa el usuario de la sesión.
     if (refrescarUsuario) refrescarUsuario();
     notificar('Foto de perfil actualizada.', 'success');
@@ -262,7 +274,9 @@ const Perfil = () => {
       notificar(result.error || 'No se pudo quitar la foto.', 'danger');
       return;
     }
-    if (result.data) setPerfil(result.data);
+    if (result.data) {
+      queryClient.setQueryData(queryKeys.private.perfil, result.data);
+    }
     if (refrescarUsuario) refrescarUsuario();
     notificar('Foto de perfil eliminada.', 'success');
   };

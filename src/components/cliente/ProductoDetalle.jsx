@@ -10,6 +10,7 @@ import { Card, Button, Row, Col } from 'react-bootstrap';
 import { FaCartPlus } from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { formatPrice } from '../../utils/formatters';
+import { resolverImagen } from '../../utils/imagenes';
 
 const ProductoDetalle = ({ producto }) => {
   const { agregarAlCarrito } = useCarrito();
@@ -24,7 +25,7 @@ const ProductoDetalle = ({ producto }) => {
     <Card className="shadow-sm">
       <Row className="g-0">
         <Col md={5}>
-          <Card.Img src={producto.imagen} alt={producto.nombre} style={{ height: '100%', objectFit: 'cover' }} />
+          <Card.Img src={resolverImagen(producto.imagen)} alt={producto.nombre} style={{ height: '100%', objectFit: 'cover' }} />
         </Col>
         <Col md={7}>
           <Card.Body className="d-flex flex-column h-100">

@@ -20,10 +20,8 @@ import { FaTimesCircle, FaArrowRight, FaTimes, FaStore } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
-import {
-  reasignarSucursal,
-  obtenerSucursalesCandidatas,
-} from '../../api/pedidos';
+import { useSucursalesCandidatasQuery } from '../../hooks/queries';
+import { reasignarSucursal } from '../../api/pedidos';
 import { puedeTransicionar, obtenerEstadosSiguientes } from '../../services/estadosPedido';
 import {
   ESTADOS_PEDIDO,
@@ -79,34 +77,27 @@ const PedidosPendientes = () => {
   const [cambiando, setCambiando] = useState(false);
   // Reasignación manual (superadmin con contexto): candidatas con cobertura+stock
   const [pedidoAReasignar, setPedidoAReasignar] = useState(null);
-  const [candidatas, setCandidatas] = useState([]);
-  const [cargandoCandidatas, setCargandoCandidatas] = useState(false);
   const [sucursalDestino, setSucursalDestino] = useState('');
   const [reasignando, setReasignando] = useState(false);
 
   // Al abrir el modal se piden las candidatas al backend: sucursales activas
   // en cobertura de la dirección del pedido y con stock suficiente. El PATCH
-  // re-valida todo; esta lista es solo para el selector.
+  // re-valida todo; esta lista es solo para el selector. La query se relee en
+  // cada apertura (staleTime 0) y queda deshabilitada al cerrar el modal.
+  const candidatasQuery = useSucursalesCandidatasQuery({
+    pedidoId: pedidoAReasignar?.id ?? null,
+    enabled: Boolean(pedidoAReasignar),
+  });
+  const candidatas = candidatasQuery.error ? [] : candidatasQuery.data ?? [];
+  const cargandoCandidatas = candidatasQuery.isFetching;
+
   useEffect(() => {
-    if (!pedidoAReasignar) return undefined;
-    let vivo = true;
-    (async () => {
-      setCargandoCandidatas(true);
-      const result = await obtenerSucursalesCandidatas(pedidoAReasignar.id);
-      if (vivo) {
-        if (result.success) {
-          setCandidatas(result.data);
-        } else {
-          setCandidatas([]);
-          notificar(result.error || 'No se pudieron obtener las sucursales.', 'danger');
-        }
-        setCargandoCandidatas(false);
-      }
-    })();
-    return () => {
-      vivo = false;
-    };
-  }, [pedidoAReasignar, notificar]);
+    if (!candidatasQuery.error) return;
+    notificar(
+      candidatasQuery.error.message || 'No se pudieron obtener las sucursales.',
+      'danger'
+    );
+  }, [candidatasQuery.error, notificar]);
 
   const puedeReasignar = isSuperadmin && Boolean(sucursalOperativaId);
 

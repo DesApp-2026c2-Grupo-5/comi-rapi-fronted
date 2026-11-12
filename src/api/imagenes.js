@@ -1,8 +1,8 @@
 import { apiPostFormData } from './client';
 
 /**
- * Sube una imagen de producto al backend, que la guarda como archivo en
- * el repo del frontend y devuelve su ruta relativa.
+ * Sube una imagen de producto al backend, que la guarda en
+ * `public/imagenes/productos` y devuelve su ruta relativa (/api/imagenes/...).
  * @param {File} archivo - Archivo de imagen seleccionado por el usuario.
  * @returns {Promise<{success: boolean, url?: string, error?: string}>}
  */
@@ -17,8 +17,8 @@ export async function subirImagenProducto(archivo) {
 }
 
 /**
- * Sube la imagen de una categoría al backend, que la guarda como archivo
- * en el repo del frontend y devuelve su ruta relativa.
+ * Sube la imagen de una categoría al backend, que la guarda en
+ * `public/imagenes/categorias` y devuelve su ruta relativa (/api/imagenes/...).
  * @param {File} archivo - Archivo de imagen seleccionado por el usuario.
  * @returns {Promise<{success: boolean, url?: string, error?: string}>}
  */

@@ -24,7 +24,9 @@ import NavInferior from './components/comunes/NavInferior';
 import BotonCarrito from './components/comunes/BotonCarrito';
 import Footer from './components/comunes/Footer';
 import BannersNotificaciones from './components/comunes/BannersNotificaciones';
+import RealtimeBridge from './components/comunes/RealtimeBridge';
 import useMuestraNavInferior from './hooks/useMuestraNavInferior';
+import { useBootstrap } from './hooks/queries';
 import { esRutaDeAdmin } from './utils/rutas';
 
 /**
@@ -63,12 +65,18 @@ function AppLayout() {
     return () => document.body.classList.remove('admin-theme');
   }, [esAdmin]);
 
+  // Precarga opcional del snapshot público (parámetros, catálogo y
+  // promociones). En el panel no aporta: esas pantallas piden listados de
+  // gestión (inactivos, stock) y no bloquea nada si falla.
+  useBootstrap({ enabled: !esRutaDeAdmin(pathname) });
+
   return (
     <div
       className={`d-flex flex-column min-vh-100 app-shell${
         conNavInferior ? " app-shell-con-nav-inferior" : ""
       }`}
     >
+      <RealtimeBridge />
       <Navbar />
       <main id="main" className="flex-grow-1" tabIndex={-1}>
         <BannersNotificaciones />

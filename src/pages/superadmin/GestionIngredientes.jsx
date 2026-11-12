@@ -5,19 +5,19 @@ import {
   actualizarIngrediente,
   crearIngrediente,
   eliminarIngrediente,
-  obtenerIngredientes,
 } from '../../api/ingredientes';
+import { useIngredientesQuery } from '../../hooks/queries';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import ModalFormulario from '../../components/comunes/ModalFormulario';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 
-const UNIDADES = ['unidad', 'g', 'kg', 'ml', 'l'];
+const UNIDADES_LISTA = ['unidad', 'g', 'kg', 'ml', 'l'];
 
 const GestionIngredientes = () => {
   const { notificar } = useNotificaciones();
-  const [ingredientes, setIngredientes] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  const { data: ingredientes = [], isPending: cargando } =
+    useIngredientesQuery();
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [enEdicion, setEnEdicion] = useState(null);
@@ -26,19 +26,6 @@ const GestionIngredientes = () => {
   const [confirmando, setConfirmando] = useState(false);
   const [form, setForm] = useState({ nombre: '', unidadMedida: 'g', activo: true });
   const nombreRef = useRef(null);
-
-  const cargar = async () => {
-    setCargando(true);
-    setError('');
-    const result = await obtenerIngredientes();
-    if (result.success) setIngredientes(result.data || []);
-    else setError(result.error || 'No se pudieron cargar los ingredientes.');
-    setCargando(false);
-  };
-
-  useEffect(() => {
-    cargar();
-  }, []);
 
   const abrirNuevo = () => {
     setEnEdicion(null);
@@ -69,7 +56,6 @@ const GestionIngredientes = () => {
         'success'
       );
       setModalAbierto(false);
-      cargar();
     } else {
       notificar(result.error || 'No se pudo guardar.', 'danger');
     }
@@ -83,7 +69,6 @@ const GestionIngredientes = () => {
     if (result.success) {
       notificar('Ingrediente dado de baja.', 'success');
       setAEliminar(null);
-      cargar();
     } else {
       notificar(result.error || 'No se pudo eliminar.', 'danger');
     }
@@ -207,7 +192,7 @@ const GestionIngredientes = () => {
               setForm((f) => ({ ...f, unidadMedida: e.target.value }))
             }
           >
-            {UNIDADES.map((unidad) => (
+            {UNIDADES_LISTA.map((unidad) => (
               <option key={unidad} value={unidad}>
                 {unidad}
               </option>

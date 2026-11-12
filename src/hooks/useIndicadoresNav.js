@@ -27,12 +27,16 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCarrito } from './useCarrito';
 import { usePedidos } from './usePedidos';
 import { useAuth } from './useAuth';
-import { useSucursalOperativa } from './useSucursalOperativa';
-import { obtenerQuejas } from '../api/quejas';
-import { conectarSocket, EVENTOS_SOCKET } from '../services/socket';
+import { useQuejasQuery } from '../hooks/queries';
+import {
+  alReconectar,
+  conectarSocket,
+  EVENTOS_SOCKET,
+} from '../services/socket';
 import {
   ESTADOS_PEDIDO,
   ESTADOS_QUEJA,
@@ -43,11 +47,7 @@ const useIndicadoresNav = () => {
   const { productosDistintos } = useCarrito();
   const { pedidos, senalPedido } = usePedidos();
   const { user, hydrated } = useAuth();
-  // `versionSocket` cambia cuando el SUPERADMIN elige o limpia su sucursal de
-  // contexto: ese flujo cierra la conexión y la próxima se abre con otras rooms.
-  // Sin esta dependencia el efecto quedaba escuchando la instancia muerta y el
-  // badge dejaba de actualizarse en vivo.
-  const { versionSocket } = useSucursalOperativa();
+  const queryClient = useQueryClient();
 
   const pedidosActivos = pedidos.filter(
     (p) =>
@@ -62,10 +62,18 @@ const useIndicadoresNav = () => {
   const [pulsoCarrito, setPulsoCarrito] = useState(false);
   const [pulsoPedido, setPulsoPedido] = useState(false);
   const [pulsoPedidoBadge, setPulsoPedidoBadge] = useState(false);
-  const [quejasPendientes, setQuejasPendientes] = useState(0);
   const [senalQueja, setSenalQueja] = useState(0);
   const [pulsoQueja, setPulsoQueja] = useState(false);
   const [pulsoQuejaBadge, setPulsoQuejaBadge] = useState(false);
+
+  // TanStack Query hook para quejas pendientes
+  const { data: quejasData } = useQuejasQuery({
+    estado: ESTADOS_QUEJA.PENDIENTE,
+    limite: 1,
+    enabled: hydrated && esGestorDeQuejas,
+  });
+
+  const quejasPendientes = quejasData?.meta?.total || 0;
 
   // Pulso del badge cada vez que cambia la cantidad de productos distintos.
   useEffect(() => {
@@ -91,42 +99,37 @@ const useIndicadoresNav = () => {
     return () => clearTimeout(timeout);
   }, [pedidosActivos]);
 
-  // Reclamos pendientes: se leen por REST (el backend acota al admin a su
-  // sucursal) y se refrescan cuando el canal avisa que llegó o cambió uno.
+  // Pulso del número cuando cambia la cantidad de reclamos pendientes.
   useEffect(() => {
-    if (!hydrated || !esGestorDeQuejas) {
-      setQuejasPendientes(0);
-      return undefined;
-    }
+    if (quejasPendientes === 0) return undefined;
+    setPulsoQuejaBadge(true);
+    const timeout = setTimeout(() => setPulsoQuejaBadge(false), 800);
+    return () => clearTimeout(timeout);
+  }, [quejasPendientes]);
 
-    let vivo = true;
-    const cargar = async () => {
-      const res = await obtenerQuejas({
-        estado: ESTADOS_QUEJA.PENDIENTE,
-        limite: 1,
-      });
-      if (vivo && res.success) setQuejasPendientes(res.data.total);
-    };
-    cargar();
+  // Socket para actualizaciones en tiempo real del contador de quejas.
+  // La suscripción vive en el singleton: el cambio de contexto del superadmin
+  // renegocia el handshake pero no reemplaza la instancia, así que los
+  // listeners siguen siendo válidos. `alReconectar` evita el GET duplicado en
+  // la primera conexión y en la reconexión intencional por cambio de contexto.
+  useEffect(() => {
+    if (!hydrated || !esGestorDeQuejas) return undefined;
 
     const instancia = conectarSocket();
-    // Al reconectar se re-consulta el total: si se perdió un aviso mientras el
-    // socket estaba caído (o se recreó por cambio de sucursal), el número
-    // quedaría viejo. El aviso en sí solo trae ids; la verdad se lee por REST.
-    const alConectar = () => cargar();
+    const invalidarQuejas = () =>
+      queryClient.invalidateQueries({ queryKey: ['private', 'quejas'] });
     const alActualizar = () => {
       setSenalQueja((valor) => valor + 1);
-      cargar();
+      invalidarQuejas();
     };
-    instancia.on('connect', alConectar);
+    const desregistrarReconexion = alReconectar(instancia, invalidarQuejas);
     instancia.on(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
 
     return () => {
-      vivo = false;
-      instancia.off('connect', alConectar);
+      desregistrarReconexion();
       instancia.off(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
     };
-  }, [hydrated, esGestorDeQuejas, user?.id, versionSocket]);
+  }, [hydrated, esGestorDeQuejas, queryClient]);
 
   // Pulso del ícono cuando llega el aviso de un reclamo nuevo o actualizado.
   useEffect(() => {

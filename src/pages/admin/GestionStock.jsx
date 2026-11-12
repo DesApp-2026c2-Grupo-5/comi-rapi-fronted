@@ -27,27 +27,22 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Container, Table, Button, ButtonGroup, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
 import { FaPlus, FaTrashAlt, FaBoxes, FaPlusCircle } from 'react-icons/fa';
-import { useAuth } from '../../hooks/useAuth';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
 import {
-  obtenerStock,
-  obtenerStockDeProducto,
-  obtenerStockInsumos,
-  obtenerStockIngredientes,
   crearStock,
   actualizarStock,
   actualizarStockInsumo,
   actualizarStockIngrediente,
   eliminarStock,
 } from '../../api/stock';
-import { obtenerProductos } from '../../api/productos';
+import { queryKeys, useProductos, useStockIngredientesQuery, useStockQuery } from '../../hooks/queries';
 import { ESTADOS_STOCK, estadoDeStock } from '../../utils/estadoStock';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
-import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
 
 // Cómo se muestra cada estado en la columna "Estado". "En stock" queda como
@@ -93,7 +88,6 @@ const GestionStock = () => {
   // Mismo umbral que usan los reportes. 0 lo desactiva: en ese caso sólo se
   // marcan los productos sin stock o apagados.
   const umbral = Number(parametros.stockCriticoUmbral ?? 0);
-  const { user, hydrated } = useAuth();
   // La sucursal operativa de la sesión: la asignada del admin o el contexto
   // elegido del superadmin. El backend además acota el stock a ella, así que
   // no hay nada que elegir en la pantalla. Sin sucursal operativa (superadmin
@@ -101,17 +95,105 @@ const GestionStock = () => {
   const { sucursalOperativa, sucursalOperativaId, versionSocket } = useSucursalOperativa();
   const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
-  const [stocks, setStocks] = useState([]);
-  const [stocksInsumos, setStocksInsumos] = useState([]);
-  const [stocksIngredientes, setStocksIngredientes] = useState([]);
-  const [productos, setProductos] = useState([]);
+  // Filtro de producto: va al backend (`GET /api/stock?productoId=`), por eso
+  // forma parte de la clave de la consulta.
   const [productoId, setProductoId] = useState('');
-  const [cargando, setCargando] = useState(true);
+
+  // Hooks de TanStack Query: stock de productos + insumos (una sola consulta)
+  // y stock de ingredientes (consulta separada), ambas acotadas a la sucursal
+  // operativa de la sesión.
+  const stockQuery = useStockQuery({
+    sucursalId,
+    productoId: productoId || null,
+    enabled: Boolean(sucursalId),
+  });
+  const stockIngredientesQuery = useStockIngredientesQuery({
+    enabled: Boolean(sucursalId),
+  });
+
+  // Catálogo de productos para la pestaña "Por agregar" y el selector de filtro.
+  const { data: productos = [] } = useProductos();
+
+  const queryClient = useQueryClient();
+
+  const stockData = stockQuery.data;
+  const stocks = stockData?.filas ?? [];
+  const stocksInsumos = stockData?.insumos ?? [];
+  const stocksIngredientes = stockIngredientesQuery.data ?? [];
+
+  const cargando = stockQuery.isPending || stockIngredientesQuery.isPending;
+  const error = stockQuery.error?.message || stockIngredientesQuery.error?.message || '';
+
+  const refrescar = async () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.private.stock });
+    queryClient.invalidateQueries({ queryKey: queryKeys.private.stockIngredientes });
+  };
+
+  // Reemplaza la fila afectada en la caché de TanStack Query sin volver a
+  // solicitar la lista completa. `data` trae la fila serializada por el backend.
+  const reemplazarFilaEnCache = (tipo, data) => {
+    if (!data) return;
+    const sucursalIdNum = Number(data.sucursalId || sucursalId);
+
+    if (tipo === 'producto') {
+      queryClient.setQueryData(
+        queryKeys.private.stockLista({ sucursalId: sucursalIdNum, productoId: 'todos' }),
+        (prev) => {
+          if (!prev) return prev;
+          const filas = [...(prev.filas || [])];
+          const idx = filas.findIndex((f) => Number(f.productoId) === Number(data.productoId));
+          if (idx >= 0) filas[idx] = { ...filas[idx], ...data };
+          else filas.push(data);
+          return { ...prev, filas };
+        }
+      );
+      if (productoId) {
+        queryClient.setQueryData(
+          queryKeys.private.stockLista({ sucursalId: sucursalIdNum, productoId }),
+          (prev) => {
+            if (!prev) return prev;
+            const filas = [...(prev.filas || [])];
+            const idx = filas.findIndex((f) => Number(f.productoId) === Number(data.productoId));
+            if (idx >= 0) filas[idx] = { ...filas[idx], ...data };
+            return { ...prev, filas };
+          }
+        );
+      }
+    } else if (tipo === 'insumo') {
+      queryClient.setQueryData(
+        queryKeys.private.stockLista({ sucursalId: sucursalIdNum, productoId: 'todos' }),
+        (prev) => {
+          if (!prev) return prev;
+          const insumos = [...(prev.insumos || [])];
+          const idx = insumos.findIndex((f) => Number(f.insumoId) === Number(data.insumoId));
+          if (idx >= 0) insumos[idx] = { ...insumos[idx], ...data };
+          else insumos.push(data);
+          return { ...prev, insumos };
+        }
+      );
+    } else if (tipo === 'ingrediente') {
+      queryClient.setQueryData(
+        queryKeys.private.stockIngredientes,
+        (prev) => {
+          if (!Array.isArray(prev)) return prev;
+          const idx = prev.findIndex((f) => Number(f.ingredienteId) === Number(data.ingredienteId));
+          if (idx >= 0) {
+            const nueva = [...prev];
+            nueva[idx] = { ...nueva[idx], ...data };
+            return nueva;
+          }
+          return [...prev, data];
+        }
+      );
+    }
+  };
+
+  // Filtro de producto: va al backend (`GET /api/stock?productoId=`), por eso
+  // forma parte de la clave de la consulta.
   const [guardando, setGuardando] = useState(false);
   // Avance del alta masiva (0 de N) mientras recorre los faltantes. Null cuando
   // no hay un alta masiva en curso.
   const [progreso, setProgreso] = useState(null);
-  const [error, setError] = useState('');
   // Fila esperando confirmación de borrado
   const [stockAEliminar, setStockAEliminar] = useState(null);
   // Fila de insumo esperando confirmación para dejar de ofrecerse en la sucursal.
@@ -126,140 +208,6 @@ const GestionStock = () => {
   // tienen además su sub-filtro por tipo (extras/condimentos).
   const [filtroPrincipal, setFiltroPrincipal] = useState('todos');
   const [filtroTipoInsumo, setFiltroTipoInsumo] = useState('todos');
-
-  // El filtro de producto va al backend: `GET /api/stock` ya acepta productoId;
-  // el `sucursalId` no se envía porque el backend usa la sucursal de la sesión.
-  // Los insumos se piden siempre: su listado es chico y así el filtro principal
-  // no depende de una segunda carga.
-  const cargar = async () => {
-    // Sin sucursal operativa (superadmin sin contexto) no hay nada que
-    // cargar: el backend respondería 403 y la pantalla muestra el aviso.
-    if (!sucursalId) return;
-    setCargando(true);
-    setError('');
-    try {
-      const filtros = productoId ? { productoId } : {};
-      const [resultadoStock, resultadoProductos, resultadoInsumos, resultadoIngredientes] =
-        await Promise.all([
-          obtenerStock(filtros),
-          obtenerProductos(),
-          obtenerStockInsumos(),
-          obtenerStockIngredientes(),
-        ]);
-      if (resultadoStock.success) setStocks(resultadoStock.data || []);
-      else setError(resultadoStock.error || 'No se pudo cargar el stock.');
-      if (resultadoProductos.success) setProductos(resultadoProductos.data || []);
-      if (resultadoInsumos.success) {
-        setStocksInsumos(resultadoInsumos.data || []);
-      } else if (!resultadoStock.success) {
-        setError(resultadoInsumos.error || 'No se pudo cargar el stock de insumos.');
-      }
-      if (resultadoIngredientes.success) {
-        setStocksIngredientes(resultadoIngredientes.data || []);
-      }
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  useEffect(() => {
-    cargar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productoId, sucursalId]);
-
-  useEffect(() => {
-    if (!hydrated || !user) return undefined;
-    const instancia = conectarSocket();
-    // Resincroniza por REST al reconectar: si se perdió un cambio durante una
-    // desconexión, el aviso no llegó. La carga inicial la hace el useEffect de
-    // arriba, por eso no se pide aquí.
-    const alConectar = () => cargar();
-    // Una compra avisa qué filas de esta sucursal cambiaron. Se releen sólo esas
-    // filas y se fusionan en la tabla, en vez de refrescar todo: el admin ve el
-    // número cambiar sin que la pantalla recargue. El evento sólo va a la room de
-    // la sucursal afectada; el filtro por sucursalId es defensa por si el backend
-    // emitiera a más de una room.
-    const alStock = async (payload) => {
-      if (Number(payload?.sucursalId) !== Number(sucursalId)) return;
-
-      const tieneInsumos = Array.isArray(payload?.insumoIds);
-      const tieneProductos = Array.isArray(payload?.productoIds);
-
-      // Los insumos no tienen endpoint individual de stock: se relee el listado
-      // completo (es corto) y se reemplaza. El evento llega tanto por compras
-      // como por ediciones del admin en otra pestaña.
-      if (tieneInsumos) {
-        const resultadoInsumos = await obtenerStockInsumos();
-        if (resultadoInsumos.success) {
-          setStocksInsumos(resultadoInsumos.data || []);
-        }
-      }
-
-      const tieneIngredientes = Array.isArray(payload?.ingredienteIds);
-      if (tieneIngredientes) {
-        const resultadoIngredientes = await obtenerStockIngredientes();
-        if (resultadoIngredientes.success) {
-          setStocksIngredientes(resultadoIngredientes.data || []);
-        }
-      }
-
-      if (!tieneProductos) {
-        // Un evento sólo de insumos o ingredientes ya quedó resuelto arriba.
-        // Recargar todo acá haría parpadear la tabla y perdería el foco. Sólo
-        // se recarga si el payload no traía ningún id (aviso genérico).
-        if (!tieneInsumos && !tieneIngredientes) {
-          await cargar();
-        }
-        return;
-      }
-      // Con un filtro activo la tabla sólo muestra ese producto: si el cambio no
-      // es suyo, no hay nada visible que actualizar.
-      const ids = payload.productoIds
-        .map(Number)
-        .filter((id) => id && (!productoId || String(id) === String(productoId)));
-      if (ids.length === 0) return;
-      const resultados = await Promise.all(
-        ids.map((id) => obtenerStockDeProducto(sucursalId, id))
-      );
-      const filasActualizadas = new Map();
-      const idsSinFila = new Set();
-      resultados.forEach((r, i) => {
-        if (r.success && r.data) {
-          filasActualizadas.set(
-            `${r.data.sucursalId}-${r.data.productoId}`,
-            r.data
-          );
-        } else {
-          idsSinFila.add(ids[i]);
-        }
-      });
-      if (filasActualizadas.size === 0 && idsSinFila.size === 0) return;
-      setStocks((prev) => {
-        const porClave = new Map(
-          prev.map((f) => [`${f.sucursalId}-${f.productoId}`, f])
-        );
-        filasActualizadas.forEach((f, clave) => porClave.set(clave, f));
-        for (const id of idsSinFila) {
-          // Elimina la fila si el producto se sacó de la sucursal.
-          for (const clave of [...porClave.keys()]) {
-            if (clave.endsWith(`-${id}`)) porClave.delete(clave);
-          }
-        }
-        return [...porClave.values()];
-      });
-    };
-    instancia.on('connect', alConectar);
-    instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
-    return () => {
-      instancia.off('connect', alConectar);
-      instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alStock);
-    };
-    // `productoId` va en las deps: el handler cierra sobre el filtro vigente.
-    // Sin él, un evento fusionaría filas con el filtro viejo. `sucursalId`
-    // también: al cambiar el contexto del superadmin, el filtro de defensa y
-    // las refencias de las filas tienen que apuntar a la sucursal nueva.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, user, productoId, sucursalId, versionSocket]);
 
   // Productos del catálogo que todavía no están en la sucursal elegida. Se deduce
   // de las filas cargadas, así que sólo sirve cuando la tabla muestra todo el
@@ -388,7 +336,7 @@ const GestionStock = () => {
     if (resultado.success) {
       notificar(`"${resultado.data.producto}" agregado a la sucursal.`, 'success');
       setProductoNuevo('');
-      await cargar();
+      await refrescar();
       setPestana('stock');
     } else {
       notificar(resultado.error || 'No se pudo agregar.', 'danger');
@@ -415,7 +363,7 @@ const GestionStock = () => {
     }
     setProgreso(null);
     setGuardando(false);
-    await cargar();
+    await refrescar();
     if (errores.length === 0) {
       notificar(
         agregados === 1
@@ -450,35 +398,7 @@ const GestionStock = () => {
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
       if (resultado.data) {
-        const actualizada = resultado.data;
-        if (esInsumo) {
-          setStocksInsumos((prev) =>
-            prev.map((f) =>
-              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-              Number(f.insumoId) === Number(actualizada.insumoId)
-                ? actualizada
-                : f
-            )
-          );
-        } else if (esIngrediente) {
-          setStocksIngredientes((prev) =>
-            prev.map((f) =>
-              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-              Number(f.ingredienteId) === Number(actualizada.ingredienteId)
-                ? actualizada
-                : f
-            )
-          );
-        } else {
-          setStocks((prev) =>
-            prev.map((f) =>
-              Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-              Number(f.productoId) === Number(actualizada.productoId)
-                ? actualizada
-                : f
-            )
-          );
-        }
+        reemplazarFilaEnCache(esInsumo ? 'insumo' : 'producto', resultado.data);
       }
     } else {
       notificar(resultado.error || 'No se pudo actualizar.', 'danger');
@@ -501,7 +421,7 @@ const GestionStock = () => {
     );
     setStockAEliminar(null);
     setConfirmando(false);
-    await cargar();
+    await refrescar();
   };
 
   // "Quitar" un insumo no borra la fila: InsumoStocks se recrea al listar. Se
@@ -522,15 +442,7 @@ const GestionStock = () => {
         'success'
       );
       if (resultado.data) {
-        const actualizada = resultado.data;
-        setStocksInsumos((prev) =>
-          prev.map((f) =>
-            Number(f.sucursalId) === Number(actualizada.sucursalId) &&
-            Number(f.insumoId) === Number(actualizada.insumoId)
-              ? actualizada
-              : f
-          )
-        );
+        reemplazarFilaEnCache('insumo', resultado.data);
       }
     } else {
       notificar(resultado.error || 'No se pudo quitar el insumo.', 'danger');
@@ -542,7 +454,11 @@ const GestionStock = () => {
     <Container fluid className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 className="h2 mb-0">Stock por sucursal</h1>
-        <Button variant="outline-primary" onClick={cargar} disabled={cargando || !sucursalId}>
+        <Button
+          variant="outline-primary"
+          onClick={() => refrescar()}
+          disabled={stockQuery.isFetching || !sucursalId}
+        >
           <FaBoxes className="me-1" aria-hidden="true" />
           Recargar
         </Button>
@@ -1006,3 +922,4 @@ const GestionStock = () => {
 };
 
 export default GestionStock;
+

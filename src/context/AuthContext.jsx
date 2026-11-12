@@ -9,6 +9,8 @@
  */
 
 import React, { createContext, useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import PropTypes from 'prop-types';
 import {
   loginCliente,
   loginPanel,
@@ -17,6 +19,7 @@ import {
   obtenerUsuarioActual,
 } from '../api/auth';
 import { ROLES } from '../utils/constants';
+import { queryKeys } from '../hooks/queries/queryKeys';
 
 export const AuthContext = createContext(null);
 
@@ -24,53 +27,66 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Los datos privados (pedidos, perfil, reseñas propias) no deben sobrevivir
+  // a un cambio de sesión: se cancelan las lecturas en vuelo y se borra su
+  // árbol de la caché. El catálogo público se conserva.
+  const limpiarCachePrivada = useCallback(async () => {
+    await queryClient.cancelQueries({ queryKey: queryKeys.private.all });
+    queryClient.removeQueries({ queryKey: queryKeys.private.all });
+  }, [queryClient]);
 
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
       const result = await loginCliente(email, password);
       if (result.success) {
+        await limpiarCachePrivada();
         setUser(result.user);
       }
       return result;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [limpiarCachePrivada]);
 
   const loginPanelAdmin = useCallback(async (email, password) => {
     setLoading(true);
     try {
       const result = await loginPanel(email, password);
       if (result.success) {
+        await limpiarCachePrivada();
         setUser(result.user);
       }
       return result;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [limpiarCachePrivada]);
 
   const register = useCallback(async (datos) => {
     setLoading(true);
     try {
       const result = await registroCliente(datos);
       if (result.success) {
+        await limpiarCachePrivada();
         setUser(result.user);
       }
       return result;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [limpiarCachePrivada]);
 
   const logout = useCallback(async () => {
     try {
       await apiLogout();
     } finally {
+      await limpiarCachePrivada();
       setUser(null);
     }
-  }, []);
+  }, [limpiarCachePrivada]);
 
   // Vuelve a leer el usuario de la sesión (p. ej. tras editar el perfil, para
   // que el nombre del navbar quede actualizado).
@@ -80,6 +96,28 @@ export const AuthProvider = ({ children }) => {
       setUser(result.user);
     }
     return result;
+  }, []);
+
+  // Refresca localmente los datos de la sucursal operativa cuando llega el
+  // aviso de tiempo real de esa sucursal. No vuelve a pedir /auth/me: el id (y
+  // por lo tanto la sucursal asignada/elegida) no cambia, sólo sus datos.
+  const actualizarSucursalOperativa = useCallback((sucursal) => {
+    if (!sucursal || sucursal.id === undefined || sucursal.id === null) return;
+    setUser((actual) => {
+      const operativa = actual?.sucursalOperativa;
+      if (!operativa || String(operativa.id) !== String(sucursal.id)) {
+        return actual;
+      }
+      const nombre = sucursal.nombre ?? operativa.nombre;
+      const activa = sucursal.activa ?? operativa.activa;
+      if (nombre === operativa.nombre && activa === operativa.activa) {
+        return actual;
+      }
+      return {
+        ...actual,
+        sucursalOperativa: { ...operativa, nombre, activa },
+      };
+    });
   }, []);
 
   // Restaurar la sesión desde el backend al cargar la app.
@@ -112,9 +150,14 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       refrescarUsuario,
+      actualizarSucursalOperativa,
     }),
-    [user, loading, hydrated, isAuthenticated, isAdmin, isSuperadmin, isCliente, login, loginPanelAdmin, register, logout, refrescarUsuario]
+    [user, loading, hydrated, isAuthenticated, isAdmin, isSuperadmin, isCliente, login, loginPanelAdmin, register, logout, refrescarUsuario, actualizarSucursalOperativa]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+AuthProvider.propTypes = {
+  children: PropTypes.node,
 };

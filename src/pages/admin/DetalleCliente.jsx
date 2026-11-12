@@ -3,22 +3,19 @@
  *            `backRoute="/superadmin/clientes"`, para el SUPERADMINISTRADOR.
  * Contenido: Componente DetalleCliente con datos, direcciones, últimos pedidos
  *            y el ranking de productos y categorías más comprados (barras en
- *            CSS).
- * Dependencias: react-bootstrap, react-router-dom, api/usuarios.js,
- *               api/direcciones.js, api/pedidos.js, formatters, react-icons,
+ *            CSS). La ficha se lee con TanStack Query.
+ * Dependencias: react-bootstrap, react-router-dom, hooks/queries
+ *               (useResumenClienteQuery), formatters, react-icons,
  *               components/comunes/Skeleton (SkeletonPagina).
  * Uso: Ruta "/admin/clientes/:id" → <DetalleCliente />
  *      Ruta "/superadmin/clientes/:id" → <DetalleCliente backRoute="/superadmin/clientes" />
  */
 
-import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Container, Card, Alert, Badge, Table, Row, Col } from 'react-bootstrap';
 import { FaLocationDot, FaChartLine } from 'react-icons/fa6';
-import { obtenerClientePorId, obtenerMasComprados } from '../../api/usuarios';
-import { obtenerDireccionesDeCliente } from '../../api/direcciones';
-import { obtenerPedidos } from '../../api/pedidos';
+import { useResumenClienteQuery } from '../../hooks/queries';
 import { formatDate, formatPrice } from '../../utils/formatters';
 import { ETIQUETAS_ESTADO_PEDIDO } from '../../utils/constants';
 import { SkeletonPagina } from '../../components/comunes/Skeleton';
@@ -80,47 +77,16 @@ BarraRanking.propTypes = {
 
 const DetalleCliente = ({ backRoute = '/admin/clientes' }) => {
   const { id } = useParams();
-  const [cliente, setCliente] = useState(null);
-  const [direcciones, setDirecciones] = useState([]);
-  const [ultimos, setUltimos] = useState([]);
-  const [masComprados, setMasComprados] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const cargar = async () => {
-      setCargando(true);
-      setError('');
-      const [resCliente, resDirecciones, resPedidos, resMasComprados] =
-        await Promise.all([
-          obtenerClientePorId(id),
-          obtenerDireccionesDeCliente(id),
-          obtenerPedidos(),
-          obtenerMasComprados(id),
-        ]);
-      if (!resCliente.success) {
-        setError(resCliente.error || 'No se pudo cargar el cliente.');
-        setCargando(false);
-        return;
-      }
-      setCliente(resCliente.data);
-      setDirecciones(resDirecciones.success ? resDirecciones.data : []);
-      // Si el ranking falla se omite la sección entera en vez de confundir un
-      // error de red con "no compró nada": el resto del detalle sigue servido.
-      if (resMasComprados.success) {
-        setMasComprados(resMasComprados.data);
-      }
-      if (resPedidos.success) {
-        const propios = (resPedidos.data || [])
-          .filter((p) => String(p.usuarioId) === String(id))
-          .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-          .slice(0, 3);
-        setUltimos(propios);
-      }
-      setCargando(false);
-    };
-    cargar();
-  }, [id]);
+  const {
+    data: resumen,
+    isPending: cargando,
+    error: errorQuery,
+  } = useResumenClienteQuery({ id });
+  const cliente = resumen?.cliente;
+  const direcciones = resumen?.direcciones || [];
+  const ultimos = resumen?.ultimosPedidos || [];
+  const masComprados = resumen?.masComprados;
+  const error = errorQuery?.message || '';
 
   if (cargando) {
     return (
