@@ -61,6 +61,13 @@
   line-height: 1.2;
 }
 
+/* ============ Selección de coincidencias ============ */
+.dir-form-opciones-lista {
+  max-height: 10rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
 /* ============ Estados del flujo verificar → confirmar ============ */
 /* Aviso informativo de zona (provincia/partido): llama la atención sin
    bloquear la edición. */

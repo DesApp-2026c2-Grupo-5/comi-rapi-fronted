@@ -7,9 +7,9 @@
  *            y la columna de herramientas (foto y contraseña) que aparece junto
  *            con esa edición.
  * Dependencias: react-bootstrap (Container, Card, Form, Button, Row, Col, Spinner),
- *               react-icons/fa, api/perfil.js, useAuth, useNotificaciones,
- *               ConfirmarModal, ModalBase, Avatar, validators, formatters,
- *               Perfil.css.
+ *               react-router-dom, react-icons/fa, api/perfil.js, useAuth,
+ *               useNotificaciones, useDirecciones, ConfirmarModal, Avatar,
+ *               validators, formatters, Perfil.css.
  * Uso: Ruta "/cliente/perfil" → <Perfil />
  *
  * El backend resuelve siempre el usuario desde la sesión: esta pantalla nunca
@@ -19,8 +19,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Container, Card, Form, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Container, Card, Form, Button, Row, Col, Spinner } from 'react-bootstrap';
 import {
   FaUserCircle,
   FaCamera,
@@ -53,9 +53,8 @@ import { validateEmail, validatePassword } from '../../utils/validators';
 import { formatDateOnly, calcularEdad, nombreCompleto } from '../../utils/formatters';
 import Avatar from '../../components/comunes/Avatar';
 import CampoPassword from '../../components/comunes/CampoPassword';
-import FormularioDireccion from '../../components/cliente/FormularioDireccion';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
-import ModalBase from '../../components/comunes/ModalBase';
+import FormularioDireccion from '../../components/cliente/FormularioDireccion';
 import './Perfil.css';
 
 // Solo se envían estos campos: nombre y apellido no se modifican desde acá.
@@ -87,8 +86,9 @@ const hoyIso = () => {
 const Perfil = () => {
   const { refrescarUsuario } = useAuth();
   const { notificar } = useNotificaciones();
-  // El carrito y otros accesos de la app abren el gestor con ?direcciones=1
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { hash } = location;
   const {
     direcciones,
     loading: cargandoDirecciones,
@@ -121,10 +121,8 @@ const Perfil = () => {
   // Aviso en la misma sección de que la contraseña quedó actualizada.
   const [passwordActualizada, setPasswordActualizada] = useState(false);
 
-  // Las direcciones se editan aparte, en su propio gestor (modal): no se
-  // mezclan con la edición del perfil.
-  const [modalDirecciones, setModalDirecciones] = useState(false);
-  const [direccionEnEdicion, setDireccionEnEdicion] = useState(null); // null | 'nueva' | objeto
+  // Alta y edición comparten el wizard en modal; la baja usa ConfirmarModal.
+  const [direccionEnEdicion, setDireccionEnEdicion] = useState(null);
   const [direccionAEliminar, setDireccionAEliminar] = useState(null);
   const [eliminandoDireccion, setEliminandoDireccion] = useState(false);
 
@@ -156,10 +154,21 @@ const Perfil = () => {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('direcciones') === '1') {
-      setModalDirecciones(true);
+    if (hash !== '#direcciones' || cargando) return undefined;
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById('direcciones')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [hash, cargando]);
+
+  useEffect(() => {
+    if (location.state?.abrirNuevaDireccion) {
+      setDireccionEnEdicion('nueva');
+      navigate('/cliente/perfil#direcciones', { replace: true, state: null });
     }
-  }, [searchParams]);
+  }, [location.state, navigate]);
 
   const cambiarCampo = (campo) => (e) => {
     setForm((actual) => ({ ...actual, [campo]: e.target.value }));
@@ -297,17 +306,17 @@ const Perfil = () => {
     notificar(result.data?.message || 'Contraseña actualizada correctamente.', 'success');
   };
 
-  // ---- Direcciones (edición aparte, en su propio gestor) ---------------
-  const abrirGestorDirecciones = () => setModalDirecciones(true);
-
-  const cerrarGestorDirecciones = () => {
-    setModalDirecciones(false);
+  // ---- Direcciones ------------------------------------------------------
+  const cerrarFormularioDireccion = () => {
     setDireccionEnEdicion(null);
+    setDireccionAEliminar(null);
   };
 
-  // Iteración 1-geo: se devuelve el resultado al formulario para que pueda
-  // manejar el 409 (opciones territoriales) y los errores reales del backend.
   const handleGuardarDireccion = async (datos) => {
+    if (!direccionEnEdicion) {
+      return { ok: false, error: 'No se pudo guardar la dirección.' };
+    }
+
     const guardada =
       direccionEnEdicion === 'nueva'
         ? await agregarDireccion(datos)
@@ -316,6 +325,13 @@ const Perfil = () => {
     if (!guardada || !guardada.ok) {
       return guardada || { ok: false, error: 'No se pudo guardar la dirección.' };
     }
+
+    notificar(
+      direccionEnEdicion === 'nueva'
+        ? 'Dirección agregada correctamente.'
+        : 'Dirección actualizada correctamente.',
+      'success'
+    );
     setDireccionEnEdicion(null);
     return guardada;
   };
@@ -389,7 +405,7 @@ const Perfil = () => {
   // La tarjeta de direcciones se muestra a la derecha al leer el perfil y, al
   // editarlo, se desplaza debajo para dejarle el lugar a foto y contraseña.
   const tarjetaDirecciones = (
-    <Card className="shadow-sm perfil-tarjeta">
+    <Card className="shadow-sm perfil-tarjeta" id="direcciones">
       <Card.Body>
         <h2 className="perfil-titulo">
           <FaMapMarkerAlt aria-hidden="true" />
@@ -418,14 +434,36 @@ const Perfil = () => {
                 {direccion.referencia && (
                   <span className="perfil-direccion-referencia">{direccion.referencia}</span>
                 )}
+                <div className="perfil-acciones mt-2">
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setDireccionEnEdicion(direccion)}
+                  >
+                    <FaEdit aria-hidden="true" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => setDireccionAEliminar(direccion)}
+                  >
+                    <FaTrashAlt aria-hidden="true" />
+                    Eliminar
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
         )}
 
-        <Button variant="primary" className="w-100 mt-3" onClick={abrirGestorDirecciones}>
-          <FaEdit aria-hidden="true" />
-          {direcciones.length === 0 ? 'Agregar dirección' : 'Administrar direcciones'}
+        <Button
+          variant="primary"
+          className="w-100 mt-3"
+          onClick={() => setDireccionEnEdicion('nueva')}
+        >
+          <FaPlus aria-hidden="true" />
+          Agregar dirección
         </Button>
       </Card.Body>
     </Card>
@@ -802,103 +840,6 @@ const Perfil = () => {
         </>
       )}
 
-      {/* ============ Gestor de direcciones (edición aparte) ============ */}
-      <ModalBase
-        mostrar={modalDirecciones}
-        onCerrar={cerrarGestorDirecciones}
-        titulo="Mis direcciones"
-        tamano="lg"
-      >
-        {direccionEnEdicion !== null ? (
-          <FormularioDireccion
-            direccion={direccionEnEdicion === 'nueva' ? null : direccionEnEdicion}
-            onGuardar={handleGuardarDireccion}
-            onCancelar={() => setDireccionEnEdicion(null)}
-          />
-        ) : direcciones.length === 0 ? (
-          <>
-            <p className="text-muted">
-              Todavía no cargaste ninguna dirección. Agregá una para poder confirmar tus pedidos.
-            </p>
-            <Button variant="primary" onClick={() => setDireccionEnEdicion('nueva')}>
-              <FaPlus aria-hidden="true" />
-              Agregar dirección
-            </Button>
-          </>
-        ) : (
-          <>
-            <ul className="perfil-direcciones mb-3">
-              {direcciones.map((direccion) => (
-                <li key={direccion.id} className="perfil-direccion">
-                  <span className="perfil-direccion-alias">
-                    {direccion.alias || direccion.calle}
-                  </span>
-                  <span className="perfil-direccion-detalle">
-                    {lineasDireccion(direccion)}
-                  </span>
-                  {direccion.referencia && (
-                    <span className="perfil-direccion-referencia">
-                      {direccion.referencia}
-                    </span>
-                  )}
-                  {/* Fix bug C (iteración 3): confirmación INLINE en lugar
-                      de un modal apilado sobre este modal (el backdrop
-                      trabado dejaba la pantalla congelada). */}
-                  {direccionAEliminar && direccionAEliminar.id === direccion.id ? (
-                    <Alert variant="danger" className="mt-2 mb-0 py-2">
-                      <div className="mb-2 fw-semibold">
-                        ¿Seguro que querés eliminar esta dirección?
-                      </div>
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={confirmarEliminarDireccion}
-                          disabled={eliminandoDireccion}
-                        >
-                          {eliminandoDireccion ? 'Eliminando…' : 'Sí, eliminar'}
-                        </Button>
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={() => setDireccionAEliminar(null)}
-                          disabled={eliminandoDireccion}
-                        >
-                          Volver
-                        </Button>
-                      </div>
-                    </Alert>
-                  ) : (
-                    <div className="perfil-acciones mt-2">
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={() => setDireccionEnEdicion(direccion)}
-                      >
-                        <FaEdit aria-hidden="true" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => setDireccionAEliminar(direccion)}
-                      >
-                        <FaTrashAlt aria-hidden="true" />
-                        Eliminar
-                      </Button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <Button variant="primary" onClick={() => setDireccionEnEdicion('nueva')}>
-              <FaPlus aria-hidden="true" />
-              Agregar dirección
-            </Button>
-          </>
-        )}
-      </ModalBase>
-
       <ConfirmarModal
         mostrar={confirmandoGuardado}
         titulo="Confirmar cambios"
@@ -914,10 +855,29 @@ const Perfil = () => {
         onCancelar={() => setConfirmandoGuardado(false)}
       />
 
-      {/* La eliminación de direcciones se confirma INLINE dentro del modal de
-          direcciones (fix bug C, iteración 3): un ConfirmarModal apilado
-          sobre otro modal dejaba el backdrop trabado y la pantalla
-          congelada. */}
+      <FormularioDireccion
+        mostrar={Boolean(direccionEnEdicion)}
+        direccion={direccionEnEdicion === 'nueva' ? null : direccionEnEdicion}
+        onGuardar={handleGuardarDireccion}
+        onCerrar={cerrarFormularioDireccion}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(direccionAEliminar)}
+        titulo="Eliminar dirección"
+        mensaje={
+          direccionAEliminar
+            ? `¿Seguro que querés eliminar "${
+                direccionAEliminar.alias || direccionAEliminar.calle
+              }"?`
+            : '¿Seguro que querés eliminar esta dirección?'
+        }
+        textoConfirmar="Sí, eliminar"
+        textoCancelar="Volver"
+        cargando={eliminandoDireccion}
+        onConfirmar={confirmarEliminarDireccion}
+        onCancelar={() => setDireccionAEliminar(null)}
+      />
 
       <ConfirmarModal
         mostrar={confirmandoBajaFoto}

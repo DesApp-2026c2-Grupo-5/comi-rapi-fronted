@@ -18,7 +18,7 @@
  * para que el botón del footer pueda ser `type="submit"`.
  */
 
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Form, Modal } from 'react-bootstrap';
 import './ModalBase.css';
@@ -47,6 +47,9 @@ const ModalBase = ({
   ariaLabelledBy,
   ariaDescribedBy,
   sinHeader = false,
+  // Deprecated props (compatibilidad temporal)
+  show,
+  onHide,
 }) => {
   const tituloId = useId();
   const descripcionId = useId();
@@ -54,17 +57,43 @@ const ModalBase = ({
   const tieneHeader = Boolean(titulo) && !sinHeader;
   const sizeProp = tamano === 'md' ? undefined : tamano;
 
+  // Soporte temporal para props deprecated
+  const propMostrar = mostrar ?? show;
+  const propOnCerrar = onCerrar ?? onHide;
+
+  if (import.meta.env.DEV && (show !== undefined || onHide !== undefined)) {
+    console.warn(
+      'ModalBase: props "show" y "onHide" están deprecadas. Usá "mostrar" y "onCerrar".'
+    );
+  }
+
   const handleHide = () => {
-    if (!cierreBloqueado) onCerrar();
+    if (!cierreBloqueado) propOnCerrar?.();
   };
 
+  // Auto-focus: usa initialFocusRef si se pasa, sino busca el primer elemento enfocable en el body
+  const autoFocusRef = useRef(null);
+  const focusTarget = initialFocusRef ?? autoFocusRef;
+
   const handleEntered = () => {
-    if (initialFocusRef?.current) initialFocusRef.current.focus();
+    if (focusTarget.current) {
+      focusTarget.current.focus();
+    } else if (!initialFocusRef) {
+      // Fallback: primer input/button/select/textarea no deshabilitado en el body
+      const body = document.querySelector('.modal-base-body');
+      const focusable = body?.querySelector(
+        'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      focusable?.focus();
+    }
   };
 
   const contenido = (
     <>
-      <Modal.Body className={`modal-base-body ${bodyClassName}`.trim()}>
+      <Modal.Body
+        ref={autoFocusRef}
+        className={`modal-base-body ${bodyClassName}`.trim()}
+      >
         {children}
       </Modal.Body>
       {footer && (
@@ -75,7 +104,7 @@ const ModalBase = ({
 
   return (
     <Modal
-      show={mostrar}
+      show={propMostrar}
       onHide={handleHide}
       onEntered={handleEntered}
       centered={centered}
@@ -150,6 +179,9 @@ ModalBase.propTypes = {
   ariaLabelledBy: PropTypes.string,
   ariaDescribedBy: PropTypes.string,
   sinHeader: PropTypes.bool,
+  // Deprecated (compatibilidad temporal)
+  show: PropTypes.bool,
+  onHide: PropTypes.func,
 };
 
 export default ModalBase;

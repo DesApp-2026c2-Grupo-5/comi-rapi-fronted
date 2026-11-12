@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Modal, Button } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
 import { usePersonalizacion } from '../../hooks/usePersonalizacion';
@@ -9,9 +9,10 @@ import { calcularPrecioUnitario } from '../../services/personalizacionConfig';
 import { formatPrice } from '../../utils/formatters';
 import GrupoOpciones from './GrupoOpciones';
 import Contador from './Contador';
+import ModalBase from '../comunes/ModalBase';
 import './ProductoPersonalizarModal.css';
 
-const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
+const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion }) => {
   const { agregarAlCarrito } = useCarrito();
   const { parametros } = useParametros();
   const { getConfigParaProducto } = usePersonalizacion();
@@ -24,6 +25,14 @@ const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
   const [acompCant, setAcompCant] = useState({});
   const [condCant, setCondCant] = useState({});
 
+  // Refs para manejo de foco al cambiar de vista
+  const vistaPrincipalRef = useRef(null);
+  const botonExtraRef = useRef(null);
+  const botonPersonalizarRef = useRef(null);
+  const botonAcompanarRef = useRef(null);
+  const botonCondimentosRef = useRef(null);
+  const botonVolverRef = useRef(null);
+
   const reset = () => {
     setVista('principal');
     setUnidades(1);
@@ -35,22 +44,18 @@ const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
 
   const handleClose = () => {
     reset();
-    onHide();
+    onCerrar();
   };
 
   const cambiar = (grupo, key, delta, minimo, maximo) => {
     const setters = { extra: setExtraCant, acompanar: setAcompCant, condimento: setCondCant };
     const estados = { extra: extraCant, acompanar: acompCant, condimento: condCant };
     const actual = estados[grupo][key] || 0;
-    // Cada elemento tiene su propio rango: sin tope global por grupo.
     const nuevo = Math.max(minimo, Math.min(maximo, actual + delta));
     if (nuevo === actual) return;
     setters[grupo]((prev) => ({ ...prev, [key]: nuevo }));
   };
 
-  /* Respetar el delta que manda el Contador: si se usara un toggle, el botón
-     "+" sólo llegaría a 1 aunque el límite permita más, y el "−" no distinguiría
-     entre bajar de 2 a 1 y de 1 a 0. */
   const cambiarSin = (key, delta, minimo, maximo) => {
     const actual = sinCant[key] || 0;
     const nuevo = Math.max(minimo, Math.min(maximo, actual + delta));
@@ -60,7 +65,7 @@ const ProductoPersonalizarModal = ({ show, onHide, producto, promocion }) => {
 
   const MAX_UNIDADES = parametros.cantidadMaximaProductoCarrito;
 
-const cambiarUnidades = (d) =>
+  const cambiarUnidades = (d) =>
     setUnidades((u) => Math.max(1, Math.min(MAX_UNIDADES, u + d)));
 
   const extrasLista = useMemo(
@@ -108,9 +113,6 @@ const cambiarUnidades = (d) =>
   const sinCount = sinLista.length;
   const condCount = Object.values(condCant).reduce((a, b) => a + b, 0);
 
-  // Si un elemento con mínimo obligatorio quedó sin stock en todas las
-  // sucursales, no hay forma de cumplir la regla: se avisa y no se puede
-  // agregar al carrito.
   const obligatoriosAgotados = [
     ...(config.extra || []),
     ...(config.condimento || []),
@@ -129,8 +131,6 @@ const cambiarUnidades = (d) =>
       return;
     }
 
-    // El mínimo de cada elemento es obligatorio: si alguno pide (por ejemplo)
-    // al menos 2, no se puede agregar con menos.
     const incumplidos = [
       ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0 })),
       ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0 })),
@@ -157,6 +157,17 @@ const cambiarUnidades = (d) =>
     handleClose();
   };
 
+  // Manejo de foco al cambiar de vista
+  const cambiarVista = (nuevaVista) => {
+    setVista(nuevaVista);
+  };
+
+  useEffect(() => {
+    if (vista !== 'principal' && botonVolverRef.current) {
+      botonVolverRef.current.focus();
+    }
+  }, [vista]);
+
   if (!producto) return null;
 
   const tienePersonalizacion =
@@ -165,8 +176,6 @@ const cambiarUnidades = (d) =>
     (config.acompanar?.length || 0) > 0 ||
     (config.condimento?.length || 0) > 0;
 
-  // El combo ya es la promoción: el backend no permite promocionar combos, así
-  // que el aviso de oferta sólo aplica a productos simples con % de descuento.
   const esCombo =
     producto.tipo === 'COMBO' ||
     (Array.isArray(producto.componentes) && producto.componentes.length > 0);
@@ -176,14 +185,21 @@ const cambiarUnidades = (d) =>
 
   if (!tienePersonalizacion) {
     return (
-      // `Modal.Title` es lo que le da nombre accesible al diálogo (react-bootstrap
-      // lo conecta por aria-labelledby); sin él el Modal queda sin título.
-      <Modal show={show} onHide={handleClose} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{producto.nombre}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="text-center">
-          {/* alt vacío: el nombre ya está en el título del diálogo. */}
+      <ModalBase
+        mostrar={mostrar}
+        onCerrar={handleClose}
+        titulo={producto.nombre}
+        centered
+        footer={
+          <>
+            <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+            <Button className="btn-primary" onClick={handleAgregar}>
+              Agregar — {formatPrice(producto.precio * unidades)}
+            </Button>
+          </>
+        }
+      >
+        <div className="text-center p-3">
           <img
             src={producto.imagen}
             alt=""
@@ -210,53 +226,77 @@ const cambiarUnidades = (d) =>
               onCambiar={cambiarUnidades}
             />
           </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
-          <Button className="btn-primary" onClick={handleAgregar}>
-            Agregar — {formatPrice(producto.precio * unidades)}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        </div>
+      </ModalBase>
     );
   }
 
+  // Footer fijo para todas las vistas
+  const footer = vista === 'principal' ? (
+    <>
+      <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+      <Button
+        className="btn-primary"
+        onClick={handleAgregar}
+        disabled={hayObligatorioAgotado}
+        aria-describedby="personalizar-total-desc"
+      >
+        <span className="badge bg-white btn-agregar-cantidad">{unidades}</span>
+        <span>Agregar a mi pedido</span>
+        <span className="ms-auto">{formatPrice(total)}</span>
+      </Button>
+    </>
+  ) : (
+    <Button
+      className="btn-primary w-100 py-3 fw-bold"
+      onClick={() => setVista('principal')}
+    >
+      Aceptar
+    </Button>
+  );
+
   return (
-    <Modal
-      show={show}
-      onHide={handleClose}
+    <ModalBase
+      mostrar={mostrar}
+      onCerrar={handleClose}
       centered
+      fullscreen="sm-down"
       dialogClassName="modal-personalizar"
       contentClassName="modal-personalizar-content"
-      fullscreen="sm-down"
-      // Esta variante no usa Modal.Header/Title, así que el nombre accesible
-      // se declara a mano apuntando al <h2> del producto.
       aria-labelledby="personalizar-titulo"
+      aria-describedby="personalizar-total-desc"
+      footer={footer}
     >
-      <Modal.Body className="p-0">
+      <ModalBase.Header closeButton>
+        <ModalBase.Title id="personalizar-titulo" className="h5 mb-0">
+          {producto.nombre}
+        </ModalBase.Title>
+      </ModalBase.Header>
+
+      <ModalBase.Body className="p-0">
         {vista === 'principal' && (
-          <div className="personalizar-principal">
+          <div className="personalizar-principal" ref={vistaPrincipalRef}>
             <div className="text-center p-3 position-relative">
               <Button className="btn-cerrar" onClick={handleClose} aria-label="Cerrar">
                 <span aria-hidden="true">×</span>
               </Button>
-              {/* alt vacío: el nombre del producto está en el h2 de abajo. */}
               <img src={producto.imagen} alt="" width={220} height={150} className="personalizar-imagen" />
             </div>
             <div className="px-3 pb-3">
               <div className="d-flex justify-content-between align-items-start">
                 <div>
-                  <h2 id="personalizar-titulo" className="h5 fw-bold mb-1">
-                    {producto.nombre}
-                  </h2>
+                  <h2 className="h5 fw-bold mb-1">{producto.nombre}</h2>
                   <p className="text-muted small mb-0 personalizar-descripcion">
                     {producto.descripcion}
                   </p>
                 </div>
                 <div className="text-end ms-2">
-                  {/* `aria-live`: el total cambia con cada customization y hay que
-                      anunciarlo, no alcanza con que cambie el color. */}
-                  <div className="fw-bold personalize-total" role="status" aria-live="polite">
+                  <div
+                    id="personalizar-total-desc"
+                    className="fw-bold personalize-total"
+                    role="status"
+                    aria-live="polite"
+                  >
                     {formatPrice(total)}
                   </div>
                   <div className="text-muted personalize-total-unitario">
@@ -279,7 +319,13 @@ const cambiarUnidades = (d) =>
                     {extraCount ? `${extraCount} seleccionados (+${formatPrice(extraCosto * unidades)})` : '—'}
                   </div>
                 </div>
-                <Button className="btn-seleccionar" onClick={() => setVista('extra')}>Seleccionar</Button>
+                <Button
+                  ref={botonExtraRef}
+                  className="btn-seleccionar"
+                  onClick={() => cambiarVista('extra')}
+                >
+                  Seleccionar
+                </Button>
               </div>
               <div className="fila-grupo">
                 <div>
@@ -288,7 +334,13 @@ const cambiarUnidades = (d) =>
                     {sinCount ? sinLista.join(', ') : '—'}
                   </div>
                 </div>
-                <Button className="btn-seleccionar" onClick={() => setVista('personalizar')}>Seleccionar</Button>
+                <Button
+                  ref={botonPersonalizarRef}
+                  className="btn-seleccionar"
+                  onClick={() => cambiarVista('personalizar')}
+                >
+                  Seleccionar
+                </Button>
               </div>
               <div className="fila-grupo">
                 <div>
@@ -297,7 +349,13 @@ const cambiarUnidades = (d) =>
                     {acompCount ? `${acompCount} seleccionados (+${formatPrice(acompCosto * unidades)})` : '—'}
                   </div>
                 </div>
-                <Button className="btn-seleccionar" onClick={() => setVista('acompanar')}>Seleccionar</Button>
+                <Button
+                  ref={botonAcompanarRef}
+                  className="btn-seleccionar"
+                  onClick={() => cambiarVista('acompanar')}
+                >
+                  Seleccionar
+                </Button>
               </div>
               <div className="fila-grupo border-0">
                 <div>
@@ -308,7 +366,13 @@ const cambiarUnidades = (d) =>
                       : '—'}
                   </div>
                 </div>
-                <Button className="btn-seleccionar" onClick={() => setVista('condimentos')}>Seleccionar</Button>
+                <Button
+                  ref={botonCondimentosRef}
+                  className="btn-seleccionar"
+                  onClick={() => cambiarVista('condimentos', botonCondimentosRef)}
+                >
+                  Seleccionar
+                </Button>
               </div>
             </div>
 
@@ -331,15 +395,6 @@ const cambiarUnidades = (d) =>
                   es obligatorio.
                 </div>
               )}
-              <Button
-                className="btn-primary w-100 py-3 fw-bold d-flex justify-content-between align-items-center btn-agregar"
-                onClick={handleAgregar}
-                disabled={hayObligatorioAgotado}
-              >
-                <span className="badge bg-white btn-agregar-cantidad">{unidades}</span>
-                <span>Agregar a mi pedido</span>
-                <span className="ms-auto">{formatPrice(total)}</span>
-              </Button>
             </div>
           </div>
         )}
@@ -347,22 +402,30 @@ const cambiarUnidades = (d) =>
         {vista === 'extra' && (
           <div className="p-3">
             <div className="d-flex align-items-center mb-3">
-              <Button className="btn-volver" onClick={() => setVista('principal')} aria-label="Volver a la selección">
+              <Button
+                ref={botonVolverRef}
+                className="btn-volver"
+                onClick={() => setVista('principal')}
+                aria-label="Volver a la selección"
+              >
                 <span aria-hidden="true">‹</span>
               </Button>
               <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Extra</h3>
-              {/* Espaciador para que el título quede centrado respecto al botón. */}
               <span className="espaciador-volver" />
             </div>
             <GrupoOpciones opciones={config.extra} valores={extraCant} onCambiar={(k, d, min, max) => cambiar('extra', k, d, min, max)} conPrecio />
-            <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}
 
         {vista === 'personalizar' && (
           <div className="p-3">
             <div className="d-flex align-items-center mb-3">
-              <Button className="btn-volver" onClick={() => setVista('principal')} aria-label="Volver a la selección">
+              <Button
+                ref={botonVolverRef}
+                className="btn-volver"
+                onClick={() => setVista('principal')}
+                aria-label="Volver a la selección"
+              >
                 <span aria-hidden="true">‹</span>
               </Button>
               <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Personalizar</h3>
@@ -385,28 +448,36 @@ const cambiarUnidades = (d) =>
                 </div>
               ))}
             </div>
-            <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}
 
         {vista === 'acompanar' && (
           <div className="p-3">
             <div className="d-flex align-items-center mb-3">
-              <Button className="btn-volver" onClick={() => setVista('principal')} aria-label="Volver a la selección">
+              <Button
+                ref={botonVolverRef}
+                className="btn-volver"
+                onClick={() => setVista('principal')}
+                aria-label="Volver a la selección"
+              >
                 <span aria-hidden="true">‹</span>
               </Button>
               <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Acompaña tu orden con</h3>
               <span className="espaciador-volver" />
             </div>
             <GrupoOpciones opciones={config.acompanar} valores={acompCant} onCambiar={(k, d, min, max) => cambiar('acompanar', k, d, min, max)} conPrecio />
-            <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}
 
         {vista === 'condimentos' && (
           <div className="p-3">
             <div className="d-flex align-items-center mb-3">
-              <Button className="btn-volver" onClick={() => setVista('principal')} aria-label="Volver a la selección">
+              <Button
+                ref={botonVolverRef}
+                className="btn-volver"
+                onClick={() => setVista('principal')}
+                aria-label="Volver a la selección"
+              >
                 <span aria-hidden="true">‹</span>
               </Button>
               <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Condimentos adicionales</h3>
@@ -422,19 +493,16 @@ const cambiarUnidades = (d) =>
                 cambiar('condimento', k, d, min, max)
               }
             />
-            <Button className="btn-primary w-100 mt-3 py-3 fw-bold" onClick={() => setVista('principal')}>Aceptar</Button>
           </div>
         )}
-      </Modal.Body>
-    </Modal>
+      </ModalBase.Body>
+    </ModalBase>
   );
 };
 
-export default ProductoPersonalizarModal;
-
 ProductoPersonalizarModal.propTypes = {
-  show: PropTypes.bool.isRequired,
-  onHide: PropTypes.func.isRequired,
+  mostrar: PropTypes.bool.isRequired,
+  onCerrar: PropTypes.func.isRequired,
   producto: PropTypes.object,
   promocion: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -448,3 +516,5 @@ ProductoPersonalizarModal.defaultProps = {
   producto: null,
   promocion: null,
 };
+
+export default ProductoPersonalizarModal;

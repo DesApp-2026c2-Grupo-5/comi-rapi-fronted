@@ -1,12 +1,26 @@
 /**
  * Propósito: Ajustes mobile del modal de confirmación.
- * Contenido: Botones a ancho completo en pantallas chicas.
+ * Contenido: Botones a ancho completo en pantallas chicas, touch targets mínimos.
  * Dependencias: Se importa desde ConfirmarModal.jsx.
  * Uso: Importado por ConfirmarModal.jsx.
  */
 
 @media (max-width: 575.98px) {
+  .confirmar-modal-acciones {
+    flex-direction: column;
+  }
   .confirmar-modal-acciones .btn {
     width: 100%;
+    min-height: 44px; /* Touch target mínimo */
+  }
+  .confirmar-modal-acciones .btn:first-child {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Desktop: gap consistente entre botones */
+@media (min-width: 576px) {
+  .confirmar-modal-acciones {
+    gap: 0.75rem !important;
   }
 }

@@ -46,7 +46,7 @@ const ACCIONES_CLIENTE = [
   {
     id: 'direcciones',
     etiqueta: 'Editar direcciones',
-    to: '/cliente/perfil?direcciones=1',
+    to: '/cliente/perfil#direcciones',
     Icono: FaMapMarkerAlt,
   },
   {
@@ -86,7 +86,7 @@ const calcularPosicion = (rect) => {
 const MenuCuenta = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash } = useLocation();
   const [abierto, setAbierto] = useState(false);
   const [posicion, setPosicion] = useState({ top: 0, left: 0 });
   const contenedorRef = useRef(null);
@@ -97,7 +97,7 @@ const MenuCuenta = () => {
   // Al navegar, el panel se cierra: si no, queda colgando sobre la página nueva.
   useEffect(() => {
     setAbierto(false);
-  }, [pathname, search]);
+  }, [pathname, search, hash]);
 
   const medir = useCallback(() => {
     const rect = botonRef.current?.getBoundingClientRect();
@@ -213,7 +213,7 @@ const MenuCuenta = () => {
 
   const nombre = nombreCompleto(user?.nombre, user?.apellido) || 'Mi cuenta';
   const enPerfil = pathname === '/cliente/perfil';
-  const enDirecciones = enPerfil && search.includes('direcciones=1');
+  const enDirecciones = enPerfil && hash === '#direcciones';
 
   const estaActivo = (id) =>
     id === 'direcciones' ? enDirecciones : enPerfil && !enDirecciones;

@@ -10,7 +10,7 @@ import {
 import 'leaflet/dist/leaflet.css';
 import { useTema } from '../../hooks/useTema';
 import { createStorePillIcon, clientPulseIcon } from './mapIcons';
-import { setupCtrlZoom, formatearDireccion } from './mapUtils';
+import { setupCtrlZoom } from './mapUtils';
 import MapErrorBoundary from './MapErrorBoundary';
 import './map-markers.css';
 import './map-container.css';
@@ -20,35 +20,20 @@ import './map-container.css';
  * Fix: Elimina AjusteInicial problemático, usa whenCreated + LayerGroup
  * Fix: Ctrl+Scroll zoom robusto
  * Dot + Pulse Aura para dirección cliente
+ * Responsive: altura reducida en mobile para no tapar el footer del wizard
  */
 const MapaSucursales = ({
   sucursales = [],
   puntoCliente = null,
   alturaPx = 260,
+  alturaMobilePx = 180,
 }) => {
   const { temaResuelto } = useTema();
   const esOscuro = temaResuelto === 'oscuro';
   const mapRef = useRef(null);
   const ctrlZoomCleanupRef = useRef(null);
 
-  if (!sucursales || sucursales.length === 0) return null;
-
-  const puntos = sucursales.filter((s) => s.latitud && s.longitud);
-  if (puntos.length === 0) return null;
-
-  // Centro inicial: el punto del cliente si existe, sino la primera sucursal.
-  const centro = puntoCliente
-    ? [Number(puntoCliente.latitud), Number(puntoCliente.longitud)]
-    : [puntos[0].latitud, puntos[0].longitud];
-
-  // Stadia Maps: Alidade Smooth (claro) / Alidade Smooth Dark (oscuro)
-  const estilo = esOscuro ? 'alidade_smooth_dark' : 'alidade_smooth';
-  const stadiaKey = import.meta.env.VITE_STADIA_API_KEY || '';
-  const tileUrl = stadiaKey
-    ? `https://tiles.stadiamaps.com/tiles/${estilo}/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`
-    : `https://tiles.stadiamaps.com/tiles/${estilo}/{z}/{x}/{y}{r}.png`;
-
-  // Configurar Ctrl+Zoom al montar el mapa
+  // Configurar Ctrl+Zoom al montar el mapa (debe ir antes de early returns)
   useEffect(() => {
     if (mapRef.current?.leafletElement) {
       ctrlZoomCleanupRef.current = setupCtrlZoom(mapRef.current.leafletElement, true);
@@ -61,12 +46,34 @@ const MapaSucursales = ({
     };
   }, []);
 
+  if (!sucursales || sucursales.length === 0) return null;
+
+  const puntos = sucursales.filter((s) => s.latitud && s.longitud);
+  if (puntos.length === 0) return null;
+
+  // Centro inicial: el punto del cliente si existe, sino la primera sucursal.
+  const centro = puntoCliente
+    ? [Number(puntoCliente.latitud), Number(puntoCliente.longitud)]
+    : [puntos[0].latitud, puntos[0].longitud];
+
+  // Altura responsive: mobile usa alturaMobilePx, desktop usa alturaPx
+  const alturaResponsive = typeof window !== 'undefined' && window.innerWidth < 576
+    ? alturaMobilePx
+    : alturaPx;
+
+  // Stadia Maps: Alidade Smooth (claro) / Alidade Smooth Dark (oscuro)
+  const estilo = esOscuro ? 'alidade_smooth_dark' : 'alidade_smooth';
+  const stadiaKey = import.meta.env.VITE_STADIA_API_KEY || '';
+  const tileUrl = stadiaKey
+    ? `https://tiles.stadiamaps.com/tiles/${estilo}/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`
+    : `https://tiles.stadiamaps.com/tiles/${estilo}/{z}/{x}/{y}{r}.png`;
+
   return (
     <MapErrorBoundary>
       <div className="comi-map-wrapper">
         <div 
           className="map-container mapa-sucursales comi-map animate-fade-in-up"
-          style={{ height: `${alturaPx}px`, width: '100%' }}
+          style={{ height: `${alturaResponsive}px`, width: '100%' }}
           role="img"
           aria-label={`Mapa con ${puntos.length} sucursal${puntos.length > 1 ? "es" : ""}${puntoCliente ? " y tu dirección" : ""}`}
         >
@@ -149,7 +156,7 @@ const MapaSucursales = ({
       </div>
       </MapErrorBoundary>
     );
-};
+  };
 
 MapaSucursales.propTypes = {
   sucursales: PropTypes.arrayOf(
@@ -167,6 +174,7 @@ MapaSucursales.propTypes = {
     longitud: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   }),
   alturaPx: PropTypes.number,
+  alturaMobilePx: PropTypes.number,
 };
 
 export default MapaSucursales;

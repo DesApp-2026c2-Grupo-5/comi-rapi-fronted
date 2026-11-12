@@ -394,7 +394,11 @@ const Carrito = () => {
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0" role="status">
                 No tenés direcciones guardadas.{" "}
-                <Link to="/cliente/perfil?direcciones=1" className="alert-link">
+                <Link
+                  to="/cliente/perfil#direcciones"
+                  state={{ abrirNuevaDireccion: true }}
+                  className="alert-link"
+                >
                   Agregá una dirección
                 </Link>{" "}
                 antes de confirmar tu pedido.
@@ -499,7 +503,7 @@ const Carrito = () => {
                   </Form.Group>
                   <Button
                     as={Link}
-                    to="/cliente/perfil?direcciones=1"
+                    to="/cliente/perfil#direcciones"
                     variant="outline-primary"
                     size="sm"
                     className="carrito-boton-direcciones w-100 rounded-pill mt-3"

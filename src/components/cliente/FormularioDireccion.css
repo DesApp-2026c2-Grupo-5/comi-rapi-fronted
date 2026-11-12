@@ -1,12 +1,145 @@
 /**
- * Propósito: Estilos del formulario de alta/edición de una dirección de entrega.
- * Contenido: Ancho máximo de la tarjeta.
+ * Propósito: Estilos del wizard de alta/edición de una dirección de entrega.
+ * Contenido: Progreso, cuerpo scrolleable y footer del wizard dentro del modal.
  * Dependencias: FormularioDireccion.jsx (se importa al final del mismo).
  * Uso: Importado desde src/components/cliente/FormularioDireccion.jsx.
  */
 
-/* Reemplaza el `style={{ maxWidth: '500px' }}` que tenía la tarjeta. */
-.direccion-form-card {
+.direccion-wizard-pasos {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.direccion-wizard-paso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.direccion-wizard-paso-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-card);
+  background: var(--color-cream-soft);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.direccion-wizard-paso.activo {
+  color: var(--color-text);
+}
+
+.direccion-wizard-paso.activo .direccion-wizard-paso-numero {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.direccion-wizard-paso.completado .direccion-wizard-paso-numero {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.direccion-wizard-paso-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.direccion-wizard-cuerpo {
+  min-height: 0;
+}
+
+.direccion-wizard-cuerpo .dir-form-seccion {
+  margin-top: 1rem;
+}
+
+.direccion-wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
-  max-width: 32rem;
+}
+
+.direccion-wizard-footer-paso {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.direccion-wizard-footer-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-height: 760px), (max-width: 30rem) {
+  .direccion-wizard-modal-body {
+    padding: 0.75rem !important;
+  }
+
+  .direccion-wizard-pasos {
+    margin-bottom: 0.5rem;
+  }
+
+  .direccion-wizard-cuerpo .dir-form-seccion {
+    margin-top: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .direccion-wizard-modal-body .mb-3 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .direccion-wizard-modal-body .form-label {
+    margin-bottom: 0.15rem;
+    font-size: 0.85rem;
+  }
+
+  .direccion-wizard-modal-body .form-control {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.92rem;
+  }
+
+  .direccion-wizard-modal-body .form-text.text-muted {
+    display: none;
+  }
+}
+
+@media (max-width: 30rem) {
+  .direccion-wizard-pasos {
+    gap: 0.25rem;
+  }
+
+  .direccion-wizard-paso-texto {
+    display: none;
+  }
+
+  .direccion-wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .direccion-wizard-footer-acciones {
+    flex: 1;
+  }
+
+  .direccion-wizard-footer-acciones .btn {
+    flex: 1 1 0;
+  }
 }

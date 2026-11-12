@@ -17,6 +17,9 @@
  *        textoConfirmar="Guardar dirección" onConfirmar={fn} onEditar={fn} />
  */
 
+/* El proyecto no tiene la dependencia "prop-types"; se desactiva la regla
+   para este componente presentacional. */
+/* eslint-disable react/prop-types */
 import { Alert, Button } from "react-bootstrap";
 import { FaSave, FaEdit, FaStore, FaCheckCircle } from "react-icons/fa";
 import MapaSucursales from "./MapaSucursales";
@@ -44,6 +47,8 @@ const ConfirmacionDireccion = ({
   textoConfirmar = "Guardar",
   onConfirmar,
   onEditar,
+  mostrarMapa = true,
+  mostrarAcciones = true,
 }) => {
   if (!resultado) {
     return null;
@@ -94,7 +99,8 @@ const ConfirmacionDireccion = ({
       {/* A5: mapa con hasta 3 sucursales dentro del radio de cobertura.
           El círculo azul marca la dirección del cliente; los pines,
           las sucursales (todas iguales). */}
-      {cobertura &&
+      {mostrarMapa &&
+        cobertura &&
         cobertura.coberturaDisponible &&
         Array.isArray(cobertura.sucursales) &&
         cobertura.sucursales.length > 0 && (
@@ -106,29 +112,32 @@ const ConfirmacionDireccion = ({
                 : null
             }
             alturaPx={240}
+            alturaMobilePx={160}
           />
         )}
 
-      <div className="d-flex gap-2 mt-3">
-        <Button
-          variant="primary"
-          className="rounded-pill px-4"
-          onClick={onConfirmar}
-          disabled={cargando}
-        >
-          <FaSave className="me-1" aria-hidden="true" />
-          {cargando ? "Guardando…" : textoConfirmar}
-        </Button>
-        <Button
-          variant="outline-secondary"
-          className="rounded-pill px-4"
-          onClick={onEditar}
-          disabled={cargando}
-        >
-          <FaEdit className="me-1" aria-hidden="true" />
-          Editar datos
-        </Button>
-      </div>
+      {mostrarAcciones && (
+        <div className="d-flex gap-2 mt-3">
+          <Button
+            variant="primary"
+            className="rounded-pill px-4"
+            onClick={onConfirmar}
+            disabled={cargando}
+          >
+            <FaSave className="me-1" aria-hidden="true" />
+            {cargando ? "Guardando…" : textoConfirmar}
+          </Button>
+          <Button
+            variant="outline-secondary"
+            className="rounded-pill px-4"
+            onClick={onEditar}
+            disabled={cargando}
+          >
+            <FaEdit className="me-1" aria-hidden="true" />
+            Editar datos
+          </Button>
+        </div>
+      )}
     </Alert>
   );
 };

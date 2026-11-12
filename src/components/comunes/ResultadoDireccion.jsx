@@ -15,6 +15,9 @@
  *        onReintentar={fn} onEditar={fn} />
  */
 
+/* El proyecto no tiene la dependencia "prop-types"; se desactiva la regla
+   para este componente presentacional. */
+/* eslint-disable react/prop-types */
 import { Alert, Button } from "react-bootstrap";
 import { FaExclamationCircle, FaBan, FaStore, FaSyncAlt } from "react-icons/fa";
 import MapaSucursales from "./MapaSucursales";
@@ -41,7 +44,13 @@ const ICONOS = {
   tecnico: FaSyncAlt,
 };
 
-const ResultadoDireccion = ({ resultado, resumen, onReintentar, onEditar }) => {
+const ResultadoDireccion = ({
+  resultado,
+  resumen,
+  onReintentar,
+  onEditar,
+  mostrarMapa = true,
+}) => {
   if (!resultado) {
     return null;
   }
@@ -87,7 +96,8 @@ const ResultadoDireccion = ({ resultado, resumen, onReintentar, onEditar }) => {
 
       {/* A5: sin cobertura → mapa con la sucursal MÁS CERCANA (fuera del
           radio). El mensaje deja claro que no entrega a esta dirección. */}
-      {resultado.tipo === "cobertura-sucursal" &&
+      {mostrarMapa &&
+        resultado.tipo === "cobertura-sucursal" &&
         resultado.detalle &&
         resultado.detalle.sucursal &&
         resultado.detalle.sucursal.latitud &&
