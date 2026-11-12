@@ -118,10 +118,11 @@ const Catalogo = () => {
     ? categorias.find((c) => c.id === categoriaId).nombre
     : "Todos";
 
-  // Búsqueda por nombre y rango de precio, también persistidos en la URL
+  // Búsqueda por nombre, rango de precio y ordenamiento, también persistidos en la URL
   const busqueda = searchParams.get("busqueda") || "";
   const precioMin = searchParams.get("precioMin") || "";
   const precioMax = searchParams.get("precioMax") || "";
+  const ordenPrecio = searchParams.get("ordenPrecio"); // 'asc' | 'desc' | null
 
   // C1: rango de precios del catálogo cargado — límites del deslizador.
   const [precioPiso, precioTecho] = useMemo(() => {
@@ -146,11 +147,24 @@ const Catalogo = () => {
     setSearchParams(next, { replace: true });
   };
 
+  // Cambiar orden de precio: cicla null → 'asc' → 'desc' → null
+  const cambiarOrdenPrecio = () => {
+    const next = new URLSearchParams(searchParams);
+    if (!ordenPrecio || ordenPrecio === 'desc') {
+      next.delete('ordenPrecio');
+    } else if (ordenPrecio === 'asc') {
+      next.set('ordenPrecio', 'desc');
+    } else {
+      next.set('ordenPrecio', 'asc');
+    }
+    setSearchParams(next, { replace: true });
+  };
+
   const productosFiltrados = useMemo(() => {
     const min = precioMin !== "" ? Number(precioMin) : null;
     const max = precioMax !== "" ? Number(precioMax) : null;
 
-    return productos.filter((p) => {
+    let resultado = productos.filter((p) => {
       // Filtro por promoción: solo los productos alcanzados por ella.
       if (idsProductosPromocion && !idsProductosPromocion.has(p.id)) {
         return false;
@@ -172,6 +186,15 @@ const Catalogo = () => {
       }
       return true;
     });
+
+    // Ordenamiento por precio
+    if (ordenPrecio === 'asc') {
+      resultado = [...resultado].sort((a, b) => a.precio - b.precio);
+    } else if (ordenPrecio === 'desc') {
+      resultado = [...resultado].sort((a, b) => b.precio - a.precio);
+    }
+
+    return resultado;
   }, [
     productos,
     idsProductosPromocion,
@@ -180,6 +203,7 @@ const Catalogo = () => {
     busqueda,
     precioMin,
     precioMax,
+    ordenPrecio,
   ]);
 
   // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
@@ -209,7 +233,7 @@ const Catalogo = () => {
   // descubrir solo que los filtros estaban en las pills de arriba.
   const limpiarFiltros = () => {
     const next = new URLSearchParams(searchParams);
-    ["categoria", "busqueda", "precioMin", "precioMax", "promocion"].forEach(
+    ["categoria", "busqueda", "precioMin", "precioMax", "promocion", "ordenPrecio"].forEach(
       (clave) => next.delete(clave),
     );
     setSearchParams(next, { replace: true });
@@ -317,6 +341,50 @@ const Catalogo = () => {
         })}
       </div>
 
+      {/* Ordenar por precio: un solo botón que cicla null → asc → desc → null */}
+      <div className="d-flex justify-content-center mb-4" role="group" aria-label="Ordenar por precio">
+        <Button
+          variant={
+            ordenPrecio === 'asc' || ordenPrecio === 'desc'
+              ? 'primary'
+              : 'outline-secondary'
+          }
+          size="sm"
+          onClick={cambiarOrdenPrecio}
+          aria-pressed={ordenPrecio !== null}
+          aria-label={`Ordenar por precio: ${ordenPrecio === 'asc' ? 'menor a mayor' : ordenPrecio === 'desc' ? 'mayor a menor' : 'sin orden'}`}
+          className="filtro-orden-precio"
+        >
+          <span className="d-flex align-items-center gap-1">
+            {ordenPrecio === 'asc' && (
+              <>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M4.5 11H12a.5.5 0 0 0 0-1H5.586l1.293-1.293a.5.5 0 0 0-.708-.708L2 7.5 7.5 2a.5.5 0 0 0 .708.708L3.707 6H11.5a.5.5 0 0 1 0 1H3.707l1.293 1.293a.5.5 0 0 0 .708.708L2 10.5 7.5 16a.5.5 0 0 0 .708-.708L3.707 11H12a.5.5 0 0 0 0-1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
+                </svg>
+                Menor a mayor
+              </>
+            )}
+            {ordenPrecio === 'desc' && (
+              <>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M4.5 5H12a.5.5 0 0 1 0 1H5.586l1.293 1.293a.5.5 0 0 1-.708.708L2 8.5l-5.5 5.5a.5.5 0 0 1-.708-.708L8.293 6H2.5a.5.5 0 0 1 0-1H8.293l-1.293-1.293a.5.5 0 0 1 .708-.708L14 7.5l5.5-5.5a.5.5 0 0 1 .708.708L8.293 11H12a.5.5 0 0 1 0 1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
+                </svg>
+                Mayor a menor
+              </>
+            )}
+            {!ordenPrecio && (
+              <>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M4.5 5H12a.5.5 0 0 1 0 1H5.586l1.293 1.293a.5.5 0 0 1-.708.708L2 8.5l-5.5 5.5a.5.5 0 0 1-.708-.708L8.293 6H2.5a.5.5 0 0 1 0-1H8.293l-1.293-1.293a.5.5 0 0 1 .708-.708L14 7.5l5.5-5.5a.5.5 0 0 1 .708.708L8.293 11H12a.5.5 0 0 1 0 1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
+                  <path d="M4.5 11H12a.5.5 0 0 0 0-1H5.586l1.293-1.293a.5.5 0 0 0-.708-.708L2 7.5 7.5 2a.5.5 0 0 0 .708.708L3.707 6H11.5a.5.5 0 0 1 0 1H3.707l1.293 1.293a.5.5 0 0 0 .708.708L2 10.5 7.5 16a.5.5 0 0 0 .708-.708L3.707 11H12a.5.5 0 0 0 0-1H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 1 0v1z"/>
+                </svg>
+                Ordenar por precio
+              </>
+            )}
+          </span>
+        </Button>
+      </div>
+
       {/* Buscador por nombre y filtro por rango de precio.
           `type="search"` ya expone un botón de limpiar en varios navegadores;
           los inputs de precio van con label propio porque el placeholder no
@@ -335,14 +403,17 @@ const Catalogo = () => {
           />
         </Form.Group>
         {/* C1: deslizador doble de precio — reemplaza los inputs numéricos.
-            Mantiene precioMin/precioMax en la URL (mismos params que antes). */}
-        <RangoPrecio
-          min={precioPiso}
-          max={precioTecho}
-          valorMin={precioMin}
-          valorMax={precioMax}
-          onChange={cambiarRangoPrecio}
-        />
+            Mantiene precioMin/precioMax en la URL (mismos params que antes).
+            Ancho reducido al 50% para dejar espacio a otros filtros. */}
+        <div className="w-100 w-md-50 mx-auto mx-md-0">
+          <RangoPrecio
+            min={precioPiso}
+            max={precioTecho}
+            valorMin={precioMin}
+            valorMax={precioMax}
+            onChange={cambiarRangoPrecio}
+          />
+        </div>
       </div>
 
       {/* Grid de productos */}

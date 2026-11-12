@@ -16,14 +16,30 @@ import Contador from './Contador';
 import ModalBase from '../comunes/ModalBase';
 import './ProductoPersonalizarModal.css';
 
-const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion, itemEditando = null }) => {
+const ProductoPersonalizarModal = ({
+  mostrar,
+  onCerrar,
+  producto,
+  promocion,
+  itemEditando = null,
+  // Deprecated props (compatibilidad con ProductoCard.jsx)
+  show,
+  onHide,
+}) => {
+  // Compatibilidad temporal con props deprecated (show/onHide)
+  // ProductoCard.jsx usa show/onHide; mapeamos a mostrar/onCerrar
+  const propMostrar = mostrar ?? show;
+  const propOnCerrar = onCerrar ?? onHide;
+
+  if (import.meta.env.DEV && (show !== undefined || onHide !== undefined)) {
+    console.warn(
+      'ProductoPersonalizarModal: props "show" y "onHide" están deprecadas. Usá "mostrar" y "onCerrar".'
+    );
+  }
+
   const { agregarAlCarrito, items, actualizarPersonalizacion } = useCarrito();
   const { parametros } = useParametros();
   const { notificar } = useNotificaciones();
-
-  // Compatibilidad temporal con props deprecated (show/onHide)
-  // En ProductoCard.jsx se usan show/onHide; aquí mapeamos a mostrar/onCerrar
-  // No hacemos nada extra porque el componente ya recibe mostrar/onCerrar
 
   // Verificar si hay items en el carrito para este producto con opciones eliminadas/desactivadas.
   // En modo edición se excluye la línea que se está corrigiendo.
@@ -48,10 +64,10 @@ const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion, ite
   const categoriaIdValida =
     categoriaId !== null && categoriaId !== undefined && Number.isFinite(categoriaId);
   const elementosQuery = usePersonalizacionProducto(producto?.id ?? null, {
-    enabled: Boolean(producto) && mostrar,
+    enabled: Boolean(producto) && propMostrar,
   });
   const plantillasQuery = usePlantillasPersonalizacionQuery(categoriaId, {
-    enabled: categoriaIdValida && mostrar,
+    enabled: categoriaIdValida && propMostrar,
   });
 
   const elementos = elementosQuery.data || [];
@@ -218,7 +234,7 @@ const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion, ite
 
   const handleClose = () => {
     reset();
-    onCerrar();
+    propOnCerrar?.();
   };
 
   const cambiar = (grupo, key, delta, minimo, maximo) => {
@@ -344,7 +360,7 @@ const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion, ite
       ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0, max: op.maximo })),
       ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0, max: op.maximo })),
       ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.id] || 0, max: op.maximo })),
-    ].filter(({ op, valor, max }) => max !== undefined && max !== null && valor > max);
+    ].filter((item) => item.max !== undefined && item.max !== null && item.valor > item.max);
 
     if (incumplidosMax.length > 0) {
       const { op, valor, max } = incumplidosMax[0];
@@ -402,20 +418,20 @@ const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion, ite
 
   if (!tienePersonalizacion) {
     return (
-      <ModalBase
-        mostrar={mostrar}
-        onCerrar={handleClose}
-        titulo={producto.nombre}
-        centered
-        footer={
-          <>
-            <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
-            <Button className="btn-primary" onClick={handleAgregar}>
-              {itemEditando ? 'Guardar cambios' : 'Agregar'} — {formatPrice(producto.precio * unidades)}
-            </Button>
-          </>
-        }
-      >
+<ModalBase
+      mostrar={propMostrar}
+      onCerrar={handleClose}
+      titulo={producto.nombre}
+      centered
+      footer={
+        <>
+          <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+          <Button className="btn-primary" onClick={handleAgregar}>
+            {itemEditando ? 'Guardar cambios' : 'Agregar'} — {formatPrice(producto.precio * unidades)}
+          </Button>
+        </>
+      }
+    >
         <div className="text-center p-3">
           <img
             src={resolverImagen(producto.imagen)}
@@ -474,7 +490,7 @@ const ProductoPersonalizarModal = ({ mostrar, onCerrar, producto, promocion, ite
 
   return (
     <ModalBase
-      mostrar={mostrar}
+      mostrar={propMostrar}
       onCerrar={handleClose}
       centered
       fullscreen="sm-down"
@@ -748,6 +764,9 @@ ProductoPersonalizarModal.propTypes = {
     personalizacion: PropTypes.object,
     producto: PropTypes.object,
   }),
+  // Deprecated (compatibilidad temporal)
+  show: PropTypes.bool,
+  onHide: PropTypes.func,
 };
 
 ProductoPersonalizarModal.defaultProps = {
