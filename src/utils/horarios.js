@@ -97,22 +97,15 @@ export const crearHorarioPorDefecto = () =>
     franjas: [{ apertura: '10:00', cierre: '23:00' }],
   }));
 
-/** ¿La franja termina al día siguiente? (cierre <= apertura). */
-export const cruzaMedianoche = (franja) => {
-  const apertura = aMinutos(franja?.apertura);
-  const cierre = aMinutos(franja?.cierre);
-  if (apertura === null || cierre === null) return false;
-  return cierre <= apertura;
-};
-
-/** Duración en minutos de una franja (contempla el cruce de medianoche). */
+/**
+ * Duración en minutos de una franja. El cierre tiene que ser posterior a la
+ * apertura: la franja no puede pasar al día siguiente.
+ */
 const duracionMinutos = (franja) => {
   const apertura = aMinutos(franja?.apertura);
   const cierre = aMinutos(franja?.cierre);
   if (apertura === null || cierre === null) return 0;
-  return cierre <= apertura
-    ? MINUTOS_DIA - apertura + cierre
-    : cierre - apertura;
+  return Math.max(0, cierre - apertura);
 };
 
 /**
@@ -147,6 +140,12 @@ export const validarHorarios = (horarios, margenMinutos = 0) => {
       }
       if (apertura === cierre) {
         mensaje('No puede abrir y cerrar a la misma hora.');
+        return;
+      }
+      if (cierre < apertura) {
+        mensaje(
+          'El cierre tiene que ser posterior a la apertura y dentro del mismo día: un horario no puede pasar al día siguiente.',
+        );
         return;
       }
       const clave = `${franja.apertura}|${franja.cierre}`;

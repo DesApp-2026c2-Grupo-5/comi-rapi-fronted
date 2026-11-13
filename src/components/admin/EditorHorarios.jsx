@@ -3,8 +3,8 @@
  * Contenido: Componente EditorHorarios con una fila por día de la semana
  *            (lunes a domingo), una o más franjas por día, alta/baja de franjas,
  *            copia del horario de un día al resto y avisos en espejo del
- *            backend (hora inválida, franja repetida, franja más corta que el
- *            margen de cierre).
+ *            backend (hora inválida, franja repetida, franja que pasa al día
+ *            siguiente, franja más corta que el margen de cierre).
  * Dependencias: react-bootstrap (Form, Button, Badge), react-icons/fa,
  *               utils/horarios.js.
  * Uso: <EditorHorarios horarios={horarios} onChange={setHorarios} margenMinutos={30} />
@@ -20,7 +20,6 @@ import { FaPlus, FaTrashAlt, FaCopy } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import {
   corteDePedidos,
-  cruzaMedianoche,
   formatearHorarios,
   validarHorarios,
 } from '../../utils/horarios';
@@ -87,6 +86,11 @@ const EditorHorarios = ({
         </span>
       </div>
 
+      <p className="text-muted small mb-2">
+        Cada franja empieza y termina el mismo día: el cierre no puede pasar la
+        medianoche.
+      </p>
+
       {horarios.map((dia) => {
         const erroresDia = erroresDeDia(dia.diaSemana);
         return (
@@ -130,10 +134,8 @@ const EditorHorarios = ({
             ) : (
               dia.franjas.map((franja, indice) => {
                 const corte = corteDePedidos(franja.cierre, margenMinutos);
-                const cruza = cruzaMedianoche(franja);
                 return (
                   <div
-                    /* eslint-disable-next-line react/no-array-index-key */
                     key={indice}
                     className="d-flex flex-wrap align-items-center gap-2 mb-1"
                   >
@@ -162,11 +164,6 @@ const EditorHorarios = ({
                       <span className="small text-muted">
                         Pedidos hasta {corte}
                       </span>
-                    ) : null}
-                    {cruza ? (
-                      <Badge bg="light" text="dark">
-                        Cruza medianoche
-                      </Badge>
                     ) : null}
                     <Button
                       type="button"

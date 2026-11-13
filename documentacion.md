@@ -107,7 +107,7 @@ src/
       ListaProductos.jsx       Tabla de productos con acciones
       FormularioProducto.jsx   Formulario de producto
       FormularioSucursal.jsx   Formulario de sucursal (incluye el editor de horarios)
-      EditorHorarios.jsx       Editor de franjas por día (siete días, cruce de medianoche)
+      EditorHorarios.jsx       Editor de franjas por día (siete días, cierre dentro del mismo día)
       PedidosPendientes.jsx    Stepper de estados de pedido (admin)
       PedidosPendientes.css
   context/
@@ -331,7 +331,7 @@ PedidoProvider > DireccionProvider > (Navbar + AppRoutes + Footer)
 | `helpers.js` | `delay(ms)`, `generateId()`, `filterByProperty(array, prop, valor)` |
 | `formatters.js` | `formatPrice` (ARS es-AR), `formatDate` (fecha larga es-AR) |
 | `validators.js` | `validateEmail`, `validatePassword` (>= 6), `validateProducto` |
-| `horarios.js` | `DIAS_SEMANA`, `normalizarHorarios`, `crearHorarioPorDefecto`, `cruzaMedianoche`, `corteDePedidos`, `validarHorarios`, `formatearHorarios`, `formatearProximaApertura`, `formatearCuentaRegresiva` |
+| `horarios.js` | `DIAS_SEMANA`, `normalizarHorarios`, `crearHorarioPorDefecto`, `corteDePedidos`, `validarHorarios`, `formatearHorarios`, `formatearProximaApertura`, `formatearCuentaRegresiva` |
 
 ---
 
@@ -402,7 +402,7 @@ Cada sucursal tiene franjas por día (`HorarioSucursal` en el backend). El front
 **Reglas que el editor replica (espejo, no autoridad):**
 
 - `diaSemana` 1 = lunes … 7 = domingo; varias franjas por día y solapamientos permitidos.
-- `apertura === cierre` es inválido; `cierre <= apertura` cruza la medianoche (ej. 19:00–02:00).
+- `apertura === cierre` es inválido y `cierre < apertura` también: cada franja tiene que cerrar dentro del mismo día (19:00–02:00 se rechaza porque pasaría al martes).
 - Un día sin franjas está cerrado; para cerrar todo el local se desactiva la sucursal.
 - Una franja más corta que el margen de cierre no deja ventana de pedidos: el formulario lo advierte.
 
