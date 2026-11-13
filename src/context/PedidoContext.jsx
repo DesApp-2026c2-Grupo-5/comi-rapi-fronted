@@ -239,6 +239,12 @@ export const PedidoProvider = ({ children }) => {
   /**
    * Al recibir pedido_actualizado por socket, solo se trae ese pedido por REST
    * y se actualiza la caché de forma quirúrgica, sin re-fetch de toda la lista.
+   *
+   * Si el aviso se refiere a un pedido que la caché todavía no conoce (el
+   * cliente que creó el pedido es otro, o la lista se leyó antes de que
+   * existiera), no alcanza con reemplazar: hay que insertarlo. Antes se hacía
+   * sólo `map`, que sobre una lista sin ese id no cambiaba nada, y el pedido
+   * recién creado quedaba afuera hasta que se recargaba la página.
    * @param {number} pedidoId
    */
   const actualizarPedidoCache = useCallback(
@@ -246,16 +252,28 @@ export const PedidoProvider = ({ children }) => {
       if (!haySesion) return;
       try {
         const res = await pedidosApi.obtenerPedidoPorId(pedidoId);
-        if (res.success && res.data) {
-          queryClient.setQueryData(CLAVE_PEDIDOS, (prev) =>
-            Array.isArray(prev)
-              ? prev.map((p) => (p.id === pedidoId ? res.data : p))
-              : prev
-          );
-          setPedidoActual((current) =>
-            current && current.id === pedidoId ? res.data : current
-          );
-        }
+        if (!res.success || !res.data) return;
+        const actualizado =
+          res.data.id === undefined || res.data.id === null
+            ? { ...res.data, id: pedidoId }
+            : res.data;
+        queryClient.setQueryData(CLAVE_PEDIDOS, (prev) => {
+          if (!Array.isArray(prev)) return prev;
+          const indice = prev.findIndex((p) => p.id === actualizado.id);
+          // Ya estaba en la lista: se reemplaza en el mismo lugar para no
+          // alterar el orden (la lista viene ordenada por fecha desde el backend).
+          if (indice >= 0) {
+            const nueva = [...prev];
+            nueva[indice] = actualizado;
+            return nueva;
+          }
+          // Pedido nuevo para esta sesión: entra al principio, igual que al
+          // crearlo desde esta misma pantalla.
+          return [actualizado, ...prev];
+        });
+        setPedidoActual((current) =>
+          current && current.id === actualizado.id ? actualizado : current
+        );
       } catch {
         // silencioso: si falla, la caché se mantiene como estaba
       }
