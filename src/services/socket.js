@@ -107,15 +107,12 @@ export const esReconexionIntencional = () => reconexionIntencional;
 export const conectarSocket = () => {
   if (socket) {
     if (socket.connected) {
-      console.log('[DIAG] Socket: reutilizando instancia existente', { connected: true, id: socket.id });
       return socket;
     }
     // Instancia existe pero está desconectada: forzar reconexión con cookie actual
-    console.log('[DIAG] Socket: instancia desconectada, forzando reconexión...', { id: socket.id });
     socket.connect();
     return socket;
   }
-  console.log('[DIAG] Socket: creando nueva conexión...');
   socket = io(ORIGEN_SOCKET, {
     withCredentials: true,
     transports: ['websocket', 'polling'],
@@ -123,16 +120,6 @@ export const conectarSocket = () => {
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-  });
-
-  socket.on('connect', () => {
-    console.log('[DIAG] Socket: conectado', { id: socket.id });
-  });
-  socket.on('disconnect', (reason) => {
-    console.log('[DIAG] Socket: desconectado', { reason });
-  });
-  socket.on('connect_error', (error) => {
-    console.log('[DIAG] Socket: error de conexión', { message: error.message });
   });
 
   return socket;
@@ -147,7 +134,6 @@ export const conectarSocket = () => {
  */
 export const forzarReconexion = () => {
   if (!socket) {
-    console.log('[DIAG] forzarReconexion: no hay instancia, creando nueva...');
     return conectarSocket();
   }
   reconexionIntencional = true;
@@ -161,11 +147,9 @@ export const forzarReconexion = () => {
   socket.once('connect', limpiarMarca);
   socket.once('connect_error', limpiarMarca);
   if (socket.connected) {
-    console.log('[DIAG] forzarReconexion: desconectando para renegociar handshake...');
     socket.disconnect();
   }
   // socket.connect() usa la cookie actual (ya actualizada por refrescarUsuario)
-  console.log('[DIAG] forzarReconexion: conectando con nueva sesión...');
   socket.connect();
   return socket;
 };
@@ -173,7 +157,6 @@ export const forzarReconexion = () => {
 /** Cierra la conexión y descarta la instancia (solo para logout). */
 export const desconectarSocket = () => {
   if (!socket) return;
-  console.log('[DIAG] desconectarSocket: cerrando instancia singleton (logout)');
   socket.removeAllListeners(); // Limpio total al cerrar sesión
   socket.disconnect();
   socket = null;
