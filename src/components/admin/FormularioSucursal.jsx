@@ -223,8 +223,7 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             </Button>
             <Button
               variant="primary"
-              type={direccionVerificada ? 'button' : 'submit'}
-              onClick={direccionVerificada ? () => setPaso(2) : undefined}
+              type="submit"
               disabled={direccionApi.cargandoPreview}
             >
               {direccionApi.cargandoPreview ? (
