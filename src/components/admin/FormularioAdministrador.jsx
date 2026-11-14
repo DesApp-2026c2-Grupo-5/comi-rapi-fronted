@@ -41,7 +41,9 @@ const formularioDesde = (administrador) =>
     : { ...FORMULARIO_VACIO };
 
 const FormularioAdministrador = ({ administrador, onGuardar }) => {
-  const esMobile = useMediaQuery('(max-width: 575.98px)');
+  // Mismo corte que la barra inferior del shell (NavInferior, <992px): cuando
+  // se navega como móvil, el formulario también usa pasos.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
   const { sucursales = [], obtenerSucursales } = useSucursal();
   const [formulario, setFormulario] = useState(() =>
     formularioDesde(administrador)

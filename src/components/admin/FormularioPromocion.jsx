@@ -61,7 +61,9 @@ const nombreCategoria = (producto) => {
 const FormularioPromocion = ({ promocion, productoIdsIniciales, onGuardar }) => {
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
-  const esMobile = useMediaQuery('(max-width: 575.98px)');
+  // Mismo corte que la barra inferior del shell (NavInferior, <992px): cuando
+  // se navega como móvil, el formulario también usa pasos.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
   const porcentajeMaximo = parametros.porcentajeMaximoDescuento;
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');

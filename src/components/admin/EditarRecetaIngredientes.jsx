@@ -6,7 +6,10 @@ import { useIngredientesQuery } from '../../hooks/queries';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
 const EditarRecetaIngredientes = ({ receta = [], onChange }) => {
-  const esMobile = useMediaQuery('(max-width: 575.98px)');
+  // Tarjetas en vez de tabla cuando el formulario se navega como móvil
+  // (mismo corte que NavInferior): la tabla de 5 columnas queda apretada en
+  // pantallas angostas.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
   const [ingredientes, setIngredientes] = useState([]);
   const { data: ingredientesCache = [], isPending: cargandoCache } =
     useIngredientesQuery();

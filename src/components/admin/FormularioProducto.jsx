@@ -57,7 +57,9 @@ const parsearIngredientes = (texto) => {
 const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
-  const esMobile = useMediaQuery('(max-width: 575.98px)');
+  // Mismo corte que la barra inferior del shell (NavInferior, <992px): cuando
+  // se navega como móvil, el formulario también usa pasos y tarjetas.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');

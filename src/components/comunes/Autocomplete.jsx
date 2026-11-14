@@ -109,13 +109,17 @@ const Autocomplete = ({
         autoComplete="off"
       />
       {/* onMouseDown preventDefault evita que el click pierda el foco antes
-          de confirmar la selección (carrera blur→click). */}
+          de confirmar la selección (carrera blur→click). `type="button"`:
+          react-bootstrap renderiza `action` como <button>, y dentro de un
+          <form> el tipo por defecto es submit; elegir una sugerencia enviaba
+          el formulario (previsualización/guardado prematuros). */}
       {abierto && filtradas.length > 0 && (
         <ListGroup className="mt-1" style={{ maxHeight: 200, overflowY: 'auto' }}>
           {filtradas.map((nombre) => (
             <ListGroup.Item
               key={nombre}
               action
+              type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => seleccionar(nombre)}
             >

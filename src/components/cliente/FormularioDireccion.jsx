@@ -420,6 +420,7 @@ const FormularioDireccion = ({
                     <ListGroup.Item
                       key={sugerencia.id}
                       action
+                      type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() =>
                         direccionApi.seleccionarSugerencia(sugerencia.nombre)

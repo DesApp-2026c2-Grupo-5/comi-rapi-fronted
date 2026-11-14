@@ -53,7 +53,9 @@ const PASOS_SUCURSAL = [
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
   const { parametros } = useParametros();
-  const esMobile = useMediaQuery('(max-width: 575.98px)');
+  // Mismo corte que la barra inferior del shell (NavInferior, <992px): cuando
+  // se navega como móvil, el formulario también usa pasos.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
 
   const [nombre, setNombre] = useState('');
   const [referencia, setReferencia] = useState('');
@@ -381,6 +383,7 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
                           <ListGroup.Item
                             key={sugerencia.id}
                             action
+                            type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() =>
                               direccionApi.seleccionarSugerencia(
