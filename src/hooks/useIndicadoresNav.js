@@ -6,7 +6,7 @@
  *            respuesta y los pulsos de aviso.
  * Dependencias: React (useState, useEffect), useCarrito, usePedidos, useAuth,
  *               api/quejas, services/socket, constants.
- * Uso: const { productosDistintos, pedidosActivos, quejasPendientes } =
+ * Uso: const { totalItems, pedidosActivos, quejasPendientes } =
  *        useIndicadoresNav();
  *
  * Existe como hook porque los mismos números se muestran en la barra superior
@@ -44,7 +44,7 @@ import {
 } from '../utils/constants';
 
 const useIndicadoresNav = () => {
-  const { productosDistintos } = useCarrito();
+  const { totalItems, productosDistintos } = useCarrito();
   const { pedidos, senalPedido } = usePedidos();
   const { user, hydrated } = useAuth();
   const queryClient = useQueryClient();
@@ -75,13 +75,14 @@ const useIndicadoresNav = () => {
 
   const quejasPendientes = quejasData?.meta?.total || 0;
 
-  // Pulso del badge cada vez que cambia la cantidad de productos distintos.
+  // Pulso del badge cada vez que cambia la cantidad de unidades del carrito
+  // (el número que muestran los badges).
   useEffect(() => {
-    if (productosDistintos === 0) return undefined;
+    if (totalItems === 0) return undefined;
     setPulsoCarrito(true);
     const timeout = setTimeout(() => setPulsoCarrito(false), 800);
     return () => clearTimeout(timeout);
-  }, [productosDistintos]);
+  }, [totalItems]);
 
   // Pulso del ícono de pedidos cada vez que se confirma un pago.
   useEffect(() => {
@@ -148,6 +149,7 @@ const useIndicadoresNav = () => {
   }, [quejasPendientes]);
 
   return {
+    totalItems,
     productosDistintos,
     pedidosActivos,
     quejasPendientes,

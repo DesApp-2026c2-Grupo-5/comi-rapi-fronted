@@ -236,7 +236,7 @@ const Navbar = () => {
   // inferior muestra los mismos números: si cada componente los calculara por su
   // cuenta, dejarían de coincidir en algún momento.
   const {
-    productosDistintos,
+    totalItems,
     pedidosActivos,
     quejasPendientes,
     pulsoCarrito,
@@ -358,13 +358,13 @@ const Navbar = () => {
   // de pantalla va aparte, porque un aria-label sobre un <span> sin rol no se
   // expone de forma fiable.
   const renderBadge = (clave) => {
-    if (clave === 'carrito' && productosDistintos > 0) {
+    if (clave === 'carrito' && totalItems > 0) {
       return (
         <span className={`carrito-badge${pulsoCarrito ? ' carrito-badge-pulso' : ''}`}>
-          <span aria-hidden="true">{productosDistintos}</span>
+          <span aria-hidden="true">{totalItems}</span>
           <span className="visually-hidden">
-            {`${productosDistintos} ${
-              productosDistintos === 1 ? 'producto' : 'productos'
+            {`${totalItems} ${
+              totalItems === 1 ? 'producto' : 'productos'
             } en el carrito`}
           </span>
         </span>
