@@ -138,6 +138,7 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
       queryKeys.public.productos({ incluirPersonalizacion: true }),
       queryKeys.public.productos({ incluirResenas: true }),
       queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }),
+      queryKeys.public.productos({ orden: 'mas-vendidos' }),
       queryKeys.public.masVendidos,
     ];
     for (const clave of clavesProductos) {
@@ -164,6 +165,10 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
     actualizarLista(queryClient, queryKeys.public.productos({ incluirPersonalizacion: true }), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirResenas: true }), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }), data, id, accion, ordenarPorNombre);
+    // Catálogo ordenado por más vendidos: se agrega/reemplaza sin reordenar por
+    // nombre, para no romper el orden por ventas (un producto nuevo queda al
+    // final, que es donde corresponde con 0 ventas).
+    actualizarLista(queryClient, queryKeys.public.productos({ orden: 'mas-vendidos' }), data, id, accion);
     // Más vendidos
     actualizarLista(queryClient, queryKeys.public.masVendidos, data, id, accion);
 

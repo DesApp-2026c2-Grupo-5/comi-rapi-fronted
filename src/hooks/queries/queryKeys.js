@@ -11,14 +11,21 @@
  * para que la clave sea estable entre renders y fácil de invalidar por prefijo.
  */
 
-const claveProductos = ({ incluirPersonalizacion = false, incluirResenas = false } = {}) => {
+const claveProductos = ({
+  incluirPersonalizacion = false,
+  incluirResenas = false,
+  orden = '',
+} = {}) => {
   const incluses = [
     incluirPersonalizacion ? 'personalizacion' : null,
     incluirResenas ? 'resenas' : null,
   ]
     .filter(Boolean)
     .join('+');
-  return incluses || 'base';
+  const base = incluses || 'base';
+  // El orden forma parte de la clave: la lista ordenada por más vendidos es una
+  // lectura distinta de la base (por nombre) y no deben compartir caché.
+  return orden ? `${base}~${orden}` : base;
 };
 
 const clavePromociones = ({ incluirInactivas = false, incluirProductos = false } = {}) =>
