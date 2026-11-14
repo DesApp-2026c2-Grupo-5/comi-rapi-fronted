@@ -157,14 +157,17 @@ const EditarProducto = () => {
       for (const clave of variantesLista) {
         const lista = queryClient.getQueryData(clave);
         if (Array.isArray(lista)) {
-          if (id) {
-            // Edición: reemplazar en la lista
-            const idx = lista.findIndex((p) => String(p.id) === String(productoId));
-            if (idx >= 0) {
-              const nuevaLista = [...lista];
-              nuevaLista[idx] = productoActualizado;
-              queryClient.setQueryData(clave, nuevaLista);
-            }
+          // Se reemplaza si el producto ya está (edición, o el aviso de tiempo
+          // real —catalogo_actualizado— lo insertó antes de que llegara esta
+          // respuesta) y se agrega sólo si falta. Agregar a ciegas duplicaba la
+          // fila cuando el socket ganaba la carrera.
+          const idx = lista.findIndex(
+            (p) => String(p.id) === String(productoId)
+          );
+          if (idx >= 0) {
+            const nuevaLista = [...lista];
+            nuevaLista[idx] = productoActualizado;
+            queryClient.setQueryData(clave, nuevaLista);
           } else {
             // Creación: agregar ordenado por nombre
             const nuevaLista = [...lista, productoActualizado].sort(ordenarPorNombre);
