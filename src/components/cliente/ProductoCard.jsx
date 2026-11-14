@@ -8,7 +8,7 @@ import { resolverImagen } from '../../utils/imagenes';
 import ProductoPersonalizarModal from './ProductoPersonalizarModal';
 import './ProductoCard.css';
 
-const ProductoCard = ({ producto, rank, promocion }) => {
+const ProductoCard = ({ producto, rank, promocion, variante }) => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   // Click en imagen o nombre → página de detalle. El botón Añadir mantiene
@@ -45,69 +45,85 @@ const ProductoCard = ({ producto, rank, promocion }) => {
 
   return (
     <>
-      <Card className="producto-card h-100">
-        {mostrarRank && (
-          <div className={`producto-rank producto-rank--${rank}`}>
-            {getRankIcon()}
-          </div>
-        )}
-        {badgePromocion && (
-          <span className="producto-promocion-badge" aria-label={`Promoción ${badgePromocion}`}>
-            {badgePromocion}
-          </span>
-        )}
-        {/* `alt=""` a propósito: el nombre del producto ya está en el título de
-            la tarjeta, y repetirlo hace que el lector de pantalla lo lea dos
-            veces. La foto es decorativa dentro de este contexto. */}
-        <Card.Img
-          variant="top"
-          src={resolverImagen(producto.imagen)}
-          alt=""
-          width={400}
-          height={280}
-          loading="lazy"
-          decoding="async"
-          className="producto-card-imagen"
-          style={{ cursor: 'pointer' }}
-          onClick={irDetalle}
-        />
-        <Card.Body className="d-flex flex-column p-3">
-          {/* Card.Title por defecto renderiza un <div>; se fuerza heading para
-              que el nombre del producto entre en la navegación por encabezados. */}
-          <Card.Title as="h3" className="producto-nombre" style={{ cursor: 'pointer' }} onClick={irDetalle}>
-            {producto.nombre}
-            {componentes.length > 0 && (
-              <Badge bg="info" className="ms-2">Combo</Badge>
-            )}
-          </Card.Title>
-          <Card.Text className="text-muted flex-grow-1 producto-descripcion">{producto.descripcion}</Card.Text>
-          {componentes.length > 0 && (
-            <ul className="producto-componentes list-unstyled text-muted small mb-2">
-              {componentes.map((componente) => (
-                <li key={componente.productoId}>
-                  {componente.cantidad} × {componente.nombre || `producto ${componente.productoId}`}
-                </li>
-              ))}
-            </ul>
-          )}
-          {precioConDescuento !== null ? (
-            <div className="d-flex flex-column">
-              <Card.Text className="text-muted text-decoration-line-through producto-precio-tachado mb-0">
-                {formatPrice(producto.precio)}
-              </Card.Text>
-              <Card.Text className="fw-bold producto-precio">
-                {formatPrice(precioConDescuento)}
-              </Card.Text>
+      {/* Contenedor del layout: habilita las container queries (el horizontal se
+          decide por el ancho real de la tarjeta) y conserva la altura de fila
+          (`h-100` del Card). El modal queda fuera, para no quedar atrapado en el
+          contexto de contención. */}
+      <div className="producto-card-contenedor">
+        <Card
+          className={`producto-card h-100${
+            variante === 'horizontal' ? ' producto-card--horizontal' : ''
+          }`}
+        >
+          {mostrarRank && (
+            <div className={`producto-rank producto-rank--${rank}`}>
+              {getRankIcon()}
             </div>
-          ) : (
-            <Card.Text className="fw-bold producto-precio">{formatPrice(producto.precio)}</Card.Text>
           )}
-          <Button className="producto-boton w-100" onClick={() => setShowModal(true)}>
-            <FaCartPlus aria-hidden="true" />
-            Añadir
-          </Button>
-        </Card.Body>
-      </Card>
+          {badgePromocion && (
+            <span className="producto-promocion-badge" aria-label={`Promoción ${badgePromocion}`}>
+              {badgePromocion}
+            </span>
+          )}
+          {/* `alt=""` a propósito: el nombre del producto ya está en el título de
+              la tarjeta, y repetirlo hace que el lector de pantalla lo lea dos
+              veces. La foto es decorativa dentro de este contexto. */}
+          <Card.Img
+            variant="top"
+            src={resolverImagen(producto.imagen)}
+            alt=""
+            width={400}
+            height={280}
+            loading="lazy"
+            decoding="async"
+            className="producto-card-imagen"
+            style={{ cursor: 'pointer' }}
+            onClick={irDetalle}
+          />
+          <Card.Body className="d-flex flex-column producto-cuerpo">
+            {/* Card.Title por defecto renderiza un <div>; se fuerza heading para
+                que el nombre del producto entre en la navegación por encabezados. */}
+            <Card.Title as="h3" className="producto-nombre" style={{ cursor: 'pointer' }} onClick={irDetalle}>
+              {producto.nombre}
+              {componentes.length > 0 && (
+                <Badge bg="info" className="ms-2">Combo</Badge>
+              )}
+            </Card.Title>
+            <Card.Text className="text-muted flex-grow-1 producto-descripcion">{producto.descripcion}</Card.Text>
+            {componentes.length > 0 && (
+              <ul className="producto-componentes list-unstyled text-muted small mb-2">
+                {componentes.map((componente) => (
+                  <li key={componente.productoId}>
+                    {componente.cantidad} × {componente.nombre || `producto ${componente.productoId}`}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {precioConDescuento !== null ? (
+              <div className="d-flex flex-column">
+                <Card.Text className="text-muted text-decoration-line-through producto-precio-tachado mb-0">
+                  {formatPrice(producto.precio)}
+                </Card.Text>
+                <Card.Text className="fw-bold producto-precio">
+                  {formatPrice(precioConDescuento)}
+                </Card.Text>
+              </div>
+            ) : (
+              <Card.Text className="fw-bold producto-precio">{formatPrice(producto.precio)}</Card.Text>
+            )}
+            {/* El nombre accesible va en aria-label: en el modo horizontal el
+                texto se oculta y el botón queda sólo con el icono. */}
+            <Button
+              className="producto-boton"
+              onClick={() => setShowModal(true)}
+              aria-label={`Añadir ${producto.nombre} al carrito`}
+            >
+              <FaCartPlus aria-hidden="true" />
+              <span className="producto-boton-texto">Añadir</span>
+            </Button>
+          </Card.Body>
+        </Card>
+      </div>
       <ProductoPersonalizarModal
         mostrar={showModal}
         onCerrar={() => setShowModal(false)}
@@ -143,4 +159,7 @@ ProductoCard.propTypes = {
     tipo: PropTypes.string.isRequired,
     valor: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   }),
+  // 'horizontal' apila la imagen a la izquierda y los datos a la derecha en
+  // pantallas chicas (catálogo mobile). Sin la prop, la tarjeta es vertical.
+  variante: PropTypes.oneOf(['horizontal']),
 };

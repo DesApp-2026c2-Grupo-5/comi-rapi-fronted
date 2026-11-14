@@ -47,9 +47,154 @@
   outline-offset: 2px;
 }
 
+.producto-card-contenedor {
+  height: 100%;
+  /* Habilita las container queries: el layout horizontal se decide por el ancho
+     real de la tarjeta, no por el viewport. `height: 100%` conserva la altura de
+     fila (el Card usa `h-100`). */
+  container-type: inline-size;
+}
+
 .producto-card-imagen {
   height: 180px;
   object-fit: cover;
+}
+
+/* El padding del cuerpo se declara acá (en vez de la utilidad `p-3` de
+   Bootstrap, que es `!important`) para poder reservar espacio al botón circular
+   en el modo horizontal. */
+.producto-card .producto-cuerpo {
+  padding: 1rem;
+}
+
+/* ============ Variante horizontal ============ */
+/* Se aplica: por debajo de 576px siempre; entre 576px y 991px sólo si la
+   tarjeta mide menos de ~360px (container query, ancho real); desde 992px nunca,
+   para conservar el diseño vertical del escritorio. La imagen y el nombre siguen
+   navegando al detalle (el JSX no cambia). */
+@media (max-width: 575.98px) {
+  /* Doble clase a propósito: le gana al `flex-direction: column` de `.card`
+     de Bootstrap, que tiene la misma especificidad y puede quedar después en
+     el bundle. */
+  .producto-card.producto-card--horizontal {
+    flex-direction: row;
+  }
+
+  .producto-card--horizontal .producto-card-imagen {
+    width: 38%;
+    min-width: 6.5rem;
+    max-width: 12rem;
+    height: auto;
+    align-self: stretch;
+    object-fit: cover;
+    border-radius: 0;
+    /* Sin encogerse: el ancho de la imagen manda (38%) y el cuerpo, que puede
+       bajar a 0 con `min-width: 0`, absorbe la diferencia. */
+    flex-shrink: 0;
+  }
+
+  .producto-card--horizontal .producto-cuerpo {
+    min-width: 0;
+    /* Reserva espacio para el botón circular (esquina inferior derecha). */
+    padding: 1rem 2.9rem 3rem 1rem;
+  }
+
+  .producto-card--horizontal .producto-nombre {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .producto-card--horizontal .producto-descripcion {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .producto-card--horizontal .producto-boton {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1rem;
+    letter-spacing: 0;
+  }
+
+  .producto-card--horizontal .producto-boton-texto {
+    display: none;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+  @container (max-width: 360px) {
+    /* Doble clase a propósito: le gana al `flex-direction: column` de `.card`
+       de Bootstrap, que tiene la misma especificidad y puede quedar después en
+       el bundle. */
+    .producto-card.producto-card--horizontal {
+      flex-direction: row;
+    }
+
+    .producto-card--horizontal .producto-card-imagen {
+      width: 38%;
+      min-width: 6.5rem;
+      max-width: 12rem;
+      height: auto;
+      align-self: stretch;
+      object-fit: cover;
+      border-radius: 0;
+      /* Sin encogerse: el ancho de la imagen manda (38%) y el cuerpo, que puede
+         bajar a 0 con `min-width: 0`, absorbe la diferencia. */
+      flex-shrink: 0;
+    }
+
+    .producto-card--horizontal .producto-cuerpo {
+      min-width: 0;
+      padding: 1rem 2.9rem 3rem 1rem;
+    }
+
+    .producto-card--horizontal .producto-nombre {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .producto-card--horizontal .producto-descripcion {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .producto-card--horizontal .producto-boton {
+      position: absolute;
+      right: 0.6rem;
+      bottom: 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .producto-card--horizontal .producto-boton-texto {
+      display: none;
+    }
+  }
 }
 
 .producto-nombre {
@@ -71,6 +216,7 @@
 }
 
 .producto-boton {
+  width: 100%;
   background-color: var(--color-primary);
   border: none;
   border-radius: 50px;
