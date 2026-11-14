@@ -1,30 +1,34 @@
 /**
  * Propósito: Página de catálogo con filtro por categoría y grid de productos.
  *            Accesible sin sesión: mirar el catálogo no pide cuenta.
- * Contenido: Componente Catalogo con título grande, filtros tipo pill, aviso
- *            para el invitado y grid responsive de ProductoCard.
- * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert, Form),
- *               api/productos.js, api/categorias.js, ProductoCard, Catalogo.css.
+ * Contenido: Componente Catalogo con título grande, buscador, filtros (sidebar
+ *            en desktop, hojas inferiores en mobile), aviso para el invitado y
+ *            grid responsive de ProductoCard.
+ * Dependencias: react-bootstrap (Container, Button, Row, Col, Alert, Form,
+ *               Offcanvas), api/productos.js, api/categorias.js, ProductoCard,
+ *               CatalogoSidebar, MiniCarrito, Catalogo.css.
  * Uso: Ruta "/cliente/catalogo" → <Catalogo />
  *
  * CAMBIOS REALIZADOS:
  *  - Título grande "Nuestro Catálogo" en tipografía bold oscura.
- *  - Filtros de categorías en forma de pills (Hamburguesas, Pizzas, Combos, Papas, Bebidas, Postres).
- *  - Las categorías de la home llegan por query param (?categoria=...) y se aplican al instante.
- *  - Al elegir una pill también se actualiza el query param (el filtro queda en la URL).
- *  - Grid responsive (3 columnas en md, 4 en lg).
- *  - Cards con el estilo visual de la home de Comi-Rapi (ver ProductoCard).
- *  - Búsqueda por nombre y rango de precio, también persistidos en la URL.
- *  - Validación de rango de precio: mínimo no puede ser negativo ni mayor al máximo y viceversa.
+ *  - Buscador por nombre junto al mini-carrito (MiniCarrito): el botón con
+ *    badge (totalItems) abre un panel anclado con el resumen; no navega solo.
+ *  - Desktop (lg+): barra lateral de filtros (CatalogoSidebar) + barra de
+ *    resultados con el selector de orden.
+ *  - Mobile (<lg): dos botones del mismo ancho (Ordenar / Filtrar) que abren
+ *    hojas inferiores; las tarjetas pasan a formato horizontal.
+ *  - Los filtros viven en la URL (?categoria, ?busqueda, ?precioMin,
+ *    ?precioMax, ?promocion, ?ordenPrecio) y se aplican al instante.
  *  - Aviso para el visitante sin sesión: el carrito se arma sin cuenta, pero
  *    confirmar el pedido no, así que se lo dice acá y no recién al final del
  *    proceso, cuando ya eligió todo.
  *
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { Container, Button, Row, Col, Alert, Form } from 'react-bootstrap';
+import { Container, Button, Row, Col, Alert, Form, Offcanvas } from 'react-bootstrap';
+import { FaSortAmountDown, FaFilter, FaCheck } from 'react-icons/fa';
 import {
   useCategorias,
   useProductos,
@@ -35,18 +39,30 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { rutaActual } from '../../utils/rutas';
 import ProductoCard from '../../components/cliente/ProductoCard';
-import RangoPrecio from '../../components/cliente/RangoPrecio';
+import CatalogoSidebar from '../../components/cliente/CatalogoSidebar';
+import MiniCarrito from '../../components/cliente/MiniCarrito';
 import AvisoSucursalesCerradas from '../../components/comunes/AvisoSucursalesCerradas';
 import { SkeletonGrillaProductos } from '../../components/comunes/Skeleton';
 import './Catalogo.css';
 
+// Opciones del selector de orden. `''` (ausente en la URL) es el orden
+// recomendado: el que devuelve la API por más vendidos del día.
+const OPCIONES_ORDEN = [
+  { valor: '', etiqueta: 'Recomendados' },
+  { valor: 'asc', etiqueta: 'Precio: menor a mayor' },
+  { valor: 'desc', etiqueta: 'Precio: mayor a menor' },
+];
+
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const productosQuery = useProductos();
+  const productosQuery = useProductos({ orden: 'mas-vendidos' });
   const categoriasQuery = useCategorias();
   const promocionesQuery = usePromociones({ incluirProductos: true });
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  // Hoja inferior mobile abierta: 'ordenar' | 'filtrar' | null. Es un único
+  // valor a propósito: las dos hojas son mutuamente excluyentes.
+  const [hojaMovil, setHojaMovil] = useState(null);
 
   const productos = useMemo(() => productosQuery.data || [], [productosQuery.data]);
   const categorias = categoriasQuery.data || [];
@@ -114,9 +130,6 @@ const Catalogo = () => {
   const categoriaId = categoriaParam ? Number(categoriaParam) : null;
   const categoriaValida =
     categoriaId !== null && categorias.some((c) => c.id === categoriaId);
-  const categoriaSeleccionada = categoriaValida
-    ? categorias.find((c) => c.id === categoriaId).nombre
-    : "Todos";
 
   // Búsqueda por nombre, rango de precio y ordenamiento, también persistidos en la URL
   const busqueda = searchParams.get("busqueda") || "";
@@ -228,11 +241,21 @@ const Catalogo = () => {
 
   // Salida del estado vacío: borra todos los filtros de la URL sin tocar la
   // ruta. Sin esto el aviso dejaba al usuario en un callejón: tenía que
-  // descubrir solo que los filtros estaban en las pills de arriba.
+  // descubrir solo que los filtros estaban en el sidebar o en la hoja "Filtrar".
   const limpiarFiltros = () => {
     const next = new URLSearchParams(searchParams);
     ["categoria", "busqueda", "precioMin", "precioMax", "promocion", "ordenPrecio"].forEach(
       (clave) => next.delete(clave),
+    );
+    setSearchParams(next, { replace: true });
+  };
+
+  // Solo los filtros del panel lateral (categoría y precio): conserva la
+  // búsqueda, la promoción y el orden. Es la acción "Restablecer filtros".
+  const restablecerFiltrosSidebar = () => {
+    const next = new URLSearchParams(searchParams);
+    ["categoria", "precioMin", "precioMax"].forEach((clave) =>
+      next.delete(clave),
     );
     setSearchParams(next, { replace: true });
   };
@@ -301,86 +324,173 @@ const Catalogo = () => {
         </Alert>
       )}
 
-{/* Filtros / categorías en forma de pills.
-          Van en un `role="group"` con etiqueta, y cada pill lleva `aria-pressed`
-          para que se anuncie cuál está activa en vez de deducirlo por el color. */}
-       <div
-         className="d-flex flex-wrap justify-content-center gap-2 mb-4"
-         role="group"
-         aria-label="Filtrar por categoría"
-       >
-         <Button
-           className={
-             categoriaSeleccionada === "Todos"
-               ? "filtro-pill filtro-activo"
-               : "filtro-pill filtro-inactivo"
-           }
-           aria-pressed={categoriaSeleccionada === "Todos"}
-           onClick={() => seleccionarCategoria(null)}
-         >
-           Todos
-         </Button>
-         {categorias.map((cat) => {
-           const activo = categoriaSeleccionada === cat.nombre;
-           return (
-             <Button
-               key={cat.id}
-               className={
-                 activo
-                   ? "filtro-pill filtro-activo"
-                   : "filtro-pill filtro-inactivo"
-               }
-               aria-pressed={activo}
-               onClick={() => seleccionarCategoria(cat.id)}
-             >
-               {cat.nombre}
-             </Button>
-           );
-         })}
-       </div>
+      {/* Buscador + mini-carrito. El botón ya no navega: abre el panel anclado
+          con el resumen y el contador de unidades totales (el mismo número que
+          la barra inferior). Ver MiniCarrito. */}
+      <div className="catalogo-header mb-4">
+        <Form.Group
+          controlId="catalogo-busqueda"
+          className="catalogo-busqueda mb-0"
+        >
+          <Form.Label className="visually-hidden">
+            Buscar producto por nombre
+          </Form.Label>
+          <Form.Control
+            type="search"
+            name="busqueda"
+            placeholder="Buscar producto por nombre…"
+            value={busqueda}
+            onChange={(e) => setParam("busqueda", e.target.value)}
+          />
+        </Form.Group>
+        <MiniCarrito />
+      </div>
 
-        <div className="catalogo-filtros mb-4">
-          <Form.Group
-            controlId="catalogo-busqueda"
-            className="catalogo-busqueda mb-0"
-          >
-            <Form.Label className="visually-hidden">
-              Buscar producto por nombre
-            </Form.Label>
-            <Form.Control
-              type="search"
-              name="busqueda"
-              placeholder="Buscar producto por nombre…"
-              value={busqueda}
-              onChange={(e) => setParam("busqueda", e.target.value)}
-            />
-          </Form.Group>
+      {/* Controles para pantallas chicas: dos botones del mismo ancho que abren
+          hojas inferiores. Van en el flujo, no fijos: el pie fijo del sitio
+          sigue siendo `NavInferior`. Cada hoja se cierra sola al elegir. */}
+      <div className="catalogo-acciones-movil d-lg-none mb-4">
+        <Button
+          className="catalogo-accion-movil"
+          onClick={() => setHojaMovil('ordenar')}
+          aria-haspopup="dialog"
+        >
+          <FaSortAmountDown aria-hidden="true" />
+          Ordenar
+        </Button>
+        <Button
+          className="catalogo-accion-movil"
+          onClick={() => setHojaMovil('filtrar')}
+          aria-haspopup="dialog"
+        >
+          <FaFilter aria-hidden="true" />
+          Filtrar
+        </Button>
+      </div>
 
-          <div className="catalogo-filtros-secundarios">
+      {/* Hojas inferiores mobile. `hojaMovil` guarda un único valor, así que
+          nunca quedan abiertas a la vez. Se renderizan fuera de `d-lg-none`
+          porque un ancestro con `display:none` las dejaría inutilizables; en
+          desktop no se pueden abrir porque los botones no existen. El offcanvas
+          de Bootstrap tiene z-index mayor que `NavInferior`, así que lo tapa
+          mientras está abierto. */}
+      <Offcanvas
+        show={hojaMovil === 'ordenar'}
+        onHide={() => setHojaMovil(null)}
+        placement="bottom"
+        className="catalogo-hoja"
+        aria-labelledby="catalogo-hoja-ordenar-titulo"
+      >
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title as="span" id="catalogo-hoja-ordenar-titulo">
+            <FaSortAmountDown className="me-2" aria-hidden="true" />
+            Ordenar
+          </Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          <ul className="catalogo-hoja-opciones">
+            {OPCIONES_ORDEN.map((opcion) => {
+              const activo = (ordenPrecio || '') === opcion.valor;
+              return (
+                <li key={opcion.valor || 'recomendados'}>
+                  <Button
+                    className={`catalogo-hoja-opcion${
+                      activo ? ' catalogo-hoja-opcion--activa' : ''
+                    }`}
+                    onClick={() => {
+                      cambiarOrdenPrecio(opcion.valor || null);
+                      setHojaMovil(null);
+                    }}
+                    aria-pressed={activo}
+                  >
+                    <span>{opcion.etiqueta}</span>
+                    {activo && <FaCheck aria-hidden="true" />}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      <Offcanvas
+        show={hojaMovil === 'filtrar'}
+        onHide={() => setHojaMovil(null)}
+        placement="bottom"
+        className="catalogo-hoja"
+        aria-labelledby="catalogo-hoja-filtrar-titulo"
+      >
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title as="span" id="catalogo-hoja-filtrar-titulo">
+            <FaFilter className="me-2" aria-hidden="true" />
+            Filtrar
+          </Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          {/* El mismo panel que el sidebar de desktop: los filtros se aplican
+              al instante (la URL es la fuente de verdad), sin botón Aplicar. */}
+          <CatalogoSidebar
+            categorias={categorias}
+            categoriaId={categoriaValida ? categoriaId : null}
+            onSeleccionarCategoria={seleccionarCategoria}
+            precioPiso={precioPiso}
+            precioTecho={precioTecho}
+            precioMin={precioMin}
+            precioMax={precioMax}
+            onCambiarRangoPrecio={cambiarRangoPrecio}
+            onLimpiarTodo={limpiarFiltros}
+            onRestablecerFiltros={restablecerFiltrosSidebar}
+          />
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      {/* Zona principal: filtros a la izquierda (desktop) y resultados a la
+          derecha. Bajo `lg` el panel se oculta y la grilla ocupa todo el ancho. */}
+      <Row className="g-4">
+        <Col lg={3} className="d-none d-lg-block">
+          <CatalogoSidebar
+            categorias={categorias}
+            categoriaId={categoriaValida ? categoriaId : null}
+            onSeleccionarCategoria={seleccionarCategoria}
+            precioPiso={precioPiso}
+            precioTecho={precioTecho}
+            precioMin={precioMin}
+            precioMax={precioMax}
+            onCambiarRangoPrecio={cambiarRangoPrecio}
+            onLimpiarTodo={limpiarFiltros}
+            onRestablecerFiltros={restablecerFiltrosSidebar}
+          />
+        </Col>
+
+        <Col lg={9}>
+          {/* Barra de resultados (desktop): conteo a la izquierda y orden a la
+              derecha. Bajo `lg` el orden vive en la hoja "Ordenar". */}
+          <div className="catalogo-resultados d-none d-lg-flex">
+            <span className="catalogo-resultados-count">
+              {cargando || error
+                ? "\u00a0"
+                : `${productosFiltrados.length} ${
+                    productosFiltrados.length === 1 ? "producto" : "productos"
+                  }`}
+            </span>
             <div className="filtro-orden-precio-contenedor">
               <Form.Select
                 value={ordenPrecio || ''}
                 onChange={(e) => cambiarOrdenPrecio(e.target.value || null)}
-                aria-label="Ordenar por precio"
+                aria-label="Ordenar productos"
                 className="filtro-orden-precio-select"
               >
-                <option value="">Ordenar por precio</option>
-                <option value="asc">Menor a mayor</option>
-                <option value="desc">Mayor a menor</option>
+                {OPCIONES_ORDEN.map((opcion) => (
+                  <option
+                    key={opcion.valor || "recomendados"}
+                    value={opcion.valor}
+                  >
+                    {opcion.etiqueta}
+                  </option>
+                ))}
               </Form.Select>
             </div>
-
-            <div className="precio-slider-corto">
-              <RangoPrecio
-                min={precioPiso}
-                max={precioTecho}
-                valorMin={precioMin}
-                valorMax={precioMax}
-                onChange={cambiarRangoPrecio}
-              />
-            </div>
           </div>
-        </div>
 
       {/* Grid de productos */}
       {cargando ? (
@@ -434,14 +544,15 @@ const Catalogo = () => {
               return (
                 <Col
                   key={producto.id}
-                  md={4}
-                  lg={3}
+                  md={6}
+                  lg={4}
                   className="mb-4 stagger-item"
                   style={{ animationDelay: `${delay}ms` }}
                 >
                   <ProductoCard
                     producto={producto}
                     promocion={promocionesPorProducto.get(producto.id)}
+                    variante="horizontal"
                   />
                 </Col>
               );
@@ -464,6 +575,8 @@ const Catalogo = () => {
           )}
         </>
       )}
+        </Col>
+      </Row>
     </Container>
   );
 };

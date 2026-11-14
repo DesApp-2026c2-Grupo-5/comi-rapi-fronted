@@ -1,6 +1,7 @@
 /**
  * Propósito: CSS extra de la página de Catálogo, alineado con el estilo de Comi-Rapi.
- * Contenido: Título bold oscuro, pills de filtro naranja/blanco y aviso de categoría vacía.
+ * Contenido: Título bold oscuro, buscador + carrito, barra de resultados, acciones
+ *            mobile (Ordenar/Filtrar) con sus hojas inferiores y avisos.
  * Dependencias: Catalogo.jsx (se importa al final del mismo).
  * Uso: Importado desde src/pages/cliente/Catalogo.jsx.
  */
@@ -12,65 +13,54 @@
   color: var(--color-text);
 }
 
-/* ============ Filtros (pills) ============ */
-.filtro-pill {
+/* ============ Acciones mobile: Ordenar / Filtrar ============ */
+/* Dos botones del mismo ancho, en el flujo (no fijos). Abren las hojas
+   inferiores; el pie fijo del sitio sigue siendo `NavInferior`. */
+.catalogo-acciones-movil {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.catalogo-accion-movil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid var(--color-border-cream);
   border-radius: 50px;
+  padding: 0.55rem 1rem;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9375rem;
   font-weight: 600;
-  padding: 0.5rem 1.4rem;
   transition:
-    background-color 160ms ease,
     border-color 160ms ease,
     color 160ms ease,
     transform 140ms var(--ease-out);
-  touch-action: manipulation;
 }
 
-.filtro-pill:active {
-  transform: scale(0.985);
+@media (hover: hover) and (pointer: fine) {
+  .catalogo-accion-movil:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+  }
 }
 
-.filtro-pill:focus-visible {
+.catalogo-accion-movil:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
-/* Lift sutil solo con puntero preciso: evita hover falso en táctil. */
-@media (hover: hover) and (pointer: fine) {
-  .filtro-pill.filtro-inactivo:hover {
-    background-color: var(--color-cream-light);
-    border-color: var(--color-primary);
-    color: var(--color-text);
-    transform: translateY(-1px);
-  }
-
-  .filtro-pill.filtro-activo:hover {
-    transform: translateY(-1px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .filtro-pill {
+  .catalogo-accion-movil {
     transition: none;
   }
 
-  .filtro-pill:active {
+  .catalogo-accion-movil:hover {
     transform: none;
   }
-
-  .filtro-pill.filtro-inactivo:hover,
-  .filtro-pill.filtro-activo:hover {
-    transform: none;
-  }
-}
-
-/* ============ Filtros del catálogo ============ */
-.catalogo-filtros {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 48rem;
-  margin: 0 auto;
 }
 
 .catalogo-busqueda {
@@ -92,11 +82,92 @@
   box-shadow: 0 0 0 0.2rem rgba(168, 84, 0, 0.2);
 }
 
-.catalogo-filtros-secundarios {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+/* ============ Header: buscador + acceso al carrito ============ */
+.catalogo-header {
+  display: flex;
+  align-items: stretch;
   gap: 0.75rem;
-  align-items: end;
+  width: 100%;
+}
+
+.catalogo-header .catalogo-busqueda {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.catalogo-boton-carrito {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  border: 2px solid var(--color-border-cream);
+  border-radius: 12px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.1rem;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 140ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .catalogo-boton-carrito:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+  }
+}
+
+.catalogo-boton-carrito:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.catalogo-boton-carrito-badge {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background-color: #dc3545;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+/* ============ Barra de resultados (desktop) ============ */
+.catalogo-resultados {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.catalogo-resultados-count {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.catalogo-resultados .filtro-orden-precio-contenedor {
+  width: auto;
+  min-width: 14rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalogo-boton-carrito {
+    transition: none;
+  }
+
+  .catalogo-boton-carrito:hover {
+    transform: none;
+  }
 }
 
 /* Dropdown ordenar por precio */
@@ -140,31 +211,6 @@
   background-color: var(--color-surface-muted);
 }
 
-/* Slider de precio */
-.precio-slider-corto {
-  width: 100%;
-  min-width: 0;
-}
-
-@media (max-width: 575.98px) {
-  .catalogo-filtros-secundarios {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    gap: 0.5rem;
-  }
-
-  .filtro-orden-precio-select {
-    padding: 0.45rem 2rem 0.45rem 0.85rem;
-    font-size: 0.8125rem;
-    background-position: right 0.7rem center;
-  }
-}
-
-@media (max-width: 360px) {
-  .catalogo-filtros-secundarios {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ============ Aviso de categoría vacía / invitado ============ */
 .cat-aviso {
   background-color: var(--color-surface);
@@ -191,8 +237,9 @@
 
 /* ============ Estado vacío con salida ============ */
 /* Un aviso sin acción deja al usuario en un callejón: tiene que descubrir solo
-   que los filtros están en las pills de arriba. La tarjeta agrupa el mensaje y
-   la salida, en el mismo lenguaje que el resto de los avisos. */
+   que los filtros están en el sidebar (desktop) o en la hoja "Filtrar" (mobile).
+   La tarjeta agrupa el mensaje y la salida, en el mismo lenguaje que el resto
+   de los avisos. */
 .cat-vacio {
   max-width: 420px;
   margin: 2rem auto 0;
@@ -268,12 +315,92 @@
   }
 }
 
-/* Aviso para el visitante sin sesión: mismo lenguaje que el aviso de catálogo
-   vacío, pero con borde continuo. Es informativo, no un error ni un paso
-   obligatorio, así que no lleva el fondo de alerta amarillo de Bootstrap. */
-.catalogo-aviso-invitado {
-  background-color: var(--color-surface);
-  border: 2px solid var(--color-border-card);
+/* ============ Hojas inferiores mobile (Ordenar / Filtrar) ============ */
+/* Mismo patrón que `.nav-hoja.offcanvas` (ver NavInferior.css): Bootstrap fija
+   `--bs-offcanvas-height: 30vh` para la colocación inferior, que recorta el
+   contenido. Se declara con dos clases (`.catalogo-hoja.offcanvas`) para ganarle
+   al `:root` de Bootstrap, que va después en el bundle. */
+.catalogo-hoja.offcanvas {
+  --bs-offcanvas-height: auto;
+  min-height: 40vh;
+  max-height: 85vh;
+  /* Esquinas sólo arriba: la hoja pega al borde inferior de la pantalla. */
+  border-top-left-radius: 1.1rem;
+  border-top-right-radius: 1.1rem;
+  border: 0;
+}
+
+.catalogo-hoja .offcanvas-header {
+  border-bottom: 2px solid var(--color-border-cream);
+  padding: 1.1rem 1.25rem;
+}
+
+.catalogo-hoja .offcanvas-title {
+  color: var(--color-primary-dark);
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.catalogo-hoja .offcanvas-body {
+  flex: 1 1 auto;
+  padding: 0.9rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+/* El sidebar de filtros ya trae su propio marco de tarjeta (borde + radio);
+   dentro de la hoja ese marco sobra y deja un borde dentro del borde. */
+.catalogo-hoja .catalogo-sidebar {
+  border: 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+/* Opciones de la hoja Ordenar: filas grandes y cómodas para el dedo. */
+.catalogo-hoja-opciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.catalogo-hoja-opcion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  border: 2px solid var(--color-border-cream);
   border-radius: 12px;
-  color: var(--color-text-brown);
+  padding: 0.85rem 1rem;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .catalogo-hoja-opcion:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.catalogo-hoja-opcion:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.catalogo-hoja-opcion--activa {
+  border-color: var(--color-primary);
+  background-color: var(--color-cream-light);
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalogo-hoja-opcion {
+    transition: none;
+  }
 }
