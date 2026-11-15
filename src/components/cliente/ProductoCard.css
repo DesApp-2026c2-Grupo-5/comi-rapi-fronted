@@ -55,15 +55,15 @@
   container-type: inline-size;
 }
 
-/* La caja de la imagen fija su relación a la de la foto (las fotos son
-   cuadradas). Con `height: 180px` fijo, una tarjeta ancha dejaba una caja
-   ~2.86:1 y `object-fit: cover` recortaba ~65% del alto (el producto "se veía
-   con zoom"). Con `aspect-ratio` la caja acompaña al ancho de la tarjeta y el
-   recorte es mínimo y estable en 1, 2 o 3 columnas. */
+/* Relación 4:3 con un piso de 180px de alto: en las tarjetas de 3 columnas
+   (desktop) la foto queda igual que en la versión anterior (~180px) y en las
+   anchas crece para no recortar de más. `object-fit: cover` mantiene el
+   encuadre centrado. */
 .producto-card-imagen {
   width: 100%;
   height: auto;
-  aspect-ratio: 1 / 1;
+  min-height: 180px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
 }
 
@@ -87,21 +87,34 @@
     flex-direction: row;
   }
 
+  /* La foto vuelve a ocupar todo el alto de la tarjeta (como antes), algo más
+     ancha (42%) para recortar menos. Sin `aspect-ratio`: manda el alto. */
   .producto-card--horizontal .producto-card-imagen {
-    width: 38%;
+    width: 42%;
     min-width: 6.5rem;
     max-width: 12rem;
     height: auto;
-    /* Caja cuadrada (relación de la foto) centrada verticalmente. Antes con
-       `align-self: stretch` la altura seguía la de la tarjeta (variable) y la
-       caja quedaba ~0.54:1, recortando ~46% del ancho. */
-    aspect-ratio: 1 / 1;
-    align-self: center;
+    min-height: 0;
+    aspect-ratio: auto;
+    align-self: stretch;
     object-fit: cover;
     border-radius: 0;
-    /* Sin encogerse: el ancho de la imagen manda (38%) y el cuerpo, que puede
-       bajar a 0 con `min-width: 0`, absorbe la diferencia. */
     flex-shrink: 0;
+  }
+
+  /* La lista de componentes del combo alarga muchísimo la tarjeta horizontal;
+     en mobile el detalle se ve en la página del producto. */
+  .producto-card--horizontal .producto-componentes {
+    display: none;
+  }
+
+  /* El badge de promoción baja a la esquina inferior izquierda (sobre la foto)
+     para no montarse sobre el nombre del producto. */
+  .producto-card--horizontal .producto-promocion-badge {
+    top: auto;
+    right: auto;
+    bottom: 0.6rem;
+    left: 0.6rem;
   }
 
   .producto-card--horizontal .producto-cuerpo {
@@ -154,21 +167,34 @@
       flex-direction: row;
     }
 
+    /* La foto vuelve a ocupar todo el alto de la tarjeta (como antes), algo más
+       ancha (42%) para recortar menos. Sin `aspect-ratio`: manda el alto. */
     .producto-card--horizontal .producto-card-imagen {
-      width: 38%;
+      width: 42%;
       min-width: 6.5rem;
       max-width: 12rem;
       height: auto;
-      /* Caja cuadrada (relación de la foto) centrada verticalmente. Antes con
-         `align-self: stretch` la altura seguía la de la tarjeta (variable) y la
-         caja quedaba ~0.54:1, recortando ~46% del ancho. */
-      aspect-ratio: 1 / 1;
-      align-self: center;
+      min-height: 0;
+      aspect-ratio: auto;
+      align-self: stretch;
       object-fit: cover;
       border-radius: 0;
-      /* Sin encogerse: el ancho de la imagen manda (38%) y el cuerpo, que puede
-         bajar a 0 con `min-width: 0`, absorbe la diferencia. */
       flex-shrink: 0;
+    }
+
+    /* La lista de componentes del combo alarga muchísimo la tarjeta horizontal;
+       en mobile el detalle se ve en la página del producto. */
+    .producto-card--horizontal .producto-componentes {
+      display: none;
+    }
+
+    /* El badge de promoción baja a la esquina inferior izquierda (sobre la foto)
+       para no montarse sobre el nombre del producto. */
+    .producto-card--horizontal .producto-promocion-badge {
+      top: auto;
+      right: auto;
+      bottom: 0.6rem;
+      left: 0.6rem;
     }
 
     .producto-card--horizontal .producto-cuerpo {

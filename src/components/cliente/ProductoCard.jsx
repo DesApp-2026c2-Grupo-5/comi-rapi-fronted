@@ -73,7 +73,7 @@ const ProductoCard = ({ producto, rank, promocion, variante }) => {
             src={resolverImagen(producto.imagen)}
             alt=""
             width={400}
-            height={400}
+            height={300}
             loading="lazy"
             decoding="async"
             className="producto-card-imagen"
