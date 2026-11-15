@@ -55,8 +55,15 @@
   container-type: inline-size;
 }
 
+/* La caja de la imagen fija su relación a la de la foto (las fotos son
+   cuadradas). Con `height: 180px` fijo, una tarjeta ancha dejaba una caja
+   ~2.86:1 y `object-fit: cover` recortaba ~65% del alto (el producto "se veía
+   con zoom"). Con `aspect-ratio` la caja acompaña al ancho de la tarjeta y el
+   recorte es mínimo y estable en 1, 2 o 3 columnas. */
 .producto-card-imagen {
-  height: 180px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
 }
 
@@ -85,7 +92,11 @@
     min-width: 6.5rem;
     max-width: 12rem;
     height: auto;
-    align-self: stretch;
+    /* Caja cuadrada (relación de la foto) centrada verticalmente. Antes con
+       `align-self: stretch` la altura seguía la de la tarjeta (variable) y la
+       caja quedaba ~0.54:1, recortando ~46% del ancho. */
+    aspect-ratio: 1 / 1;
+    align-self: center;
     object-fit: cover;
     border-radius: 0;
     /* Sin encogerse: el ancho de la imagen manda (38%) y el cuerpo, que puede
@@ -148,7 +159,11 @@
       min-width: 6.5rem;
       max-width: 12rem;
       height: auto;
-      align-self: stretch;
+      /* Caja cuadrada (relación de la foto) centrada verticalmente. Antes con
+         `align-self: stretch` la altura seguía la de la tarjeta (variable) y la
+         caja quedaba ~0.54:1, recortando ~46% del ancho. */
+      aspect-ratio: 1 / 1;
+      align-self: center;
       object-fit: cover;
       border-radius: 0;
       /* Sin encogerse: el ancho de la imagen manda (38%) y el cuerpo, que puede
