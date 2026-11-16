@@ -161,7 +161,7 @@ export const useDireccionTerritorial = ({
   // normalizada por el backend, y este select usa localidades BAHRA (la
   // semántica del filtro `localidad` de Georef). Precargarla reintroduciría
   // el bug A.
-  useEffect(() => {
+  const reiniciar = useCallback(() => {
     setCalle(inicial?.calle || '');
     setAltura(inicial?.altura ?? '');
     setProvincia(inicial?.provincia || '');
@@ -172,9 +172,17 @@ export const useDireccionTerritorial = ({
     setResultado(null);
     setSugerencias([]);
     setErrorSugerencias(null);
-    calleSeleccionadaRef.current = null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inicial?.id]);
+    calleSeleccionadaRef.current = inicial?.calle || null;
+  }, [
+    inicial?.calle,
+    inicial?.altura,
+    inicial?.provincia,
+    inicial?.departamento,
+  ]);
+
+  useEffect(() => {
+    reiniciar();
+  }, [reiniciar]);
 
   // ---- Zonas de operación (una sola vez) -------------------------------------
   useEffect(() => {
@@ -379,24 +387,14 @@ export const useDireccionTerritorial = ({
   const requierePartido =
     String(provincia ?? '').trim() === PROVINCIA_PARTIDO_OBLIGATORIO;
 
-  const validar = () => {
+  const validarUbicacion = () => {
     const nuevos = [];
-    if (!String(calle ?? '').trim()) {
-      nuevos.push('La calle es obligatoria.');
-    }
-    if (
-      altura === '' ||
-      altura === null ||
-      !Number.isInteger(Number(altura)) ||
-      Number(altura) < 0
-    ) {
-      nuevos.push(
-        'La altura es obligatoria y debe ser un número entero mayor o igual a 0.'
-      );
-    }
     if (!String(provincia ?? '').trim()) {
       nuevos.push('La provincia es obligatoria.');
-    } else if (!provinciasOpts.includes(provincia)) {
+    } else if (
+      provinciasOpts.length > 0 &&
+      !provinciasOpts.includes(provincia)
+    ) {
       nuevos.push('Seleccioná una provincia de la lista.');
     }
     if (requierePartido && !String(departamento ?? '').trim()) {
@@ -424,6 +422,26 @@ export const useDireccionTerritorial = ({
     return nuevos;
   };
 
+  const validarDireccion = () => {
+    const nuevos = [];
+    if (!String(calle ?? '').trim()) {
+      nuevos.push('La calle es obligatoria.');
+    }
+    if (
+      altura === '' ||
+      altura === null ||
+      !Number.isInteger(Number(altura)) ||
+      Number(altura) < 0
+    ) {
+      nuevos.push(
+        'La altura es obligatoria y debe ser un número entero mayor o igual a 0.'
+      );
+    }
+    return nuevos;
+  };
+
+  const validar = () => [...validarUbicacion(), ...validarDireccion()];
+
   const construirDatos = () => ({
     calle: String(calle ?? '').trim(),
     altura: Number(altura),
@@ -445,7 +463,7 @@ export const useDireccionTerritorial = ({
     if (erroresValidacion.length > 0) {
       setResultado({ tipo: 'datos', items: erroresValidacion });
       setPreview(null);
-      return;
+      return { ok: false, tipo: 'datos', errores: erroresValidacion };
     }
     setResultado(null);
     setCargandoPreview(true);
@@ -458,22 +476,21 @@ export const useDireccionTerritorial = ({
         // reintentar; el resto (400/409/422) = funcional → corregir datos.
         const esTecnico =
           result.status === undefined || result.status >= 500;
-        setResultado({
-          tipo: esTecnico ? 'tecnico' : 'datos',
-          mensaje:
-            result.error ||
-            (esTecnico
-              ? 'Servicio temporalmente no disponible. Esperá unos segundos y volvé a intentar.'
-              : 'No se pudo verificar la dirección.'),
-        });
+        const tipo = esTecnico ? 'tecnico' : 'datos';
+        const mensaje =
+          result.error ||
+          (esTecnico
+            ? 'Servicio temporalmente no disponible. Esperá unos segundos y volvé a intentar.'
+            : 'No se pudo verificar la dirección.');
+        setResultado({ tipo, mensaje });
         setPreview(null);
-        return;
+        return { ok: false, tipo, mensaje };
       }
       const { estado, resultado, opciones, cobertura } = result.data;
       if (estado === 'no_encontrada') {
         setResultado({ tipo: 'datos', mensaje: MENSAJE_NO_ENCONTRADA });
         setPreview(null);
-        return;
+        return { ok: false, tipo: 'datos', mensaje: MENSAJE_NO_ENCONTRADA };
       }
       setPreview({
         estado,
@@ -495,6 +512,16 @@ export const useDireccionTerritorial = ({
       } else {
         setResultado(null);
       }
+      return {
+        ok: true,
+        estado,
+        resultado: resultado || null,
+        opciones: opciones || [],
+        cobertura: cobertura || null,
+        bloqueada: Boolean(
+          validarCobertura && cobertura && !cobertura.coberturaDisponible
+        ),
+      };
     } finally {
       setCargandoPreview(false);
     }
@@ -627,6 +654,9 @@ export const useDireccionTerritorial = ({
     preview,
     opcionElegida,
     cargandoPreview,
+    validarUbicacion,
+    validarDireccion,
+    validar,
     // Iteración 6: estado unificado de resultados (antes errores+tipoError).
     resultado,
     guardando,
@@ -635,6 +665,7 @@ export const useDireccionTerritorial = ({
     elegirOpcion,
     confirmar,
     editarDatos,
+    reiniciar,
     mostrarOpcionesExternas,
     mostrarError,
     // utilidades

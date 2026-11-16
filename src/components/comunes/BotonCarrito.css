@@ -1,11 +1,13 @@
 /* ============ Botón flotante del carrito (B1) ============ */
-/* Círculo naranja fijo en la esquina inferior derecha, encima de la
-   barra inferior móvil (que ocupa ~56px). El badge rojo muestra el
-   conteo de items en tiempo real (CarritoContext). */
+/* Círculo naranja fijo en la esquina inferior derecha. El badge rojo muestra
+   el conteo de items en tiempo real (CarritoContext). En pantallas chicas
+   convive con la barra inferior de navegación (fija): se eleva por encima de
+   ella con su altura + safe area + un margen, así no la tapa ni queda tapado. */
 
 .boton-carrito-flotante {
   position: fixed;
-  bottom: 72px;
+  /* Alto de la barra inferior (60px) + safe area del dispositivo + margen. */
+  bottom: calc(60px + env(safe-area-inset-bottom) + 16px);
   right: 20px;
   z-index: 1050;
   display: flex;
@@ -50,10 +52,10 @@
   border: 2px solid var(--color-on-fill);
 }
 
-/* En móviles (< sm) el botón flotante quita espacio útil y estorba sobre la
-   barra inferior de navegación: se oculta en la versión responsive. */
-@media (max-width: 767.98px) {
+/* Desde `lg` la barra inferior no existe (ver NavInferior.css): el botón baja
+   al margen inferior de la pantalla. Mismo corte que pliega la barra. */
+@media (min-width: 992px) {
   .boton-carrito-flotante {
-    display: none !important;
+    bottom: 24px;
   }
 }

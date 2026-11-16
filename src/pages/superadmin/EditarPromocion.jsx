@@ -10,10 +10,11 @@
  */
 
 import { useState, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Container, Alert } from 'react-bootstrap';
 import FormularioPromocion from '../../components/admin/FormularioPromocion';
+import PaginaFormularioABM from '../../components/admin/PaginaFormularioABM';
 import {
   crearPromocion,
   editarPromocion,
@@ -148,12 +149,17 @@ const EditarPromocion = () => {
   const mostrarFormulario = !id || Boolean(promocion) || Boolean(error);
 
   return (
-    <Container className="py-4">
-      <Link to="/superadmin/promociones" className="text-danger text-decoration-none mb-3 d-inline-block">
-        ← Volver a promociones
-      </Link>
-      <h1 className="h2 mb-4">{id ? `Editar Promoción #${id}` : 'Nueva Promoción'}</h1>
-      {error && <Alert variant="danger" role="alert">{error}</Alert>}
+    <PaginaFormularioABM
+      titulo={id ? `Editar promoción #${id}` : 'Nueva promoción'}
+      descripcion="Definí el descuento, su vigencia y los productos que alcanza."
+      volverA="/superadmin/promociones"
+      volverTexto="Volver a promociones"
+    >
+      {error && (
+        <Alert variant="danger" role="alert" className="mb-3">
+          {error}
+        </Alert>
+      )}
       {mostrarFormulario && (
         <FormularioPromocion
           promocion={promocion}
@@ -166,7 +172,7 @@ const EditarPromocion = () => {
           No se pudo cargar la promoción. Intente recargar la página.
         </Alert>
       )}
-    </Container>
+    </PaginaFormularioABM>
   );
 };
 

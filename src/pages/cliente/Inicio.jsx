@@ -27,7 +27,7 @@
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { FaShoppingCart } from 'react-icons/fa';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   useCategorias,
   useMasVendidos,
@@ -36,6 +36,8 @@ import {
 import ProductoCard from '../../components/cliente/ProductoCard';
 import PromocionCard from '../../components/cliente/PromocionCard';
 import AvisoSucursalesCerradas from '../../components/comunes/AvisoSucursalesCerradas';
+import { useSucursal } from '../../hooks/useSucursal';
+import MapaHome from '../../components/comunes/MapaHome';
 import {
   IMAGEN_CATEGORIA_POR_DEFECTO,
   resolverImagen,
@@ -78,6 +80,11 @@ const Inicio = () => {
   const categoriasQuery = useCategorias();
   const masVendidosQuery = useMasVendidos();
   const promocionesQuery = usePromociones();
+  const { sucursales, cargarSucursales } = useSucursal();
+
+  useEffect(() => {
+    cargarSucursales();
+  }, [cargarSucursales]);
 
   const categorias = useMemo(
     () => (categoriasQuery.data || []).map(aCategoriaVista),
@@ -357,7 +364,24 @@ const Inicio = () => {
         </Container>
       </section>
 
-      {/* ===================== 6. FOOTER OSCURO ===================== */}
+      {/* ===================== 6. NUESTRAS SUCURSALES ===================== */}
+      <section className="sucursales-section py-5">
+        <Container>
+          <h2 className="seccion-titulo mb-4">Nuestras sucursales</h2>
+          <p className="text-center text-muted mb-4">
+            Encontrá la sucursal más cercana a tu zona. Todas con envío a domicilio.
+          </p>
+          {/* Se pasan las sucursales tal cual las serializa el backend: el
+              popup usa `horariosTexto` (ya formateado), sin aplanar el array
+              estructurado de `horarios`. */}
+          <MapaHome
+            sucursales={sucursales}
+            alturaPx={420}
+          />
+        </Container>
+      </section>
+
+      {/* ===================== 7. FOOTER OSCURO ===================== */}
       {/* El footer oscuro ya lo renderiza el componente global <Footer /> (bg-dark)
           definido en src/components/comunes/Footer.jsx y montado en App.jsx. */}
     </>

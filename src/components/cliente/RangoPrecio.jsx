@@ -50,25 +50,17 @@ const RangoPrecio = ({ min, max, valorMin, valorMax, onChange }) => {
 
   return (
     <div className="rango-precio">
-      <div className="rango-precio-header d-flex align-items-center justify-content-between mb-1">
-        <span className="text-muted small">
-          {hayFiltro
-            ? `${formatPrice(minActual)} — ${formatPrice(maxActual)}`
-            : `Precio (${formatPrice(min)} — ${formatPrice(max)})`}
-        </span>
-        {hayFiltro && (
-          <Button
-            variant="link"
-            size="sm"
-            className="rango-precio-limpiar p-0 text-muted"
-            onClick={limpiar}
-            aria-label="Quitar filtro de precio"
-          >
-            <FaTimes size={12} aria-hidden="true" className="me-1" />
-            Limpiar
-          </Button>
-        )}
-      </div>
+      {hayFiltro && (
+        <Button
+          variant="link"
+          size="sm"
+          className="rango-precio-limpiar p-0"
+          onClick={limpiar}
+          aria-label="Quitar filtro de precio"
+        >
+          <FaTimes size={12} aria-hidden="true" />
+        </Button>
+      )}
 
       <div className="rango-precio-track-container">
         {/* Pista visual: gris de fondo, naranja el rango seleccionado. */}
@@ -77,6 +69,12 @@ const RangoPrecio = ({ min, max, valorMin, valorMax, onChange }) => {
           className="rango-precio-rango"
           style={{ left: `${pctInicio}%`, width: `${pctFin - pctInicio}%` }}
         />
+
+        {/* Labels en los extremos del slider */}
+        <div className="rango-precio-labels d-flex justify-content-between">
+          <span className="text-muted small">{formatPrice(minActual)}</span>
+          <span className="text-muted small">{formatPrice(maxActual)}</span>
+        </div>
 
         {/* Dos range inputs superpuestos: solo los thumbs son clickeables. */}
         <input

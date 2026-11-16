@@ -125,11 +125,20 @@ const DetalleProducto = () => {
       queryClient.invalidateQueries({ queryKey: ['private', 'resenas'] }),
     ]);
 
+  // Un combo se define por sus componentes (con cantidad); un producto, por su
+  // receta y sus opciones de personalización.
+  const esCombo = producto?.tipo === 'COMBO';
+  const componentesCombo = useMemo(() => {
+    if (!esCombo || !Array.isArray(producto?.componentes)) return [];
+    return producto.componentes.map((c) => ({
+      productoId: c.productoId,
+      cantidad: Number(c.cantidad) || 1,
+      nombre: c.nombre || `producto ${c.productoId}`,
+    }));
+  }, [producto, esCombo]);
+
   const ingredientes = useMemo(() => {
-    if (!producto) return [];
-    if (producto.tipo === 'COMBO' && Array.isArray(producto.componentes)) {
-      return producto.componentes.map((c) => c.nombre || `producto ${c.productoId}`);
-    }
+    if (!producto || esCombo) return [];
     // Para PRODUCTO: mostrar ingredientes de la receta (origin/dev) y también
     // los elementos de personalización tipo "personalizar" (HEAD).
     const deReceta = Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0
@@ -139,7 +148,7 @@ const DetalleProducto = () => {
       .filter((e) => e.tipo === 'personalizar' && e.activo !== false)
       .map((e) => e.nombre);
     return [...deReceta, ...dePersonalizar];
-  }, [producto, personalizacion]);
+  }, [producto, personalizacion, esCombo]);
 
   // Mismo criterio de siempre: productos de la misma categoría, sin el actual.
   const relacionados = useMemo(
@@ -338,22 +347,42 @@ const DetalleProducto = () => {
       <Row className="g-3 mb-4">
         <Col md={7}>
           <Card className="card-comi p-4 h-100">
-            <span className="detalle-etiqueta">Ingredientes</span>
-            {ingredientes.length > 0 ? (
-              <div className="d-flex flex-wrap gap-2">
-                {ingredientes.map((nombre) => (
-                  <span key={nombre} className="ing-chip">
-                    {nombre}
-                  </span>
-                ))}
-              </div>
+            {esCombo ? (
+              <>
+                <span className="detalle-etiqueta">Este combo incluye</span>
+                {componentesCombo.length > 0 ? (
+                  <ul className="combo-componentes list-unstyled mb-0">
+                    {componentesCombo.map((c) => (
+                      <li key={c.productoId}>
+                        <span className="combo-cantidad">{c.cantidad}×</span>
+                        {c.nombre}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted small mb-0">La composición está descrita arriba.</p>
+                )}
+              </>
             ) : (
-              <p className="text-muted small mb-0">La composición está descrita arriba.</p>
-            )}
-            {ingredientes.length > 0 && (
-              <p className="text-muted small mt-3 mb-0">
-                ¿Sacás o agregás algo? Personalizalo a tu gusto.
-              </p>
+              <>
+                <span className="detalle-etiqueta">Ingredientes</span>
+                {ingredientes.length > 0 ? (
+                  <div className="d-flex flex-wrap gap-2">
+                    {ingredientes.map((nombre) => (
+                      <span key={nombre} className="ing-chip">
+                        {nombre}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted small mb-0">La composición está descrita arriba.</p>
+                )}
+                {ingredientes.length > 0 && (
+                  <p className="text-muted small mt-3 mb-0">
+                    ¿Sacás o agregás algo? Personalizalo a tu gusto.
+                  </p>
+                )}
+              </>
             )}
           </Card>
         </Col>
@@ -486,8 +515,8 @@ const DetalleProducto = () => {
       )}
 
       <ProductoPersonalizarModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
+        mostrar={showModal}
+        onCerrar={() => setShowModal(false)}
         producto={producto}
       />
 

@@ -60,31 +60,35 @@ const invalidarCatalogo = (queryClient) => {
  * @param {string} accion - 'creado' | 'actualizado' | 'eliminado'
  * @param {(a: any, b: any) => number} [ordenar] - Función de ordenamiento opcional
  */
+const sinDuplicadosPorId = (lista) => {
+  const vistos = new Set();
+  return lista.filter((item) => {
+    if (item?.id === undefined || item?.id === null) return true;
+    const clave = String(item.id);
+    if (vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
+};
+
 const actualizarLista = (queryClient, clave, data, id, accion, ordenar) => {
   queryClient.setQueryData(clave, (old) => {
     if (!Array.isArray(old)) return old;
-    const idx = old.findIndex((item) => String(item.id) === String(id));
+    const idBuscado = String(id);
+    const idx = old.findIndex((item) => String(item.id) === idBuscado);
+
     if (accion === 'eliminado') {
-      if (idx >= 0) {
-        const nueva = [...old];
-        nueva.splice(idx, 1);
-        return nueva;
-      }
-      return old;
+      return sinDuplicadosPorId(
+        old.filter((item) => String(item.id) !== idBuscado)
+      );
     }
-    if (accion === 'creado') {
-      const nueva = [...old, data];
-      return ordenar ? nueva.sort(ordenar) : nueva;
-    }
-    // actualizado
-    if (idx >= 0) {
-      const nueva = [...old];
-      nueva[idx] = data;
-      return ordenar ? nueva.sort(ordenar) : nueva;
-    }
-    // Si no existe en la lista (caso raro), agregar
-    const nueva = [...old, data];
-    return ordenar ? nueva.sort(ordenar) : nueva;
+
+    const nueva =
+      idx >= 0
+        ? old.map((item, i) => (i === idx ? data : item))
+        : [...old, data];
+    const sinRepetidos = sinDuplicadosPorId(nueva);
+    return ordenar ? sinRepetidos.sort(ordenar) : sinRepetidos;
   });
 };
 
@@ -134,6 +138,7 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
       queryKeys.public.productos({ incluirPersonalizacion: true }),
       queryKeys.public.productos({ incluirResenas: true }),
       queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }),
+      queryKeys.public.productos({ orden: 'mas-vendidos' }),
       queryKeys.public.masVendidos,
     ];
     for (const clave of clavesProductos) {
@@ -160,6 +165,10 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
     actualizarLista(queryClient, queryKeys.public.productos({ incluirPersonalizacion: true }), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirResenas: true }), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }), data, id, accion, ordenarPorNombre);
+    // Catálogo ordenado por más vendidos: se agrega/reemplaza sin reordenar por
+    // nombre, para no romper el orden por ventas (un producto nuevo queda al
+    // final, que es donde corresponde con 0 ventas).
+    actualizarLista(queryClient, queryKeys.public.productos({ orden: 'mas-vendidos' }), data, id, accion);
     // Más vendidos
     actualizarLista(queryClient, queryKeys.public.masVendidos, data, id, accion);
 

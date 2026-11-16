@@ -47,9 +47,273 @@
   outline-offset: 2px;
 }
 
+.producto-card-contenedor {
+  height: 100%;
+  /* `height: 100%` conserva la altura de fila (el Card usa `h-100`): así, en una
+     misma fila, todas las tarjetas se estiran al alto de la más alta. */
+}
+
+/* Contenedor de la foto. La foto lo cubre por completo en los dos modos
+   (vertical y horizontal): no hay franjas ni fondos alternativos. El color de
+   fondo solo se ve durante la carga de la imagen. */
+.producto-card-media {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-border-cream, #f2ece4);
+}
+
+/* Caja 4:3 con `object-fit: cover`: la foto llena toda la superficie sin
+   franjas. En el modo vertical (3 columnas) la relación 4:3 la impone este
+   bloque; en el horizontal la caja la fija `.producto-card-media` (alto de la
+   columna) y la imagen se estira a `height: 100%`. */
 .producto-card-imagen {
-  height: 180px;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
+  /* Encuadre centrado por defecto. Si alguna foto tiene el producto desplazado
+     y el centrado recorta de más, se puede sobrescribir por imagen. */
+  object-position: center;
+  /* La tarjeta recorta las esquinas (`overflow: hidden`); así el `card-img-top`
+     de Bootstrap no deja ver el fondo del contenedor en las esquinas. */
+  border-radius: 0;
+}
+
+/* El padding del cuerpo se declara acá (en vez de la utilidad `p-3` de
+   Bootstrap, que es `!important`) para poder ajustarlo en el modo horizontal. */
+.producto-card .producto-cuerpo {
+  padding: 1rem;
+}
+
+/* Pie de la tarjeta: precio + botón. Por defecto (vertical) se apilan con el
+   botón de ancho completo; en horizontal pasan a una fila al pie de la tarjeta. */
+.producto-card .producto-pie {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============ Variante horizontal (1 y 2 columnas) ============ */
+/* Se aplica a todo lo que está por debajo de `lg`: en 1 y 2 columnas la tarjeta
+   es "de lista" (imagen a la izquierda, datos a la derecha). Desde 992px
+   (3 columnas) vuelve al diseño vertical del escritorio. La decisión es por
+   breakpoint y no por container query, así no cambia de disposición dentro de
+   la misma cantidad de columnas. La imagen y el nombre siguen navegando al
+   detalle (el JSX no cambia). */
+@media (max-width: 991.98px) {
+  /* Doble clase a propósito: le gana al `flex-direction: column` de `.card`
+     de Bootstrap, que tiene la misma especificidad y puede quedar después en
+     el bundle. */
+  .producto-card.producto-card--horizontal {
+    flex-direction: row;
+    /* La tarjeta es contenedor de consulta: la tipografía (y con ella el alto)
+       escala con el ancho real de la tarjeta (`cqw`), no con el viewport. Así el
+       texto acompaña a la imagen al redimensionar y todas las tarjetas de una
+       misma grilla siguen midiendo lo mismo (mismo ancho → misma tipografía). */
+    container-type: inline-size;
+    /* Un poco más alto que antes: ahora la descripción ocupa 2 renglones. El
+       piso es uniforme; cuando la tipografía fluida crece lo suficiente (1
+       columna ancha) el contenido ya supera este alto por sí solo. Se mantiene
+       contenido para no recortar de más la foto panorámica del combo. */
+    min-height: 11.25rem;
+  }
+
+  /* Reparto proporcional del ancho: la foto toma ~56% y la información ~44%, y
+     las dos escalan juntas con el ancho real de la tarjeta (sin topes fijos,
+     así en 1 columna ancha la foto crece en vez de quedar fija mientras el
+     texto absorbe el espacio). Se estira al alto de la tarjeta. Puede encogerse
+     (`flex-shrink: 1`) para cederle ancho al cuerpo en pantallas muy angostas:
+     así el bloque de precio + botón nunca envuelve y todas las tarjetas miden
+     lo mismo. El `min-width` evita que desaparezca. */
+  .producto-card--horizontal .producto-card-media {
+    flex: 0 1 56%;
+    min-width: 5rem;
+    align-self: stretch;
+    border-radius: 0;
+  }
+
+  /* La foto se saca del flujo (`position: absolute`) para que su alto
+     intrínseco no estire la tarjeta: el alto lo fija solo el texto del cuerpo,
+     que es uniforme. Así una foto vertical no hace más larga su tarjeta que una
+     panorámica. La foto llena igual toda la columna (`inset: 0`) y `object-fit:
+     cover` la recorta lo mínimo para cubrirla: sin franjas ni espacio libre. */
+  .producto-card--horizontal .producto-card-imagen {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 0;
+  }
+
+  /* El badge de promoción va a la esquina inferior izquierda. Vive dentro de
+     `.producto-card-media`, así `bottom`/`left` se resuelven contra la foto y
+     no se monta sobre el nombre. */
+  .producto-card--horizontal .producto-promocion-badge {
+    top: auto;
+    right: auto;
+    bottom: 0.6rem;
+    left: 0.6rem;
+  }
+
+  /* El cuerpo reserva el ancho mínimo que necesita el pie en una sola fila
+     (bloque de precio más ancho + botón) y crece con `flex-basis: 0` para
+     ocupar todo el ancho libre (el ~44% restante en tarjetas anchas). Con este
+     piso, el botón nunca baja de línea ni en las pantallas más angostas y todas
+     las tarjetas conservan la misma altura; si falta espacio, la imagen (único
+     ítem que encoge) cede el ancho sobrante. El padding también escala con el
+     ancho de la tarjeta para acompañar a la tipografía fluida. */
+  .producto-card--horizontal .producto-cuerpo {
+    flex: 1 1 0;
+    min-width: 10.5rem;
+    padding: clamp(0.75rem, 3.6cqw, 1.1rem);
+  }
+
+  /* Tipografía fluida: el nombre, la descripción, el precio y el botón escalan
+     con el ancho real de la tarjeta (`cqw` sobre el contenedor declarado arriba)
+     en lugar de quedar fijos mientras solo cambia la imagen. Los `clamp()` fijan
+     un piso y un techo legibles. El nombre va a 2 renglones y `min-height` en
+     `em` reserva ambos aunque el texto sea más corto, así todas las tarjetas de
+     una misma grilla miden exactamente lo mismo. */
+  .producto-card--horizontal .producto-nombre {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: clamp(1rem, 4.3cqw, 1.55rem);
+    line-height: 1.2;
+    min-height: 2.4em;
+  }
+
+  /* Descripción a 2 renglones: se ve un poco más de texto en el card horizontal
+     (el completo vive en la página del producto). `min-height` en `em` reserva
+     las dos líneas para que las tarjetas con descripción corta midan igual. */
+  .producto-card--horizontal .producto-descripcion {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin-bottom: 0.4rem;
+    font-size: clamp(0.8rem, 3.4cqw, 1.1rem);
+    line-height: 1.3;
+    min-height: 2.6em;
+  }
+
+  /* El precio y el botón comparten la fila inferior: precio a la izquierda y
+     botón circular a la derecha. `margin-left: auto` lo mantiene pegado a la
+     derecha y `flex-wrap` queda como red de seguridad extrema (ventanas de menos
+     de ~290px): el botón baja de línea pero nunca se recorta. El `font-size`
+     fluido del pie y su `min-height` en `em` reservan el alto del bloque de
+     precios con descuento (tachado + final) para que las tarjetas con promo
+     midan exactamente igual que las que no la tienen, también con tipografía
+     fluida. */
+  .producto-card--horizontal .producto-pie {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: clamp(1rem, 3.9cqw, 1.4rem);
+    min-height: 2.7em;
+  }
+
+  /* Precio un punto más chico que en el modo vertical (1.2rem) para que entre en
+     la columna angosta sin forzar el salto del botón; escala con la tarjeta. */
+  .producto-card--horizontal .producto-precio {
+    margin-bottom: 0;
+    font-size: clamp(1rem, 3.9cqw, 1.4rem);
+  }
+
+  .producto-card--horizontal .producto-precio-tachado {
+    font-size: clamp(0.8rem, 3.1cqw, 1.05rem);
+  }
+
+  .producto-card--horizontal .producto-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    width: clamp(2.2rem, 8.5cqw, 2.7rem);
+    height: clamp(2.2rem, 8.5cqw, 2.7rem);
+    padding: 0;
+    border-radius: 50%;
+    font-size: clamp(0.9rem, 3.2cqw, 1.1rem);
+    letter-spacing: 0;
+    flex-shrink: 0;
+  }
+
+  .producto-card--horizontal .producto-boton-texto {
+    display: none;
+  }
+}
+
+/* ============ Ajuste de 1 columna (< 768px) ============ */
+/* En 1 columna la tarjeta ocupa todo el ancho y queda todavía más apaisada. Se
+   le da un poco menos de ancho a la foto (para que la información respire y la
+   imagen no sea una franja) y un alto mínimo algo mayor, así la tarjeta no se
+   ve como una tira. */
+@media (max-width: 767.98px) {
+  .producto-card.producto-card--horizontal {
+    min-height: 12.5rem;
+  }
+
+  .producto-card--horizontal .producto-card-media {
+    flex-basis: 48%;
+  }
+}
+
+/* ============ Variante vertical (3 columnas, escritorio) ============ */
+/* Nombre a 2 renglones y descripción a 3: las tarjetas de una misma fila quedan
+   parejas y una descripción larga no estira la fila entera. El texto completo
+   vive en la página del producto. */
+@media (min-width: 992px) {
+  /* Reserva el alto del pie con promoción (original tachado + precio final) para
+     que las filas con descuento no queden más altas que las que no lo tienen. */
+  .producto-card .producto-pie {
+    min-height: 5.5rem;
+  }
+
+  .producto-card .producto-nombre {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    min-height: 2.4em;
+  }
+
+  .producto-card .producto-descripcion {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    min-height: 4.5em;
+  }
+}
+
+/* Fila del nombre con el badge "Combo" a la derecha. El badge va fuera del
+   `Card.Title` (que usa `line-clamp`): dentro del título caía a una tercera
+   línea y quedaba recortado en las tarjetas angostas de 2 columnas. */
+.producto-encabezado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.producto-encabezado .producto-nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.producto-badge-combo {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  line-height: 1;
+  padding: 0.3em 0.55em;
+  font-size: 0.7rem;
 }
 
 .producto-nombre {
@@ -71,6 +335,7 @@
 }
 
 .producto-boton {
+  width: 100%;
   background-color: var(--color-primary);
   border: none;
   border-radius: 50px;

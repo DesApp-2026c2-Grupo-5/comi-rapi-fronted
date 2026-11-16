@@ -103,6 +103,7 @@ const Reportes = lazy(() => import('../pages/reportes/Reportes'));
 // Páginas superadmin
 const PanelSuperadmin = lazy(() => import('../pages/superadmin/PanelSuperadmin'));
 const GestionAdministradores = lazy(() => import('../pages/superadmin/GestionAdministradores'));
+const EditarAdministrador = lazy(() => import('../pages/superadmin/EditarAdministrador'));
 const GestionClientesSuperadmin = lazy(() => import('../pages/superadmin/GestionClientes'));
 const DetalleClienteSuperadmin = lazy(() => import('../pages/superadmin/DetalleCliente'));
 const GestionSucursales = lazy(() => import('../pages/superadmin/GestionSucursales'));
@@ -214,7 +215,10 @@ const AppRoutes = () => {
           <Route element={<ProtectedRoute requiredRole="SUPERADMINISTRADOR" />}>
             <Route path="/superadmin/panel" element={<PanelSuperadmin />} />
             <Route path="/superadmin/reportes" element={<Reportes />} />
-            <Route path="/superadmin/administradores" element={<GestionAdministradores />} />
+            <Route path="/superadmin/administrador" element={<GestionAdministradores />} />
+            <Route path="/superadmin/administrador/nuevo" element={<EditarAdministrador />} />
+            <Route path="/superadmin/administrador/editar/:id" element={<EditarAdministrador />} />
+            <Route path="/superadmin/administradores" element={<Navigate to="/superadmin/administrador" replace />} />
             <Route path="/superadmin/clientes" element={<GestionClientesSuperadmin />} />
             <Route path="/superadmin/clientes/:id" element={<DetalleClienteSuperadmin />} />
             <Route path="/superadmin/sucursales" element={<GestionSucursales />} />

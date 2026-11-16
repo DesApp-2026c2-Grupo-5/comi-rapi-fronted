@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Container, Alert, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioProducto from '../../components/admin/FormularioProducto';
+import PaginaFormularioABM from '../../components/admin/PaginaFormularioABM';
 import { crearProducto, editarProducto } from '../../api/productos';
 import { asignarProducto } from '../../api/promociones';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
@@ -156,14 +157,17 @@ const EditarProducto = () => {
       for (const clave of variantesLista) {
         const lista = queryClient.getQueryData(clave);
         if (Array.isArray(lista)) {
-          if (id) {
-            // Edición: reemplazar en la lista
-            const idx = lista.findIndex((p) => String(p.id) === String(productoId));
-            if (idx >= 0) {
-              const nuevaLista = [...lista];
-              nuevaLista[idx] = productoActualizado;
-              queryClient.setQueryData(clave, nuevaLista);
-            }
+          // Se reemplaza si el producto ya está (edición, o el aviso de tiempo
+          // real —catalogo_actualizado— lo insertó antes de que llegara esta
+          // respuesta) y se agrega sólo si falta. Agregar a ciegas duplicaba la
+          // fila cuando el socket ganaba la carrera.
+          const idx = lista.findIndex(
+            (p) => String(p.id) === String(productoId)
+          );
+          if (idx >= 0) {
+            const nuevaLista = [...lista];
+            nuevaLista[idx] = productoActualizado;
+            queryClient.setQueryData(clave, nuevaLista);
           } else {
             // Creación: agregar ordenado por nombre
             const nuevaLista = [...lista, productoActualizado].sort(ordenarPorNombre);
@@ -233,14 +237,27 @@ const EditarProducto = () => {
   }
 
   return (
-    <Container className="py-4">
-      <Link to="/superadmin/productos" className="text-danger text-decoration-none mb-3 d-inline-block">
-        ← Volver a productos
-      </Link>
-      <h1 className="h2 mb-4">
-        {id ? `Editar Producto #${id}` : forzarTipo ? 'Nuevo Combo' : 'Nuevo Producto'}
-      </h1>
-      {error && <Alert variant="danger" role="alert">{error}</Alert>}
+    <PaginaFormularioABM
+      titulo={
+        id
+          ? `Editar producto #${id}`
+          : forzarTipo
+            ? 'Nuevo combo'
+            : 'Nuevo producto'
+      }
+      descripcion={
+        forzarTipo
+          ? 'Armá el combo con sus productos y definí cómo se muestra en el catálogo.'
+          : 'Completá los datos, la receta y la presentación del producto.'
+      }
+      volverA="/superadmin/productos"
+      volverTexto="Volver a productos"
+    >
+      {error && (
+        <Alert variant="danger" role="alert" className="mb-3">
+          {error}
+        </Alert>
+      )}
 
       {sugerencias.length > 0 && !descartado && (
         <section
@@ -290,7 +307,7 @@ const EditarProducto = () => {
         onGuardar={guardando ? undefined : handleGuardar}
         forzarTipo={forzarTipo}
       />
-    </Container>
+    </PaginaFormularioABM>
   );
 };
 
