@@ -13,6 +13,14 @@
   color: var(--color-text);
 }
 
+/* El contenedor es fluido (crece con la ventana) con un tope para que en
+   pantallas enormes la grilla no se estire de más. Antes, el `Container` fijo de
+   Bootstrap dejaba franjas muertas a los costados en cada rango de breakpoint
+   (p. ej. 768–991px) y las tarjetas no crecían. */
+.catalogo-container {
+  max-width: 1400px;
+}
+
 /* ============ Acciones mobile: Ordenar / Filtrar ============ */
 /* Dos botones del mismo ancho, en el flujo (no fijos). Abren las hojas
    inferiores; el pie fijo del sitio sigue siendo `NavInferior`. */

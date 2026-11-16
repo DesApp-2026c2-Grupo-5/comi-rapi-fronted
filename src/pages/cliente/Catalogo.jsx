@@ -261,7 +261,7 @@ const Catalogo = () => {
   };
 
   return (
-    <Container className="py-5">
+    <Container fluid className="py-5 catalogo-container">
       {/* Título */}
       <div className="text-center mb-4">
         <h1 className="catalogo-titulo mb-2">Nuestro Catálogo</h1>
