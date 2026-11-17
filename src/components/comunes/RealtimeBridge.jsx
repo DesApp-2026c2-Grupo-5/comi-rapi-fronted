@@ -60,31 +60,35 @@ const invalidarCatalogo = (queryClient) => {
  * @param {string} accion - 'creado' | 'actualizado' | 'eliminado'
  * @param {(a: any, b: any) => number} [ordenar] - Función de ordenamiento opcional
  */
+const sinDuplicadosPorId = (lista) => {
+  const vistos = new Set();
+  return lista.filter((item) => {
+    if (item?.id === undefined || item?.id === null) return true;
+    const clave = String(item.id);
+    if (vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
+};
+
 const actualizarLista = (queryClient, clave, data, id, accion, ordenar) => {
   queryClient.setQueryData(clave, (old) => {
     if (!Array.isArray(old)) return old;
-    const idx = old.findIndex((item) => String(item.id) === String(id));
+    const idBuscado = String(id);
+    const idx = old.findIndex((item) => String(item.id) === idBuscado);
+
     if (accion === 'eliminado') {
-      if (idx >= 0) {
-        const nueva = [...old];
-        nueva.splice(idx, 1);
-        return nueva;
-      }
-      return old;
+      return sinDuplicadosPorId(
+        old.filter((item) => String(item.id) !== idBuscado)
+      );
     }
-    if (accion === 'creado') {
-      const nueva = [...old, data];
-      return ordenar ? nueva.sort(ordenar) : nueva;
-    }
-    // actualizado
-    if (idx >= 0) {
-      const nueva = [...old];
-      nueva[idx] = data;
-      return ordenar ? nueva.sort(ordenar) : nueva;
-    }
-    // Si no existe en la lista (caso raro), agregar
-    const nueva = [...old, data];
-    return ordenar ? nueva.sort(ordenar) : nueva;
+
+    const nueva =
+      idx >= 0
+        ? old.map((item, i) => (i === idx ? data : item))
+        : [...old, data];
+    const sinRepetidos = sinDuplicadosPorId(nueva);
+    return ordenar ? sinRepetidos.sort(ordenar) : sinRepetidos;
   });
 };
 
@@ -98,9 +102,7 @@ const actualizarLista = (queryClient, clave, data, id, accion, ordenar) => {
  */
 const actualizarCacheCatalogo = (queryClient, payload) => {
   const { tipo, id, accion, data, updatedAt } = payload;
-  console.log('[DIAG] actualizarCacheCatalogo: procesando', { tipo, id, accion, hasData: !!data });
   if (!data) {
-    console.log('[DIAG] actualizarCacheCatalogo: sin data, abortando');
     return;
   }
 
@@ -114,7 +116,6 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
     const cachedTime = new Date(cached.updatedAt).getTime();
     const incomingTime = new Date(updatedAt).getTime();
     if (incomingTime <= cachedTime) {
-      console.log('[DIAG] actualizarCacheCatalogo: evento obsoleto/duplicado, ignorando', { cachedTime, incomingTime });
       return;
     }
   }
@@ -137,6 +138,7 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
       queryKeys.public.productos({ incluirPersonalizacion: true }),
       queryKeys.public.productos({ incluirResenas: true }),
       queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }),
+      queryKeys.public.productos({ orden: 'mas-vendidos' }),
       queryKeys.public.masVendidos,
     ];
     for (const clave of clavesProductos) {
@@ -156,26 +158,26 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
   // 1. Actualizar la query individual (detalle)
   if (tipo === 'producto') {
     const key = queryKeys.public.producto(id);
-    console.log('[DIAG] actualizarCacheCatalogo: setQueryData detalle producto', key);
     queryClient.setQueryData(key, data);
 
     // Variantes de lista de productos
-    console.log('[DIAG] actualizarCacheCatalogo: actualizando listas de productos');
     actualizarLista(queryClient, queryKeys.public.productos({}), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirPersonalizacion: true }), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirResenas: true }), data, id, accion, ordenarPorNombre);
     actualizarLista(queryClient, queryKeys.public.productos({ incluirPersonalizacion: true, incluirResenas: true }), data, id, accion, ordenarPorNombre);
+    // Catálogo ordenado por más vendidos: se agrega/reemplaza sin reordenar por
+    // nombre, para no romper el orden por ventas (un producto nuevo queda al
+    // final, que es donde corresponde con 0 ventas).
+    actualizarLista(queryClient, queryKeys.public.productos({ orden: 'mas-vendidos' }), data, id, accion);
     // Más vendidos
     actualizarLista(queryClient, queryKeys.public.masVendidos, data, id, accion);
 
   } else if (tipo === 'categoria') {
     const key = queryKeys.public.categoria(id);
-    console.log('[DIAG] actualizarCacheCatalogo: setQueryData detalle categoria', key);
     queryClient.setQueryData(key, data);
 
     // Variantes de lista de categorías
-    console.log('[DIAG] actualizarCacheCatalogo: actualizando listas de categorias');
-    
+
     // La lista 'categorias(true)' incluye TODAS (activas e inactivas): 
     // - 'actualizado'/'creado': actualizar/reemplazar
     // - 'eliminado' (soft delete): mantener en lista con activa: false
@@ -196,7 +198,7 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
       // 'creado' o 'actualizado': actualizar normalmente
       actualizarLista(queryClient, queryKeys.public.categorias(true), data, id, accion, ordenarPorNombre);
     }
-    
+
     // La lista 'categorias(false)' solo incluye ACTIVAS: 
     // - Si se deshabilita/elimina (activa: false), eliminar de la lista de activas
     // - Si se habilita (activa: true), agregar a la lista de activas en posición ordenada
@@ -220,43 +222,32 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
 
     // 3. Propagar cambio de categoría a productos que pertenecen a ella
     // (actualizan su campo `categoria` con el nuevo nombre)
-    console.log('[DIAG] actualizarCacheCatalogo: propagando categoría a productos');
     actualizarListasProductosPorCategoria(queryClient, data);
 
   } else if (tipo === 'promocion') {
     const key = queryKeys.public.promocion(id);
-    console.log('[DIAG PROMO] setQueryData detalle promocion', { key, dataKeys: Object.keys(data), hasProductos: !!data.Productos, dataActiva: data.activa });
     queryClient.setQueryData(key, data);
 
     // Variantes de lista de promociones
-    console.log('[DIAG PROMO] actualizando listas de promociones', { accion, id });
-    
+
     // Helper para actualizar lista de promociones preservando productos en variantes con incluirProductos
     const actualizarListaPromocion = (clave, incluirProductos) => {
-      console.log('[DIAG PROMO] actualizarListaPromocion INICIO', { clave: clave.join('.'), incluirProductos });
-      const beforeCache = queryClient.getQueryData(clave);
-      console.log('[DIAG PROMO] CACHE ANTES', { clave: clave.join('.'), isArray: Array.isArray(beforeCache), length: beforeCache?.length, firstId: beforeCache?.[0]?.id, firstHasProductos: !!beforeCache?.[0]?.Productos ?? !!beforeCache?.[0]?.productos });
-      
       queryClient.setQueryData(clave, (old) => {
         if (!Array.isArray(old)) {
-          console.log('[DIAG PROMO] CACHE NO ES ARRAY', { clave: clave.join('.'), old });
           return old;
         }
         const idx = old.findIndex((item) => String(item.id) === String(id));
-        console.log('[DIAG PROMO] ÍNDICE ENCONTRADO', { clave: clave.join('.'), idx, buscadoId: id, primerItemId: old[0]?.id });
-        
+
         if (accion === 'eliminado') {
           if (idx >= 0) {
             const nueva = [...old];
             nueva.splice(idx, 1);
-            console.log('[DIAG PROMO] ELIMINADO', { clave: clave.join('.'), newLength: nueva.length });
             return nueva;
           }
           return old;
         }
         if (accion === 'creado') {
           const nueva = [...old, data];
-          console.log('[DIAG PROMO] CREADO', { clave: clave.join('.'), newLength: nueva.length });
           return ordenarPorNombre ? nueva.sort(ordenarPorNombre) : nueva;
         }
         // actualizado: merge con datos existentes para preservar productos en variantes con incluirProductos
@@ -265,14 +256,6 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
           // El cache de lista usa 'productos' (minúscula), el evento trae 'Productos' (mayúscula)
           const existentesProductos = existente.Productos ?? existente.productos;
           const dataProductos = data.Productos ?? data.productos;
-          console.log('[DIAG PROMO] ACTUALIZADO - merge', { 
-            clave: clave.join('.'), 
-            incluirProductos, 
-            existenteHasProductos: !!existentesProductos, 
-            dataHasProductos: !!dataProductos,
-            existenteActiva: existente.activa,
-            dataActiva: data.activa
-          });
           // Si la variante incluye productos y el dato nuevo no trae productos pero el cache sí, preservar
           // Normalizar: el cache de lista usa 'productos' (minúscula)
           let merged = data;
@@ -284,22 +267,12 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
           }
           const nueva = [...old];
           nueva[idx] = merged;
-          console.log('[DIAG PROMO] ACTUALIZADO RESULTADO', { 
-            clave: clave.join('.'), 
-            mergedKeys: Object.keys(merged), 
-            mergedHasProductos: !!merged.Productos ?? !!merged.productos,
-            mergedProductosLength: merged.Productos?.length ?? merged.productos?.length
-          });
           return ordenarPorNombre ? nueva.sort(ordenarPorNombre) : nueva;
         }
         // Si no existe en la lista (caso raro), agregar
         const nueva = [...old, data];
-        console.log('[DIAG PROMO] AGREGADO (no existía)', { clave: clave.join('.'), newLength: nueva.length });
         return ordenarPorNombre ? nueva.sort(ordenarPorNombre) : nueva;
       });
-      
-      const afterCache = queryClient.getQueryData(clave);
-      console.log('[DIAG PROMO] CACHE DESPUÉS', { clave: clave.join('.'), isArray: Array.isArray(afterCache), length: afterCache?.length, firstId: afterCache?.[0]?.id, firstHasProductos: !!afterCache?.[0]?.Productos ?? !!afterCache?.[0]?.productos });
     };
 
     // 4 variantes: incluirInactivas (true/false) x incluirProductos (true/false)
@@ -311,7 +284,6 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
   } else if (tipo === 'personalizacion') {
     // Personalización: actualizar elemento individual y listas
     const key = queryKeys.public.personalizacionElemento(id);
-    console.log('[DIAG] actualizarCacheCatalogo: setQueryData elemento personalizacion', key);
     queryClient.setQueryData(key, data);
 
     // Lista general de personalización (por producto y global)
@@ -365,9 +337,7 @@ const actualizarCacheCatalogo = (queryClient, payload) => {
  */
 const actualizarCachePersonalizacion = (queryClient, payload) => {
   const { tipo, id, accion, data, updatedAt } = payload;
-  console.log('[DIAG PERS] actualizarCachePersonalizacion: procesando', { tipo, id, accion, hasData: !!data });
   if (!data) {
-    console.log('[DIAG PERS] actualizarCachePersonalizacion: sin data, abortando');
     return;
   }
 
@@ -380,7 +350,6 @@ const actualizarCachePersonalizacion = (queryClient, payload) => {
     const cachedTime = new Date(cached.updatedAt).getTime();
     const incomingTime = new Date(updatedAt).getTime();
     if (incomingTime < cachedTime) {
-      console.log('[DIAG PERS] actualizarCachePersonalizacion: evento obsoleto, ignorando', { cachedTime, incomingTime });
       return;
     }
   }
@@ -391,7 +360,6 @@ const actualizarCachePersonalizacion = (queryClient, payload) => {
   if (tipo === 'personalizacion') {
     // 1. Actualizar el elemento individual
     const key = queryKeys.public.personalizacionElemento(id);
-    console.log('[DIAG PERS] setQueryData elemento personalizacion', key);
     queryClient.setQueryData(key, data);
 
     // 2. Actualizar lista general de personalización (todas)
@@ -437,7 +405,6 @@ const actualizarCachePersonalizacion = (queryClient, payload) => {
   } else if (tipo === 'personalizacion_categoria') {
     // 1. Actualizar la plantilla individual
     const key = queryKeys.public.plantilla(id);
-    console.log('[DIAG PERS] setQueryData plantilla categoria', key);
     queryClient.setQueryData(key, data);
 
     // 2. Actualizar lista general de plantillas
@@ -512,11 +479,9 @@ const actualizarParametrosCache = (queryClient, parametrosModificados) => {
   const cacheActual = queryClient.getQueryData(claveCache);
 
   if (!Array.isArray(cacheActual)) {
-    console.log('[DIAG PARAMS] Cache no es array, no se puede actualizar selectivamente');
     return;
   }
 
-  console.log('[DIAG PARAMS] Actualizando parámetros modificados:', parametrosModificados.map(p => p.clave));
 
   // Crear mapa de parámetros modificados para búsqueda O(1)
   const modificadosPorClave = new Map();
@@ -802,35 +767,20 @@ const RealtimeBridge = () => {
     // El socket se conecta SIEMPRE (incluso sin sesión) para recibir
     // eventos públicos de catálogo y parámetros.
     if (!hydrated) {
-      console.log('[DIAG] RealtimeBridge: esperando hidratación...');
       return undefined;
     }
 
-    console.log('[DIAG] RealtimeBridge: hidratación completa, conectando socket...', { haySesion });
     const instancia = conectarSocket();
     if (!instancia) {
-      console.log('[DIAG] RealtimeBridge: no se pudo conectar socket');
       return undefined;
     }
-    console.log('[DIAG] RealtimeBridge: socket conectado, registrando listeners...', { connected: instancia.connected });
 
     // Handlers para eventos PÚBLICOS (catálogo, parámetros, personalización, insumos)
     // Se registran SIEMPRE, incluso sin sesión.
     const alCambiarCatalogo = (payload) => {
-      console.log('[DIAG PROMO] RealtimeBridge: CATALOGO_ACTUALIZADO recibido', { 
-        tipo: payload?.tipo, 
-        id: payload?.id, 
-        accion: payload?.accion, 
-        hasData: !!payload?.data,
-        dataKeys: payload?.data ? Object.keys(payload.data) : [],
-        dataActiva: payload?.data?.activa,
-        dataHasProductos: !!payload?.data?.Productos,
-        dataProductosLength: payload?.data?.Productos?.length
-      });
       actualizarCacheCatalogo(queryClient, payload);
     };
     const alCambiarParametros = (payload) => {
-      console.log('[DIAG] RealtimeBridge: PARAMETROS_ACTUALIZADOS recibido', { payload });
       if (payload?.parametros && Array.isArray(payload.parametros)) {
         actualizarParametrosCache(queryClient, payload.parametros);
       } else {
@@ -848,12 +798,6 @@ const RealtimeBridge = () => {
     };
     // Personalización: elemento por producto o plantilla por categoría
     const alCambiarPersonalizacion = (payload) => {
-      console.log('[DIAG PERS] RealtimeBridge: PERSONALIZACION recibido', {
-        tipo: payload?.tipo,
-        id: payload?.id,
-        accion: payload?.accion,
-        hasData: !!payload?.data
-      });
       actualizarCachePersonalizacion(queryClient, payload);
     };
 
@@ -893,6 +837,9 @@ const RealtimeBridge = () => {
       queryClient.invalidateQueries({ queryKey: ['public', 'sucursales'] });
       if (haySesion) {
         invalidarStock(queryClient);
+        // Reclamos: los avisos del canal caído no se recuperan solos, así que
+        // al volver la conexión se relee la bandeja y el detalle.
+        queryClient.invalidateQueries({ queryKey: ['private', 'quejas'] });
       }
     });
 

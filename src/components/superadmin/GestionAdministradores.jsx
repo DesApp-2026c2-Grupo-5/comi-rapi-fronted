@@ -1,38 +1,19 @@
-/**
- * Propósito: Gestión de usuarios administrativos del SUPERADMINISTRADOR:
- *            listado, alta, edición y activación/desactivación de
- *            ADMINISTRADOR y SUPERADMINISTRADOR.
- * Contenido: Componente GestionAdministradores con buscador, tabla y un modal
- *            de alta/edición (selector de rol y de sucursal). El listado y las
- *            sucursales se leen con TanStack Query; las mutaciones invalidan
- *            la clave de administradores.
- * Dependencias: react-bootstrap, api/usuarios, hooks/queries
- *               (useAdministradoresQuery), react-icons, hooks/useSucursal,
- *               components/comunes/Skeleton (SkeletonTabla).
- * Uso: <GestionAdministradores /> - Se renderiza en GestionAdministradoresPage.
- */
-
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Table,
-  Button,
-  Container,
-  Alert,
-  Badge,
-  Form,
-  Row,
-  Col,
-  Modal,
-} from 'react-bootstrap';
-import { FaUserTie, FaPlus, FaEdit, FaStore } from 'react-icons/fa';
-import {
-  crearUsuarioPanel,
-  actualizarUsuarioPanel,
-} from '../../api/usuarios';
+import { Alert, Badge, Button, Col, Form, Row, Table } from 'react-bootstrap';
+import { FaEdit, FaPlus, FaStore, FaUserTie } from 'react-icons/fa';
+import { actualizarUsuarioPanel } from '../../api/usuarios';
 import { useAdministradoresQuery } from '../../hooks/queries';
 import { useSucursal } from '../../hooks/useSucursal';
 import { SkeletonTabla } from '../comunes/Skeleton';
+
+const CLAVE_ADMINISTRADORES = ['private', 'administradores'];
+
+const ETIQUETA_ROL = {
+  ADMINISTRADOR: 'Administrador',
+  SUPERADMINISTRADOR: 'Superadmin',
+};
 
 const inicialesDe = (admin) => {
   const nombre = (admin.nombre || '').trim();
@@ -43,26 +24,8 @@ const inicialesDe = (admin) => {
 const nombreCompleto = (admin) =>
   `${admin.nombre || ''} ${admin.apellido || ''}`.trim() || '—';
 
-const FORMULARIO_VACIO = {
-  nombre: '',
-  apellido: '',
-  email: '',
-  telefono: '',
-  password: '',
-  rol: 'ADMINISTRADOR',
-  sucursalId: '',
-  activo: true,
-};
-
-const ETIQUETA_ROL = {
-  ADMINISTRADOR: 'Administrador',
-  SUPERADMINISTRADOR: 'Superadmin',
-};
-
-// Prefijo que cubre cualquier variante de búsqueda/paginación del listado.
-const CLAVE_ADMINISTRADORES = ['private', 'administradores'];
-
 const GestionAdministradores = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
     data: dataAdministradores,
@@ -73,8 +36,6 @@ const GestionAdministradores = () => {
     () => dataAdministradores?.items || [],
     [dataAdministradores]
   );
-  // La lista (incluidas inactivas) la carga SucursalProvider para el superadmin:
-  // esta pantalla la consume del contexto y sólo relee si la caché está vencida.
   const { sucursales = [], obtenerSucursales } = useSucursal();
 
   useEffect(() => {
@@ -83,19 +44,10 @@ const GestionAdministradores = () => {
 
   const [errorAccion, setErrorAccion] = useState('');
   const [buscar, setBuscar] = useState('');
-
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [editando, setEditando] = useState(null);
-  const [formulario, setFormulario] = useState(FORMULARIO_VACIO);
-  const [guardando, setGuardando] = useState(false);
-  const [errorFormulario, setErrorFormulario] = useState('');
-
   const error = errorAccion || errorQuery?.message || '';
 
   const refrescarAdministradores = () =>
-    queryClient.invalidateQueries({
-      queryKey: CLAVE_ADMINISTRADORES,
-    });
+    queryClient.invalidateQueries({ queryKey: CLAVE_ADMINISTRADORES });
 
   const nombreSucursal = (sucursalId) => {
     const sucursal = sucursales.find((s) => s.id === Number(sucursalId));
@@ -116,81 +68,11 @@ const GestionAdministradores = () => {
   }, [administradores, buscar]);
 
   const abrirNuevo = () => {
-    setEditando(null);
-    setFormulario(FORMULARIO_VACIO);
-    setErrorFormulario('');
-    setModalAbierto(true);
+    navigate('/superadmin/administrador/nuevo');
   };
 
   const abrirEdicion = (admin) => {
-    setEditando(admin);
-    setFormulario({
-      nombre: admin.nombre || '',
-      apellido: admin.apellido || '',
-      email: admin.email || '',
-      telefono: admin.telefono || '',
-      password: '',
-      rol: admin.rol || 'ADMINISTRADOR',
-      sucursalId: admin.sucursalId ? String(admin.sucursalId) : '',
-      activo: Boolean(admin.activo),
-    });
-    setErrorFormulario('');
-    setModalAbierto(true);
-  };
-
-  const cambiarCampo = (campo, valor) => {
-    setFormulario((previo) => ({ ...previo, [campo]: valor }));
-  };
-
-  const guardarAdministrador = async (e) => {
-    e.preventDefault();
-    setErrorFormulario('');
-
-    if (!formulario.nombre.trim() || !formulario.email.trim()) {
-      setErrorFormulario('El nombre y el email son obligatorios.');
-      return;
-    }
-    if (!editando && formulario.password.length < 6) {
-      setErrorFormulario('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-    const esAdministrador = formulario.rol === 'ADMINISTRADOR';
-    if (esAdministrador && !formulario.sucursalId) {
-      setErrorFormulario('Un administrador debe tener una sucursal asignada.');
-      return;
-    }
-
-    setGuardando(true);
-    const datos = {
-      nombre: formulario.nombre.trim(),
-      apellido: formulario.apellido.trim(),
-      email: formulario.email.trim(),
-      telefono: formulario.telefono.trim() || undefined,
-      activo: formulario.activo,
-      rol: formulario.rol,
-    };
-    if (esAdministrador) {
-      datos.sucursalId = Number(formulario.sucursalId);
-    }
-    if (editando) {
-      const result = await actualizarUsuarioPanel(editando.id, datos);
-      if (!result.success) {
-        setErrorFormulario(result.error || 'No se pudo actualizar el administrador.');
-        setGuardando(false);
-        return;
-      }
-    } else {
-      datos.password = formulario.password;
-      const result = await crearUsuarioPanel(datos);
-      if (!result.success) {
-        setErrorFormulario(result.error || 'No se pudo crear el administrador.');
-        setGuardando(false);
-        return;
-      }
-    }
-    setGuardando(false);
-    setModalAbierto(false);
-    await refrescarAdministradores();
+    navigate(`/superadmin/administrador/editar/${admin.id}`);
   };
 
   const alternarActivo = async (admin) => {
@@ -206,7 +88,7 @@ const GestionAdministradores = () => {
   };
 
   return (
-    <Container>
+    <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 className="h2 mb-0">
           <FaUserTie className="me-2" aria-hidden="true" />
@@ -215,13 +97,17 @@ const GestionAdministradores = () => {
             {visibles.length} de {administradores.length}
           </Badge>
         </h1>
-        <Button variant="warning" className="fw-semibold" onClick={abrirNuevo}>
+        <Button variant="primary" className="fw-semibold" onClick={abrirNuevo}>
           <FaPlus className="me-1" aria-hidden="true" />
-          Nuevo usuario
+          Nuevo administrador
         </Button>
       </div>
 
-      {error && <Alert variant="danger" role="alert">{error}</Alert>}
+      {error && (
+        <Alert variant="danger" role="alert">
+          {error}
+        </Alert>
+      )}
 
       <Row className="g-2 mb-3">
         <Col xs={12} md={6}>
@@ -277,7 +163,11 @@ const GestionAdministradores = () => {
                 </td>
                 <td data-label="Email">{admin.email}</td>
                 <td data-label="Rol">
-                  <Badge bg={admin.rol === 'SUPERADMINISTRADOR' ? 'dark' : 'warning'}>
+                  <Badge
+                    bg={
+                      admin.rol === 'SUPERADMINISTRADOR' ? 'dark' : 'warning'
+                    }
+                  >
                     {ETIQUETA_ROL[admin.rol] || admin.rol}
                   </Badge>
                 </td>
@@ -320,135 +210,7 @@ const GestionAdministradores = () => {
           </tbody>
         </Table>
       )}
-
-      <Modal show={modalAbierto} onHide={() => setModalAbierto(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title as="h2" className="h5">
-            {editando ? 'Editar usuario' : 'Nuevo usuario'}
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={guardarAdministrador} noValidate>
-          <Modal.Body>
-            {errorFormulario && (
-              <Alert variant="warning" role="alert">
-                {errorFormulario}
-              </Alert>
-            )}
-            <Row>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-nombre">
-                  <Form.Label>Nombre</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formulario.nombre}
-                    onChange={(e) => cambiarCampo('nombre', e.target.value)}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-apellido">
-                  <Form.Label>Apellido</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formulario.apellido}
-                    onChange={(e) => cambiarCampo('apellido', e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-email">
-                  <Form.Label>Email</Form.Label>
-                  <Form.Control
-                    type="email"
-                    value={formulario.email}
-                    onChange={(e) => cambiarCampo('email', e.target.value)}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-rol">
-                  <Form.Label>Rol</Form.Label>
-                  <Form.Select
-                    value={formulario.rol}
-                    onChange={(e) => cambiarCampo('rol', e.target.value)}
-                  >
-                    <option value="ADMINISTRADOR">Administrador</option>
-                    <option value="SUPERADMINISTRADOR">Superadmin</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              {formulario.rol === 'ADMINISTRADOR' ? (
-                <Col md={6} className="mb-3">
-                  <Form.Group controlId="admin-sucursal">
-                    <Form.Label>Sucursal asignada</Form.Label>
-                    <Form.Select
-                      value={formulario.sucursalId}
-                      onChange={(e) => cambiarCampo('sucursalId', e.target.value)}
-                      required
-                    >
-                      <option value="">Seleccioná una sucursal…</option>
-                      {sucursales.map((sucursal) => (
-                        <option key={sucursal.id} value={sucursal.id}>
-                          {sucursal.nombre}
-                          {sucursal.activa ? '' : ' (inactiva)'}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              ) : (
-                <Col md={6} className="mb-3 d-flex align-items-end">
-                  <p className="text-muted mb-0 small">
-                    El superadmin no lleva sucursal asignada.
-                  </p>
-                </Col>
-              )}
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-password">
-                  <Form.Label>
-                    Contraseña{editando ? ' (nueva, opcional)' : ''}
-                  </Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={formulario.password}
-                    onChange={(e) => cambiarCampo('password', e.target.value)}
-                    placeholder={editando ? 'Dejar vacío para no cambiarla' : 'Mínimo 6 caracteres'}
-                    required={!editando}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6} className="mb-3">
-                <Form.Group controlId="admin-telefono">
-                  <Form.Label>Teléfono</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formulario.telefono}
-                    onChange={(e) => cambiarCampo('telefono', e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Form.Check
-              type="switch"
-              id="admin-activo"
-              label="Cuenta activa"
-              checked={formulario.activo}
-              onChange={(e) => cambiarCampo('activo', e.target.checked)}
-            />
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setModalAbierto(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="warning" disabled={guardando}>
-              {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear usuario'}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-    </Container>
+    </div>
   );
 };
 

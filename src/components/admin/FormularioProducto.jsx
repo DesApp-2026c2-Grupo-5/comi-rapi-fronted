@@ -15,17 +15,26 @@ import { FaSave } from 'react-icons/fa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
 import { useCategorias, useProductos } from '../../hooks/queries';
+import useMediaQuery from '../../hooks/useMediaQuery';
 import { IMAGEN_PRODUCTO_POR_DEFECTO } from '../../utils/imagenes';
 import { SkeletonTarjeta } from '../comunes/Skeleton';
 import SubirImagen from './SubirImagen';
 import EditarComponentes from './EditarComponentes';
 import EditarRecetaIngredientes from './EditarRecetaIngredientes';
+import FormularioPasos from './FormularioPasos';
 import './FormularioAdmin.css';
+import './FormularioABM.css';
 
 // La categoría "Combos" es la de los combos y no se le ofrece al admin: se
 // deduce del tipo. En un producto normal ni siquiera aparece en el desplegable,
 // así nadie clasifica una hamburguesa como combo por error.
 const CATEGORIA_COMBOS = 'combos';
+
+const PASOS_PRODUCTO = [
+  { id: 'datos', etiqueta: 'Datos básicos' },
+  { id: 'receta', etiqueta: 'Receta' },
+  { id: 'presentacion', etiqueta: 'Imagen y descripción' },
+];
 
 const esCategoriaCombos = (categoria) =>
   String(categoria?.nombre).trim().toLowerCase() === CATEGORIA_COMBOS;
@@ -48,6 +57,10 @@ const parsearIngredientes = (texto) => {
 const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
+  // Mismo corte que la barra inferior del shell (NavInferior, <992px): cuando
+  // se navega como móvil, el formulario también usa pasos y tarjetas.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
+  const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
@@ -106,14 +119,13 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
           : []
       );
     }
+    setPaso(1);
   }, [producto, forzarTipo]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const validarDatosBasicos = () => {
     if (!nombre.trim() || precio === '') {
       notificar('Por favor completa todos los campos obligatorios.', 'warning');
-      return;
+      return false;
     }
 
     // Un combo siempre va a la categoría "Combos"; el admin no la elige. Si esa
@@ -124,7 +136,7 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
         'No se encontró la categoría "Combos". Creala antes de armar un combo.',
         'warning'
       );
-      return;
+      return false;
     }
 
     // Para un producto normal la categoría sí se elige; la "Combos" está
@@ -132,8 +144,46 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
     const categoriaEfectiva = esCombo ? categoriaCombos.id : Number(categoriaId);
     if (!categoriaEfectiva || Number.isNaN(categoriaEfectiva)) {
       notificar('Elegí una categoría.', 'warning');
+      return false;
+    }
+
+    return true;
+  };
+
+  const validarReceta = () => {
+    if (!esCombo) {
+      return true;
+    }
+
+    const receta = componentes
+      .map((c) => ({
+        productoId: Number(c.productoId),
+        cantidad: Number(c.cantidad),
+      }))
+      .filter((c) => c.productoId > 0 && c.cantidad > 0);
+
+    const minimoComponentes = parametros.minimoComponentesCombo;
+    if (receta.length < minimoComponentes) {
+      notificar(
+        `Un combo tiene que armarse con ${minimoComponentes} o más productos.`,
+        'warning'
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  const irAPaso = (nuevoPaso) => setPaso(nuevoPaso);
+
+  const guardarProducto = () => {
+    if (!validarDatosBasicos() || !validarReceta()) {
       return;
     }
+
+    const categoriaEfectiva = esCombo
+      ? categoriaCombos.id
+      : Number(categoriaId);
 
     const datosProducto = {
       nombre: nombre.trim(),
@@ -156,29 +206,72 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
     }
 
     if (esCombo) {
-      const receta = componentes
+      datosProducto.componentes = componentes
         .map((c) => ({
           productoId: Number(c.productoId),
           cantidad: Number(c.cantidad),
         }))
         .filter((c) => c.productoId > 0 && c.cantidad > 0);
-
-      // Se valida acá para avisar sin ida y vuelta; el backend igual lo exige.
-      const minimoComponentes = parametros.minimoComponentesCombo;
-      if (receta.length < minimoComponentes) {
-        notificar(
-          `Un combo tiene que armarse con ${minimoComponentes} o más productos.`,
-          'warning'
-        );
-        return;
-      }
-      datosProducto.componentes = receta;
     }
 
     if (onGuardar) {
       onGuardar(datosProducto);
     }
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!esMobile) {
+      guardarProducto();
+      return;
+    }
+
+    if (paso === 1) {
+      if (validarDatosBasicos()) {
+        irAPaso(2);
+      }
+      return;
+    }
+
+    if (paso === 2) {
+      if (validarReceta()) {
+        irAPaso(3);
+      }
+      return;
+    }
+
+    guardarProducto();
+  };
+
+  const footerPasos = (
+    <div className="w-100">
+      <span className="abm-stepper-footer-paso">
+        Paso {paso} de {PASOS_PRODUCTO.length}
+      </span>
+      <div className="abm-stepper-footer-acciones mt-2">
+        {paso > 1 && (
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => irAPaso(paso - 1)}
+          >
+            Atrás
+          </Button>
+        )}
+        <Button variant="primary" type="submit">
+          {paso === 3 ? (
+            <>
+              <FaSave className="me-1" aria-hidden="true" />
+              Guardar cambios
+            </>
+          ) : (
+            'Siguiente'
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   if (cargandoCategorias) {
     return (
@@ -190,107 +283,135 @@ const FormularioProducto = ({ producto, onGuardar, forzarTipo = null }) => {
   }
 
   return (
-    <>
-{/* Más ancho para combo: las filas de la receta llevan selector + cantidad + */}
-      {/* botón de quitar, y a 500px quedan apretadas. */}
-      <Card className={`shadow-sm formulario-admin-card ${esCombo ? 'formulario-admin-card-ancho' : ''}`}>
-        <Card.Body>
-          <Form onSubmit={handleSubmit} noValidate>
-          <Form.Group className="mb-3" controlId="producto-nombre">
-            <Form.Label>Nombre *</Form.Label>
-            <Form.Control
-              type="text"
-              name="nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Nombre del producto"
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="producto-precio">
-            <Form.Label>Precio *</Form.Label>
-            <Form.Control
-              type="number"
-              name="precio"
-              value={precio}
-              onChange={(e) => setPrecio(e.target.value)}
-              placeholder="0"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              required
-            />
-          </Form.Group>
-{/* Un combo se categoriza solo como "Combos", así que no se le
-              pregunta la categoría al admin. */}
-          {!esCombo && (            <Form.Group className="mb-3" controlId="producto-categoria">
-              <Form.Label>Categoría *</Form.Label>
-              <Form.Select name="categoriaId" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
-                <option value="">Seleccionar categoría</option>
-                {categoriasVisibles.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          )}
+    <Card className="shadow-sm formulario-admin-card">
+      <Card.Body>
+        <Form onSubmit={handleSubmit} noValidate>
+          <FormularioPasos
+            pasos={PASOS_PRODUCTO}
+            paso={paso}
+            onPaso={irAPaso}
+            esMobile={esMobile}
+            footer={footerPasos}
+          >
+            {(!esMobile || paso === 1) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">Datos básicos</h4>
+                <div className="abm-form-grid">
+                  <Form.Group className="mb-3" controlId="producto-nombre">
+                    <Form.Label>Nombre *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="nombre"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Nombre del producto"
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="producto-precio">
+                    <Form.Label>Precio *</Form.Label>
+                    <Form.Control
+                      type="number"
+                      name="precio"
+                      value={precio}
+                      onChange={(e) => setPrecio(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      required
+                    />
+                  </Form.Group>
+                  {!esCombo && (
+                    <Form.Group
+                      className="mb-3 abm-full"
+                      controlId="producto-categoria"
+                    >
+                      <Form.Label>Categoría *</Form.Label>
+                      <Form.Select
+                        name="categoriaId"
+                        value={categoriaId}
+                        onChange={(e) => setCategoriaId(e.target.value)}
+                      >
+                        <option value="">Seleccionar categoría</option>
+                        {categoriasVisibles.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.nombre}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  )}
+                </div>
+              </section>
+            )}
 
-          {!esCombo && (
-            <EditarRecetaIngredientes
-              receta={recetaIngredientes}
-              onChange={setRecetaIngredientes}
-            />
-          )}
+            {(!esMobile || paso === 2) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">
+                  {esCombo ? 'Componentes del combo' : 'Receta de ingredientes'}
+                </h4>
+                {!esCombo && (
+                  <EditarRecetaIngredientes
+                    receta={recetaIngredientes}
+                    onChange={setRecetaIngredientes}
+                  />
+                )}
+                {esCombo && (
+                  <EditarComponentes
+                    productos={productos}
+                    componentes={componentes}
+                    onChange={setComponentes}
+                  />
+                )}
+              </section>
+            )}
 
-          {/* La receta va en el medio del formulario: es lo que define qué es un
-              combo, así que va después de los datos básicos y antes de la
-              descripción y la imagen, que son metadatos. */}
-          {esCombo && (
-            <div className="mb-3">
-              <EditarComponentes
-                productos={productos}
-                componentes={componentes}
-                onChange={setComponentes}
-              />
-            </div>
-          )}
+            {(!esMobile || paso === 3) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">Imagen y descripción</h4>
+                <Form.Group className="mb-3" controlId="producto-descripcion">
+                  <Form.Label>Descripción</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    name="descripcion"
+                    rows={3}
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    placeholder="Descripción del producto"
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3" controlId="producto-imagen">
+                  <Form.Label>Imagen</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="imagen"
+                    value={imagen}
+                    onChange={(e) => setImagen(e.target.value)}
+                    placeholder="/api/imagenes/productos/tu-imagen.jpg"
+                  />
+                  <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                    <SubirImagen imagen={imagen} onImagenSubida={setImagen} />
+                  </div>
+                  <Form.Text className="text-muted">
+                    Subí una imagen desde tu dispositivo; queda guardada como
+                    archivo del proyecto y se ve en el catálogo. También podés
+                    escribir la ruta o pegar un link.
+                  </Form.Text>
+                </Form.Group>
+              </section>
+            )}
 
-          <Form.Group className="mb-3" controlId="producto-descripcion">
-            <Form.Label>Descripción</Form.Label>
-            <Form.Control
-              as="textarea"
-              name="descripcion"
-              rows={2}
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Descripción del producto"
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="producto-imagen">
-            <Form.Label>Imagen</Form.Label>
-            <Form.Control
-              type="text"
-              name="imagen"
-              value={imagen}
-              onChange={(e) => setImagen(e.target.value)}
-              placeholder="/api/imagenes/productos/tu-imagen.jpg"
-            />
-            <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
-              <SubirImagen imagen={imagen} onImagenSubida={setImagen} />
-            </div>
-            <Form.Text className="text-muted">
-              Subí una imagen desde tu dispositivo; queda guardada como archivo
-              del proyecto y se ve en el catálogo. También podés escribir la
-              ruta o pegar un link.
-            </Form.Text>
-          </Form.Group>
-          <Button variant="primary" type="submit" className="w-100">
-            <FaSave className="me-1" aria-hidden="true" />
-            Guardar cambios
-          </Button>
-          </Form>
-        </Card.Body>
-      </Card>
-    </>
+            {!esMobile && (
+              <Button variant="primary" type="submit" className="w-100">
+                <FaSave className="me-1" aria-hidden="true" />
+                Guardar cambios
+              </Button>
+            )}
+          </FormularioPasos>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 };
 

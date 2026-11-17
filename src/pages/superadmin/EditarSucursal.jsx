@@ -13,6 +13,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
 import FormularioSucursal from '../../components/admin/FormularioSucursal';
+import PaginaFormularioABM from '../../components/admin/PaginaFormularioABM';
 import { useSucursal } from '../../hooks/useSucursal';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { SkeletonTarjeta } from '../../components/comunes/Skeleton';
@@ -89,13 +90,14 @@ const EditarSucursal = () => {
   }
 
   return (
-    <Container className="py-4">
-      <Link to="/superadmin/sucursales" className="text-danger text-decoration-none mb-3 d-inline-block">
-        ← Volver a sucursales
-      </Link>
-      <h1 className="h2 mb-4">{id ? `Editar Sucursal #${id}` : 'Nueva Sucursal'}</h1>
+    <PaginaFormularioABM
+      titulo={id ? `Editar sucursal #${id}` : 'Nueva sucursal'}
+      descripcion="Cargá los datos, verificá la dirección y completá los horarios de atención."
+      volverA="/superadmin/sucursales"
+      volverTexto="Volver a sucursales"
+    >
       <FormularioSucursal sucursal={sucursal} onGuardar={handleGuardar} />
-    </Container>
+    </PaginaFormularioABM>
   );
 };
 

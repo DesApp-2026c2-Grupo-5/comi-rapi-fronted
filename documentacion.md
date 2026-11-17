@@ -99,6 +99,8 @@ src/
       AvisoSucursalesCerradas.jsx  Banner global "todas cerradas" + próxima apertura
     cliente/
       ProductoCard.jsx         Tarjeta de producto del catálogo
+      CatalogoSidebar.jsx      Filtros del catálogo (desktop): categorías + rango de precio
+      CatalogoSidebar.css
       ItemCarrito.jsx          Ítem del carrito (imagen, cantidad, eliminar)
       ResumenPedido.jsx        Resumen (subtotal, envío, total, sucursal)
       FormularioDireccion.jsx  Alta/edición de dirección
@@ -107,7 +109,7 @@ src/
       ListaProductos.jsx       Tabla de productos con acciones
       FormularioProducto.jsx   Formulario de producto
       FormularioSucursal.jsx   Formulario de sucursal (incluye el editor de horarios)
-      EditorHorarios.jsx       Editor de franjas por día (siete días, cruce de medianoche)
+      EditorHorarios.jsx       Editor de franjas por día (siete días, cierre dentro del mismo día)
       PedidosPendientes.jsx    Stepper de estados de pedido (admin)
       PedidosPendientes.css
   context/
@@ -331,7 +333,7 @@ PedidoProvider > DireccionProvider > (Navbar + AppRoutes + Footer)
 | `helpers.js` | `delay(ms)`, `generateId()`, `filterByProperty(array, prop, valor)` |
 | `formatters.js` | `formatPrice` (ARS es-AR), `formatDate` (fecha larga es-AR) |
 | `validators.js` | `validateEmail`, `validatePassword` (>= 6), `validateProducto` |
-| `horarios.js` | `DIAS_SEMANA`, `normalizarHorarios`, `crearHorarioPorDefecto`, `cruzaMedianoche`, `corteDePedidos`, `validarHorarios`, `formatearHorarios`, `formatearProximaApertura`, `formatearCuentaRegresiva` |
+| `horarios.js` | `DIAS_SEMANA`, `normalizarHorarios`, `crearHorarioPorDefecto`, `corteDePedidos`, `validarHorarios`, `formatearHorarios`, `formatearProximaApertura`, `formatearCuentaRegresiva` |
 
 ---
 
@@ -402,7 +404,7 @@ Cada sucursal tiene franjas por día (`HorarioSucursal` en el backend). El front
 **Reglas que el editor replica (espejo, no autoridad):**
 
 - `diaSemana` 1 = lunes … 7 = domingo; varias franjas por día y solapamientos permitidos.
-- `apertura === cierre` es inválido; `cierre <= apertura` cruza la medianoche (ej. 19:00–02:00).
+- `apertura === cierre` es inválido y `cierre < apertura` también: cada franja tiene que cerrar dentro del mismo día (19:00–02:00 se rechaza porque pasaría al martes).
 - Un día sin franjas está cerrado; para cerrar todo el local se desactiva la sucursal.
 - Una franja más corta que el margen de cierre no deja ventana de pedidos: el formulario lo advierte.
 
@@ -435,14 +437,24 @@ Cada sucursal tiene franjas por día (`HorarioSucursal` en el backend). El front
 
 - Título grande "Nuestro Catálogo".
 - Banner global `<AvisoSucursalesCerradas />`: si ninguna sucursal activa está abierta, se avisa una sola vez (con la próxima apertura); el catálogo se sigue pudiendo recorrer.
-- Filtros de categoría en pills (Todos + categorías de la API).
-- Grid responsive de `<ProductoCard />` (md=3, lg=4 columnas).
-- Aviso si no hay productos en la categoría.
+- **Header de búsqueda + carrito**: input de búsqueda por nombre y botón compacto de carrito (`MiniCarrito`) con badge. El botón no navega: abre un panel anclado (popover) con el resumen del carrito y el botón "Ver carrito" (`/cliente/carrito`). El badge muestra `totalItems` (unidades totales), el mismo número que la barra superior y la inferior.
+- **Layout desktop (`lg` y más)**: barra lateral de filtros (`CatalogoSidebar`) de 3 columnas + resultados en 9 columnas.
+  - `CatalogoSidebar.jsx` (`components/cliente/CatalogoSidebar.jsx`): encabezado "Filtros" con "Limpiar todo", categorías en **selección única** (Todos + categorías de la API, sin checkboxes), rango de precios reutilizando `<RangoPrecio />` y botón "Restablecer filtros" (limpia sólo categoría y precio; no la búsqueda).
+  - **Barra de resultados**: conteo (`N productos`) a la izquierda y selector de orden a la derecha (Recomendados / Precio: menor a mayor / Precio: mayor a menor). No hay botón "Precio" en la barra: el rango vive sólo en el sidebar.
+- **Layout mobile (`lg` y menos)**: la búsqueda y el botón de carrito se mantienen en la misma fila; debajo van dos botones del mismo ancho, **Ordenar** y **Filtrar**, **en el flujo** (no fijos). Cada uno abre una hoja inferior (`Offcanvas` de Bootstrap, mutuamente excluyentes) que tapa el `NavInferior` mientras está abierta.
+  - **Ordenar**: lista de opciones (Recomendados / Precio: menor a mayor / Precio: mayor a menor) con la activa marcada; al elegir se aplica y la hoja se cierra.
+  - **Filtrar**: reutiliza `<CatalogoSidebar />` (mismo panel que el desktop) sin su marco de tarjeta. Los filtros se aplican al instante (la URL es la fuente de verdad), sin botón "Aplicar".
+  - Las tarjetas usan la variante horizontal (imagen a la izquierda) siempre por debajo de 576px y, entre 576px y 991px, sólo si la tarjeta mide menos de ~360px de ancho (container query).
+- **Orden "Recomendados"**: `Catalogo.jsx` consulta `useProductos({ orden: 'mas-vendidos' })`. La URL conserva `?ordenPrecio=asc|desc`; ausente = Recomendados. "Recomendados" = más vendidos del día (mismo criterio que la portada; ver `GET /api/productos?orden=mas-vendidos`).
+- Grid responsive de `<ProductoCard />` dentro de las 9 columnas: `md=6`, `lg=4`.
+- Aviso si no hay productos en la categoría ("Limpiar filtros").
+- Filtros persistidos en la URL (`useSearchParams`): categoría, búsqueda, rango de precio, promoción y orden; sobreviven a refresh y a atrás/adelante.
 
 ### 9.3 ProductoCard — `components/cliente/ProductoCard.jsx` + `ProductoCard.css`
 
 - Card redondeada con sombra, imagen arriba, nombre, descripción, precio destacado (`formatPrice`) y botón "Añadir" redondo naranja (100%).
 - Al click llama a `agregarAlCarrito(producto, 1)` y muestra `alert`.
+- Prop `variante`: con `variante="horizontal"` la tarjeta pasa a imagen a la izquierda y datos a la derecha por debajo de 576px y, entre 576px y 991px, cuando la tarjeta mide menos de ~360px (container query); desde 992px siempre es vertical. Sin la prop, siempre vertical. La imagen y el nombre siguen navegando al detalle.
 
 ### 9.4 Carrito (`/cliente/carrito`) — `Carrito.jsx` + `Carrito.css`
 

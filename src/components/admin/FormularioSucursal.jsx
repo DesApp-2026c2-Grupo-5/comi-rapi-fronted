@@ -38,32 +38,48 @@ import OpcionesDireccionAmbigua from '../comunes/OpcionesDireccionAmbigua';
 import ConfirmacionDireccion from '../comunes/ConfirmacionDireccion';
 import ResultadoDireccion from '../comunes/ResultadoDireccion';
 import EditorHorarios from './EditorHorarios';
+import FormularioPasos from './FormularioPasos';
+import useMediaQuery from '../../hooks/useMediaQuery';
 import '../comunes/DireccionFormulario.css';
 // Convención de dev (rediseño UI): estilos compartidos de formularios admin.
 import './FormularioAdmin.css';
+import './FormularioABM.css';
+
+const PASOS_SUCURSAL = [
+  { id: 'datos', etiqueta: 'Datos y dirección' },
+  { id: 'operacion', etiqueta: 'Horarios y contacto' },
+];
 
 const FormularioSucursal = ({ sucursal, onGuardar }) => {
   const navigate = useNavigate();
   const { parametros } = useParametros();
+  // Mismo corte que la barra inferior del shell (NavInferior, <992px): cuando
+  // se navega como móvil, el formulario también usa pasos.
+  const esMobile = useMediaQuery('(max-width: 991.98px)');
 
   const [nombre, setNombre] = useState('');
   const [referencia, setReferencia] = useState('');
   const [horarios, setHorarios] = useState(() => crearHorarioPorDefecto());
   const [telefono, setTelefono] = useState('');
   const [activa, setActiva] = useState(true);
+  const [paso, setPaso] = useState(1);
+  const [errorPaso, setErrorPaso] = useState('');
 
   const confirmarGuardado = async (datosDireccion) => {
     // El hook valida la dirección; el nombre y el horario son propios de la
     // sucursal. El horario se valida acá, en espejo del backend, para no
     // geocodificar de nuevo si lo único inválido es una franja.
+    setErrorPaso('');
     if (!nombre.trim()) {
+      setErrorPaso('El nombre es obligatorio.');
       direccionApi.mostrarError('El nombre es obligatorio.');
       return;
     }
     if (!tieneFranjas(horarios)) {
-      direccionApi.mostrarError(
-        'Cargá al menos una franja de atención (para cerrar la sucursal usá el estado inactiva).',
-      );
+      const mensaje =
+        'Cargá al menos una franja de atención (para cerrar la sucursal usá el estado inactiva).';
+      setErrorPaso(mensaje);
+      direccionApi.mostrarError(mensaje);
       return;
     }
     const { valido, errores } = validarHorarios(
@@ -74,9 +90,11 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
       const dia = horarios.find(
         (d) => d.diaSemana === errores[0].diaSemana,
       );
-      direccionApi.mostrarError(
-        `Horario del ${dia?.dia.toLowerCase() || 'día'}: ${errores[0].mensaje}`,
-      );
+      const mensaje = `Horario del ${
+        dia?.dia.toLowerCase() || 'día'
+      }: ${errores[0].mensaje}`;
+      setErrorPaso(mensaje);
+      direccionApi.mostrarError(mensaje);
       return;
     }
     const datosSucursal = {
@@ -132,234 +150,82 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
     );
     setTelefono(sucursal?.telefono || '');
     setActiva(sucursal?.activa !== false);
+    setPaso(1);
+    setErrorPaso('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sucursal?.id]);
 
+  const validarPaso1 = () => {
+    if (!nombre.trim()) {
+      const mensaje = 'El nombre es obligatorio.';
+      setErrorPaso(mensaje);
+      direccionApi.mostrarError(mensaje);
+      return false;
+    }
+    const errores = direccionApi.validar();
+    if (errores.length > 0) {
+      setErrorPaso(errores[0]);
+      direccionApi.mostrarError(errores[0]);
+      return false;
+    }
+    setErrorPaso('');
+    return true;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    direccionApi.previsualizar();
+
+    if (!esMobile) {
+      if (validarPaso1()) {
+        direccionApi.previsualizar();
+      }
+      return;
+    }
+
+    if (paso === 1) {
+      if (!validarPaso1()) {
+        return;
+      }
+      if (direccionApi.preview?.estado === 'unica') {
+        irAPaso(2);
+        return;
+      }
+      direccionApi.previsualizar();
+      return;
+    }
+
+    if (direccionApi.preview?.estado !== 'unica') {
+      irAPaso(1);
+      return;
+    }
+    direccionApi.confirmar();
   };
 
   const handleCancelar = () => {
     navigate('/superadmin/sucursales');
   };
 
-  return (
-    <Card className="shadow-sm formulario-admin-card">
-      <Card.Body>
-        {/* Convención de dev: h3 con clase h5 (el <h1> de la página es el
-            nivel superior). */}
-        <h3 className="h5 mb-4">Datos de la sucursal</h3>
-        <Form onSubmit={handleSubmit} noValidate>
-          {(direccionApi.avisoFueraZona || direccionApi.avisoPartidoFueraZona) && (
-            <Alert variant="warning" role="alert" className="mb-3 dir-form-aviso">
-              {direccionApi.MENSAJE_FUERA_DE_ZONA}
-            </Alert>
-          )}
+  const irAPaso = (nuevoPaso) => {
+    setErrorPaso('');
+    setPaso(nuevoPaso);
+  };
 
-          {/* Iteración 6: región de resultados con estado unificado. El admin
-              NO valida cobertura comercial (sin flag cobertura): los estados
-              de cobertura-zona/sucursal solo podrían llegar del guardado. */}
-          <div aria-live="polite">
-            <ResultadoDireccion
-              resultado={direccionApi.resultado}
-              resumen={
-                direccionApi.preview?.estado === 'unica'
-                  ? direccionApi.preview.resultado.nomenclatura
-                  : null
-              }
-              onReintentar={direccionApi.previsualizar}
-              onEditar={direccionApi.editarDatos}
-            />
-          </div>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Nombre *</Form.Label>
-            <Form.Control
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Sucursal Centro"
-            />
-          </Form.Group>
-
-          {/* ===== Ubicación: de lo más general a lo más específico ===== */}
-          <div className="dir-form-seccion">Ubicación</div>
-
-          <Autocomplete
-            etiqueta="Provincia *"
-            value={direccionApi.provincia}
-            opciones={PROVINCIAS}
-            onChange={direccionApi.actualizarProvincia}
-            placeholder="Escribí para buscar tu provincia…"
-          />
-
-          {direccionApi.provincia && (
-            <Autocomplete
-              etiqueta={
-                direccionApi.requierePartido ? (
-                  'Partido *'
-                ) : (
-                  <>
-                    Partido / Comuna{' '}
-                    <span className="text-muted">(opcional)</span>
-                  </>
-                )
-              }
-              value={direccionApi.departamento}
-              opciones={direccionApi.departamentosOpts}
-              onChange={direccionApi.actualizarDepartamento}
-              placeholder="Escribí para buscar el partido/comuna…"
-              ayudaOpcional="Si no lo sabés, la determina el sistema."
-            />
-          )}
-
-          {direccionApi.provincia && (
-            <Autocomplete
-              etiqueta={
-                <>
-                  Localidad <span className="text-muted">(opcional)</span>
-                </>
-              }
-              value={direccionApi.localidad}
-              opciones={direccionApi.localidadesOpts}
-              onChange={direccionApi.actualizarLocalidad}
-              placeholder="Escribí para buscar la localidad (ej: Liniers)…"
-              ayudaOpcional="Si no la sabés, la determina el sistema."
-            />
-          )}
-
-          {/* ===== Dirección: calle y altura ===== */}
-          <div className="dir-form-seccion">Dirección</div>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Calle *</Form.Label>
-            <Form.Control
-              type="text"
-              value={direccionApi.calle}
-              onChange={(e) => direccionApi.actualizarCalle(e.target.value)}
-              placeholder="Ej: Av. Principal"
-              autoComplete="off"
-              disabled={!direccionApi.provincia}
-            />
-            {!direccionApi.provincia && (
-              <Form.Text className="text-muted">
-                Seleccioná primero la provincia para buscar la calle.
-              </Form.Text>
-            )}
-            {direccionApi.errorSugerencias && (
-              <Form.Text className="text-danger d-block">
-                {direccionApi.errorSugerencias}
-              </Form.Text>
-            )}
-            {direccionApi.sugerencias.length > 0 && (
-              <ListGroup className="mt-1 dir-form-sugerencias">
-                {direccionApi.sugerencias.map((sugerencia) => (
-                  <ListGroup.Item
-                    key={sugerencia.id}
-                    action
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() =>
-                      direccionApi.seleccionarSugerencia(sugerencia.nombre)
-                    }
-                  >
-                    <div className="dir-form-sugerencia-nombre">
-                      {sugerencia.nombre}
-                    </div>
-                    {sugerencia.nomenclatura && (
-                      <div className="dir-form-sugerencia-detalle">
-                        {sugerencia.nomenclatura}
-                      </div>
-                    )}
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
-            )}
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Altura *</Form.Label>
-            <Form.Control
-              type="number"
-              min="0"
-              value={direccionApi.altura}
-              onChange={(e) => direccionApi.actualizarAltura(e.target.value)}
-              placeholder="Ej: 123"
-            />
-          </Form.Group>
-
-          {/* ===== Datos propios de la sucursal ===== */}
-          <div className="dir-form-seccion">Operación</div>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Referencia de la dirección</Form.Label>
-            <Form.Control
-              type="text"
-              value={referencia}
-              onChange={(e) => setReferencia(e.target.value)}
-              placeholder="Ej: Frente a la plaza"
-            />
-          </Form.Group>
-
-          <EditorHorarios
-            horarios={horarios}
-            onChange={setHorarios}
-            margenMinutos={parametros.margenCierreMinutos}
-            deshabilitado={direccionApi.guardando}
-          />
-
-          <Form.Group className="mb-3">
-            <Form.Label>Teléfono</Form.Label>
-            <Form.Control
-              type="text"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              placeholder="Ej: 011-1234-5678"
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-4">
-            <Form.Label>Estado</Form.Label>
-            <Form.Select
-              value={activa ? 'activa' : 'inactiva'}
-              onChange={(e) => setActiva(e.target.value === 'activa')}
-            >
-              <option value="activa">Activo</option>
-              <option value="inactiva">Inactivo</option>
-            </Form.Select>
-          </Form.Group>
-
-          {/* Paso de selección de coincidencias (componente compartido). */}
-          {direccionApi.preview?.estado === 'ambigua' && (
-            <OpcionesDireccionAmbigua
-              opciones={direccionApi.preview.opciones}
-              opcionElegida={direccionApi.opcionElegida}
-              onElegir={direccionApi.elegirOpcion}
-              onConfirmar={direccionApi.previsualizar}
-              name="opciones-direccion-sucursal"
-            />
-          )}
-
-          {/* Confirmación de la resolución (componente compartido). */}
-          {direccionApi.preview?.estado === 'unica' && (
-            <div className="dir-form-confirmacion">
-              <ConfirmacionDireccion
-                resultado={direccionApi.preview.resultado}
-                altura={direccionApi.altura}
-                referencia={referencia.trim() || null}
-                cargando={direccionApi.guardando}
-                textoConfirmar="Guardar sucursal"
-                onConfirmar={direccionApi.confirmar}
-                onEditar={direccionApi.editarDatos}
-              />
-            </div>
-          )}
-
-          <div className="d-flex gap-2">
+  const direccionVerificada = direccionApi.preview?.estado === 'unica';
+  const footerPasos = (
+    <div className="w-100">
+      <span className="abm-stepper-footer-paso">
+        Paso {paso} de {PASOS_SUCURSAL.length}
+      </span>
+      <div className="abm-stepper-footer-acciones mt-2">
+        {paso === 1 ? (
+          <>
+            <Button variant="secondary" type="button" onClick={handleCancelar}>
+              <FaTimes className="me-1" aria-hidden="true" />
+              Cancelar
+            </Button>
             <Button
               variant="primary"
               type="submit"
-              className="flex-fill"
               disabled={direccionApi.cargandoPreview}
             >
               {direccionApi.cargandoPreview ? (
@@ -367,6 +233,8 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
                   <Spinner size="sm" className="me-1" animation="border" />
                   Verificando…
                 </>
+              ) : direccionVerificada ? (
+                'Continuar'
               ) : (
                 <>
                   <FaMapMarkedAlt className="me-1" aria-hidden="true" />
@@ -374,16 +242,297 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
                 </>
               )}
             </Button>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={handleCancelar}
-              className="flex-fill"
-            >
-              <FaTimes className="me-1" aria-hidden="true" />
-              Cancelar
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" type="button" onClick={() => setPaso(1)}>
+              Atrás
             </Button>
-          </div>
+            <Button variant="primary" type="submit" disabled={direccionApi.guardando}>
+              {direccionApi.guardando ? 'Guardando…' : 'Guardar sucursal'}
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <Card className="shadow-sm formulario-admin-card">
+      <Card.Body>
+        <h3 className="h5 mb-4">Datos de la sucursal</h3>
+        <Form onSubmit={handleSubmit} noValidate>
+          <FormularioPasos
+            pasos={PASOS_SUCURSAL}
+            paso={paso}
+            onPaso={irAPaso}
+            esMobile={esMobile}
+            footer={footerPasos}
+          >
+            {(!esMobile || paso === 1) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">Datos y ubicación</h4>
+                {(direccionApi.avisoFueraZona ||
+                  direccionApi.avisoPartidoFueraZona) && (
+                  <Alert
+                    variant="warning"
+                    role="alert"
+                    className="mb-3 dir-form-aviso"
+                  >
+                    {direccionApi.MENSAJE_FUERA_DE_ZONA}
+                  </Alert>
+                )}
+
+                <div aria-live="polite">
+                  <ResultadoDireccion
+                    resultado={direccionApi.resultado}
+                    resumen={
+                      direccionApi.preview?.estado === 'unica'
+                        ? direccionApi.preview.resultado.nomenclatura
+                        : null
+                    }
+                    onReintentar={direccionApi.previsualizar}
+                    onEditar={direccionApi.editarDatos}
+                  />
+                </div>
+
+                <div className="abm-form-grid">
+                  <Form.Group className="mb-3 abm-full">
+                    <Form.Label>Nombre *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Ej: Sucursal Centro"
+                    />
+                  </Form.Group>
+
+                  <div className="dir-form-seccion abm-full">Ubicación</div>
+
+                  <Autocomplete
+                    etiqueta="Provincia *"
+                    value={direccionApi.provincia}
+                    opciones={PROVINCIAS}
+                    onChange={direccionApi.actualizarProvincia}
+                    placeholder="Escribí para buscar tu provincia…"
+                  />
+
+                  {direccionApi.provincia && (
+                    <Autocomplete
+                      etiqueta={
+                        direccionApi.requierePartido ? (
+                          'Partido *'
+                        ) : (
+                          <>
+                            Partido / Comuna{' '}
+                            <span className="text-muted">(opcional)</span>
+                          </>
+                        )
+                      }
+                      value={direccionApi.departamento}
+                      opciones={direccionApi.departamentosOpts}
+                      onChange={direccionApi.actualizarDepartamento}
+                      placeholder="Escribí para buscar el partido/comuna…"
+                      ayudaOpcional="Si no lo sabés, la determina el sistema."
+                    />
+                  )}
+
+                  {direccionApi.provincia && (
+                    <Autocomplete
+                      etiqueta={
+                        <>
+                          Localidad{' '}
+                          <span className="text-muted">(opcional)</span>
+                        </>
+                      }
+                      value={direccionApi.localidad}
+                      opciones={direccionApi.localidadesOpts}
+                      onChange={direccionApi.actualizarLocalidad}
+                      placeholder="Escribí para buscar la localidad (ej: Liniers)…"
+                      ayudaOpcional="Si no la sabés, la determina el sistema."
+                    />
+                  )}
+
+                  <div className="dir-form-seccion abm-full">Dirección</div>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Calle *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={direccionApi.calle}
+                      onChange={(e) =>
+                        direccionApi.actualizarCalle(e.target.value)
+                      }
+                      placeholder="Ej: Av. Principal"
+                      autoComplete="off"
+                      disabled={!direccionApi.provincia}
+                    />
+                    {!direccionApi.provincia && (
+                      <Form.Text className="text-muted">
+                        Seleccioná primero la provincia para buscar la calle.
+                      </Form.Text>
+                    )}
+                    {direccionApi.errorSugerencias && (
+                      <Form.Text className="text-danger d-block">
+                        {direccionApi.errorSugerencias}
+                      </Form.Text>
+                    )}
+                    {direccionApi.sugerencias.length > 0 && (
+                      <ListGroup className="mt-1 dir-form-sugerencias">
+                        {direccionApi.sugerencias.map((sugerencia) => (
+                          <ListGroup.Item
+                            key={sugerencia.id}
+                            action
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              direccionApi.seleccionarSugerencia(
+                                sugerencia.nombre,
+                              )
+                            }
+                          >
+                            <div className="dir-form-sugerencia-nombre">
+                              {sugerencia.nombre}
+                            </div>
+                            {sugerencia.nomenclatura && (
+                              <div className="dir-form-sugerencia-detalle">
+                                {sugerencia.nomenclatura}
+                              </div>
+                            )}
+                          </ListGroup.Item>
+                        ))}
+                      </ListGroup>
+                    )}
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Altura *</Form.Label>
+                    <Form.Control
+                      type="number"
+                      min="0"
+                      value={direccionApi.altura}
+                      onChange={(e) =>
+                        direccionApi.actualizarAltura(e.target.value)
+                      }
+                      placeholder="Ej: 123"
+                    />
+                  </Form.Group>
+                </div>
+
+                {direccionApi.preview?.estado === 'ambigua' && (
+                  <OpcionesDireccionAmbigua
+                    opciones={direccionApi.preview.opciones}
+                    opcionElegida={direccionApi.opcionElegida}
+                    onElegir={direccionApi.elegirOpcion}
+                    onConfirmar={direccionApi.previsualizar}
+                    name="opciones-direccion-sucursal"
+                  />
+                )}
+
+                {direccionApi.preview?.estado === 'unica' && (
+                  <div className="dir-form-confirmacion">
+                    <ConfirmacionDireccion
+                      resultado={direccionApi.preview.resultado}
+                      altura={direccionApi.altura}
+                      referencia={referencia.trim() || null}
+                      cargando={direccionApi.guardando}
+                      textoConfirmar="Guardar sucursal"
+                      onConfirmar={
+                        esMobile ? () => irAPaso(2) : direccionApi.confirmar
+                      }
+                      onEditar={direccionApi.editarDatos}
+                      mostrarAcciones={!esMobile}
+                    />
+                  </div>
+                )}
+              </section>
+            )}
+
+            {(!esMobile || paso === 2) && (
+              <section className="abm-seccion">
+                <h4 className="abm-seccion-titulo">Horarios y contacto</h4>
+                {esMobile && errorPaso && (
+                  <Alert variant="danger" role="alert" className="mb-3">
+                    {errorPaso}
+                  </Alert>
+                )}
+
+                <div className="abm-form-grid">
+                  <Form.Group className="mb-3 abm-full">
+                    <Form.Label>Referencia de la dirección</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={referencia}
+                      onChange={(e) => setReferencia(e.target.value)}
+                      placeholder="Ej: Frente a la plaza"
+                    />
+                  </Form.Group>
+
+                  <div className="abm-full">
+                    <EditorHorarios
+                      horarios={horarios}
+                      onChange={setHorarios}
+                      margenMinutos={parametros.margenCierreMinutos}
+                      deshabilitado={direccionApi.guardando}
+                    />
+                  </div>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Teléfono</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                      placeholder="Ej: 011-1234-5678"
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Estado</Form.Label>
+                    <Form.Select
+                      value={activa ? 'activa' : 'inactiva'}
+                      onChange={(e) => setActiva(e.target.value === 'activa')}
+                    >
+                      <option value="activa">Activo</option>
+                      <option value="inactiva">Inactivo</option>
+                    </Form.Select>
+                  </Form.Group>
+                </div>
+              </section>
+            )}
+
+            {!esMobile && (
+              <div className="d-flex gap-2">
+                <Button
+                  variant="primary"
+                  type="submit"
+                  className="flex-fill"
+                  disabled={direccionApi.cargandoPreview}
+                >
+                  {direccionApi.cargandoPreview ? (
+                    <>
+                      <Spinner size="sm" className="me-1" animation="border" />
+                      Verificando…
+                    </>
+                  ) : (
+                    <>
+                      <FaMapMarkedAlt className="me-1" aria-hidden="true" />
+                      Verificar dirección
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={handleCancelar}
+                  className="flex-fill"
+                >
+                  <FaTimes className="me-1" aria-hidden="true" />
+                  Cancelar
+                </Button>
+              </div>
+            )}
+          </FormularioPasos>
         </Form>
       </Card.Body>
     </Card>

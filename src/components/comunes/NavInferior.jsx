@@ -229,10 +229,10 @@ const enlacesSuperadmin = [
         prefijo: '/superadmin/clientes',
       },
       {
-        to: '/superadmin/administradores',
+        to: '/superadmin/administrador',
         etiqueta: 'Administradores',
         icono: FaUserTie,
-        prefijo: '/superadmin/administradores',
+        prefijo: '/superadmin/administrador',
       },
       {
         to: '/superadmin/cupones',
@@ -264,7 +264,7 @@ const NavInferior = () => {
   const [hojaAbierta, setHojaAbierta] = useState(null);
 
   const {
-    productosDistintos,
+    totalItems,
     pedidosActivos,
     quejasPendientes,
     pulsoCarrito,
@@ -293,13 +293,13 @@ const NavInferior = () => {
   // de pantalla va aparte, porque un aria-label sobre un <span> sin rol no se
   // expone de forma fiable.
   const renderBadge = (clave) => {
-    if (clave === 'carrito' && productosDistintos > 0) {
+    if (clave === 'carrito' && totalItems > 0) {
       return (
         <span className={`carrito-badge nav-inferior-badge${pulsoCarrito ? ' carrito-badge-pulso' : ''}`}>
-          <span aria-hidden="true">{productosDistintos}</span>
+          <span aria-hidden="true">{totalItems}</span>
           <span className="visually-hidden">
-            {`${productosDistintos} ${
-              productosDistintos === 1 ? 'producto' : 'productos'
+            {`${totalItems} ${
+              totalItems === 1 ? 'producto' : 'productos'
             } en el carrito`}
           </span>
         </span>

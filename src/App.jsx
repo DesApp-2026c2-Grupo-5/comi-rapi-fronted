@@ -21,7 +21,6 @@ import { ParametrosProvider } from './context/ParametrosContext';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/comunes/Navbar';
 import NavInferior from './components/comunes/NavInferior';
-import BotonCarrito from './components/comunes/BotonCarrito';
 import Footer from './components/comunes/Footer';
 import BannersNotificaciones from './components/comunes/BannersNotificaciones';
 import RealtimeBridge from './components/comunes/RealtimeBridge';
@@ -82,7 +81,6 @@ function AppLayout() {
         <BannersNotificaciones />
         <AppRoutes />
       </main>
-      <BotonCarrito />
       {mostrarFooter && <Footer />}
       <NavInferior />
     </div>

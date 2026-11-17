@@ -9,7 +9,7 @@
  * Uso: <BandejaQuejas /> - Se renderiza en GestionQuejas.
  */
 
-import { useEffect, useId, useState, useCallback } from 'react';
+import { useEffect, useId, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from 'react-bootstrap';
 import { FaComments, FaSyncAlt } from 'react-icons/fa';
@@ -19,13 +19,18 @@ import {
 } from '../../api/quejas';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursal } from '../../hooks/useSucursal';
-import { useQuejasQuery } from '../../hooks/queries';
+import { useQuejasQuery, queryKeys } from '../../hooks/queries';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
 import { ROLES } from '../../utils/constants';
 import ListaConversaciones from './quejas/ListaConversaciones';
 import ConversacionQueja from './quejas/ConversacionQueja';
 import { LIMITE_CONVERSACIONES, contarSinResponder } from './quejas/ayudas';
 import './quejas/BandejaQuejas.css';
+
+// Referencia estable para "sin datos": un `[]` literal en el render cambiaría
+// de identidad en cada pasada e invalidaría los `useMemo` que dependen de la
+// lista.
+const LISTA_VACIA = [];
 
 const BandejaQuejas = () => {
   const { user } = useAuth();
@@ -43,7 +48,15 @@ const BandejaQuejas = () => {
   const [estado, setEstado] = useState('');
   const [sucursalId, setSucursalId] = useState('');
   const [pagina, setPagina] = useState(1);
-  const [seleccionada, setSeleccionada] = useState(null);
+  // Conversación abierta: se guarda el id y se deriva de la lista recién leída.
+  // Antes se guardaba el objeto completo, así que el hilo quedaba congelado en
+  // el momento de abrirlo: cuando el cliente respondía, el socket invalidaba la
+  // bandeja y la lista se actualizaba, pero el hilo de la derecha seguía
+  // mostrando la versión vieja hasta recargar.
+  const [seleccionadaId, setSeleccionadaId] = useState(null);
+  // Última versión conocida de la conversación abierta. Sólo cubre el caso en
+  // que el reclamo deje de estar en la página/filtro actual de la lista.
+  const [ultimaSeleccion, setUltimaSeleccion] = useState(null);
 
   // TanStack Query hook para la bandeja de quejas
   const {
@@ -59,10 +72,28 @@ const BandejaQuejas = () => {
     enabled: true,
   });
 
-  const quejas = quejasData?.items || [];
+  const quejas = quejasData?.items || LISTA_VACIA;
   const total = quejasData?.meta?.total || 0;
   const paginas = quejasData?.meta?.paginas || 0;
   const error = errorQuery?.message || '';
+
+  const seleccionada = useMemo(() => {
+    if (!seleccionadaId) return null;
+    const enLista = quejas.find((queja) => queja.id === seleccionadaId);
+    if (enLista) return enLista;
+    return ultimaSeleccion?.id === seleccionadaId ? ultimaSeleccion : null;
+  }, [quejas, seleccionadaId, ultimaSeleccion]);
+
+  const abrirConversacion = useCallback((queja) => {
+    if (!queja) return;
+    setSeleccionadaId(queja.id);
+    setUltimaSeleccion(queja);
+  }, []);
+
+  const cerrarConversacion = useCallback(() => {
+    setSeleccionadaId(null);
+    setUltimaSeleccion(null);
+  }, []);
 
   // Socket para actualizaciones en tiempo real
   useEffect(() => {
@@ -113,9 +144,17 @@ const BandejaQuejas = () => {
       };
     }
 
-    // Actualización optimista en caché
+    // Actualización optimista en la clave exacta de la bandeja (con filtros y
+    // página). La clave parcial `['private','quejas','bandeja']` no coincidía
+    // con ninguna consulta, así que la actualización no se aplicaba.
     queryClient.setQueryData(
-      ['private', 'quejas', 'bandeja'],
+      queryKeys.private.quejas({
+        estado,
+        q,
+        sucursalId: esSuperadmin ? sucursalId : '',
+        pagina,
+        limite: LIMITE_CONVERSACIONES,
+      }),
       (old) => {
         if (!old) return old;
         return {
@@ -127,9 +166,20 @@ const BandejaQuejas = () => {
       }
     );
 
-    setSeleccionada(res.data);
+    // El hilo se deriva de la lista: alcanza con dejar la versión recién
+    // respondida como respaldo hasta que llegue el próximo refetch.
+    setUltimaSeleccion(res.data);
+    setSeleccionadaId(res.data.id);
     return { ok: true };
-  }, [seleccionada, queryClient]);
+  }, [
+    seleccionada,
+    queryClient,
+    estado,
+    q,
+    esSuperadmin,
+    sucursalId,
+    pagina,
+  ]);
 
   const sinResponderPagina = quejas.reduce(
     (totalParcial, queja) => totalParcial + contarSinResponder(queja),
@@ -177,7 +227,7 @@ const BandejaQuejas = () => {
             pagina={pagina}
             paginas={paginas}
             seleccionadaId={seleccionada?.id}
-            onSeleccionar={setSeleccionada}
+            onSeleccionar={abrirConversacion}
             texto={texto}
             onTextoChange={setTexto}
             estado={estado}
@@ -212,7 +262,7 @@ const BandejaQuejas = () => {
               queja={seleccionada}
               rol={user?.rol}
               onEnviar={enviar}
-              onVolver={() => setSeleccionada(null)}
+              onVolver={cerrarConversacion}
             />
           ) : (
             <div className="queja-conv-placeholder">

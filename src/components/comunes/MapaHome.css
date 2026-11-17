@@ -1,0 +1,164 @@
+/* ============ Floating Pill Pin Styles ============ */
+
+.pill-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 12px;
+  border-radius: 50px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #1a1a2e);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition: 
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.pill-pin:hover,
+.pill-pin:active,
+.leaflet-marker-icon:hover .pill-pin {
+  transform: scale(1.08);
+  box-shadow: 
+    0 8px 28px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+}
+
+.pill-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.pill-label {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tema oscuro - ajustes automáticos via CSS vars */
+@media (prefers-color-scheme: dark) {
+  .pill-pin {
+    background: var(--color-surface-dark, #1e1e2e);
+    color: var(--color-text-dark, #e8e8e8);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  
+  .pill-pin:hover,
+  .pill-pin:active,
+  .leaflet-marker-icon:hover .pill-pin {
+    box-shadow: 
+      0 8px 28px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Animación de entrada suave */
+.leaflet-marker-icon {
+  animation: pill-pop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes pill-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Estilo para el contenedor del mapa */
+.mapa-home {
+  border: 1px solid var(--color-border, #e0e0e0);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.mapa-home .leaflet-container {
+  border-radius: 0.75rem;
+  font-family: inherit;
+}
+
+/* Popup personalizado */
+.mapa-popup {
+  min-width: 220px;
+  font-family: inherit;
+}
+
+.mapa-popup strong {
+  color: var(--color-text, #1a1a2e);
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.mapa-popup .text-muted {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Zoom control hint (opcional) */
+.mapa-home::before {
+  content: 'Mantené Ctrl + ruedita para zoom';
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--color-text-muted, #9ca3af);
+  background: var(--color-surface, rgba(255, 255, 255, 0.9));
+  padding: 4px 10px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.mapa-home:hover::before {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .mapa-home::before {
+    display: none;
+  }
+  
+  .pill-pin {
+    padding: 5px 10px 5px 8px;
+    font-size: 12px;
+  }
+  
+  .pill-icon {
+    font-size: 16px;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .pill-label {
+    font-size: 12px;
+    max-width: 100px;
+  }
+}
