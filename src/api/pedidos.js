@@ -75,6 +75,21 @@ export const mapearPedido = (p) => {
       (acc, promo) => acc + Number(promo.descuentoAplicado ?? 0),
       0
     ),
+    cupon: p.cupon
+      ? {
+          codigo: p.cupon.codigo,
+          tipoDescuento: p.cupon.tipoDescuento,
+          valorDescuento: Number(p.cupon.valorDescuento),
+          compraMinima: Number(p.cupon.compraMinima),
+          descuentoMaximo:
+            p.cupon.descuentoMaximo === null ||
+            p.cupon.descuentoMaximo === undefined
+              ? null
+              : Number(p.cupon.descuentoMaximo),
+          baseCalculo: Number(p.cupon.baseCalculo),
+          descuentoAplicado: Number(p.cupon.descuentoAplicado),
+        }
+      : null,
     _raw: p,
   };
 };
@@ -150,6 +165,7 @@ function payloadBackend(datosPedido, sucursal) {
     datosPedido.promocionIds.length > 0
       ? { promocionIds: datosPedido.promocionIds }
       : {}),
+    ...(datosPedido.cuponCodigo ? { cuponCodigo: datosPedido.cuponCodigo } : {}),
   };
 }
 

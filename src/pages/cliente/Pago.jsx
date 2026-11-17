@@ -439,6 +439,16 @@ const Pago = () => {
             costoEnvio={pedido.costoEnvio ?? 0}
             sucursal={sucursalQuePrepara}
             promociones={pedido.promociones}
+            descuentoCupon={
+              pedido.cupon?.descuentoAplicado
+                ? Number(pedido.cupon.descuentoAplicado)
+                : 0
+            }
+            detalleDescuentoCupon={
+              pedido.cupon
+                ? `Cupón ${pedido.cupon.codigo} (${pedido.cupon.tipoDescuento === 'PORCENTAJE' ? Number(pedido.cupon.valorDescuento) + '%' : '$' + Number(pedido.cupon.valorDescuento)})`
+                : ''
+            }
           />
 
           {/* Un solo botón. Antes coexistían "Volver al carrito" (navegación pura,
