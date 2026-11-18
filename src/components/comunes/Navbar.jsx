@@ -29,6 +29,7 @@ import {
   FaStore,
   FaSlidersH,
   FaTags,
+  FaTag,
   FaPercent,
   FaUsers,
   FaUserTie,
@@ -68,6 +69,11 @@ const enlacesCliente = [
     etiqueta: 'Mis Pedidos',
     icono: FaReceipt,
     badge: 'pedidos',
+  },
+  {
+    to: '/cliente/mis-cupones',
+    etiqueta: 'Mis Cupones',
+    icono: FaTag,
   },
 ];
 
@@ -216,6 +222,12 @@ const menuSuperadmin = [
         etiqueta: 'Administradores',
         icono: FaUserTie,
         prefijo: '/superadmin/administrador',
+      },
+      {
+        to: '/superadmin/cupones',
+        etiqueta: 'Cupones',
+        icono: FaPercent,
+        prefijo: '/superadmin/cupones',
       },
     ],
   },

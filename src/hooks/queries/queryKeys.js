@@ -30,6 +30,17 @@ const clavePromociones = ({ incluirInactivas = false, incluirProductos = false }
     incluirProductos ? 'con-productos' : 'sin-productos',
   ].join('/');
 
+/** Parámetros que identifican de forma única una página del listado de emisiones. */
+const claveEmisionesLista = ({
+  estado = '', desde = '', hasta = '', pagina = 1, limite = 20,
+} = {}) => [
+  estado || 'todos',
+  desde || 'sin-desde',
+  hasta || 'sin-hasta',
+  String(pagina),
+  String(limite),
+];
+
 export const queryKeys = {
   public: {
     all: ['public'],
@@ -147,6 +158,34 @@ export const queryKeys = {
       'elegibles',
       pedidoId === null || pedidoId === undefined ? 'todas' : String(pedidoId),
     ],
+    // Emisiones y cupones del SUPERADMINISTRADOR.
+    // `emisiones` es el prefijo para invalidar/actualizar todo el árbol;
+    // `emisionesLista` identifica cada combinación de filtros y página.
+    emisiones: ['private', 'emisiones'],
+    emisionesLista: (filtros = {}) => [
+      'private', 'emisiones', 'lista', ...claveEmisionesLista(filtros),
+    ],
+    emisionesListaPrefix: ['private', 'emisiones', 'lista'],
+    emisionesDetallePrefix: ['private', 'emisiones', 'detalle'],
+    emision: (id) => ['private', 'emisiones', 'detalle', String(id)],
+    // Los cupones del detalle viven en su propio árbol: no se mezclan con
+    // `private.cupones` (listado filtrado de cupones) ni con los datos propios
+    // de la emisión.
+    emisionesCuponesPrefix: ['private', 'emisiones', 'cupones'],
+    emisionCupones: (id) => ['private', 'emisiones', 'cupones', String(id)],
+    cupones: ({ emisionId, estado, activo, pagina, limite } = {}) => [
+      'private',
+      'cupones',
+      'lista',
+      emisionId ? String(emisionId) : 'todas',
+      estado || 'todos',
+      activo === false ? 'inactivos' : 'activos',
+      pagina === null || pagina === undefined ? 'sin-pagina' : String(pagina),
+      limite === null || limite === undefined ? 'sin-limite' : String(limite),
+    ],
+    cuponesCliente: ['private', 'cupones', 'cliente'],
+    cupon: (id) => ['private', 'cupones', 'detalle', String(id)],
+
     // Quejas: bandeja paginada para ADMIN/SUPERADMIN y mis quejas para CLIENTE
     quejas: ({ estado = '', q = '', sucursalId = '', pagina = 1, limite = 20 } = {}) => [
       'private',

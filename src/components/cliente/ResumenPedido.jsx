@@ -43,6 +43,8 @@ const ResumenPedido = ({
   botonTexto = 'Confirmar Pedido',
   descuento = 0,
   detalleDescuento = '',
+  descuentoCupon = 0,
+  detalleDescuentoCupon = '',
   promociones: promocionesProp,
   // En desktop la card se pega al scrollear. Sólo conviene en la columna lateral
   // del carrito: en columnas únicas tapa lo que va después (ver ResumenPedido.css).
@@ -77,7 +79,13 @@ const ResumenPedido = ({
   // En modo carrito el descuento es estimado (el backend lo confirma al crear).
   // En modo lectura el total del backend ya lo incluye: no se resta de nuevo.
   const descuentoVista = !enModoLectura && Number(descuento) > 0 ? Number(descuento) : 0;
-  const totalFinal = enModoLectura ? montoTotal : montoTotal + costoEnvio - descuentoVista;
+  // El cupón se estima igual que la promo en modo carrito y también se resta.
+  // En modo lectura el total del backend ya lo incluye: no se descuenta de nuevo.
+  const descuentoCuponVista =
+    !enModoLectura && Number(descuentoCupon) > 0 ? Number(descuentoCupon) : 0;
+  const totalFinal = enModoLectura
+    ? montoTotal
+    : montoTotal + costoEnvio - descuentoVista - descuentoCuponVista;
 
   return (
     <Card className={`resumen-card${fija ? ' resumen-card-fija' : ''}`}>
@@ -113,6 +121,16 @@ const ResumenPedido = ({
               Descuento{detalleDescuento ? ` (${detalleDescuento})` : ''}
             </span>
             <strong className="text-success">−{formatPrice(descuentoVista)}</strong>
+          </div>
+        )}
+
+        {/* Descuento del cupón (vista previa en carrito, informativo en lectura) */}
+        {descuentoCupon > 0 && (
+          <div className="d-flex justify-content-between mb-3">
+            <span className="text-muted">
+              Cupón{detalleDescuentoCupon ? ` (${detalleDescuentoCupon})` : ''}
+            </span>
+            <strong className="text-success">−{formatPrice(descuentoCupon)}</strong>
           </div>
         )}
 
@@ -183,6 +201,8 @@ ResumenPedido.propTypes = {
   botonTexto: PropTypes.string,
   descuento: PropTypes.number,
   detalleDescuento: PropTypes.string,
+  descuentoCupon: PropTypes.number,
+  detalleDescuentoCupon: PropTypes.string,
   promociones: PropTypes.array,
   fija: PropTypes.bool,
   deshabilitado: PropTypes.bool,

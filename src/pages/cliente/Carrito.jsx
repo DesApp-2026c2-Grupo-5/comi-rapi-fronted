@@ -46,6 +46,7 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../hooks/useAuth";
 import { useCarrito } from "../../hooks/useCarrito";
+import { useCuponesClienteQuery } from "../../hooks/queries";
 import { usePromocionesCarrito } from "../../hooks/usePromocionesCarrito";
 import { usePedidos } from "../../hooks/usePedidos";
 import { useDirecciones } from "../../hooks/useDirecciones";
@@ -56,6 +57,7 @@ import { useNotificaciones } from "../../hooks/useNotificaciones";
 import { useParametros } from "../../hooks/useParametros";
 import { calcularCostoEnvio } from "../../services/envio";
 import { ESTADOS_PEDIDO } from "../../utils/constants";
+import { formatPrice } from "../../utils/formatters";
 import { rutaActual } from "../../utils/rutas";
 import { dentroDelAvisoDeCierre } from "../../utils/horarios";
 import ItemCarrito from "../../components/cliente/ItemCarrito";
@@ -63,6 +65,25 @@ import ResumenPedido from "../../components/cliente/ResumenPedido";
 import ContadorCierre from "../../components/comunes/ContadorCierre";
 import { consultarDisponibilidad } from "../../api/pedidos";
 import "./Carrito.css";
+
+const textoValorCupon = (cupon) =>
+  cupon.tipoDescuento === "PORCENTAJE"
+    ? `${Number(cupon.valorDescuento)}%`
+    : `$${Number(cupon.valorDescuento)}`;
+
+/** Describe el beneficio del cupón (porcentaje o monto fijo). */
+const textoBeneficioCupon = (cupon) =>
+  cupon.tipoDescuento === "PORCENTAJE"
+    ? `${Number(cupon.valorDescuento)}% de descuento`
+    : `$${Number(cupon.valorDescuento)} de descuento`;
+
+/** Texto de vigencia del cupón, o null si no tiene fechas. */
+const textoVigenciaCupon = (cupon) => {
+  if (!cupon.fechaInicio && !cupon.fechaFin) return null;
+  const desde = cupon.fechaInicio ? new Date(cupon.fechaInicio).toLocaleDateString() : "…";
+  const hasta = cupon.fechaFin ? new Date(cupon.fechaFin).toLocaleDateString() : "…";
+  return `Vigente del ${desde} al ${hasta}`;
+};
 
 /**
  * Productos del carrito en el shape mínimo que necesita la consulta de
@@ -94,6 +115,86 @@ const Carrito = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Cupones del cliente (solo con sesión).
+  const { data: cuponesCliente = [] } = useCuponesClienteQuery({
+    enabled: isAuthenticated,
+  });
+  const cuponesDisponibles = useMemo(
+    () =>
+      (cuponesCliente || []).filter(
+        (c) => c.estado === "DISPONIBLE" && c.activo !== false
+      ),
+    [cuponesCliente]
+  );
+  const [cuponCodigo, setCuponCodigo] = useState("");
+
+  // Descuento estimado del cupón (vista previa local; el backend es la
+  // autoridad al crear y confirmar el pedido).
+  //
+  // Fórmula del backend: base = max(0, subtotalItems - descuentoPromociones).
+  // La compra mínima se mide sobre subtotalItems (antes de descuentos).
+  // El envío nunca forma parte de la base ni se descuenta.
+  const subtotalItems = total;
+  const baseCalculo = Math.max(0, subtotalItems - descuentoTotal);
+
+  const descuentoCuponEstimado = useMemo(() => {
+    if (!cuponCodigo.trim()) return { monto: 0, codigo: "", detalle: "" };
+    const cupon = cuponesDisponibles.find((c) => c.codigo === cuponCodigo.trim());
+    if (!cupon) return { monto: 0, codigo: "", detalle: "" };
+
+    // Verificar usos disponibles del cupón.
+    const usosRestantes = Number(cupon.usosRestantes) || 0;
+    if (usosRestantes <= 0) {
+      return {
+        monto: 0,
+        codigo: cupon.codigo,
+        detalle: `El cupón ya no tiene usos disponibles`,
+      };
+    }
+
+    // Compra mínima sobre subtotal de ítems (antes de descuentos de promos ni cupón).
+    const minimo = Number(cupon.compraMinima) || 0;
+    if (minimo > 0 && subtotalItems < minimo) {
+      return {
+        monto: 0,
+        codigo: cupon.codigo,
+        detalle: `Compra mínima no alcanzada ($${minimo})`,
+      };
+    }
+
+    // Calcular descuento sobre la base (después de promociones, antes de cupón).
+    let monto = 0;
+    if (cupon.tipoDescuento === "PORCENTAJE") {
+      monto = Math.round((baseCalculo * Number(cupon.valorDescuento)) / 100);
+    } else {
+      monto = Number(cupon.valorDescuento);
+    }
+
+    // Respetar descuento máximo y que nunca deje el subtotal negativo.
+    if (
+      cupon.descuentoMaximo !== null &&
+      cupon.descuentoMaximo !== undefined &&
+      monto > Number(cupon.descuentoMaximo)
+    ) {
+      monto = Number(cupon.descuentoMaximo);
+    }
+    monto = Math.min(monto, baseCalculo);
+
+    return {
+      monto,
+      codigo: cupon.codigo,
+      detalle: cupon.tipoDescuento === "PORCENTAJE" ? `${Number(cupon.valorDescuento)}%` : `$${Number(cupon.valorDescuento)}`,
+    };
+  }, [cuponCodigo, cuponesDisponibles, subtotalItems, baseCalculo]);
+
+  // Cupón actualmente seleccionado (para mostrar su detalle: nombre,
+  // beneficio y condiciones). Puede ser undefined si se ingresó un código
+  // manual que no coincide con ninguno disponible.
+  const cuponSeleccionado = useMemo(
+    () => cuponesDisponibles.find((c) => c.codigo === cuponCodigo.trim()),
+    [cuponCodigo, cuponesDisponibles]
+  );
 
   // Pantalla de origen para el login: se vuelve al carrito con lo elegido.
   const origen = rutaActual(location);
@@ -207,7 +308,8 @@ const Carrito = () => {
   // El pendiente queda obsoleto si cambiaron promos o importes desde que se creó:
   // en ese caso hay que recrearlo para que el Pago coincida con el carrito.
   const costoEnvioActual = calcularCostoEnvio(total, parametros);
-  const totalEstimado = total + costoEnvioActual - descuentoTotal;
+  const totalEstimado =
+    total + costoEnvioActual - descuentoTotal - descuentoCuponEstimado.monto;
   const idsPrevistos = useMemo(
     () => [...promocionIds].map(String).sort(),
     [promocionIds],
@@ -244,6 +346,7 @@ const Carrito = () => {
     costoEnvio: costoEnvioActual,
     direccion,
     ...(promocionIds.length > 0 ? { promocionIds } : {}),
+    ...(cuponCodigo.trim() ? { cuponCodigo: cuponCodigo.trim() } : {}),
   });
 
   const handleConfirmarPedido = async () => {
@@ -496,6 +599,88 @@ const Carrito = () => {
                 {promosAplicadas.map((promo) => promo.nombre).join(" · ")}.
               </Alert>
             )}
+
+            {/* Selector de cupón: lista los cupones asignados al cliente.
+                El backend valida al crear el pedido; acá solo se elige el
+                código a enviar. */}
+            {isAuthenticated && cuponesDisponibles.length > 0 && (
+              <Card className="shadow-sm mb-3">
+                <Card.Body>
+                  <Form.Label className="fw-bold small">Cupón de descuento</Form.Label>
+                  <Form.Select
+                    value={cuponCodigo}
+                    onChange={(e) => setCuponCodigo(e.target.value)}
+                    className="mb-2"
+                  >
+                    <option value="">Seleccioná un cupón…</option>
+                    {cuponesDisponibles.map((c) => (
+                      <option key={c.id} value={c.codigo}>
+                        {c.emision?.nombre || "Cupón"} — {textoValorCupon(c)}
+                      </option>
+                    ))}
+                  </Form.Select>
+
+                  {/* Detalle del cupón seleccionado: nombre destacado,
+                      beneficio y condiciones de uso. */}
+                  {cuponSeleccionado && (
+                    <div className="cupon-detalle p-3 mt-3 border rounded bg-light">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h6 className="mb-1 fw-bold">
+                            {cuponSeleccionado.emision?.nombre || "Cupón"}
+                          </h6>
+                          <span className="text-success fw-semibold">
+                            {textoBeneficioCupon(cuponSeleccionado)}
+                          </span>
+                          {cuponSeleccionado.compraMinima > 0 && (
+                            <div className="small text-muted mt-1">
+                              Compra mínima:{" "}
+                              {formatPrice(cuponSeleccionado.compraMinima)}
+                            </div>
+                          )}
+                          {textoVigenciaCupon(cuponSeleccionado) && (
+                            <div className="small text-muted mt-1">
+                              {textoVigenciaCupon(cuponSeleccionado)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-end">
+                          <span className="fw-monospace text-muted d-block">
+                            Código:{cuponSeleccionado.codigo}
+                          </span>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={() => setCuponCodigo("")}
+                          >
+                            Quitar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {descuentoCuponEstimado.detalle && (
+                    <Form.Text className="text-muted small mt-1">
+                      {descuentoCuponEstimado.monto > 0
+                        ? `Descuento estimado: ${formatPrice(
+                            descuentoCuponEstimado.monto
+                          )} (${descuentoCuponEstimado.detalle})`
+                        : descuentoCuponEstimado.detalle
+                        ? descuentoCuponEstimado.detalle
+                        : ""
+                      }
+                    </Form.Text>
+                  )}
+                </Card.Body>
+              </Card>
+            )}
+            {isAuthenticated && cuponesDisponibles.length === 0 && (
+              <Alert variant="info" className="mb-3 small">
+                No tenés cupones disponibles. Los que te envíen por email
+                aparecerán en <Link to="/cliente/mis-cupones">Mis Cupones</Link>.
+              </Alert>
+            )}
             <div className="d-flex flex-column gap-3">
               {items.map((item) => (
                 <ItemCarrito
@@ -588,6 +773,12 @@ const Carrito = () => {
               detalleDescuento={promosAplicadas
                 .map((promo) => promo.nombre)
                 .join(" · ")}
+              descuentoCupon={descuentoCuponEstimado.monto}
+              detalleDescuentoCupon={
+                descuentoCuponEstimado.codigo
+                  ? `Cupón ${descuentoCuponEstimado.codigo} (${descuentoCuponEstimado.detalle})`
+                  : ""
+              }
             />
           </Col>
         </Row>

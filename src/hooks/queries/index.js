@@ -38,6 +38,19 @@ export {
   useSucursalesCandidatasQuery,
 } from './usePrivados';
 export {
+  buscarEmisionEnCache,
+  useEmisionesQuery,
+  useEmisionQuery,
+  useEmisionCuponesQuery,
+  usePreviewDestinatariosQuery,
+  useCuponesQuery,
+  useCuponesClienteQuery,
+  useCrearEmision,
+  useReenviarEmision,
+  useCambiarActivoCupon,
+  useCuponQuery,
+} from './useCampanas';
+export {
   useAdministradoresQuery,
   useClientesQuery,
   useElementoPersonalizacionQuery,

@@ -137,6 +137,16 @@ const ConfirmacionPedido = () => {
             costoEnvio={pedidoActual.costoEnvio ?? 0}
             sucursal={sucursal}
             promociones={pedidoActual.promociones}
+            descuentoCupon={
+              pedidoActual.cupon?.descuentoAplicado
+                ? Number(pedidoActual.cupon.descuentoAplicado)
+                : 0
+            }
+            detalleDescuentoCupon={
+              pedidoActual.cupon
+                ? `Cupón ${pedidoActual.cupon.codigo} (${pedidoActual.cupon.tipoDescuento === 'PORCENTAJE' ? Number(pedidoActual.cupon.valorDescuento) + '%' : '$' + Number(pedidoActual.cupon.valorDescuento)})`
+                : ''
+            }
           />
         </Col>
       </Row>

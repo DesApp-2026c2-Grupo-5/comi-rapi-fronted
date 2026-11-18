@@ -234,6 +234,12 @@ const enlacesSuperadmin = [
         icono: FaUserTie,
         prefijo: '/superadmin/administrador',
       },
+      {
+        to: '/superadmin/cupones',
+        etiqueta: 'Cupones',
+        icono: FaPercent,
+        prefijo: '/superadmin/cupones',
+      },
     ],
   },
 ];
@@ -417,9 +423,10 @@ const NavInferior = () => {
       </nav>
 
       {/* Hoja de Catálogo (admin en solo lectura, superadmin con CRUD) y hoja de
-          Negocio (parámetros, sucursales y clientes del superadmin). La hoja
-          crece desde abajo, igual que esta barra, para mantener la mano en el
-          mismo lugar. Al tocar un destino se navega y se cierra. */}
+          Negocio (parámetros, sucursales, clientes, administradores y
+          cupones del superadmin). La hoja crece desde abajo, igual que esta
+          barra, para mantener la mano en el mismo lugar. Al tocar un destino se
+          navega y se cierra. */}
       {hojaVisible && (
         <Offcanvas
           show={Boolean(hojaVisible)}

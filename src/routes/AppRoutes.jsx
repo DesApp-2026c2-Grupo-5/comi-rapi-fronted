@@ -84,6 +84,7 @@ const DetallePedido = lazy(() => import('../pages/cliente/DetallePedido'));
 const DetalleProducto = lazy(() => import('../pages/cliente/DetalleProducto'));
 const ResenasProducto = lazy(() => import('../pages/cliente/ResenasProducto'));
 const Perfil = lazy(() => import('../pages/cliente/Perfil'));
+const MisCupones = lazy(() => import('../pages/cliente/MisCuponesPage'));
 
 // Páginas admin
 const Dashboard = lazy(() => import('../pages/admin/Dashboard'));
@@ -121,6 +122,10 @@ const GestionPersonalizacionCategorias = lazy(() => import('../pages/superadmin/
 const EditarPlantillaCategoria = lazy(() => import('../pages/superadmin/EditarPlantillaCategoria'));
 const GestionPromociones = lazy(() => import('../pages/superadmin/GestionPromociones'));
 const EditarPromocion = lazy(() => import('../pages/superadmin/EditarPromocion'));
+const CrearEmision = lazy(() => import('../pages/superadmin/CrearEmision'));
+const DetalleEmision = lazy(() => import('../pages/superadmin/DetalleEmision'));
+const GestionEmisiones = lazy(() => import('../pages/superadmin/GestionEmisiones'));
+const DetalleCupon = lazy(() => import('../pages/superadmin/DetalleCupon'));
 
 /**
  * Definición de rutas de la aplicación.
@@ -172,6 +177,7 @@ const AppRoutes = () => {
             <Route path="/cliente/historial" element={<HistorialPedidos />} />
             <Route path="/cliente/pedido/:id" element={<DetallePedido />} />
             <Route path="/cliente/perfil" element={<Perfil />} />
+            <Route path="/cliente/mis-cupones" element={<MisCupones />} />
           </Route>
 
           {/* Rutas operativas de sucursal: pedidos y stock las comparten el
@@ -243,6 +249,13 @@ const AppRoutes = () => {
             <Route path="/superadmin/promociones" element={<GestionPromociones />} />
             <Route path="/superadmin/promocion/nuevo" element={<EditarPromocion />} />
             <Route path="/superadmin/promocion/editar/:id" element={<EditarPromocion />} />
+
+            {/* Emisiones y cupones: exclusivo del SUPERADMINISTRADOR.
+                El listado de emisiones vive directamente en /cupones. */}
+            <Route path="/superadmin/cupones/crear" element={<CrearEmision />} />
+            <Route path="/superadmin/cupones/emisiones/:id" element={<DetalleEmision />} />
+            <Route path="/superadmin/cupones/cupones/:id" element={<DetalleCupon />} />
+            <Route path="/superadmin/cupones" element={<GestionEmisiones />} />
           </Route>
 
           {/* Ruta 404 - redirige según estado de sesión */}

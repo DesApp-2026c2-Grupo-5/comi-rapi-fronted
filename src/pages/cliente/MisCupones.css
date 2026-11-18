@@ -1,0 +1,27 @@
+.resumen-card {
+  border: 1px solid var(--color-border-cream);
+}
+
+.resumen-titulo {
+  border-bottom-color: var(--color-border-cream);
+}
+
+.resumen-divisor {
+  border-color: var(--color-border-cream);
+  margin-y: 1rem;
+}
+
+.resumen-total {
+  color: var(--color-primary-dark);
+}
+
+.fw-monospace {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.text-truncate {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
