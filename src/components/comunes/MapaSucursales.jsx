@@ -17,7 +17,9 @@ import './map-container.css';
 
 /**
  * Mapa para gestión de sucursales y dirección del cliente
- * Fix: Elimina AjusteInicial problemático, usa whenCreated + LayerGroup
+ * Fix: Elimina AjusteInicial problemático, usa whenReady + LayerGroup
+ * Fix v4: migrado de la API de react-leaflet v3 (`whenCreated` + `leafletElement`)
+ *         a v4 (`whenReady` recibe el evento de Leaflet; el mapa es su `target`).
  * Fix: Ctrl+Scroll zoom robusto
  * Dot + Pulse Aura para dirección cliente
  * Responsive: altura reducida en mobile para no tapar el footer del wizard
@@ -30,21 +32,19 @@ const MapaSucursales = ({
 }) => {
   const { temaResuelto } = useTema();
   const esOscuro = temaResuelto === 'oscuro';
-  const mapRef = useRef(null);
   const ctrlZoomCleanupRef = useRef(null);
 
-  // Configurar Ctrl+Zoom al montar el mapa (debe ir antes de early returns)
-  useEffect(() => {
-    if (mapRef.current?.leafletElement) {
-      ctrlZoomCleanupRef.current = setupCtrlZoom(mapRef.current.leafletElement, true);
-    }
-    return () => {
+  // Limpieza del listener de Ctrl+Zoom al desmontar (va antes de los early
+  // returns por las Rules of Hooks).
+  useEffect(
+    () => () => {
       if (ctrlZoomCleanupRef.current) {
         ctrlZoomCleanupRef.current();
         ctrlZoomCleanupRef.current = null;
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   if (!sucursales || sucursales.length === 0) return null;
 
@@ -55,6 +55,29 @@ const MapaSucursales = ({
   const centro = puntoCliente
     ? [Number(puntoCliente.latitud), Number(puntoCliente.longitud)]
     : [puntos[0].latitud, puntos[0].longitud];
+
+  // Se ejecuta una sola vez, cuando react-leaflet ya montó el mapa. En v4
+  // `whenCreated` ya no existe: `whenReady` se llama con el evento de Leaflet,
+  // cuyo `target` es la instancia del mapa (en ese momento el `ref` todavía no
+  // está asignado).
+  const inicializarMapa = (map) => {
+    if (!map) return;
+
+    ctrlZoomCleanupRef.current = setupCtrlZoom(map, true);
+
+    const todos = [...puntos];
+    if (puntoCliente) todos.push(puntoCliente);
+    if (todos.length === 0) return;
+
+    if (todos.length === 1) {
+      map.setView([todos[0].latitud, todos[0].longitud], 15);
+    } else {
+      map.fitBounds(
+        todos.map((p) => [p.latitud, p.longitud]),
+        { padding: [40, 40], maxZoom: 15 }
+      );
+    }
+  };
 
   // Altura responsive: mobile usa alturaMobilePx, desktop usa alturaPx
   const alturaResponsive = typeof window !== 'undefined' && window.innerWidth < 576
@@ -78,25 +101,11 @@ const MapaSucursales = ({
           aria-label={`Mapa con ${puntos.length} sucursal${puntos.length > 1 ? "es" : ""}${puntoCliente ? " y tu dirección" : ""}`}
         >
           <MapContainer
-            ref={mapRef}
             center={centro}
             zoom={13}
             style={{ height: "100%", width: "100%", borderRadius: "12px" }}
             scrollWheelZoom={false}
-            whenCreated={(map) => {
-              const todos = [...puntos];
-              if (puntoCliente) todos.push(puntoCliente);
-              if (todos.length === 0) return;
-
-              if (todos.length === 1) {
-                map.setView([todos[0].latitud, todos[0].longitud], 15);
-              } else {
-                map.fitBounds(
-                  todos.map((p) => [p.latitud, p.longitud]),
-                  { padding: [40, 40], maxZoom: 15 }
-                );
-              }
-            }}
+            whenReady={(evento) => inicializarMapa(evento?.target)}
           >
             <TileLayer
               attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
