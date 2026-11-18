@@ -23,12 +23,6 @@ import { SkeletonTabla } from '../../components/comunes/Skeleton';
 
 const LIMITE_POR_PAGINA = 20;
 
-const VARIANTE_ESTADO_EMISION = {
-  EN_PROCESO: 'primary',
-  COMPLETADA: 'success',
-  CON_ERRORES: 'warning',
-};
-
 const VARIANTE_ESTADO_CUPON = {
   DISPONIBLE: 'success',
   EN_USO: 'warning',
@@ -80,7 +74,7 @@ function estadoPredominante(cuponesPorEstado) {
 const GestionEmisiones = () => {
   const navigate = useNavigate();
   const [pagina, setPagina] = useState(1);
-  const [error, setError] = useState('');
+  const [error] = useState('');
 
   const {
     data: paginaEmisiones = { items: [], total: 0, pagina: 1, paginas: 1 },
@@ -152,7 +146,6 @@ const GestionEmisiones = () => {
               <tbody>
                 {emisiones.map((emision) => {
                   const cpe = emision.cuponesPorEstado || {};
-                  const totalCupones = emision.cantidadCupones;
                   const estadoPred = estadoPredominante(cpe);
                   return (
                     <tr key={emision.id}>

@@ -11,11 +11,11 @@
  */
 
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Container, Row, Col, Card, CardBody, CardTitle, Button, Alert, Badge, Table,
+  Container, Row, Col, Card, CardBody, CardTitle, Button, Alert, Badge,
 } from 'react-bootstrap';
-import { FaArrowLeft, FaUser, FaEnvelope, FaTag, FaClock, FaWallet, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaArrowLeft, FaUser, FaEnvelope, FaTag, FaWallet, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 import { useCuponQuery, useCambiarActivoCupon } from '../../hooks/queries';
 
 const VARIANTE_ESTADO = {
