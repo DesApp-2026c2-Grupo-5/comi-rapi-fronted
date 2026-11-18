@@ -9,7 +9,7 @@ const PromocionCard = ({ promocion }) => {
   const badge = esDosPorUno ? '2x1' : `-${Number(promocion.valor)}%`;
 
   return (
-    <Card className="promocion-card h-100">
+    <Card className="promocion-card hover-elevar h-100">
       <Badge className="promocion-badge" bg="danger">
         {badge}
       </Badge>

@@ -52,7 +52,7 @@ const ProductoCard = ({ producto, rank, promocion, variante }) => {
           contención. */}
       <div className="producto-card-contenedor">
         <Card
-          className={`producto-card h-100${
+          className={`producto-card hover-elevar h-100${
             variante === 'horizontal' ? ' producto-card--horizontal' : ''
           }`}
         >

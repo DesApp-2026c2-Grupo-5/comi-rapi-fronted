@@ -1,7 +1,9 @@
 /**
  * Propósito: Tabla de elementos de personalización (por producto o plantilla
  *            por categoría) con edición en línea de mínimo/máximo.
- * Contenido: CeldaCantidadInline y TablaPersonalizacion.
+ * Contenido: CeldaCantidadInline y TablaPersonalizacion. Las filas
+ *            `personalizar` (ingredientes) se muestran en solo lectura: se
+ *            administran desde el formulario del producto, no desde acá.
  * Dependencias: react-bootstrap, react-icons, formatters.
  * Uso: <TablaPersonalizacion elementos={...} productos={...} onEditar={...} />
  */
@@ -129,6 +131,12 @@ const TablaPersonalizacion = ({
                 (p) => String(p.id) === String(el.productoReferenciaId)
               )
             : null;
+          // Las filas `personalizar` no se editan desde este ABM: los
+          // ingredientes de un producto se administran en su propio formulario.
+          // Acá quedan en solo lectura (sin edición en línea ni acciones) para
+          // que la tabla siga mostrando el dato sin ofrecer una edición que el
+          // backend rechaza.
+          const filaSoloLectura = soloLectura || el.tipo === 'personalizar';
           return (
             <tr key={el.id}>
               <td>#{el.id}</td>
@@ -212,7 +220,7 @@ const TablaPersonalizacion = ({
                   : '—'}
               </td>
               <td className="text-center">
-                {soloLectura ? (
+                {filaSoloLectura ? (
                   el.minimo ?? 0
                 ) : (
                   <CeldaCantidadInline
@@ -224,7 +232,7 @@ const TablaPersonalizacion = ({
                 )}
               </td>
               <td className="text-center">
-                {soloLectura ? (
+                {filaSoloLectura ? (
                   el.maximo ?? 1
                 ) : (
                   <CeldaCantidadInline
@@ -242,21 +250,29 @@ const TablaPersonalizacion = ({
               </td>
               {!soloLectura && (
                 <td className="text-nowrap">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => onEditar(el.id)}
-                  >
-                    <FaEdit className="me-1" aria-hidden="true" /> Editar
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => onEliminar(el)}
-                  >
-                    <FaTrashAlt className="me-1" aria-hidden="true" /> Eliminar
-                  </Button>
+                  {el.tipo === 'personalizar' ? (
+                    <span className="text-muted small">
+                      Se gestiona desde el producto
+                    </span>
+                  ) : (
+                    <>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => onEditar(el.id)}
+                      >
+                        <FaEdit className="me-1" aria-hidden="true" /> Editar
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onEliminar(el)}
+                      >
+                        <FaTrashAlt className="me-1" aria-hidden="true" /> Eliminar
+                      </Button>
+                    </>
+                  )}
                 </td>
               )}
             </tr>

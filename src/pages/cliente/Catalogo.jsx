@@ -15,10 +15,13 @@
  *    badge (totalItems) abre un panel anclado con el resumen; no navega solo.
  *  - Desktop (lg+): barra lateral de filtros (CatalogoSidebar) + barra de
  *    resultados con el selector de orden.
- *  - Mobile (<lg): dos botones del mismo ancho (Ordenar / Filtrar) que abren
+ *  - Mobile (<lg): dos botones del mismo ancho (Ordenar por / Filtrar) que abren
  *    hojas inferiores; las tarjetas pasan a formato horizontal.
  *  - Los filtros viven en la URL (?categoria, ?busqueda, ?precioMin,
- *    ?precioMax, ?promocion, ?ordenPrecio) y se aplican al instante.
+ *    ?precioMax, ?promocion, ?orden) y se aplican al instante.
+ *  - El orden es opcional: sin `?orden` la grilla conserva el orden natural de
+ *    la API (nombre A-Z); con `?orden` se ordena en el cliente por precio o
+ *    nombre, en ambos sentidos.
  *  - Aviso para el visitante sin sesión: el carrito se arma sin cuenta, pero
  *    confirmar el pedido no, así que se lo dice acá y no recién al final del
  *    proceso, cuando ya eligió todo.
@@ -45,17 +48,23 @@ import AvisoSucursalesCerradas from '../../components/comunes/AvisoSucursalesCer
 import { SkeletonGrillaProductos } from '../../components/comunes/Skeleton';
 import './Catalogo.css';
 
-// Opciones del selector de orden. `''` (ausente en la URL) es el orden
-// recomendado: el que devuelve la API por más vendidos del día.
+// Opciones del selector de orden. La opción vacía (sin `?orden`) no ordena: la
+// grilla queda con el orden natural de la API (nombre A-Z). El resto se aplica
+// en el cliente sobre la lista ya filtrada.
 const OPCIONES_ORDEN = [
-  { valor: '', etiqueta: 'Recomendados' },
-  { valor: 'asc', etiqueta: 'Precio: menor a mayor' },
-  { valor: 'desc', etiqueta: 'Precio: mayor a menor' },
+  { valor: 'precio-asc', etiqueta: 'Precio: menor a mayor' },
+  { valor: 'precio-desc', etiqueta: 'Precio: mayor a menor' },
+  { valor: 'nombre-asc', etiqueta: 'Nombre: A-Z' },
+  { valor: 'nombre-desc', etiqueta: 'Nombre: Z-A' },
 ];
+
+// Comparador de nombres insensible a mayúsculas y acentos ("ñ" ordena junto a
+// la "n"), para que A-Z/Z-A se lean como los espera un usuario.
+const COMPARADOR_NOMBRE = new Intl.Collator('es', { sensitivity: 'base' });
 
 const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const productosQuery = useProductos({ orden: 'mas-vendidos' });
+  const productosQuery = useProductos();
   const categoriasQuery = useCategorias();
   const promocionesQuery = usePromociones({ incluirProductos: true });
   const { isAuthenticated } = useAuth();
@@ -135,7 +144,7 @@ const Catalogo = () => {
   const busqueda = searchParams.get("busqueda") || "";
   const precioMin = searchParams.get("precioMin") || "";
   const precioMax = searchParams.get("precioMax") || "";
-  const ordenPrecio = searchParams.get("ordenPrecio"); // 'asc' | 'desc' | null
+  const orden = searchParams.get("orden"); // 'precio-asc' | 'precio-desc' | 'nombre-asc' | 'nombre-desc' | null
 
   // C1: rango de precios del catálogo cargado — límites del deslizador.
   const [precioPiso, precioTecho] = useMemo(() => {
@@ -160,13 +169,14 @@ const Catalogo = () => {
     setSearchParams(next, { replace: true });
   };
 
-  // Cambiar orden de precio: solo asc o desc
-  const cambiarOrdenPrecio = (nuevoOrden) => {
+  // Cambiar el orden de la grilla: cualquiera de las opciones, o `null` para
+  // quitarlo y volver al orden natural de la API.
+  const cambiarOrden = (nuevoOrden) => {
     const next = new URLSearchParams(searchParams);
     if (nuevoOrden) {
-      next.set('ordenPrecio', nuevoOrden);
+      next.set('orden', nuevoOrden);
     } else {
-      next.delete('ordenPrecio');
+      next.delete('orden');
     }
     setSearchParams(next, { replace: true });
   };
@@ -198,11 +208,23 @@ const Catalogo = () => {
       return true;
     });
 
-    // Ordenamiento por precio
-    if (ordenPrecio === 'asc') {
-      resultado = [...resultado].sort((a, b) => a.precio - b.precio);
-    } else if (ordenPrecio === 'desc') {
-      resultado = [...resultado].sort((a, b) => b.precio - a.precio);
+    // Orden elegido por el usuario. Sin orden se conserva el orden natural de la
+    // API (nombre A-Z).
+    if (orden) {
+      resultado = [...resultado].sort((a, b) => {
+        switch (orden) {
+          case 'precio-asc':
+            return a.precio - b.precio;
+          case 'precio-desc':
+            return b.precio - a.precio;
+          case 'nombre-asc':
+            return COMPARADOR_NOMBRE.compare(a.nombre, b.nombre);
+          case 'nombre-desc':
+            return COMPARADOR_NOMBRE.compare(b.nombre, a.nombre);
+          default:
+            return 0;
+        }
+      });
     }
 
     return resultado;
@@ -214,7 +236,7 @@ const Catalogo = () => {
     busqueda,
     precioMin,
     precioMax,
-    ordenPrecio,
+    orden,
   ]);
 
   // Elegir categoría desde las pills (sincroniza la URL para que también la home la setee)
@@ -244,7 +266,7 @@ const Catalogo = () => {
   // descubrir solo que los filtros estaban en el sidebar o en la hoja "Filtrar".
   const limpiarFiltros = () => {
     const next = new URLSearchParams(searchParams);
-    ["categoria", "busqueda", "precioMin", "precioMax", "promocion", "ordenPrecio"].forEach(
+    ["categoria", "busqueda", "precioMin", "precioMax", "promocion", "orden"].forEach(
       (clave) => next.delete(clave),
     );
     setSearchParams(next, { replace: true });
@@ -356,7 +378,7 @@ const Catalogo = () => {
           aria-haspopup="dialog"
         >
           <FaSortAmountDown aria-hidden="true" />
-          Ordenar
+          Ordenar por
         </Button>
         <Button
           className="catalogo-accion-movil"
@@ -388,17 +410,35 @@ const Catalogo = () => {
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
+          {/* La primera opción es la "sin orden": cuando no hay orden activo se
+              muestra como "Ordenar por" (es la vigente) y cuando hay uno pasa a
+              "Quitar ordenamiento", la salida que busca el usuario. */}
           <ul className="catalogo-hoja-opciones">
+            <li>
+              <Button
+                className={`catalogo-hoja-opcion${
+                  !orden ? ' catalogo-hoja-opcion--activa' : ''
+                }`}
+                onClick={() => {
+                  cambiarOrden(null);
+                  setHojaMovil(null);
+                }}
+                aria-pressed={!orden}
+              >
+                <span>{orden ? 'Quitar ordenamiento' : 'Ordenar por'}</span>
+                {!orden && <FaCheck aria-hidden="true" />}
+              </Button>
+            </li>
             {OPCIONES_ORDEN.map((opcion) => {
-              const activo = (ordenPrecio || '') === opcion.valor;
+              const activo = orden === opcion.valor;
               return (
-                <li key={opcion.valor || 'recomendados'}>
+                <li key={opcion.valor}>
                   <Button
                     className={`catalogo-hoja-opcion${
                       activo ? ' catalogo-hoja-opcion--activa' : ''
                     }`}
                     onClick={() => {
-                      cambiarOrdenPrecio(opcion.valor || null);
+                      cambiarOrden(opcion.valor);
                       setHojaMovil(null);
                     }}
                     aria-pressed={activo}
@@ -475,16 +515,19 @@ const Catalogo = () => {
             </span>
             <div className="filtro-orden-precio-contenedor">
               <Form.Select
-                value={ordenPrecio || ''}
-                onChange={(e) => cambiarOrdenPrecio(e.target.value || null)}
+                value={orden || ''}
+                onChange={(e) => cambiarOrden(e.target.value || null)}
                 aria-label="Ordenar productos"
                 className="filtro-orden-precio-select"
               >
+                {/* Opción vacía: etiqueta dinámica. Sin orden activo dice
+                    "Ordenar por" (es el placeholder); con uno activo, la misma
+                    opción pasa a "Quitar ordenamiento". */}
+                <option value="">
+                  {orden ? 'Quitar ordenamiento' : 'Ordenar por'}
+                </option>
                 {OPCIONES_ORDEN.map((opcion) => (
-                  <option
-                    key={opcion.valor || "recomendados"}
-                    value={opcion.valor}
-                  >
+                  <option key={opcion.valor} value={opcion.valor}>
                     {opcion.etiqueta}
                   </option>
                 ))}

@@ -36,6 +36,10 @@ import './styles/tokens.css';
 // Tema global de botones y utilidades Comi-Rapi (debe ir DESPUÉS de Bootstrap)
 import './styles/comirapi.css';
 
+// Utilidad compartida de hover para tarjetas (Inicio y Catálogo hablan el mismo
+// idioma al pasar el mouse).
+import './styles/hover.css';
+
 // Paleta del panel de administración y superadministración (debe ir al final
 // para pisar los estilos de marca del cliente).
 import './styles/admin-theme.css';

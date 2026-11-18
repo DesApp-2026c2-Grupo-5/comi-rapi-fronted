@@ -14,7 +14,6 @@
 const claveProductos = ({
   incluirPersonalizacion = false,
   incluirResenas = false,
-  orden = '',
 } = {}) => {
   const incluses = [
     incluirPersonalizacion ? 'personalizacion' : null,
@@ -22,10 +21,7 @@ const claveProductos = ({
   ]
     .filter(Boolean)
     .join('+');
-  const base = incluses || 'base';
-  // El orden forma parte de la clave: la lista ordenada por más vendidos es una
-  // lectura distinta de la base (por nombre) y no deben compartir caché.
-  return orden ? `${base}~${orden}` : base;
+  return incluses || 'base';
 };
 
 const clavePromociones = ({ incluirInactivas = false, incluirProductos = false } = {}) =>

@@ -42,7 +42,6 @@ export const fetchCategoria = ({ id, signal } = {}) =>
 export const fetchProductos = ({
   incluirPersonalizacion = false,
   incluirResenas = false,
-  orden = '',
   signal,
 } = {}) => {
   const include = [
@@ -51,7 +50,7 @@ export const fetchProductos = ({
   ]
     .filter(Boolean)
     .join(',');
-  return apiGet(conQuery('/productos', { include, orden }), { signal }).then(
+  return apiGet(conQuery('/productos', { include }), { signal }).then(
     desenvolver
   );
 };

@@ -34,6 +34,7 @@ import OpcionesDireccionAmbigua from "../comunes/OpcionesDireccionAmbigua";
 import ConfirmacionDireccion from "../comunes/ConfirmacionDireccion";
 import ResultadoDireccion from "../comunes/ResultadoDireccion";
 import "../comunes/DireccionFormulario.css";
+import "../comunes/Wizard.css";
 import "./FormularioDireccion.css";
 
 const PASOS = [
@@ -199,11 +200,11 @@ const FormularioDireccion = ({
   };
 
   const footer = (
-    <div className="direccion-wizard-footer">
-      <span className="direccion-wizard-footer-paso">
+    <div className="wizard-footer">
+      <span className="wizard-footer-paso">
         Paso {paso} de {PASOS.length}
       </span>
-      <div className="direccion-wizard-footer-acciones">
+      <div className="wizard-footer-acciones">
         {paso === 1 ? (
           <>
             <Button
@@ -283,28 +284,28 @@ const FormularioDireccion = ({
     >
       <div ref={inicioRef} />
 
-      <ol className="direccion-wizard-pasos" aria-label="Progreso del formulario">
+      <ol className="wizard-pasos" aria-label="Progreso del formulario">
         {PASOS.map((item) => (
           <li
             key={item.numero}
-            className={`direccion-wizard-paso${
+            className={`wizard-paso${
               paso === item.numero ? " activo" : ""
             }${paso > item.numero ? " completado" : ""}`}
             aria-current={paso === item.numero ? "step" : undefined}
           >
-            <span className="direccion-wizard-paso-numero">
+            <span className="wizard-paso-numero">
               {paso > item.numero ? (
                 <FaCheck aria-hidden="true" />
               ) : (
                 item.numero
               )}
             </span>
-            <span className="direccion-wizard-paso-texto">{item.etiqueta}</span>
+            <span className="wizard-paso-texto">{item.etiqueta}</span>
           </li>
         ))}
       </ol>
 
-      <div className="direccion-wizard-cuerpo">
+      <div className="wizard-cuerpo">
         {(direccionApi.avisoFueraZona ||
           direccionApi.avisoPartidoFueraZona) && (
           <Alert variant="warning" role="alert" className="mb-3 dir-form-aviso">

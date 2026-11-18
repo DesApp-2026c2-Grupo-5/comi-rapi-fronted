@@ -1,7 +1,7 @@
 /**
  * Propósito: Estilos de la tarjeta de promoción del home y del catálogo.
- * Contenido: Card con badge de descuento, lift en hover (gateado a puntero
- *            fino), anillo de foco y botón "Aprovechar".
+ * Contenido: Card con badge de descuento, hover con elevación compartido
+ *            (utilidad `hover-elevar`), anillo de foco y botón "Aprovechar".
  * Dependencias: PromocionCard.jsx (se importa al final del mismo), token
  *               --ease-out de styles/comirapi.css.
  * Uso: Importado desde src/components/cliente/PromocionCard.jsx.
@@ -13,15 +13,10 @@
   border-radius: 16px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .promocion-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
-  }
-}
+/* El hover (elevación + zoom + sombra) lo aporta la utilidad compartida
+   `hover-elevar` (styles/hover.css), aplicada desde PromocionCard.jsx. */
 
 .promocion-badge {
   position: absolute;

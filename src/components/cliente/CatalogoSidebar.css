@@ -115,3 +115,22 @@
     transition: none;
   }
 }
+
+/* ============ Sticky en desktop ============ */
+/* En `lg` y más la grilla de productos suele ser mucho más alta que la tarjeta
+   de filtros, y todo el alto que sobraba debajo de ella quedaba desaprovechado.
+   Con la tarjeta fija (sticky) los filtros siguen a mano mientras se recorre el
+   catálogo: el espacio deja de ser "vacío" y pasa a ser recorrido útil. Si hay
+   muchas categorías, la propia tarjeta scrollea en vez de desbordar la pantalla.
+   Bajo `lg` el panel vive dentro de la hoja "Filtrar" (Offcanvas), que ya
+   administra su propio scroll, por eso la regla no aplica ahí. */
+@media (min-width: 992px) {
+  .catalogo-sidebar {
+    position: sticky;
+    /* Deja libre la navbar superior (`sticky-top`, ~62px) más un respiro. */
+    top: 4.5rem;
+    max-height: calc(100vh - 6rem);
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+  }
+}

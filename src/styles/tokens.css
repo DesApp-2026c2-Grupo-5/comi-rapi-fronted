@@ -106,6 +106,9 @@
   /* ============ Sombras ============ */
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.05);
   --shadow-card-hover: 0 8px 18px rgba(0, 0, 0, 0.12);
+  /* Sombra del lift compartido (utilidad `hover-elevar`): un poco más marcada
+     que la de hover estándar para que la tarjeta "se despegue" con el zoom. */
+  --shadow-card-lift: 0 12px 26px rgba(0, 0, 0, 0.16);
   --shadow-cta: 0 4px 12px rgba(240, 127, 16, 0.25);
   --shadow-cta-hover: 0 8px 18px rgba(240, 127, 16, 0.38);
 

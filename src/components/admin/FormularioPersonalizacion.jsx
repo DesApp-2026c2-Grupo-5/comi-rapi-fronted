@@ -103,7 +103,7 @@ const FormularioPersonalizacion = ({
     if (nuevo === 'acompanar') {
       // precio se deja editable, no se limpia
     }
-    if (nuevo === 'personalizar' || nuevo === 'condimento') {
+    if (nuevo === 'condimento') {
       setPrecio('');
       setProductoReferenciaId('');
     }
@@ -170,12 +170,8 @@ const FormularioPersonalizacion = ({
       datos.nombre = insumo ? insumo.nombre : nombre.trim();
       datos.precio = tipo === 'extra' ? (precio !== '' ? Number(precio) : null) : null;
       datos.productoReferenciaId = null;
-    } else {
-      datos.nombre = nombre.trim();
-      datos.precio = tipo === 'extra' ? (precio !== '' ? Number(precio) : null) : null;
-      datos.productoReferenciaId = null;
-      datos.insumoId = null;
     }
+    // Sin tipo elegido no hay datos que completar: la validación lo rechaza.
 
     const errores = esModoCategoria
       ? validatePlantillaCategoria({ ...datos, productos })
@@ -279,21 +275,6 @@ const FormularioPersonalizacion = ({
                   ? 'No hay insumos de este tipo. Creá uno en Catálogo → Insumos.'
                   : 'El insumo define el nombre y el precio base; el precio se puede pisar abajo.'}
               </Form.Text>
-            </Form.Group>
-          )}
-
-          {!esAcompanar && !esExtraOCondimento && (
-            <Form.Group className="mb-3" controlId="personalizacion-nombre">
-              <Form.Label>Nombre *</Form.Label>
-              <Form.Control
-                type="text"
-                name="nombre"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                placeholder={tipo === 'personalizar' ? 'Ej: Queso Cheddar en fetas' : 'Ej: Bacon'}
-                required
-              />
-              {tipo === 'personalizar' && <Form.Text className="text-muted">Se mostrará como &quot;Sin {nombre || 'X'}&quot;</Form.Text>}
             </Form.Group>
           )}
 

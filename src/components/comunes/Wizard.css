@@ -1,0 +1,123 @@
+/**
+ * Propósito: Estilos compartidos de los wizards dentro de un modal: el
+ *            indicador horizontal de pasos y el footer de acciones.
+ * Contenido: Círculos numerados (activo/completado/pendiente), línea de pasos
+ *            y pie con "Paso X de N" + acciones.
+ * Dependencias: tokens de `styles/tokens.css` (--color-primary, --color-*).
+ * Uso: se importa desde FormularioDireccion.jsx (ABM de direcciones del
+ *      cliente) y desde ProductoPersonalizarModal.jsx, para que ambos wizards
+ *      hablen el mismo idioma visual. Clases con prefijo `.wizard-*`.
+ *
+ * Nació de los estilos del wizard de direcciones; se extrajo para no duplicar
+ * el patrón en el configurador de productos.
+ */
+
+.wizard-pasos {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.wizard-paso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.wizard-paso-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-card);
+  background: var(--color-cream-soft);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.wizard-paso.activo {
+  color: var(--color-text);
+}
+
+.wizard-paso.activo .wizard-paso-numero {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.wizard-paso.completado .wizard-paso-numero {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.wizard-paso-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wizard-cuerpo {
+  min-height: 0;
+}
+
+.wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.wizard-footer-paso {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wizard-footer-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* En ventanas bajas o pantallas angostas el indicador se comprime. */
+@media (max-height: 760px), (max-width: 30rem) {
+  .wizard-pasos {
+    margin-bottom: 0.35rem;
+  }
+}
+
+/* En pantallas muy angostas se ocultan las etiquetas y el footer se apila. */
+@media (max-width: 30rem) {
+  .wizard-pasos {
+    gap: 0.25rem;
+  }
+
+  .wizard-paso-texto {
+    display: none;
+  }
+
+  .wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wizard-footer-acciones {
+    flex: 1;
+  }
+
+  .wizard-footer-acciones .btn {
+    flex: 1 1 0;
+  }
+}

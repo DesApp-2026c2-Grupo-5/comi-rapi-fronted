@@ -29,7 +29,6 @@ export const useProductos = (
   {
     incluirPersonalizacion = false,
     incluirResenas = false,
-    orden = '',
     enabled = true,
     staleTime = TIEMPO_CACHE_QUERY_MS,
   } = {}
@@ -38,20 +37,19 @@ export const useProductos = (
   const clave = queryKeys.public.productos({
     incluirPersonalizacion,
     incluirResenas,
-    orden,
   });
   const datosBootstrap = queryClient.getQueryData(queryKeys.public.bootstrap);
-  // El bootstrap solo siembra productos base (sin personalización, reseñas ni
-  // orden alternativo): para una lista ordenada por más vendidos hay que ir a
-  // la API, porque el snapshot llega en orden por nombre.
+  // El bootstrap siembra productos base (sin personalización ni reseñas): para
+  // cualquiera de esas variantes hay que ir a la API, porque el snapshot llega
+  // con la forma base.
   const datosExistentes =
-    !incluirPersonalizacion && !incluirResenas && !orden
+    !incluirPersonalizacion && !incluirResenas
       ? datosBootstrap?.productos || queryClient.getQueryData(clave)
       : queryClient.getQueryData(clave);
   return useQuery({
     queryKey: clave,
     queryFn: ({ signal }) =>
-      fetchProductos({ incluirPersonalizacion, incluirResenas, orden, signal }),
+      fetchProductos({ incluirPersonalizacion, incluirResenas, signal }),
     // initialData lee la caché al montar; la query queda habilitada y
     // suscrita a actualizaciones vía setQueryData/setQueriesData.
     initialData: () => datosExistentes,

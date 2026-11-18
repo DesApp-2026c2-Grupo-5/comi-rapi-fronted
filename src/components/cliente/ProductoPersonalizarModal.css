@@ -1,100 +1,534 @@
-.modal-personalizar-content{ border:2px solid var(--color-border-card); border-radius:18px; overflow:hidden; }
-.personalizar-imagen{ width:220px; height:150px; object-fit:cover; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,.12); }
-.btn-cerrar{ position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; background:var(--color-cream-light); border:none; color:var(--color-text); font-size:1.4rem; line-height:1; display:flex; align-items:center; justify-content:center; }
-.btn-cerrar:hover{ background:var(--color-border-card); }
-.btn-seleccionar{ background:var(--color-cream); border:1px solid var(--color-border-cream); color:var(--color-primary-dark); border-radius:999px; font-weight:700; font-size:.8rem; padding:.3rem 1rem; }
-.btn-seleccionar:hover{ background:var(--color-cream-hover); color:var(--color-primary-dark); border-color:var(--color-primary); }
-.btn-volver{ width:36px; height:36px; border-radius:50%; background:var(--color-cream-light); border:none; color:var(--color-text); font-size:1.3rem; }
-/* Los dos botones circulares (cerrar y volver) suben a 44px: 36px queda corto
-   para el dedo en móvil. El foco visible va aparte del hover porque :hover en
-   escritorio no distingue mouse de teclado. */
-.btn-volver,
-.btn-cerrar{ width:44px; height:44px; touch-action:manipulation; display:inline-flex; align-items:center; justify-content:center; }
-.btn-volver:focus-visible,
-.btn-cerrar:focus-visible,
-.btn-seleccionar:focus-visible{ outline: 2px solid var(--color-focus); outline-offset:2px; }
+/**
+ * Propósito: Estilos del configurador de productos (wizard de 2 pasos).
+ * Contenido: Tamaño del diálogo por breakpoint, cuerpo del modal, paso 1
+ *            (producto) y paso 2 (acordeón de opciones). El indicador de pasos
+ *            y el footer son compartidos y viven en `comunes/Wizard.css`
+ *            (mismo patrón que el ABM de direcciones).
+ * Dependencias: ProductoPersonalizarModal.jsx (se importa al final del mismo),
+ *            comunes/Wizard.css y los tokens de `styles/tokens.css`.
+ * Uso: Importado desde src/components/cliente/ProductoPersonalizarModal.jsx.
+ */
 
-/* Cumplimenta al botón "volver" para que el título quede centrado. */
-.espaciador-volver{ width:44px; flex:0 0 auto; }
-.fila-grupo{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--color-border-card); }
-.fila-grupo:last-child{ border-bottom:none; }
-.badge-grupo{ font-size:.75rem; color:var(--color-text-muted); }
-.card-comi-grupo{ border:2px solid var(--color-border-card); border-radius:14px; background:var(--color-surface); padding:8px 14px; }
-.fila-opcion{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--color-border-card); }
-.fila-opcion:last-child{ border-bottom:none; }
+/* ============ Tamaño del diálogo ============ */
+/* Por debajo de 576px (teléfono vertical) el modal es fullscreen: lo resuelve
+   la variante `fullscreen-mobile` de ModalBase. Desde 576px pasa a ser un
+   diálogo centrado y crece junto con la grilla del catálogo: 2 columnas (md) y
+   3 columnas (lg). Se probó fullscreen hasta 768px (md-down) pero en ese rango
+   el contenido quedaba estirado y el modal dejaba de leerse como diálogo, así
+   que se volvió al corte de 576px. */
+@media (min-width: 576px) {
+  .modal-base-dialog.personalizar-dialog {
+    max-width: 540px;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-base-dialog.personalizar-dialog {
+    max-width: 700px;
+  }
+}
+
+@media (min-width: 992px) {
+  .modal-base-dialog.personalizar-dialog {
+    max-width: 860px;
+  }
+}
+
+/* ============ Alto estable del diálogo (≥576px) ============ */
+/* Los dos pasos tienen contenidos muy distintos: "Producto" (imagen + datos) y
+   "Opciones" (acordeón). Si el alto lo dictara el contenido, el modal cambiaría
+   de tamaño al pasar a "Opciones" y parecería otro modal. Por eso se fija un
+   alto intermedio: bastante para que "Producto" entre sin scroll, y sin llegar
+   al alto máximo de "Opciones" con una sección desplegada (ahí el cuerpo
+   scrollea). Nunca supera la ventana (`100dvh - 3.5rem`, el mismo tope que usa
+   ModalBase). En fullscreen (<576px) el alto ya es la pantalla completa, así que
+   la regla no aplica. Si se quiere otro alto, se cambia sólo este `37.5rem`. */
+@media (min-width: 576px) {
+  .modal-base-dialog.personalizar-dialog .modal-base-content {
+    height: min(37.5rem, calc(100dvh - 3.5rem));
+    max-height: calc(100dvh - 3.5rem);
+  }
+}
+
+/* ============ Cuerpo del modal ============ */
+/* El header (título + cerrar) y el footer los aporta ModalBase; acá solo se
+   ajusta el aire del cuerpo scrolleable. */
+.personalizar-body {
+  padding: 1rem;
+}
+
+/* ============ Paso 1: producto ============ */
+.personalizar-paso1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: center;
+  /* Entrada suave al montar el paso: el contenido aparece en vez de
+     reemplazarse de golpe. Se anula con prefers-reduced-motion. */
+  animation: personalizar-entrada 260ms var(--ease-out) both;
+}
+
+@keyframes personalizar-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Marco de la imagen: un halo cálido de marca detrás de la foto le da
+   profundidad a un bloque que antes era una imagen suelta sobre el fondo. */
+.personalizar-media {
+  position: relative;
+  display: inline-flex;
+  padding: 0.5rem;
+  border-radius: calc(var(--radius-card) + 8px);
+  border: 1px solid var(--color-border-card);
+  background:
+    radial-gradient(120% 120% at 50% 0%, var(--color-cream) 0%, transparent 70%),
+    var(--color-cream-soft);
+}
+
+.personalizar-imagen {
+  width: 200px;
+  height: 132px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Badge de oferta flotando sobre la esquina de la foto. */
+.personalizar-media-badge {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow-cta);
+}
+
+/* Chips de datos: categoría, combo y "Personalizable". */
+.personalizar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.personalizar-chip {
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-cream);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* "Personalizable" usa el color de marca: anticipa el Paso 2, así que se
+   destaca por sobre los datos descriptivos. */
+.personalizar-chip-marca {
+  border-color: transparent;
+  background: var(--color-cream);
+  color: var(--color-primary-dark);
+}
+
+.personalizar-descripcion {
+  max-width: 34rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.personalizar-promo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+/* Fila de unidades: tarjeta con borde de marca y dos líneas de texto (título +
+   pregunta) para que el control no quede solo con una etiqueta seca. */
+.personalizar-unidades-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--color-border-cream);
+  border-radius: var(--radius-panel);
+  background: var(--color-cream-soft);
+}
+
+.personalizar-unidades-texto {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.personalizar-unidades-titulo {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.personalizar-unidades-hint {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+/* ============ Paso 2: acordeón exclusivo ============ */
+.personalizar-paso2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.personalizar-alertas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.acordeon {
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.acordeon-seccion + .acordeon-seccion {
+  border-top: 1px solid var(--color-border-card);
+}
+
+/* Sección abierta: tinte naranja muy suave, sin convertirla en tarjeta. */
+.acordeon-seccion-abierta {
+  background: var(--color-cream);
+}
+
+.acordeon-titulo {
+  margin: 0;
+}
+
+.acordeon-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.acordeon-header:hover {
+  background: var(--color-cream-light);
+}
+
+.acordeon-header:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.acordeon-header-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.acordeon-header-titulo {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Descripción fija de la sección: visible siempre (abierta o cerrada) para
+   anticipar qué se puede configurar antes de desplegarla. */
+.acordeon-header-descripcion {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+}
+
+.acordeon-resumen {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+/* Indicador de expansión uniforme, alineado a la derecha. */
+.acordeon-chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 0.15s var(--ease-out);
+}
+
+.acordeon-chevron-abierto {
+  transform: rotate(180deg);
+}
+
+.acordeon-cuerpo {
+  padding: 0 1rem 1rem;
+}
+
+/* ============ Grupos de opciones (GrupoOpciones.jsx) ============ */
+.card-comi-grupo {
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  padding: 0.3rem 0.9rem;
+}
+
+.fila-opcion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--color-border-card);
+}
+
+.fila-opcion:last-child {
+  border-bottom: none;
+}
+
+/* Fila con checkbox (Form.Check de react-bootstrap, raíz con clase
+   `.form-check`): el input va pegado a la izquierda y el texto a su lado, sin
+   el flote ni el padding que Bootstrap trae para el layout de bloque. */
+.fila-opcion-check {
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.fila-opcion-check .form-check-input {
+  float: none;
+  margin: 0;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.fila-opcion-check .form-check-label {
+  cursor: pointer;
+}
+
+.fila-opcion-check .form-check-input:disabled,
+.fila-opcion-check .form-check-input:disabled ~ .form-check-label {
+  cursor: not-allowed;
+}
+
 /* Opción agotada: gris, sin contador y con el texto "Agotado" debajo del nombre. */
-.fila-opcion-agotada{ cursor:not-allowed; }
-.fila-opcion-agotada .texto-agotado{ font-size:.75rem; color:var(--color-text-muted); line-height:1.2; margin-top:2px; }
-.pill-control{ background:var(--color-cream-light); border-radius:999px; padding:4px 6px; display:inline-flex; align-items:center; gap:6px; }
-.pill-control button{ width:28px; height:28px; border-radius:50%; border:none; background:var(--color-surface); box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; line-height:1; }
-.pill-control button:hover{ background:var(--color-primary); color:var(--color-on-primary); }
-.pill-control span{ min-width:18px; text-align:center; font-weight:700; }
+.fila-opcion-agotada {
+  cursor: not-allowed;
+}
+
+.fila-opcion-agotada .texto-agotado {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.pill-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: var(--color-cream-light);
+}
+
+.pill-control button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pill-control button:hover {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.pill-control span {
+  min-width: 18px;
+  text-align: center;
+  font-weight: 700;
+}
 
 /* ============ Contador (Contador.jsx) ============ */
-/* `.pill-control button` sizes original: 28px, por debajo del mínimo táctil de 44px.
-   El Contador sube los botones a 44px y agranda la cápsula para compensarlo. */
-.contador .pill-control{ padding:4px; gap:4px; }
-
-.contador .pill-control .contador-boton{
-  width:44px; height:44px;
-  border-radius:50%; border:none;
-  background:var(--color-surface); color:var(--color-text);
-  box-shadow:0 1px 4px rgba(0,0,0,.1);
-  font-weight:700; font-size:1.25rem; line-height:1;
-  touch-action:manipulation;
-  display:inline-flex; align-items:center; justify-content:center;
+/* `.pill-control button` mide 28px, demasiado chico; el Contador fija su propio
+   tamaño en 34px: por encima del mínimo táctil razonable y bastante más bajo
+   que los 44px anteriores, para que las filas de personalización no se estiren
+   de alto. Se achica también el hueco de la cápsula para acompañar. */
+.contador .pill-control {
+  padding: 3px;
+  gap: 3px;
 }
 
-/* El hover no se dispara en táctil y endesktop el :hoveralone no distingue
-   teclado de mouse, así que el foco visible va por aparte. */
-.contador .pill-control .contador-boton:hover:not(:disabled){
-  background:var(--color-primary); color:var(--color-on-primary);
+.contador .pill-control .contador-boton {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.contador .pill-control .contador-boton:focus-visible{
-  outline: 2px solid var(--color-focus); outline-offset:2px;
+/* El hover no se dispara en táctil y en escritorio no distingue teclado de
+   mouse, así que el foco visible va aparte. */
+.contador .pill-control .contador-boton:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.contador .pill-control .contador-boton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 /* Botón deshabilitado: el límite se comunica con el estado, en vez de que el
-   clic se ignore en silencio y el usuario piense que la app se colgó. */
-.contador .pill-control .contador-boton:disabled{
-  background:var(--color-cream-light); color:var(--color-text-muted); box-shadow:none; cursor:not-allowed;
+   clic se ignore en silencio. */
+.contador .pill-control .contador-boton:disabled {
+  background: var(--color-cream-light);
+  color: var(--color-text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
-.contador .contador-valor{
-  min-width:2.25rem; text-align:center; font-weight:700;
-  font-variant-numeric:tabular-nums;
+.contador .contador-valor {
+  min-width: 1.6rem;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Etiqueta que acompaña al contador dentro de una fila de opción. */
-.fila-opcion .contador-valor{ font-size:1rem; }
-
-/* ============ Reglas sacadas de los style={{...}} en línea ============ */
-/* Estas medidas eran decisiones de layout escritas en el JSX; en CSS se pueden
-   auditar, ajustar por breakpoint y no ensucian el marcado. */
-
-/* Diálogo simple (producto sin opciones de personalización) */
-.modal-producto-imagen{ object-fit:cover; }
-.modal-precio{ color:var(--color-danger); }
-
-/* Vista principal del diálogo personalizable */
-.personalizar-descripcion{ max-width:320px; }
-.personalizar-total{ font-size:1.1rem; font-variant-numeric:tabular-nums; }
-.personalizar-total-unitario{ font-size:.7rem; }
-.personalizar-grupos,
-.personalizar-unidades{ border-radius:14px; }
-.personalizar-unidades .contador{ flex:0 0 auto; }
-
-/* Botón de agregar: la burbuja con la cantidad de unidades */
-.btn-agregar-cantidad{
-  color:var(--color-primary); border-radius:50%;
-  width:22px; height:22px;
-  display:inline-flex; align-items:center; justify-content:center;
-  font-variant-numeric:tabular-nums;
+/* ============ Botones del footer ============ */
+/* Más compactos que el botón por defecto y sin partirse en dos renglones: el
+   ícono, la etiqueta y el precio van siempre en una sola línea. */
+.personalizar-dialog .wizard-footer-acciones .btn {
+  gap: 0.4rem;
+  padding: 0.4rem 0.95rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
-/* Estados de los resúmenes de cada grupo. Antes el color iba por style inline,
-   así que un estado "vacío" y uno "con selección" solo se distinguían por el
-   tono; ahora el color es una clase y se puede revisar el contraste. */
-.badge-grupo-activo{ color:var(--color-success); }
-.badge-grupo-ambar{ color:var(--color-primary-dark); }
+.personalizar-footer-precio {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Diálogo simple (producto sin opciones de personalización) ============ */
+.modal-producto-imagen {
+  object-fit: cover;
+}
+
+.modal-precio {
+  color: var(--color-danger);
+}
+
+/* ============ Responsive ============ */
+/* Fullscreen (<576px, teléfono vertical): las acciones se reparten de forma que
+   la principal se estira y su contenido entra en un renglón; las filas de
+   opciones quedan apenas más altas para el dedo. */
+@media (max-width: 575.98px) {
+  .personalizar-dialog .wizard-footer-acciones {
+    width: 100%;
+  }
+
+  .personalizar-dialog .wizard-footer-acciones .btn-outline-secondary {
+    flex: 0 0 auto;
+  }
+
+  .personalizar-dialog .wizard-footer-acciones .btn-primary {
+    flex: 1 1 auto;
+  }
+
+  .fila-opcion {
+    padding: 0.55rem 0;
+  }
+}
+
+/* Grilla de 2 columnas (md): los elementos internos crecen con el modal. */
+@media (min-width: 768px) {
+  .personalizar-imagen {
+    width: 240px;
+    height: 158px;
+  }
+}
+
+/* Grilla de 3 columnas (lg): más aire y elementos más grandes. */
+@media (min-width: 992px) {
+  .personalizar-body {
+    padding: 1.25rem;
+  }
+
+  .personalizar-imagen {
+    width: 300px;
+    height: 198px;
+  }
+
+  .acordeon-header {
+    padding: 1rem 1.15rem;
+  }
+
+  .acordeon-cuerpo {
+    padding: 0 1.15rem 1.15rem;
+  }
+}
+
+@media (max-height: 760px), (max-width: 30rem) {
+  .personalizar-dialog .modal-base-footer {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .personalizar-body {
+    padding: 0.75rem;
+  }
+
+  .acordeon-header {
+    padding: 0.7rem 0.85rem;
+  }
+
+  .acordeon-cuerpo {
+    padding: 0 0.85rem 0.85rem;
+  }
+}
+
+/* Movimiento reducido: el contenido del Paso 1 aparece sin desplazarse. */
+@media (prefers-reduced-motion: reduce) {
+  .personalizar-paso1 {
+    animation: none;
+  }
+}

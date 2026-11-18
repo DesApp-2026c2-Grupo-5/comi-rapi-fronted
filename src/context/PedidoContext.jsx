@@ -362,6 +362,13 @@ export const PedidoProvider = ({ children }) => {
           insertarPrimero(Array.isArray(prev) ? prev : [], res.data)
         );
         setPedidoActual(res.data);
+        // El pedido recién creado ya cuenta como venta del día (el ranking sólo
+        // ignora los cancelados), así que cambia la portada "Más vendidos hoy".
+        // Se marca vencido el árbol público de productos —prefijo que cubre esa
+        // lista y el catálogo— para que se recalculen al volver a consultarlas;
+        // sin esto la portada se quedaba con el ranking cacheado (staleTime
+        // 20 min) y no reflejaba la compra.
+        queryClient.invalidateQueries({ queryKey: ['public', 'productos'] });
         // El pedido nace PENDIENTE: se registra su estado para que una
         // cancelación posterior (p. ej. el vencimiento de la reserva de stock)
         // se detecte como transición y no como "primera vez que se ve".

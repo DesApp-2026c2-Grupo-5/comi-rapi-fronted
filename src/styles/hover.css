@@ -1,0 +1,34 @@
+/**
+ * Propósito: Utilidad compartida de hover para tarjetas clicleables.
+ * Contenido: Clase `.hover-elevar`: al pasar el mouse, la tarjeta se eleva
+ *            (translateY -2px) y crece un 2%, con una sombra más marcada.
+ * Dependencias: tokens de `styles/tokens.css` (--shadow-card-lift, --ease-out).
+ * Uso: se importa una sola vez en `main.jsx` y se agrega la clase a la raíz del
+ *      componente (ProductoCard, PromocionCard). Así el gesto es el mismo en
+ *      Inicio y en Catálogo en vez de repetir reglas de hover por hoja.
+ *
+ * Gateado a puntero fino: en pantallas táctiles no hay hover real y el efecto
+ * solo genera saltos. Con movimiento reducido se conserva el cambio de sombra
+ * (es color, no movimiento) pero se anula el desplazamiento.
+ */
+
+.hover-elevar {
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-elevar:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: var(--shadow-card-lift);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-elevar {
+    transition: none;
+  }
+
+  .hover-elevar:hover {
+    transform: none;
+  }
+}

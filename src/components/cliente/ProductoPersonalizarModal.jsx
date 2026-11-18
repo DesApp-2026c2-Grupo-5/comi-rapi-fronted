@@ -1,6 +1,13 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useId } from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'react-bootstrap';
+import {
+  FaCheck,
+  FaArrowRight,
+  FaArrowLeft,
+  FaShoppingCart,
+  FaSave,
+} from 'react-icons/fa';
 import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
 import {
@@ -14,6 +21,7 @@ import { resolverImagen } from '../../utils/imagenes';
 import GrupoOpciones from './GrupoOpciones';
 import Contador from './Contador';
 import ModalBase from '../comunes/ModalBase';
+import '../comunes/Wizard.css';
 import './ProductoPersonalizarModal.css';
 
 const CONFIG_VACIA = {
@@ -22,6 +30,13 @@ const CONFIG_VACIA = {
   acompanar: [],
   condimento: [],
 };
+
+/* Los dos pasos del configurador. Mismo patrón (etiqueta + número) que el
+   wizard de direcciones para que el indicador hable el mismo idioma visual. */
+const PASOS = [
+  { numero: 1, etiqueta: 'Producto' },
+  { numero: 2, etiqueta: 'Opciones' },
+];
 
 const normalizarElemento = (e) => ({
   id: String(e.id),
@@ -66,6 +81,7 @@ const ProductoPersonalizarModal = ({
   const { agregarAlCarrito, items, actualizarPersonalizacion } = useCarrito();
   const { parametros } = useParametros();
   const { notificar } = useNotificaciones();
+  const idBase = useId();
 
   // Verificar si hay items en el carrito para este producto con opciones eliminadas/desactivadas.
   // En modo edición se excluye la línea que se está corrigiendo.
@@ -155,61 +171,70 @@ const ProductoPersonalizarModal = ({
     };
   }, [elementosQuery.data, plantillasQuery.data, producto, categoriaId]);
 
-  const [vista, setVista] = useState('principal');
-  const [unidades, setUnidades] = useState(1);
-  const [extraCant, setExtraCant] = useState({});
-  const [sinCant, setSinCant] = useState({});
-  const [acompCant, setAcompCant] = useState({});
-  const [condCant, setCondCant] = useState({});
+  // Primera sección con opciones, en el mismo orden en que se pintan. Se usa
+  // para autoabrirla al entrar al Paso 2, así el cliente ve enseguida qué puede
+  // configurar sin tener que desplegar una sección a mano.
+  const primeraSeccionKey = useMemo(() => {
+    const enOrden = [
+      ['extra', config.extra],
+      ['personalizar', config.personalizar],
+      ['acompanar', config.acompanar],
+      ['condimentos', config.condimento],
+    ];
+    const encontrada = enOrden.find(
+      ([, opciones]) => (opciones?.length || 0) > 0
+    );
+    return encontrada ? encontrada[0] : null;
+  }, [config]);
 
-  // Refs para manejo de foco al cambiar de vista
-  const vistaPrincipalRef = useRef(null);
-  const botonExtraRef = useRef(null);
-  const botonPersonalizarRef = useRef(null);
-  const botonAcompanarRef = useRef(null);
-  const botonCondimentosRef = useRef(null);
-  const botonVolverRef = useRef(null);
+  // Navegación del wizard y acordeón exclusivo. No reemplazan a los mapas de
+  // selección: `paso` y `seccionAbierta` solo deciden qué se pinta.
+  const [paso, setPaso] = useState(1);
+  const [seccionAbierta, setSeccionAbierta] = useState(null);
+  const [unidades, setUnidades] = useState(itemEditando?.cantidad || 1);
 
-  // Inicializar estado desde itemEditando (modo edición)
-  useEffect(() => {
-    if (itemEditando?.personalizacion) {
-      const pers = itemEditando.personalizacion;
-      const extraMap = {};
-      (pers.extras || []).forEach((e) => {
-        extraMap[e.id] = e.cantidad;
-      });
-      const acompMap = {};
-      (pers.acompanamientos || []).forEach((a) => {
-        acompMap[a.id] = a.cantidad;
-      });
-      const condMap = {};
-      (pers.condimentos || []).forEach((c) => {
-        condMap[c.id] = c.cantidad;
-      });
-      const sinArr = pers.sin || [];
-      const sinMap = {};
-      sinArr.forEach((s) => {
-        sinMap[s] = 1;
-      });
+  // Estado de selección inicializado una sola vez por montaje (ver nota más abajo).
+  const persInicial = itemEditando?.personalizacion;
+  const [extraCant, setExtraCant] = useState(() => {
+    const map = {};
+    (persInicial?.extras || []).forEach((e) => {
+      map[e.id] = e.cantidad;
+    });
+    return map;
+  });
+  const [sinCant, setSinCant] = useState(() => {
+    const map = {};
+    (persInicial?.sin || []).forEach((s) => {
+      map[s] = 1;
+    });
+    return map;
+  });
+  const [acompCant, setAcompCant] = useState(() => {
+    const map = {};
+    (persInicial?.acompanamientos || []).forEach((a) => {
+      map[a.id] = a.cantidad;
+    });
+    return map;
+  });
+  const [condCant, setCondCant] = useState(() => {
+    const map = {};
+    (persInicial?.condimentos || []).forEach((c) => {
+      map[c.id] = c.cantidad;
+    });
+    return map;
+  });
 
-      setExtraCant(extraMap);
-      setAcompCant(acompMap);
-      setCondCant(condMap);
-      setSinCant(sinMap);
-      setUnidades(itemEditando.cantidad || 1);
-    } else {
-      // Reset al abrir en modo nuevo
-      setExtraCant({});
-      setAcompCant({});
-      setCondCant({});
-      setSinCant({});
-      setUnidades(1);
-    }
-    setVista('principal');
-  }, [itemEditando]);
+  // Refs de scroll y foco. El cuerpo del modal es el único contenedor con
+  // scroll; los encabezados de sección se referencian para poder llevar el foco
+  // a la sección que bloquea el agregado.
+  const contenidoRef = useRef(null);
+  const seccionRefs = useRef({});
+  const seccionFocoRef = useRef(null);
+  const [focoSeccion, setFocoSeccion] = useState(0);
 
   const reset = () => {
-    setVista('principal');
+    setPaso(1);
+    setSeccionAbierta(null);
     setUnidades(1);
     setExtraCant({});
     setSinCant({});
@@ -222,6 +247,29 @@ const ProductoPersonalizarModal = ({
     onCerrar();
   };
 
+  // Al cambiar de paso, el cuerpo vuelve arriba para mostrar el indicador.
+  useEffect(() => {
+    contenidoRef.current?.parentElement?.scrollTo?.({ top: 0 });
+  }, [paso]);
+
+  // Al abrir por validación, se lleva el foco al encabezado de la sección
+  // infractora (y se la trae a la vista).
+  useEffect(() => {
+    if (focoSeccion === 0) return;
+    const el = seccionRefs.current[seccionFocoRef.current];
+    if (!el) return;
+    el.scrollIntoView({ block: 'start' });
+    el.focus();
+  }, [focoSeccion]);
+
+  // Al entrar al Paso 2 se abre la primera sección con opciones, salvo que ya
+  // haya una abierta (por ejemplo la que abrió una validación, que tiene
+  // prioridad) o que el cliente haya elegido otra sección.
+  useEffect(() => {
+    if (paso !== 2 || !primeraSeccionKey) return;
+    setSeccionAbierta((prev) => prev ?? primeraSeccionKey);
+  }, [paso, primeraSeccionKey]);
+
   const cambiar = (grupo, key, delta, minimo, maximo) => {
     const setters = { extra: setExtraCant, acompanar: setAcompCant, condimento: setCondCant };
     const estados = { extra: extraCant, acompanar: acompCant, condimento: condCant };
@@ -231,11 +279,15 @@ const ProductoPersonalizarModal = ({
     setters[grupo]((prev) => ({ ...prev, [key]: nuevo }));
   };
 
-  const cambiarSin = (key, delta, minimo, maximo) => {
-    const actual = sinCant[key] || 0;
-    const nuevo = Math.max(minimo, Math.min(maximo, actual + delta));
-    if (nuevo === actual) return;
-    setSinCant((prev) => ({ ...prev, [key]: nuevo }));
+  // "Personalizar" se elige con un checkbox (quitar/no quitar): el mapa guarda 1
+  // cuando está tildado y no guarda clave cuando no lo está, igual que antes.
+  const toggleSin = (key, activo) => {
+    setSinCant((prev) => {
+      if (activo) return { ...prev, [key]: 1 };
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   const MAX_UNIDADES = parametros.cantidadMaximaProductoCarrito;
@@ -282,27 +334,36 @@ const ProductoPersonalizarModal = ({
   const total = precioUnitario * unidades;
 
   const extraCount = Object.values(extraCant).reduce((a, b) => a + b, 0);
-  const extraCosto = extrasLista.reduce((s, e) => s + e.precio * e.cantidad, 0);
   const acompCount = Object.values(acompCant).reduce((a, b) => a + b, 0);
-  const acompCosto = acompLista.reduce((s, e) => s + e.precio * e.cantidad, 0);
   const sinCount = sinLista.length;
   const condCount = Object.values(condCant).reduce((a, b) => a + b, 0);
 
+  // Los agotados obligatorios viven en Extra y Condimentos: se etiqueta cada uno
+  // con su sección para poder abrirla al bloquear el agregado.
   const obligatoriosAgotados = [
-    ...(config.extra || []),
-    ...(config.condimento || []),
-  ].filter((op) => op.agotado && (op.minimo || 0) > 0);
+    ...(config.extra || []).map((op) => ({ op, seccion: 'extra' })),
+    ...(config.condimento || []).map((op) => ({ op, seccion: 'condimentos' })),
+  ].filter(({ op }) => op.agotado && (op.minimo || 0) > 0);
   const hayObligatorioAgotado = obligatoriosAgotados.length > 0;
+
+  // Abre la sección infractora y agenda el foco (funciona aunque ya estuviera abierta).
+  const abrirSeccionInfractora = (seccion) => {
+    if (!seccion) return;
+    seccionFocoRef.current = seccion;
+    setSeccionAbierta(seccion);
+    setFocoSeccion((n) => n + 1);
+  };
 
   const handleAgregar = () => {
     if (hayObligatorioAgotado) {
-      const nombres = obligatoriosAgotados.map((op) => `"${op.nombre}"`).join(', ');
+      const nombres = obligatoriosAgotados.map(({ op }) => `"${op.nombre}"`).join(', ');
       notificar(
         `No se puede agregar: ${nombres} ${
           obligatoriosAgotados.length === 1 ? 'está agotado' : 'están agotados'
         } y es obligatorio.`,
         'warning'
       );
+      abrirSeccionInfractora(obligatoriosAgotados[0].seccion);
       return;
     }
 
@@ -324,35 +385,37 @@ const ProductoPersonalizarModal = ({
 
     // Validar mínimos
     const incumplidosMin = [
-      ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0 })),
-      ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0 })),
-      ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0 })),
-      ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.id] || 0 })),
+      ...(config.extra || []).map((op) => ({ op, seccion: 'extra', valor: extraCant[op.id] || 0 })),
+      ...(config.acompanar || []).map((op) => ({ op, seccion: 'acompanar', valor: acompCant[op.id] || 0 })),
+      ...(config.personalizar || []).map((op) => ({ op, seccion: 'personalizar', valor: sinCant[op.nombre] || 0 })),
+      ...(config.condimento || []).map((op) => ({ op, seccion: 'condimentos', valor: condCant[op.id] || 0 })),
     ].filter(({ op, valor }) => valor < (op.minimo || 0));
 
     if (incumplidosMin.length > 0) {
-      const { op, valor } = incumplidosMin[0];
+      const { op, valor, seccion } = incumplidosMin[0];
       notificar(
         `Debés elegir al menos ${op.minimo} de "${op.nombre}" (llevás ${valor}).`,
         'warning'
       );
+      abrirSeccionInfractora(seccion);
       return;
     }
 
     // Validar máximos (límites vigentes)
     const incumplidosMax = [
-      ...(config.extra || []).map((op) => ({ op, valor: extraCant[op.id] || 0, max: op.maximo })),
-      ...(config.acompanar || []).map((op) => ({ op, valor: acompCant[op.id] || 0, max: op.maximo })),
-      ...(config.personalizar || []).map((op) => ({ op, valor: sinCant[op.nombre] || 0, max: op.maximo })),
-      ...(config.condimento || []).map((op) => ({ op, valor: condCant[op.id] || 0, max: op.maximo })),
+      ...(config.extra || []).map((op) => ({ op, seccion: 'extra', valor: extraCant[op.id] || 0, max: op.maximo })),
+      ...(config.acompanar || []).map((op) => ({ op, seccion: 'acompanar', valor: acompCant[op.id] || 0, max: op.maximo })),
+      ...(config.personalizar || []).map((op) => ({ op, seccion: 'personalizar', valor: sinCant[op.nombre] || 0, max: op.maximo })),
+      ...(config.condimento || []).map((op) => ({ op, seccion: 'condimentos', valor: condCant[op.id] || 0, max: op.maximo })),
     ].filter((item) => item.max !== undefined && item.max !== null && item.valor > item.max);
 
     if (incumplidosMax.length > 0) {
-      const { op, valor, max } = incumplidosMax[0];
+      const { op, valor, max, seccion } = incumplidosMax[0];
       notificar(
         `No podés elegir más de ${max} de "${op.nombre}" (llevás ${valor}).`,
         'warning'
       );
+      abrirSeccionInfractora(seccion);
       return;
     }
 
@@ -375,17 +438,6 @@ const ProductoPersonalizarModal = ({
     handleClose();
   };
 
-  // Manejo de foco al cambiar de vista
-  const cambiarVista = (nuevaVista) => {
-    setVista(nuevaVista);
-  };
-
-  useEffect(() => {
-    if (vista !== 'principal' && botonVolverRef.current) {
-      botonVolverRef.current.focus();
-    }
-  }, [vista]);
-
   if (!producto) return null;
 
   const tienePersonalizacion =
@@ -403,20 +455,20 @@ const ProductoPersonalizarModal = ({
 
   if (!tienePersonalizacion) {
     return (
-<ModalBase
-      mostrar={mostrar}
-      onCerrar={handleClose}
-      titulo={producto.nombre}
-      centered
-      footer={
-        <>
-          <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
-          <Button className="btn-primary" onClick={handleAgregar}>
-            {itemEditando ? 'Guardar cambios' : 'Agregar'} — {formatPrice(producto.precio * unidades)}
-          </Button>
-        </>
-      }
-    >
+      <ModalBase
+        mostrar={mostrar}
+        onCerrar={handleClose}
+        titulo={producto.nombre}
+        centered
+        footer={
+          <>
+            <Button variant="outline-secondary" onClick={handleClose}>Cancelar</Button>
+            <Button variant="primary" onClick={handleAgregar}>
+              {itemEditando ? 'Guardar cambios' : 'Agregar'} — {formatPrice(producto.precio * unidades)}
+            </Button>
+          </>
+        }
+      >
         <div className="text-center p-3">
           <img
             src={resolverImagen(producto.imagen)}
@@ -449,28 +501,141 @@ const ProductoPersonalizarModal = ({
     );
   }
 
-  // Footer fijo para todas las vistas
-  const footer = vista === 'principal' ? (
-    <>
-      <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
-      <Button
-        className="btn-primary"
-        onClick={handleAgregar}
-        disabled={hayObligatorioAgotado}
-        aria-describedby="personalizar-total-desc"
-      >
-        <span className="badge bg-white btn-agregar-cantidad">{unidades}</span>
-        <span>{itemEditando ? 'Guardar cambios' : 'Agregar a mi pedido'}</span>
-        <span className="ms-auto">{formatPrice(total)}</span>
-      </Button>
-    </>
-  ) : (
-    <Button
-      className="btn-primary w-100 py-3 fw-bold"
-      onClick={() => setVista('principal')}
-    >
-      Aceptar
-    </Button>
+  // Secciones del acordeón: solo las que tienen opciones (una sección vacía no
+  // tiene nada que configurar y solo agrega ruido). La descripción es fija y va
+  // siempre visible en el encabezado, abierto o cerrado: le dice al cliente qué
+  // esperar de la sección antes de desplegarla.
+  const secciones = [
+    {
+      key: 'extra',
+      titulo: 'Extra',
+      descripcion: 'Agregá ingredientes extra; cada uno suma al precio.',
+      opciones: config.extra,
+    },
+    {
+      key: 'personalizar',
+      titulo: 'Personalizar',
+      descripcion: 'Quitá ingredientes de tu producto; no cambia el precio.',
+      opciones: config.personalizar,
+    },
+    {
+      key: 'acompanar',
+      titulo: 'Acompaña tu orden con',
+      descripcion: 'Sumá bebidas o guarniciones a tu pedido.',
+      opciones: config.acompanar,
+    },
+    {
+      key: 'condimentos',
+      titulo: 'Condimentos adicionales',
+      descripcion: 'Elegí sobres y salsas; sin costo.',
+      opciones: config.condimento,
+    },
+  ].filter((s) => (s.opciones?.length || 0) > 0);
+
+  // Resumen informativo bajo el título: solo aparece con selección cargada y no
+  // introduce estado nuevo (se deriva de los mapas ya existentes).
+  const resumenDe = (key) => {
+    const cantidad = {
+      extra: extraCount,
+      acompanar: acompCount,
+      personalizar: sinCount,
+      condimentos: condCount,
+    }[key] || 0;
+    if (cantidad <= 0) return null;
+    return `${cantidad} seleccionado${cantidad === 1 ? '' : 's'}`;
+  };
+
+  const cuerpoSeccion = (key) => {
+    if (key === 'extra') {
+      return (
+        <GrupoOpciones
+          opciones={config.extra}
+          valores={extraCant}
+          onCambiar={(k, d, min, max) => cambiar('extra', k, d, min, max)}
+          conPrecio
+          control="contador"
+        />
+      );
+    }
+    if (key === 'personalizar') {
+      // Quitar un ingrediente es una decisión de sí/no, así que siempre se
+      // resuelve con checkbox. La clave del mapa `sinCant` es el nombre del
+      // ingrediente, por eso se reescribe `id` antes de delegar en GrupoOpciones.
+      return (
+        <GrupoOpciones
+          opciones={(config.personalizar || []).map((op) => ({
+            ...op,
+            id: op.nombre,
+            nombre: `Sin ${op.nombre}`,
+          }))}
+          valores={sinCant}
+          onCambiar={(k, d) => toggleSin(k, (sinCant[k] || 0) + d > 0)}
+          control="checkbox"
+        />
+      );
+    }
+    if (key === 'acompanar') {
+      return (
+        <GrupoOpciones
+          opciones={config.acompanar}
+          valores={acompCant}
+          onCambiar={(k, d, min, max) => cambiar('acompanar', k, d, min, max)}
+          conPrecio
+        />
+      );
+    }
+    return (
+      <GrupoOpciones
+        opciones={config.condimento}
+        valores={condCant}
+        onCambiar={(k, d, min, max) => cambiar('condimento', k, d, min, max)}
+      />
+    );
+  };
+
+  // Footer contextual: el paso 1 avanza, el paso 2 agrega. El total vive dentro
+  // del botón de agregado, nunca en la cabecera. Mismo patrón (Paso X de N +
+  // acciones a la derecha) que el wizard de direcciones.
+  const footer = (
+    <div className="wizard-footer">
+      <span className="wizard-footer-paso">
+        Paso {paso} de {PASOS.length}
+      </span>
+      <div className="wizard-footer-acciones">
+        {paso === 1 ? (
+          <>
+            <Button variant="outline-secondary" type="button" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button variant="primary" type="button" onClick={() => setPaso(2)}>
+              Siguiente
+              <FaArrowRight aria-hidden="true" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline-secondary" type="button" onClick={() => setPaso(1)}>
+              <FaArrowLeft aria-hidden="true" />
+              Volver
+            </Button>
+            <Button
+              variant="primary"
+              type="button"
+              onClick={handleAgregar}
+              disabled={hayObligatorioAgotado}
+            >
+              {itemEditando ? (
+                <FaSave aria-hidden="true" />
+              ) : (
+                <FaShoppingCart aria-hidden="true" />
+              )}
+              <span>{itemEditando ? 'Guardar' : 'Agregar'}</span>
+              <span className="personalizar-footer-precio">· {formatPrice(total)}</span>
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
   );
 
   return (
@@ -478,120 +643,74 @@ const ProductoPersonalizarModal = ({
       mostrar={mostrar}
       onCerrar={handleClose}
       titulo={producto.nombre}
-      sinHeader
-      ariaLabel={producto.nombre}
       centered
       variante="fullscreen-mobile"
-      dialogClassName="modal-personalizar"
-      contentClassName="modal-personalizar-content"
-      aria-describedby="personalizar-total-desc"
+      dialogClassName="personalizar-dialog"
+      bodyClassName="personalizar-body"
       footer={footer}
-      bodyClassName="p-0"
     >
-      {vista === 'principal' && (
-          <div className="personalizar-principal" ref={vistaPrincipalRef}>
-            <div className="text-center p-3 position-relative">
-              <Button className="btn-cerrar" onClick={handleClose} aria-label="Cerrar">
-                <span aria-hidden="true">×</span>
-              </Button>
-              <img src={resolverImagen(producto.imagen)} alt="" width={220} height={150} className="personalizar-imagen" />
-            </div>
-            <div className="px-3 pb-3">
-              <div className="d-flex justify-content-between align-items-start">
-                <div>
-                  <h2 className="h5 fw-bold mb-1">{producto.nombre}</h2>
-                  <p className="text-muted small mb-0 personalizar-descripcion">
-                    {producto.descripcion}
-                  </p>
-                </div>
-                <div className="text-end ms-2">
-                  <div
-                    id="personalizar-total-desc"
-                    className="fw-bold personalize-total"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    {formatPrice(total)}
-                  </div>
-                  <div className="text-muted personalize-total-unitario">
-                    {unidades > 1 ? `${formatPrice(precioUnitario)} c/u` : 'Precio unitario'}
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div className="personalizar-contenido" ref={contenidoRef}>
+        <ol className="wizard-pasos" aria-label="Progreso de la configuración">
+          {PASOS.map((item) => (
+            <li
+              key={item.numero}
+              className={`wizard-paso${paso === item.numero ? ' activo' : ''}${
+                paso > item.numero ? ' completado' : ''
+              }`}
+              aria-current={paso === item.numero ? 'step' : undefined}
+            >
+              <span className="wizard-paso-numero">
+                {paso > item.numero ? <FaCheck aria-hidden="true" /> : item.numero}
+              </span>
+              <span className="wizard-paso-texto">{item.etiqueta}</span>
+            </li>
+          ))}
+        </ol>
 
-            <div className="mx-3 mb-3 p-2 card-comi personalize-grupos">
+        {paso === 1 && (
+          <div className="personalizar-paso1">
+            <div className="personalizar-media">
+              <img
+                src={resolverImagen(producto.imagen)}
+                alt=""
+                className="personalizar-imagen"
+              />
               {tieneDescuento && (
-                <div className="mb-2 small text-muted">
-                  Aprovechá esta oferta: {descuentoPorcentual}% OFF sobre este producto.
-                </div>
+                <span className="personalizar-media-badge">
+                  {descuentoPorcentual}% OFF
+                </span>
               )}
-              <div className="fila-grupo">
-                <div>
-                  <div className="fw-bold small">Extra</div>
-                  <div className={`badge-grupo ${extraCount ? 'badge-grupo-activo' : ''}`}>
-                    {extraCount ? `${extraCount} seleccionados (+${formatPrice(extraCosto * unidades)})` : '—'}
-                  </div>
-                </div>
-                <Button
-                  ref={botonExtraRef}
-                  className="btn-seleccionar"
-                  onClick={() => cambiarVista('extra')}
-                >
-                  Seleccionar
-                </Button>
-              </div>
-              <div className="fila-grupo">
-                <div>
-                  <div className="fw-bold small">Personalizar</div>
-                  <div className={`badge-grupo ${sinCount ? 'badge-grupo-ambar' : ''}`}>
-                    {sinCount ? sinLista.join(', ') : '—'}
-                  </div>
-                </div>
-                <Button
-                  ref={botonPersonalizarRef}
-                  className="btn-seleccionar"
-                  onClick={() => cambiarVista('personalizar')}
-                >
-                  Seleccionar
-                </Button>
-              </div>
-              <div className="fila-grupo">
-                <div>
-                  <div className="fw-bold small">Acompaña tu orden con</div>
-                  <div className={`badge-grupo ${acompCount ? 'badge-grupo-activo' : ''}`}>
-                    {acompCount ? `${acompCount} seleccionados (+${formatPrice(acompCosto * unidades)})` : '—'}
-                  </div>
-                </div>
-                <Button
-                  ref={botonAcompanarRef}
-                  className="btn-seleccionar"
-                  onClick={() => cambiarVista('acompanar')}
-                >
-                  Seleccionar
-                </Button>
-              </div>
-              <div className="fila-grupo border-0">
-                <div>
-                  <div className="fw-bold small">Condimentos adicionales</div>
-                  <div className="badge-grupo">
-                    {condCount
-                      ? condLista.map((c) => `${c.nombre} x${c.cantidad}`).join(', ')
-                      : '—'}
-                  </div>
-                </div>
-                <Button
-                  ref={botonCondimentosRef}
-                  className="btn-seleccionar"
-                  onClick={() => cambiarVista('condimentos')}
-                >
-                  Seleccionar
-                </Button>
-              </div>
             </div>
 
-            <div className="mx-3 mb-3 p-3 card-comi d-flex justify-content-between align-items-center personalizar-unidades">
-              <span className="fw-bold small">Unidades</span>
+            {(producto.categoria || esCombo || tienePersonalizacion) && (
+              <ul className="personalizar-chips" aria-label="Detalles del producto">
+                {producto.categoria && (
+                  <li className="personalizar-chip">{producto.categoria}</li>
+                )}
+                {esCombo && <li className="personalizar-chip">Combo</li>}
+                {tienePersonalizacion && (
+                  <li className="personalizar-chip personalizar-chip-marca">
+                    Personalizable
+                  </li>
+                )}
+              </ul>
+            )}
+
+            {producto.descripcion && (
+              <p className="text-muted small mb-0 personalizar-descripcion">
+                {producto.descripcion}
+              </p>
+            )}
+            {tieneDescuento && (
+              <p className="personalizar-promo mb-0">
+                Aprovechá esta oferta: {descuentoPorcentual}% OFF sobre este producto.
+              </p>
+            )}
+            <div className="personalizar-unidades-row">
+              <span className="personalizar-unidades-texto">
+                <span className="personalizar-unidades-titulo">Unidades</span>
+                <span className="personalizar-unidades-hint">¿Cuántas querés?</span>
+              </span>
               <Contador
                 etiqueta="una unidad"
                 valor={unidades}
@@ -600,131 +719,87 @@ const ProductoPersonalizarModal = ({
                 onCambiar={cambiarUnidades}
               />
             </div>
-
-            <div className="p-3 pt-0">
-              {hayObligatorioAgotado && (
-                <div className="alert alert-warning small mb-2" role="alert">
-                  No se puede agregar: {obligatoriosAgotados.map((op) => `"${op.nombre}"`).join(', ')}{' '}
-                  {obligatoriosAgotados.length === 1 ? 'está agotado' : 'están agotados'} y
-                  es obligatorio.
-                </div>
-              )}
-              {itemsConRevision.length > 0 && (
-                <div className="alert alert-warning small mb-2" role="alert">
-                  <strong>Atención:</strong> Hay opciones eliminadas o desactivadas en tu carrito
-                  para este producto. Revisá el carrito antes de continuar.
-                </div>
-              )}
-              <Button
-                className="btn-primary w-100 py-3 fw-bold d-flex justify-content-between align-items-center btn-agregar"
-                onClick={handleAgregar}
-                disabled={hayObligatorioAgotado}
-              >
-                <span className="badge bg-white btn-agregar-cantidad">{unidades}</span>
-                <span>{itemEditando ? 'Guardar cambios' : 'Agregar a mi pedido'}</span>
-                <span className="ms-auto">{formatPrice(total)}</span>
-              </Button>
-            </div>
           </div>
         )}
 
-        {vista === 'extra' && (
-          <div className="p-3">
-            <div className="d-flex align-items-center mb-3">
-              <Button
-                ref={botonVolverRef}
-                className="btn-volver"
-                onClick={() => setVista('principal')}
-                aria-label="Volver a la selección"
-              >
-                <span aria-hidden="true">‹</span>
-              </Button>
-              <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Extra</h3>
-              <span className="espaciador-volver" />
-            </div>
-            <GrupoOpciones opciones={config.extra} valores={extraCant} onCambiar={(k, d, min, max) => cambiar('extra', k, d, min, max)} conPrecio />
-          </div>
-        )}
+        {paso === 2 && (
+          <div className="personalizar-paso2">
+            {(hayObligatorioAgotado || itemsConRevision.length > 0) && (
+              <div className="personalizar-alertas">
+                {hayObligatorioAgotado && (
+                  <div className="alert alert-warning small mb-2" role="alert">
+                    No se puede agregar: {obligatoriosAgotados.map(({ op }) => `"${op.nombre}"`).join(', ')}{' '}
+                    {obligatoriosAgotados.length === 1 ? 'está agotado' : 'están agotados'} y
+                    es obligatorio.
+                  </div>
+                )}
+                {itemsConRevision.length > 0 && (
+                  <div className="alert alert-warning small mb-2" role="alert">
+                    <strong>Atención:</strong> Hay opciones eliminadas o desactivadas en tu carrito
+                    para este producto. Revisá el carrito antes de continuar.
+                  </div>
+                )}
+              </div>
+            )}
 
-        {vista === 'personalizar' && (
-          <div className="p-3">
-            <div className="d-flex align-items-center mb-3">
-              <Button
-                ref={botonVolverRef}
-                className="btn-volver"
-                onClick={() => setVista('principal')}
-                aria-label="Volver a la selección"
-              >
-                <span aria-hidden="true">‹</span>
-              </Button>
-              <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Personalizar</h3>
-              <span className="espaciador-volver" />
-            </div>
-            <p className="fw-bold small">
-              Elegí qué ingredientes querés quitar; quitar no descuenta.
-            </p>
-            <div className="card-comi-grupo">
-              {config.personalizar.map((op) => (
-                <div key={op.id || op.nombre} className="fila-opcion">
-                  <span className="small">Sin {op.nombre}</span>
-                  <Contador
-                    etiqueta={`el ingrediente ${op.nombre}`}
-                    valor={sinCant[op.nombre] || 0}
-                    min={op.minimo ?? 0}
-                    max={op.maximo ?? 1}
-                    onCambiar={(delta) => cambiarSin(op.nombre, delta, op.minimo ?? 0, op.maximo ?? 1)}
-                  />
-                </div>
-              ))}
+            <div className="acordeon">
+              {secciones.map(({ key, titulo, descripcion }) => {
+                const abierta = seccionAbierta === key;
+                const headerId = `${idBase}-${key}-header`;
+                const panelId = `${idBase}-${key}-panel`;
+                const resumen = resumenDe(key);
+                return (
+                  <section
+                    key={key}
+                    className={`acordeon-seccion${abierta ? ' acordeon-seccion-abierta' : ''}`}
+                  >
+                    <h3 className="acordeon-titulo">
+                      <button
+                        type="button"
+                        id={headerId}
+                        className="acordeon-header"
+                        aria-expanded={abierta}
+                        aria-controls={panelId}
+                        ref={(el) => {
+                          seccionRefs.current[key] = el;
+                        }}
+                        onClick={() =>
+                          setSeccionAbierta((prev) => (prev === key ? null : key))
+                        }
+                      >
+                        <span className="acordeon-header-texto">
+                          <span className="acordeon-header-titulo">{titulo}</span>
+                          <span className="acordeon-header-descripcion">{descripcion}</span>
+                          {resumen && (
+                            <span className="acordeon-resumen">{resumen}</span>
+                          )}
+                        </span>
+                        <span
+                          className={`acordeon-chevron${abierta ? ' acordeon-chevron-abierto' : ''}`}
+                          aria-hidden="true"
+                        >
+                          ⌄
+                        </span>
+                      </button>
+                    </h3>
+                    {abierta && (
+                      <div
+                        id={panelId}
+                        role="region"
+                        aria-labelledby={headerId}
+                        className="acordeon-cuerpo"
+                      >
+                        {cuerpoSeccion(key)}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           </div>
         )}
-
-        {vista === 'acompanar' && (
-          <div className="p-3">
-            <div className="d-flex align-items-center mb-3">
-              <Button
-                ref={botonVolverRef}
-                className="btn-volver"
-                onClick={() => setVista('principal')}
-                aria-label="Volver a la selección"
-              >
-                <span aria-hidden="true">‹</span>
-              </Button>
-              <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Acompaña tu orden con</h3>
-              <span className="espaciador-volver" />
-            </div>
-            <GrupoOpciones opciones={config.acompanar} valores={acompCant} onCambiar={(k, d, min, max) => cambiar('acompanar', k, d, min, max)} conPrecio />
-          </div>
-        )}
-
-        {vista === 'condimentos' && (
-          <div className="p-3">
-            <div className="d-flex align-items-center mb-3">
-              <Button
-                ref={botonVolverRef}
-                className="btn-volver"
-                onClick={() => setVista('principal')}
-                aria-label="Volver a la selección"
-              >
-                <span aria-hidden="true">‹</span>
-              </Button>
-              <h3 className="h6 fw-bold mb-0 flex-grow-1 text-center">Condimentos adicionales</h3>
-              <span className="espaciador-volver" />
-            </div>
-            <p className="fw-bold small">
-              Elegí los condimentos adicionales que quieras; sin costo.
-            </p>
-            <GrupoOpciones
-              opciones={config.condimento}
-              valores={condCant}
-              onCambiar={(k, d, min, max) =>
-                cambiar('condimento', k, d, min, max)
-              }
-            />
-          </div>
-        )}
-      </ModalBase>
+      </div>
+    </ModalBase>
   );
 };
 
