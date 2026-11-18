@@ -409,10 +409,17 @@ const GestionStock = () => {
   const confirmarEliminar = async () => {
     if (!stockAEliminar) return;
     setConfirmando(true);
-    const resultado = await eliminarStock(
-      stockAEliminar.sucursalId,
-      stockAEliminar.productoId
-    );
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de confirmación trabado con sus salidas cerradas.
+    let resultado;
+    try {
+      resultado = await eliminarStock(
+        stockAEliminar.sucursalId,
+        stockAEliminar.productoId
+      );
+    } finally {
+      setConfirmando(false);
+    }
     notificar(
       resultado.success
         ? `"${stockAEliminar.producto}" sacado del catálogo de la sucursal.`
@@ -420,7 +427,6 @@ const GestionStock = () => {
       resultado.success ? 'success' : 'danger'
     );
     setStockAEliminar(null);
-    setConfirmando(false);
     await refrescar();
   };
 
@@ -431,11 +437,15 @@ const GestionStock = () => {
   const confirmarQuitarInsumo = async () => {
     if (!insumoAQuitar) return;
     setConfirmando(true);
-    const resultado = await actualizarStockInsumo(insumoAQuitar.insumoId, {
-      cantidad: 0,
-      disponible: false,
-    });
-    setConfirmando(false);
+    let resultado;
+    try {
+      resultado = await actualizarStockInsumo(insumoAQuitar.insumoId, {
+        cantidad: 0,
+        disponible: false,
+      });
+    } finally {
+      setConfirmando(false);
+    }
     if (resultado.success) {
       notificar(
         `"${insumoAQuitar.insumo}" sacado de la sucursal.`,

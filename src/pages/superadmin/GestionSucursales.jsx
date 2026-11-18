@@ -48,7 +48,14 @@ const GestionSucursales = () => {
   const confirmarEliminar = async () => {
     if (!sucursalAEliminar) return;
     setConfirmando(true);
-    const ok = await eliminarSucursal(sucursalAEliminar.id);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de confirmación trabado con sus salidas cerradas.
+    let ok;
+    try {
+      ok = await eliminarSucursal(sucursalAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     notificar(
       ok
         ? `Sucursal "${sucursalAEliminar.nombre}" eliminada correctamente.`
@@ -56,7 +63,6 @@ const GestionSucursales = () => {
       ok ? 'success' : 'danger'
     );
     setSucursalAEliminar(null);
-    setConfirmando(false);
   };
 
   return (

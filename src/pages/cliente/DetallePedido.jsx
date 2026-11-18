@@ -296,13 +296,18 @@ const DetallePedido = () => {
     if (!queja) return;
     setCerrandoQueja(true);
     setErrorQueja("");
-    const res = await cerrarQueja(queja.id);
-    setCerrandoQueja(false);
-    if (res.success) {
-      setQueja(res.data);
-      setMostrarCerrarQueja(false);
-    } else {
-      setErrorQueja(res.error || "No se pudo cerrar el reclamo");
+    try {
+      const res = await cerrarQueja(queja.id);
+      if (res.success) {
+        setQueja(res.data);
+        setMostrarCerrarQueja(false);
+      } else {
+        setErrorQueja(res.error || "No se pudo cerrar el reclamo");
+      }
+    } finally {
+      // El flag se baja siempre: un fallo no debe dejar el modal de confirmación
+      // trabado con sus salidas deshabilitadas.
+      setCerrandoQueja(false);
     }
   };
 

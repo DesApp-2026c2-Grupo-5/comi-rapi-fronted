@@ -100,14 +100,20 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
   const confirmarEliminar = async () => {
     if (!elementoAEliminar) return;
     setConfirmando(true);
-    const res = await eliminar(elementoAEliminar.id);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal trabado con sus salidas cerradas.
+    let res;
+    try {
+      res = await eliminar(elementoAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     const label = etiquetaDe(elementoAEliminar);
     notificar(
       res.success ? `"${label}" eliminado correctamente.` : res.error || 'No se pudo eliminar.',
       res.success ? 'success' : 'danger'
     );
     setElementoAEliminar(null);
-    setConfirmando(false);
   };
 
   const elementosFiltrados = useMemo(() => {

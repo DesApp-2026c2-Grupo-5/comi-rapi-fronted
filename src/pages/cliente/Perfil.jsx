@@ -216,28 +216,34 @@ const Perfil = () => {
     setConfirmandoGuardado(true);
   };
 
+  // Fix freeze de modales: el flag de "guardando" se baja en un finally para
+  // que un fallo (o una promesa que rechaza) nunca deje el modal de
+  // confirmación trabado con sus salidas deshabilitadas.
   const confirmarGuardado = async () => {
     setGuardando(true);
-    const result = await actualizarPerfil({
-      email: form.email.trim(),
-      telefono: form.telefono.trim(),
-      fechaNacimiento: form.fechaNacimiento,
-    });
-    setGuardando(false);
-    setConfirmandoGuardado(false);
+    try {
+      const result = await actualizarPerfil({
+        email: form.email.trim(),
+        telefono: form.telefono.trim(),
+        fechaNacimiento: form.fechaNacimiento,
+      });
 
-    if (!result.success) {
-      notificar(result.error || 'No se pudieron guardar los datos.', 'danger');
-      return;
+      if (!result.success) {
+        notificar(result.error || 'No se pudieron guardar los datos.', 'danger');
+        return;
+      }
+
+      queryClient.setQueryData(queryKeys.private.perfil, result.data);
+      setForm(datosFormulario(result.data));
+      setEditando(false);
+      setMostrarFormPassword(false);
+      // El navbar muestra el usuario de la sesión (email y avatar).
+      if (refrescarUsuario) refrescarUsuario();
+      notificar('Tus datos se actualizaron correctamente.', 'success');
+    } finally {
+      setGuardando(false);
+      setConfirmandoGuardado(false);
     }
-
-    queryClient.setQueryData(queryKeys.private.perfil, result.data);
-    setForm(datosFormulario(result.data));
-    setEditando(false);
-    setMostrarFormPassword(false);
-    // El navbar muestra el usuario de la sesión (email y avatar).
-    if (refrescarUsuario) refrescarUsuario();
-    notificar('Tus datos se actualizaron correctamente.', 'success');
   };
 
   // ---- Foto de perfil ---------------------------------------------------
@@ -267,18 +273,21 @@ const Perfil = () => {
   const handleQuitarFoto = async () => {
     setConfirmandoBajaFoto(false);
     setQuitandoFoto(true);
-    const result = await eliminarFotoPerfil();
-    setQuitandoFoto(false);
+    try {
+      const result = await eliminarFotoPerfil();
 
-    if (!result.success) {
-      notificar(result.error || 'No se pudo quitar la foto.', 'danger');
-      return;
+      if (!result.success) {
+        notificar(result.error || 'No se pudo quitar la foto.', 'danger');
+        return;
+      }
+      if (result.data) {
+        queryClient.setQueryData(queryKeys.private.perfil, result.data);
+      }
+      if (refrescarUsuario) refrescarUsuario();
+      notificar('Foto de perfil eliminada.', 'success');
+    } finally {
+      setQuitandoFoto(false);
     }
-    if (result.data) {
-      queryClient.setQueryData(queryKeys.private.perfil, result.data);
-    }
-    if (refrescarUsuario) refrescarUsuario();
-    notificar('Foto de perfil eliminada.', 'success');
   };
 
   // ---- Contraseña -------------------------------------------------------

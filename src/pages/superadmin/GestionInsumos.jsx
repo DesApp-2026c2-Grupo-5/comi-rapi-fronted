@@ -85,13 +85,19 @@ const GestionInsumos = () => {
 
   const guardar = async (datos) => {
     setGuardando(true);
-    const result = insumoEnEdicion
-      ? await actualizarInsumo(insumoEnEdicion.id, datos)
-      : await (async () => {
-          const { activo, ...alta } = datos;
-          return crearInsumo({ ...alta, activo });
-        })();
-    setGuardando(false);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal trabado con sus salidas cerradas.
+    let result;
+    try {
+      result = insumoEnEdicion
+        ? await actualizarInsumo(insumoEnEdicion.id, datos)
+        : await (async () => {
+            const { activo, ...alta } = datos;
+            return crearInsumo({ ...alta, activo });
+          })();
+    } finally {
+      setGuardando(false);
+    }
     if (!result.success) {
       notificar(result.error || 'No se pudo guardar el insumo.', 'danger');
       return;
@@ -110,8 +116,12 @@ const GestionInsumos = () => {
   const confirmarEliminar = async () => {
     if (!insumoAEliminar) return;
     setConfirmando(true);
-    const result = await eliminarInsumo(insumoAEliminar.id);
-    setConfirmando(false);
+    let result;
+    try {
+      result = await eliminarInsumo(insumoAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     if (!result.success) {
       notificar(result.error || 'No se pudo dar de baja el insumo.', 'danger');
       return;
@@ -124,8 +134,12 @@ const GestionInsumos = () => {
   const confirmarReactivar = async () => {
     if (!insumoAReactivar) return;
     setConfirmando(true);
-    const result = await actualizarInsumo(insumoAReactivar.id, { activo: true });
-    setConfirmando(false);
+    let result;
+    try {
+      result = await actualizarInsumo(insumoAReactivar.id, { activo: true });
+    } finally {
+      setConfirmando(false);
+    }
     if (!result.success) {
       notificar(result.error || 'No se pudo reactivar el insumo.', 'danger');
       return;

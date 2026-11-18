@@ -46,10 +46,16 @@ const GestionIngredientes = () => {
   const guardar = async (e) => {
     e.preventDefault();
     setGuardando(true);
-    const result = enEdicion
-      ? await actualizarIngrediente(enEdicion.id, form)
-      : await crearIngrediente(form);
-    setGuardando(false);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal trabado con sus salidas cerradas.
+    let result;
+    try {
+      result = enEdicion
+        ? await actualizarIngrediente(enEdicion.id, form)
+        : await crearIngrediente(form);
+    } finally {
+      setGuardando(false);
+    }
     if (result.success) {
       notificar(
         enEdicion ? 'Ingrediente actualizado.' : 'Ingrediente creado.',
@@ -64,8 +70,12 @@ const GestionIngredientes = () => {
   const confirmarEliminar = async () => {
     if (!aEliminar) return;
     setConfirmando(true);
-    const result = await eliminarIngrediente(aEliminar.id);
-    setConfirmando(false);
+    let result;
+    try {
+      result = await eliminarIngrediente(aEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     if (result.success) {
       notificar('Ingrediente dado de baja.', 'success');
       setAEliminar(null);
