@@ -4,7 +4,8 @@
  * Contenido: Componente DetallePedido con Card, Table, Badge y stepper horizontal de estados.
  * Dependencias: react-bootstrap (Container, Card, Table, Badge, Button, Row, Col),
  *               react-router-dom, hooks/usePedidos, utils/constants.js, utils/formatters.js,
- *               componentes/comunes/HistorialStepper, DetallePedido.css.
+ *               api/pedidos (descarga del recibo), componentes/comunes/HistorialStepper,
+ *               DetallePedido.css.
  * Uso: Ruta "/cliente/pedido/:id" → <DetallePedido />
  */
 
@@ -21,7 +22,15 @@ import {
   Col,
   Alert,
 } from "react-bootstrap";
-import { FaArrowLeft, FaRedo, FaShippingFast, FaStar, FaPen, FaExclamationCircle } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaDownload,
+  FaRedo,
+  FaShippingFast,
+  FaStar,
+  FaPen,
+  FaExclamationCircle,
+} from "react-icons/fa";
 import { usePedidos } from "../../hooks/usePedidos";
 import { useRepetirPedido } from "../../hooks/useRepetirPedido";
 import { useParametros } from "../../hooks/useParametros";
@@ -30,7 +39,12 @@ import {
   useElegiblesParaResenar,
   useMisResenasQuery,
 } from "../../hooks/queries";
-import { obtenerMisQuejas, responderQueja, cerrarQueja } from "../../api/quejas";
+import {
+  obtenerMisQuejas,
+  responderQueja,
+  cerrarQueja,
+} from "../../api/quejas";
+import { descargarReciboPedido } from "../../api/pedidos";
 import {
   ESTADOS_PEDIDO,
   ETIQUETAS_ESTADO_PEDIDO,
@@ -118,6 +132,8 @@ const DetallePedido = () => {
   const [errorQueja, setErrorQueja] = useState("");
   const [mostrarCerrarQueja, setMostrarCerrarQueja] = useState(false);
   const [cerrandoQueja, setCerrandoQueja] = useState(false);
+  const [descargandoRecibo, setDescargandoRecibo] = useState(false);
+  const [errorRecibo, setErrorRecibo] = useState("");
 
   // Reclamos: un pedido entregado admite una sola queja. Se consulta solo en
   // ese estado para no pedir datos que no se van a mostrar.
@@ -147,7 +163,8 @@ const DetallePedido = () => {
     // Suscribirse al pedido para recibir notificaciones del cliente
     const suscribir = async () => {
       const resp = await suscribirPedido(pedidoId);
-      if (!resp.success) console.warn('Suscripción al pedido falló', resp.error);
+      if (!resp.success)
+        console.warn("Suscripción al pedido falló", resp.error);
     };
     suscribir();
 
@@ -155,11 +172,11 @@ const DetallePedido = () => {
     const onConnect = () => {
       suscribir();
     };
-    socket.on('connect', onConnect);
+    socket.on("connect", onConnect);
 
     return () => {
       socket.off(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
-      socket.off('connect', onConnect);
+      socket.off("connect", onConnect);
       desuscribirPedido(pedidoId);
     };
   }, [esEntregado, pedidoId]);
@@ -200,6 +217,15 @@ const DetallePedido = () => {
   const esFinal =
     pedido.estado === ESTADOS_PEDIDO.ENTREGADO ||
     pedido.estado === ESTADOS_PEDIDO.CANCELADO;
+  // El recibo existe desde el pago confirmado y sigue disponible mientras el
+  // pedido avanza. Los estados pendiente y cancelado no tienen comprobante.
+  const esConfirmado = [
+    ESTADOS_PEDIDO.CONFIRMADO,
+    ESTADOS_PEDIDO.EN_PREPARACION,
+    ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
+    ESTADOS_PEDIDO.EN_CAMINO,
+    ESTADOS_PEDIDO.ENTREGADO,
+  ].includes(pedido.estado);
   // A6: solo visible en en_camino con hora estimada persistida.
   const textoLlegadaEnCamino =
     pedido.estado === ESTADOS_PEDIDO.EN_CAMINO && pedido.horaEstimadaLlegada
@@ -225,22 +251,22 @@ const DetallePedido = () => {
     if (!resenaGuardada || productoId === undefined) return;
     // La respuesta del POST/PUT ya trae la reseña: se escribe en la caché de
     // TanStack Query en lugar de repetir los dos GET después de guardar.
-    queryClient.setQueryData(
-      queryKeys.private.elegibles(pedidoId),
-      (prev) =>
-        Array.isArray(prev)
-          ? prev.filter((p) => String(p.productoId) !== String(productoId))
-          : prev
+    queryClient.setQueryData(queryKeys.private.elegibles(pedidoId), (prev) =>
+      Array.isArray(prev)
+        ? prev.filter((p) => String(p.productoId) !== String(productoId))
+        : prev,
     );
     queryClient.setQueryData(queryKeys.private.misResenas, (prev) => {
       const lista = Array.isArray(prev) ? prev : [];
       const nueva = { productoId, ...resenaGuardada };
       const existe = lista.some(
-        (r) => String(r.productoId) === String(productoId)
+        (r) => String(r.productoId) === String(productoId),
       );
       return existe
         ? lista.map((r) =>
-            String(r.productoId) === String(productoId) ? { ...r, ...nueva } : r
+            String(r.productoId) === String(productoId)
+              ? { ...r, ...nueva }
+              : r,
           )
         : [...lista, nueva];
     });
@@ -280,6 +306,31 @@ const DetallePedido = () => {
     }
   };
 
+  const descargarRecibo = async () => {
+    if (!pedidoId || descargandoRecibo) return;
+    setDescargandoRecibo(true);
+    setErrorRecibo("");
+    try {
+      const res = await descargarReciboPedido(pedidoId);
+      if (!res.success) {
+        setErrorRecibo(res.error || "No se pudo descargar el recibo");
+        return;
+      }
+      const url = URL.createObjectURL(res.blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = res.nombre || `recibo-pedido-${pedidoId}.pdf`;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setErrorRecibo(error?.message || "No se pudo descargar el recibo");
+    } finally {
+      setDescargandoRecibo(false);
+    }
+  };
+
   return (
     <Container className="py-5">
       <Link to="/cliente/mis-pedidos" className="boton-volver mb-4">
@@ -290,9 +341,20 @@ const DetallePedido = () => {
       </Link>
 
       <Card className="detalle-card">
-        <Card.Header className="detalle-card-header d-flex justify-content-between align-items-center">
+        <Card.Header className="detalle-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
           <h1 className="h4 mb-0">Pedido #{pedido.id}</h1>
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            {esConfirmado && (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={descargarRecibo}
+                disabled={descargandoRecibo}
+              >
+                <FaDownload className="me-1" aria-hidden="true" />
+                {descargandoRecibo ? "Generando…" : "Descargar recibo"}
+              </Button>
+            )}
             <Badge
               bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || "secondary"}
               className="badge-estado fs-6 d-inline-flex align-items-center gap-1"
@@ -304,34 +366,39 @@ const DetallePedido = () => {
         </Card.Header>
 
         <Card.Body className="p-4">
-{/* A6: alert prominente cuando el pedido sale en camino. La hora
+          {errorRecibo && (
+            <Alert variant="danger" className="mb-4" role="alert">
+              {errorRecibo}
+            </Alert>
+          )}
+          {/* A6: alert prominente cuando el pedido sale en camino. La hora
               es fija (persistida al pasar a en_camino), no un countdown. */}
-           {textoLlegadaEnCamino && (
-             <Alert
-               variant="success"
-               className="d-flex align-items-center gap-3 mb-4"
-               role="status"
-             >
-               <FaShippingFast
-                 size={28}
-                 aria-hidden="true"
-                 className="flex-shrink-0"
-               />
-               <div className="flex-grow-1">
-                 <strong className="d-block">Tu pedido está en camino</strong>
-                 <div className="d-flex align-items-center gap-2 flex-wrap mt-1">
-                   <span className="small">{textoLlegadaEnCamino}</span>
-                   {pedido.etaMinutos && (
-                      <EtaPillBadge
-                        variant="map"
-                        minutes={pedido.etaMinutos}
-                        arrivalTime={pedido.horaEstimadaLlegada}
-                      />
-                   )}
-                 </div>
-               </div>
-             </Alert>
-           )}
+          {textoLlegadaEnCamino && (
+            <Alert
+              variant="success"
+              className="d-flex align-items-center gap-3 mb-4"
+              role="status"
+            >
+              <FaShippingFast
+                size={28}
+                aria-hidden="true"
+                className="flex-shrink-0"
+              />
+              <div className="flex-grow-1">
+                <strong className="d-block">Tu pedido está en camino</strong>
+                <div className="d-flex align-items-center gap-2 flex-wrap mt-1">
+                  <span className="small">{textoLlegadaEnCamino}</span>
+                  {pedido.etaMinutos && (
+                    <EtaPillBadge
+                      variant="map"
+                      minutes={pedido.etaMinutos}
+                      arrivalTime={pedido.horaEstimadaLlegada}
+                    />
+                  )}
+                </div>
+              </div>
+            </Alert>
+          )}
           {/* T4: aviso de reasignación de sucursal */}
           {reasignado && (
             <Alert variant="warning" className="mb-4">
@@ -433,7 +500,10 @@ const DetallePedido = () => {
                     </tr>
                     {tieneDesglose && (
                       <tr>
-                        <td colSpan={esEntregado ? 5 : 4} className="small text-muted bg-crema">
+                        <td
+                          colSpan={esEntregado ? 5 : 4}
+                          className="small text-muted bg-crema"
+                        >
                           {prod.extras?.map((ex) => (
                             <div key={ex.id}>
                               › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
@@ -466,7 +536,8 @@ const DetallePedido = () => {
                           colSpan={esEntregado ? 5 : 4}
                           className="small bg-crema"
                         >
-                          &rsaquo; <strong>Nota para cocina:</strong> {prod.nota}
+                          &rsaquo; <strong>Nota para cocina:</strong>{" "}
+                          {prod.nota}
                         </td>
                       </tr>
                     )}

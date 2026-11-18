@@ -18,18 +18,18 @@
  * este cliente sólo transporta y normaliza las respuestas.
  *
  * Dependencias: ninguna externa (usa fetch nativo y cookies del navegador).
- * Uso: import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiPostFormData } from './client';
+ * Uso: import { apiGet, apiGetBlob, apiPost, apiPut, apiPatch, apiDelete, apiPostFormData } from './client';
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
-const CSRF_COOKIE = 'csrf-token';
-const CSRF_HEADER = 'x-csrf-token';
-const METODOS_PROTEGIDOS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const CSRF_COOKIE = "csrf-token";
+const CSRF_HEADER = "x-csrf-token";
+const METODOS_PROTEGIDOS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function leerCookie(nombre) {
   const coincidencia = document.cookie.match(
-    new RegExp(`(^|; )${nombre}=([^;]*)`)
+    new RegExp(`(^|; )${nombre}=([^;]*)`),
   );
   return coincidencia ? decodeURIComponent(coincidencia[2]) : null;
 }
@@ -47,8 +47,8 @@ async function obtenerTokenCsrf() {
   if (!promesaCsrf) {
     promesaCsrf = (async () => {
       const res = await fetch(`${BASE_URL}/auth/csrf-token`, {
-        method: 'GET',
-        credentials: 'include',
+        method: "GET",
+        credentials: "include",
       });
       let body = null;
       try {
@@ -77,14 +77,19 @@ async function obtenerTokenCsrf() {
  */
 async function ejecutar(method, path, datos, { signal } = {}) {
   const url = BASE_URL + path;
-  const opciones = { method, credentials: 'include', headers: {}, cache: 'no-store' };
+  const opciones = {
+    method,
+    credentials: "include",
+    headers: {},
+    cache: "no-store",
+  };
   if (signal) opciones.signal = signal;
 
   if (datos !== undefined) {
     if (datos instanceof FormData) {
       opciones.body = datos;
     } else {
-      opciones.headers['Content-Type'] = 'application/json';
+      opciones.headers["Content-Type"] = "application/json";
       opciones.body = JSON.stringify(datos);
     }
   }
@@ -132,7 +137,12 @@ async function ejecutar(method, path, datos, { signal } = {}) {
   const extra = { ...body };
   delete extra.success;
   delete extra.data;
-  return { success: true, status: res.status, data: body.data ?? null, ...extra };
+  return {
+    success: true,
+    status: res.status,
+    data: body.data ?? null,
+    ...extra,
+  };
 }
 
 /**
@@ -156,14 +166,57 @@ async function request(method, path, datos, opciones = {}) {
  * @param {AbortSignal} [opciones.signal] - Cancela la petición (TanStack Query).
  */
 export const apiGet = (path, { signal } = {}) =>
-  request('GET', path, undefined, { signal });
+  request("GET", path, undefined, { signal });
+
+/**
+ * GET que devuelve un archivo (por ejemplo, un PDF) sin pasar por el parser
+ * JSON. Mantiene credenciales y errors normalizados; el nombre del archivo se
+ * toma del Content-Disposition cuando el backend lo envía.
+ *
+ * @param {string} path
+ * @param {object} [opciones]
+ * @param {AbortSignal} [opciones.signal]
+ * @returns {Promise<{success: boolean, blob?: Blob, nombre?: string, error?: string, status?: number}>}
+ */
+export const apiGetBlob = async (path, { signal } = {}) => {
+  const res = await fetch(BASE_URL + path, {
+    method: "GET",
+    credentials: "include",
+    headers: {},
+    cache: "no-store",
+    signal,
+  });
+
+  if (!res.ok) {
+    let body = null;
+    try {
+      body = await res.json();
+    } catch {
+      body = null;
+    }
+    const mensaje =
+      (body && (body.error || body.message)) || `Error ${res.status}`;
+    return { success: false, status: res.status, error: mensaje };
+  }
+
+  const coincidencia = (res.headers.get("Content-Disposition") || "").match(
+    /filename="?([^";]+)"?/i,
+  );
+  return {
+    success: true,
+    status: res.status,
+    blob: await res.blob(),
+    nombre: coincidencia ? coincidencia[1] : null,
+  };
+};
 
 export const apiPost = (path, datos, opciones) =>
-  request('POST', path, datos, opciones);
+  request("POST", path, datos, opciones);
 export const apiPut = (path, datos, opciones) =>
-  request('PUT', path, datos, opciones);
+  request("PUT", path, datos, opciones);
 export const apiPatch = (path, datos, opciones) =>
-  request('PATCH', path, datos, opciones);
-export const apiDelete = (path, opciones) => request('DELETE', path, undefined, opciones);
+  request("PATCH", path, datos, opciones);
+export const apiDelete = (path, opciones) =>
+  request("DELETE", path, undefined, opciones);
 export const apiPostFormData = (path, formData, opciones) =>
-  request('POST', path, formData, opciones);
+  request("POST", path, formData, opciones);

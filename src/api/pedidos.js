@@ -3,17 +3,18 @@
  * (Postgres), usando la sesión existente del usuario (cookie, gestionada por
  * AuthContext). Sin mocks ni login silencioso: los errores de la API se
  * propagan al llamador ({ success: false, error }).
- * Funciones: crearPedido, obtenerPedidos, obtenerPedidoPorId, cambiarEstado, confirmarPedido.
+ * Funciones: crearPedido, obtenerPedidos, obtenerPedidoPorId, cambiarEstado,
+ *            confirmarPedido, descargarReciboPedido.
  *
  * Todo el transporte (credenciales, CSRF, reintento y normalización) vive en
  * client.js: este módulo solo mapea payloads y respuestas.
  */
 
-import { apiGet, apiPatch, apiPost } from './client';
+import { apiGet, apiGetBlob, apiPatch, apiPost } from "./client";
 
 /** Mapea un pedido del backend (DER) al shape que usa el frontend. */
 export const mapearPedido = (p) => {
-  if (!p || typeof p !== 'object') return p;
+  if (!p || typeof p !== "object") return p;
   // Si ya viene en formato frontend, devolver tal cual
   if (Array.isArray(p.productos) && p.historialEstados) return p;
   const estado = p.estado || p.estadoActual?.nombre || p.estadoId;
@@ -47,14 +48,17 @@ export const mapearPedido = (p) => {
     total: Number(p.total),
     costoEnvio: p.costoEnvio !== undefined ? Number(p.costoEnvio) : 0,
     estado,
-    sucursal: p.Sucursal || p.sucursal || (p.sucursalId ? { id: p.sucursalId } : undefined),
+    sucursal:
+      p.Sucursal ||
+      p.sucursal ||
+      (p.sucursalId ? { id: p.sucursalId } : undefined),
     fecha: p.fechaHora || p.fecha,
     etaMinutos: p.etaMinutos !== undefined ? p.etaMinutos : null,
     etaCalculadoEn: p.etaCalculadoEn || null,
     horaEstimadaLlegada: p.horaEstimadaLlegada || null,
     direccion: p.calle
       ? {
-          direccion: [p.calle, p.altura].filter(Boolean).join(' '),
+          direccion: [p.calle, p.altura].filter(Boolean).join(" "),
           ciudad: p.ciudad,
           codigoPostal: p.codigoPostal,
           referencia: p.referencia,
@@ -73,7 +77,7 @@ export const mapearPedido = (p) => {
     })),
     descuentoTotal: promociones.reduce(
       (acc, promo) => acc + Number(promo.descuentoAplicado ?? 0),
-      0
+      0,
     ),
     cupon: p.cupon
       ? {
@@ -97,7 +101,7 @@ export const mapearPedido = (p) => {
 function safeParsePersonalizacion(texto) {
   try {
     const parsed = JSON.parse(texto);
-    if (parsed && typeof parsed === 'object') return parsed;
+    if (parsed && typeof parsed === "object") return parsed;
   } catch {
     // es observacion libre, no personalizacion
   }
@@ -165,7 +169,9 @@ function payloadBackend(datosPedido, sucursal) {
     datosPedido.promocionIds.length > 0
       ? { promocionIds: datosPedido.promocionIds }
       : {}),
-    ...(datosPedido.cuponCodigo ? { cuponCodigo: datosPedido.cuponCodigo } : {}),
+    ...(datosPedido.cuponCodigo
+      ? { cuponCodigo: datosPedido.cuponCodigo }
+      : {}),
   };
 }
 
@@ -178,8 +184,8 @@ function payloadBackend(datosPedido, sucursal) {
 export const crearPedido = async (datosPedido, sucursal) => {
   try {
     const result = await apiPost(
-      '/pedidos',
-      payloadBackend(datosPedido, sucursal)
+      "/pedidos",
+      payloadBackend(datosPedido, sucursal),
     );
     if (!result.success) return result;
     return { success: true, data: mapearPedido(result.data) };
@@ -199,15 +205,16 @@ export const crearPedido = async (datosPedido, sucursal) => {
 export const obtenerPedidos = async (filtros = {}) => {
   try {
     const params = new URLSearchParams();
-    if (filtros.estado) params.set('estado', filtros.estado);
-    if (filtros.sucursalId) params.set('sucursalId', String(filtros.sucursalId));
-    if (filtros.usuarioId) params.set('usuarioId', String(filtros.usuarioId));
-    if (filtros.desde) params.set('desde', filtros.desde);
-    if (filtros.hasta) params.set('hasta', filtros.hasta);
-    if (filtros.pagina) params.set('pagina', String(filtros.pagina));
-    if (filtros.limite) params.set('limite', String(filtros.limite));
+    if (filtros.estado) params.set("estado", filtros.estado);
+    if (filtros.sucursalId)
+      params.set("sucursalId", String(filtros.sucursalId));
+    if (filtros.usuarioId) params.set("usuarioId", String(filtros.usuarioId));
+    if (filtros.desde) params.set("desde", filtros.desde);
+    if (filtros.hasta) params.set("hasta", filtros.hasta);
+    if (filtros.pagina) params.set("pagina", String(filtros.pagina));
+    if (filtros.limite) params.set("limite", String(filtros.limite));
     const qs = params.toString();
-    const result = await apiGet(`/pedidos${qs ? `?${qs}` : ''}`);
+    const result = await apiGet(`/pedidos${qs ? `?${qs}` : ""}`);
     if (!result.success) return result;
     const data = result.data;
     // El backend devuelve el array histórico. Con paginación opt-in responde
@@ -220,7 +227,13 @@ export const obtenerPedidos = async (filtros = {}) => {
       data: lista,
       ...(Array.isArray(data)
         ? {}
-        : { meta: { total: data?.total, pagina: data?.pagina, limite: data?.limite } }),
+        : {
+            meta: {
+              total: data?.total,
+              pagina: data?.pagina,
+              limite: data?.limite,
+            },
+          }),
     };
   } catch (error) {
     return { success: false, error: error.message };
@@ -237,7 +250,7 @@ export const obtenerPedidoPorId = async (id) => {
     if (!result.success) return result;
     return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
-    return { success: false, error: error?.message || 'Pedido no encontrado' };
+    return { success: false, error: error?.message || "Pedido no encontrado" };
   }
 };
 
@@ -250,16 +263,16 @@ export const obtenerPedidoPorId = async (id) => {
  */
 export const cambiarEstado = async (id, estado, medioPago) => {
   try {
-    const result = await apiPatch(
-      `/pedidos/${id}/estado`,
-      { estado, ...(medioPago ? { medioPago } : {}) }
-    );
+    const result = await apiPatch(`/pedidos/${id}/estado`, {
+      estado,
+      ...(medioPago ? { medioPago } : {}),
+    });
     if (!result.success) return result;
     return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
     return {
       success: false,
-      error: error?.message || 'Pedido no encontrado',
+      error: error?.message || "Pedido no encontrado",
       cancelado: Boolean(error?.cancelado),
       motivo: error?.motivo ?? null,
       pedidoId: error?.pedidoId ?? null,
@@ -271,7 +284,31 @@ export const cambiarEstado = async (id, estado, medioPago) => {
  * Confirma un pedido (pendiente → confirmado), persistiendo el medio de pago.
  */
 export const confirmarPedido = async (id, medioPago) => {
-  return cambiarEstado(id, 'confirmado', medioPago);
+  return cambiarEstado(id, "confirmado", medioPago);
+};
+
+/**
+ * Descarga el recibo PDF de un pedido confirmado y propio. El backend valida la
+ * sesión y la propiedad; acá sólo se transporta el blob para que la UI lo
+ * guarde con el nombre sugerido.
+ * @param {number} id - ID del pedido.
+ * @returns {Promise<{success: boolean, blob?: Blob, nombre?: string, error?: string}>}
+ */
+export const descargarReciboPedido = async (id) => {
+  try {
+    const res = await apiGetBlob(`/pedidos/${id}/recibo`);
+    if (!res.success) return res;
+    return {
+      success: true,
+      blob: res.blob,
+      nombre: res.nombre || `recibo-pedido-${id}.pdf`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error?.message || "No se pudo descargar el recibo",
+    };
+  }
 };
 
 /**
@@ -284,14 +321,14 @@ export const confirmarPedido = async (id, medioPago) => {
  */
 export const reasignarSucursal = async (id, sucursalId) => {
   try {
-    const result = await apiPatch(
-      `/pedidos/${id}/sucursal`,
-      { sucursalId }
-    );
+    const result = await apiPatch(`/pedidos/${id}/sucursal`, { sucursalId });
     if (!result.success) return result;
     return { success: true, data: mapearPedido(result.data) };
   } catch (error) {
-    return { success: false, error: error?.message || 'No se pudo reasignar el pedido' };
+    return {
+      success: false,
+      error: error?.message || "No se pudo reasignar el pedido",
+    };
   }
 };
 
@@ -307,7 +344,7 @@ export const reasignarSucursal = async (id, sucursalId) => {
  */
 export const consultarDisponibilidad = async ({ direccionId, productos }) => {
   try {
-    const result = await apiPost('/pedidos/disponibilidad', {
+    const result = await apiPost("/pedidos/disponibilidad", {
       direccionId,
       productos,
     });
@@ -316,7 +353,7 @@ export const consultarDisponibilidad = async ({ direccionId, productos }) => {
   } catch (error) {
     return {
       success: false,
-      error: error?.message || 'No se pudo consultar la disponibilidad',
+      error: error?.message || "No se pudo consultar la disponibilidad",
     };
   }
 };
@@ -340,7 +377,7 @@ export const obtenerDisponibilidadPedido = async (id) => {
   } catch (error) {
     return {
       success: false,
-      error: error?.message || 'No se pudo consultar la disponibilidad',
+      error: error?.message || "No se pudo consultar la disponibilidad",
     };
   }
 };
@@ -357,11 +394,15 @@ export const obtenerSucursalesCandidatas = async (id) => {
   try {
     const result = await apiGet(`/pedidos/${id}/sucursales-candidatas`);
     if (!result.success) return result;
-    return { success: true, data: Array.isArray(result.data) ? result.data : [] };
+    return {
+      success: true,
+      data: Array.isArray(result.data) ? result.data : [],
+    };
   } catch (error) {
     return {
       success: false,
-      error: error?.message || 'No se pudieron obtener las sucursales candidatas',
+      error:
+        error?.message || "No se pudieron obtener las sucursales candidatas",
     };
   }
 };
