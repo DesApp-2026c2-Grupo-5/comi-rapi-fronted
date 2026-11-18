@@ -265,10 +265,19 @@ const ReporteNegocio = () => {
   const esSuperadmin = user?.rol === ROLES.SUPERADMIN;
   const esAdmin = user?.rol === ROLES.ADMIN;
 
+  const { sucursalOperativaId } = useSucursalOperativa();
+
   const [desde, setDesde] = useState(RANGO_INICIAL[0]);
   const [hasta, setHasta] = useState(RANGO_INICIAL[1]);
   const [preset, setPreset] = useState('30d');
-  const [sucursalId, setSucursalId] = useState('');
+  // Se inicializa directamente desde el contexto operativo para evitar un
+  // cambio de estado post-montaje que cambiaría el queryKey de los reportes y
+  // provocaría una segunda consulta GET al ingresar al panel.
+  // Cuando no hay sucursal operativa (SUPERADMIN sin contexto), sucursalId
+  // queda como '' y el backend devuelve el consolidado de todas las sucursales.
+  const [sucursalId, setSucursalId] = useState(
+    esSuperadmin ? String(sucursalOperativaId || '') : ''
+  );
   const [busquedaProductos, setBusquedaProductos] = useState('');
   const [ordenVendidos, setOrdenVendidos] = useState({
     clave: 'unidades',
@@ -283,16 +292,6 @@ const ReporteNegocio = () => {
     dir: 'asc',
   });
   const [rankingActivo, setRankingActivo] = useState('masVendidos');
-
-  // El panel sigue la sucursal de contexto del superadmin: al elegir una
-  // sucursal, los reportes se acotan a ella; al dejar de operar, vuelven a la
-  // vista general. El selector manual sigue disponible y solo se reajusta
-  // cuando cambia el contexto, no en cada render.
-  const { sucursalOperativaId } = useSucursalOperativa();
-  useEffect(() => {
-    if (!esSuperadmin) return;
-    setSucursalId(sucursalOperativaId ? String(sucursalOperativaId) : '');
-  }, [esSuperadmin, sucursalOperativaId]);
 
   // Un rango al revés no se pide al backend: se explica en pantalla.
   const rangoInvalido = desde > hasta;
