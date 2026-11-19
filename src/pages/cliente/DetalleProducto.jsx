@@ -222,15 +222,20 @@ const DetalleProducto = () => {
     if (!resenaABorrar) return;
     setBorrandoResena(true);
     setErrorResenas('');
-    const res = await eliminarResena(resenaABorrar.id);
-    setBorrandoResena(false);
-    setResenaABorrar(null);
-    if (!res.success) {
-      setErrorResenas(res.error || 'No se pudo eliminar la reseña.');
-      return;
+    try {
+      const res = await eliminarResena(resenaABorrar.id);
+      if (!res.success) {
+        setErrorResenas(res.error || 'No se pudo eliminar la reseña.');
+        return;
+      }
+      setMensajeResenas('Tu reseña se eliminó.');
+      await refrescarResenas();
+    } finally {
+      // El flag se baja siempre: un fallo no debe dejar el modal de confirmación
+      // trabado con sus salidas deshabilitadas.
+      setBorrandoResena(false);
+      setResenaABorrar(null);
     }
-    setMensajeResenas('Tu reseña se eliminó.');
-    await refrescarResenas();
   };
 
   if (cargando) {

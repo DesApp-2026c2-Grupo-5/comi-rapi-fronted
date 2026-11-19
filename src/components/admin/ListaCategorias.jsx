@@ -42,7 +42,14 @@ const ListaCategorias = ({ soloLectura = false }) => {
   const confirmarEliminar = async () => {
     if (!categoriaAEliminar) return;
     setConfirmando(true);
-    const result = await eliminarCategoria(categoriaAEliminar.id);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de confirmación trabado con sus salidas cerradas.
+    let result;
+    try {
+      result = await eliminarCategoria(categoriaAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     if (result.success) {
       const categoriaId = categoriaAEliminar.id;
       setCategoriaAEliminar(null);
@@ -62,13 +69,17 @@ const ListaCategorias = ({ soloLectura = false }) => {
     } else {
       setErrorLocal(result.error || 'No se pudo eliminar la categoría.');
     }
-    setConfirmando(false);
   };
 
   const confirmarReactivar = async () => {
     if (!categoriaAReactivar) return;
     setConfirmando(true);
-    const result = await editarCategoria(categoriaAReactivar.id, { activa: true });
+    let result;
+    try {
+      result = await editarCategoria(categoriaAReactivar.id, { activa: true });
+    } finally {
+      setConfirmando(false);
+    }
     if (result.success) {
       const categoriaActualizada = result.data;
       setCategoriaAReactivar(null);
@@ -96,7 +107,6 @@ const ListaCategorias = ({ soloLectura = false }) => {
     } else {
       setErrorLocal(result.error || 'No se pudo reactivar la categoría.');
     }
-    setConfirmando(false);
   };
 
   const handleEditar = (id) => {

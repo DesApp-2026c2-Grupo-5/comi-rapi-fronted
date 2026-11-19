@@ -45,8 +45,14 @@ export const CeldaCantidadInline = ({
       return;
     }
     setGuardando(true);
-    const ok = await onGuardar(numero);
-    setGuardando(false);
+    // Fix freeze: el flag se baja en un finally para que un fallo de la API no
+    // deje el campo trabado con su spinner/deshabilitado.
+    let ok;
+    try {
+      ok = await onGuardar(numero);
+    } finally {
+      setGuardando(false);
+    }
     if (!ok) setTexto(String(valor ?? ''));
   };
 

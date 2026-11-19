@@ -109,8 +109,14 @@ const PedidosPendientes = () => {
   const handleReasignar = async () => {
     if (!pedidoAReasignar || !sucursalDestino) return;
     setReasignando(true);
-    const result = await reasignarSucursal(pedidoAReasignar.id, sucursalDestino);
-    setReasignando(false);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de reasignación trabado con sus salidas cerradas.
+    let result;
+    try {
+      result = await reasignarSucursal(pedidoAReasignar.id, sucursalDestino);
+    } finally {
+      setReasignando(false);
+    }
     if (result.success) {
       notificar('Pedido reasignado correctamente.', 'success');
       setPedidoAReasignar(null);

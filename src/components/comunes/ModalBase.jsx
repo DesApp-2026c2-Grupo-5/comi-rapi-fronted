@@ -18,10 +18,16 @@
  * para que el botón del footer pueda ser `type="submit"`.
  */
 
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Form, Modal } from 'react-bootstrap';
 import './ModalBase.css';
+
+// Mientras una operación está en curso (`cargando`) se bloquean las salidas del
+// modal para que no se cierre a mitad de camino. Si esa operación se cuelga y
+// el flag nunca baja, la app quedaría sin forma de cerrar el modal: pasado este
+// tiempo se asume el cuelgue y se vuelven a habilitar X, Escape y backdrop.
+const TIMEOUT_CIERRE_FORZADO_MS = 15000;
 
 const ModalBase = ({
   mostrar,
@@ -53,7 +59,24 @@ const ModalBase = ({
 }) => {
   const tituloId = useId();
   const descripcionId = useId();
-  const cierreBloqueado = bloquearCierre || cargando;
+
+  // Watchdog de robustez: si `cargando` queda encendido más de lo razonable se
+  // asume que la operación se colgó y se libera el bloqueo de cierre. Durante
+  // una operación normal el bloqueo se mantiene igual que antes.
+  const [cierreForzado, setCierreForzado] = useState(false);
+  useEffect(() => {
+    if (!cargando) {
+      setCierreForzado(false);
+      return undefined;
+    }
+    const temporizador = window.setTimeout(
+      () => setCierreForzado(true),
+      TIMEOUT_CIERRE_FORZADO_MS
+    );
+    return () => window.clearTimeout(temporizador);
+  }, [cargando]);
+
+  const cierreBloqueado = bloquearCierre || (cargando && !cierreForzado);
   const tieneHeader = Boolean(titulo) && !sinHeader;
   const sizeProp = tamano === 'md' ? undefined : tamano;
 

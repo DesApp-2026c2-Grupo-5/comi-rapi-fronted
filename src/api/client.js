@@ -8,6 +8,9 @@
  *   GET /api/auth/csrf-token cuando no existe.
  * - Normalizar las respuestas del backend ({ success, data | error }) al formato
  *   { success, data? | error? } usado por la capa api/.
+ * - No rechazar nunca por un error de red: si `fetch` falla (sin conexión,
+ *   servidor caído) se resuelve { success:false, status:0, error } para que
+ *   quien llama siempre pueda bajar su estado de "cargando".
  * - Reintentar una única vez si el backend responde 403 por CSRF (token rotado/expirado).
  * - Subir archivos (multipart) con apiPostFormData: envía un FormData sin fijar
  *   Content-Type para que el navegador agregue el boundary correcto.
@@ -93,12 +96,28 @@ async function ejecutar(method, path, datos, { signal } = {}) {
       opciones.body = JSON.stringify(datos);
     }
   }
-  if (METODOS_PROTEGIDOS.has(method)) {
-    const token = await obtenerTokenCsrf();
-    if (token) opciones.headers[CSRF_HEADER] = token;
+  let res;
+  try {
+    if (METODOS_PROTEGIDOS.has(method)) {
+      const token = await obtenerTokenCsrf();
+      if (token) opciones.headers[CSRF_HEADER] = token;
+    }
+    res = await fetch(url, opciones);
+  } catch (error) {
+    // `fetch` rechaza cuando no hay red, el servidor no responde o la petición
+    // se aborta. Toda la capa api/ (y los handlers que la consumen) asume que
+    // esta promesa siempre resuelve con { success, ... }: si rechazara, el
+    // estado de "cargando" del que llamó quedaría trabado para siempre (era la
+    // causa del freeze de los modales). Se devuelve el mismo shape que el resto
+    // de la capa. La cancelación de TanStack Query se re-lanza tal cual para
+    // que esCancelacion() la reconozca.
+    if (error && error.name === 'AbortError') throw error;
+    return {
+      success: false,
+      status: 0,
+      error: 'No se pudo conectar con el servidor.',
+    };
   }
-
-  const res = await fetch(url, opciones);
   // 304 Not Modified: el recurso no cambió. Se trata como éxito sin body.
   if (res.status === 304) {
     return { success: true, status: res.status, data: null };

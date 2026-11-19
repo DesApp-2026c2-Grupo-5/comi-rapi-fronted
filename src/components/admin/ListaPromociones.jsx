@@ -56,7 +56,14 @@ const ListaPromociones = ({ soloLectura = false }) => {
   const confirmarEliminar = async () => {
     if (!promoAEliminar) return;
     setConfirmando(true);
-    const result = await eliminarPromocion(promoAEliminar.id);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de confirmación trabado con sus salidas cerradas.
+    let result;
+    try {
+      result = await eliminarPromocion(promoAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     if (result.success) {
       const promoId = promoAEliminar.id;
       setPromoAEliminar(null);
@@ -70,7 +77,6 @@ const ListaPromociones = ({ soloLectura = false }) => {
     } else {
       setErrorLocal(result.error || 'No se pudo eliminar la promoción.');
     }
-    setConfirmando(false);
   };
 
   const handleReactivar = (id, nombre) => setPromoAReactivar({ id, nombre });
@@ -78,7 +84,12 @@ const ListaPromociones = ({ soloLectura = false }) => {
   const confirmarReactivar = async () => {
     if (!promoAReactivar) return;
     setConfirmando(true);
-    const result = await editarPromocion(promoAReactivar.id, { activa: true });
+    let result;
+    try {
+      result = await editarPromocion(promoAReactivar.id, { activa: true });
+    } finally {
+      setConfirmando(false);
+    }
     if (result.success) {
       const promoActualizada = result.data;
       setPromoAReactivar(null);
@@ -94,7 +105,6 @@ const ListaPromociones = ({ soloLectura = false }) => {
     } else {
       setErrorLocal(result.error || 'No se pudo reactivar la promoción.');
     }
-    setConfirmando(false);
   };
 
   const esVencida = (promocion) => {

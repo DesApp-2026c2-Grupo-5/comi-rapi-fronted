@@ -36,7 +36,9 @@ const formatearDireccion = (direccion) => {
 
 /**
  * Mapa principal - Home con sucursales
- * Fix: Elimina AjusteInicial problemático, usa whenCreated + LayerGroup
+ * Fix: Elimina AjusteInicial problemático, usa whenReady + LayerGroup
+ * Fix v4: migrado de la API de react-leaflet v3 (`whenCreated` + `leafletElement`)
+ *         a v4 (`whenReady` recibe el evento de Leaflet; el mapa es su `target`).
  * Fix: Ctrl+Scroll zoom robusto
  */
 const MapaHome = ({
@@ -45,21 +47,19 @@ const MapaHome = ({
 }) => {
   const { temaResuelto } = useTema();
   const esOscuro = temaResuelto === 'oscuro';
-  const mapRef = useRef(null);
   const ctrlZoomCleanupRef = useRef(null);
 
-  // Configurar Ctrl+Zoom al montar el mapa - SIEMPRE PRIMERO (Rules of Hooks)
-  useEffect(() => {
-    if (mapRef.current?.leafletElement) {
-      ctrlZoomCleanupRef.current = setupCtrlZoom(mapRef.current.leafletElement, true);
-    }
-    return () => {
+  // Limpieza del listener de Ctrl+Zoom al desmontar - SIEMPRE PRIMERO
+  // (Rules of Hooks).
+  useEffect(
+    () => () => {
       if (ctrlZoomCleanupRef.current) {
         ctrlZoomCleanupRef.current();
         ctrlZoomCleanupRef.current = null;
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   // Validaciones DESPUÉS de los hooks (Rules of Hooks)
   if (!sucursales || sucursales.length === 0) return null;
@@ -72,6 +72,28 @@ const MapaHome = ({
   const centro = puntos.length === 1
     ? [puntos[0].latitud, puntos[0].longitud]
     : [puntos[0].latitud, puntos[0].longitud];
+
+  // Se ejecuta una sola vez, cuando react-leaflet ya montó el mapa. En v4
+  // `whenCreated` ya no existe: `whenReady` se llama con el evento de Leaflet,
+  // cuyo `target` es la instancia del mapa (en ese momento el `ref` todavía no
+  // está asignado).
+  const inicializarMapa = (map) => {
+    if (!map) return;
+
+    ctrlZoomCleanupRef.current = setupCtrlZoom(map, true);
+
+    // Fit bounds inicial SOLO al montar (whenReady se ejecuta una sola vez).
+    if (puntos.length === 0) return;
+
+    if (puntos.length === 1) {
+      map.setView([puntos[0].latitud, puntos[0].longitud], 13);
+    } else {
+      map.fitBounds(
+        puntos.map((p) => [p.latitud, p.longitud]),
+        { padding: [40, 40], maxZoom: 15 }
+      );
+    }
+  };
 
   // Stadia Maps: Alidade Smooth (claro) / Alidade Smooth Dark (oscuro)
   const estilo = esOscuro ? 'alidade_smooth_dark' : 'alidade_smooth';
@@ -90,24 +112,11 @@ const MapaHome = ({
           aria-label={`Mapa con ${puntos.length} sucursal${puntos.length > 1 ? "es" : ""} activas`}
         >
           <MapContainer
-            ref={mapRef}
             center={centro}
             zoom={12}
             style={{ height: "100%", width: "100%", borderRadius: "12px" }}
             scrollWheelZoom={false}
-            whenCreated={(map) => {
-              // Fit bounds inicial SOLO al montar (whenCreated se ejecuta una sola vez)
-              if (puntos.length > 0) {
-                if (puntos.length === 1) {
-                  map.setView([puntos[0].latitud, puntos[0].longitud], 13);
-                } else {
-                  map.fitBounds(
-                    puntos.map((p) => [p.latitud, p.longitud]),
-                    { padding: [40, 40], maxZoom: 15 }
-                  );
-                }
-              }
-            }}
+            whenReady={(evento) => inicializarMapa(evento?.target)}
           >
             <TileLayer
               attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

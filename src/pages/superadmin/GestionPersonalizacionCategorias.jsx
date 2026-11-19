@@ -122,7 +122,14 @@ const GestionPersonalizacionCategorias = () => {
   const confirmarEliminar = async () => {
     if (!plantillaAEliminar) return;
     setConfirmando(true);
-    const res = await eliminarPlantilla(plantillaAEliminar.id);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de confirmación trabado con sus salidas cerradas.
+    let res;
+    try {
+      res = await eliminarPlantilla(plantillaAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     const label = etiquetaDe(plantillaAEliminar);
     notificar(
       res.success
@@ -131,7 +138,6 @@ const GestionPersonalizacionCategorias = () => {
       res.success ? 'success' : 'danger'
     );
     setPlantillaAEliminar(null);
-    setConfirmando(false);
   };
 
   const plantillasDeCategoria = useMemo(() => {

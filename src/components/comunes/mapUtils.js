@@ -51,22 +51,29 @@ export const fitBoundsSafe = (map, puntos, opciones = {}) => {
 };
 
 /**
- * Configura zoom con Ctrl + ruedita
- * Deshabilita zoom nativo y maneja evento wheel con ctrlKey
- * Retorna función de limpieza
+ * Configura zoom con Ctrl/Cmd + ruedita.
+ *
+ * El mapa se monta con `scrollWheelZoom` desactivado, así que la rueda sola
+ * nunca hace zoom ni secuestra el scroll de la página. Acá aplicamos el zoom:
+ * sin Ctrl/Cmd dejamos pasar la rueda (desplaza la página normal) y con
+ * Ctrl/Cmd hacemos zoom sobre el mapa.
+ *
+ * Retorna función de limpieza.
  */
 export const setupCtrlZoom = (map, habilitado = true) => {
   if (!map || !habilitado) return () => {};
 
   const handleWheel = (e) => {
-    // Permitir zoom nativo solo con Ctrl (Windows/Linux) o Cmd (Mac)
-    if (e.ctrlKey || e.metaKey) {
-      return; // Dejar que Leaflet maneje el zoom nativo
-    }
-    
-    // Prevenir zoom sin Ctrl/Cmd
+    // Sin Ctrl (Windows/Linux) ni Cmd (Mac) la rueda desplaza la página.
+    if (!(e.ctrlKey || e.metaKey)) return;
+
+    // Con modificador hacemos el zoom nosotros (Leaflet no lo maneja solo).
     e.preventDefault();
-    e.stopPropagation();
+    if (e.deltaY < 0) {
+      map.zoomIn();
+    } else if (e.deltaY > 0) {
+      map.zoomOut();
+    }
   };
 
   const container = map.getContainer();

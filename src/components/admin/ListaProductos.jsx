@@ -86,7 +86,14 @@ const ListaProductos = ({ soloLectura = false }) => {
   const confirmarEliminar = async () => {
     if (!productoAEliminar) return;
     setConfirmando(true);
-    const result = await eliminarProducto(productoAEliminar.id);
+    // Fix freeze de modales: el flag se baja en un finally para que un fallo de
+    // la API no deje el modal de confirmación trabado con sus salidas cerradas.
+    let result;
+    try {
+      result = await eliminarProducto(productoAEliminar.id);
+    } finally {
+      setConfirmando(false);
+    }
     if (result.success) {
       notificar(`Producto "${productoAEliminar.nombre}" eliminado.`, 'success');
       const productoId = productoAEliminar.id;
@@ -107,7 +114,6 @@ const ListaProductos = ({ soloLectura = false }) => {
     } else {
       setErrorLocal(result.error || 'No se pudo eliminar el producto.');
     }
-    setConfirmando(false);
   };
 
   const handleNuevo = () => {
