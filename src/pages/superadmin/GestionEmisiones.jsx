@@ -20,6 +20,7 @@ import {
   useEmisionesQuery,
 } from '../../hooks/queries';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
+import './Cupones.css';
 
 const LIMITE_POR_PAGINA = 20;
 
@@ -107,10 +108,14 @@ const GestionEmisiones = () => {
   }
 
   return (
-    <Container>
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 className="h2 mb-0">Emisiones de Cupones</h1>
-        <Button variant="primary" onClick={() => navigate('/superadmin/cupones/crear')}>
+    <Container className="py-4 cupones-vista">
+      <div className="cupon-cabecera mb-4">
+        <h1 className="h2 mb-0 cupon-cabecera-titulo">Emisiones de Cupones</h1>
+        <Button
+          variant="primary"
+          className="cupon-cabecera-accion"
+          onClick={() => navigate('/superadmin/cupones/crear')}
+        >
           <FaTags /> Nueva emisión
         </Button>
       </div>
@@ -122,24 +127,37 @@ const GestionEmisiones = () => {
           <FaClock size={48} className="mb-3 opacity-25" aria-hidden="true" />
           <h3 className="h5">No hay emisiones de cupones.</h3>
           <p className="text-muted">
-            Las emisiones creadas desde <strong>Nueva emisión</strong>
+            Las emisiones creadas desde <strong>Nueva emisión</strong>{' '}
             aparecerán en este listado.
           </p>
         </div>
       ) : (
         <>
           <div className="table-responsive">
-            <Table striped bordered hover className="tabla-cliente shadow-sm">
+            <Table
+              striped
+              bordered
+              hover
+              className="tabla-cliente tabla-cupones shadow-sm"
+            >
               <thead className="table-light">
                 <tr>
-                  <th>Emisión</th>
-                  <th>Descripción</th>
-                  <th>Descuento</th>
-                  <th>Fecha emisión</th>
-                  <th>Vigencia</th>
-                  <th>Cupones</th>
-                  <th>Envío</th>
-                  <th>Vigencia cupones</th>
+                  <th data-label="Emisión">Emisión</th>
+                  <th data-label="Descripción" className="d-none d-md-table-cell">
+                    Descripción
+                  </th>
+                  <th data-label="Descuento">Descuento</th>
+                  <th data-label="Fecha emisión" className="d-none d-md-table-cell">
+                    Fecha emisión
+                  </th>
+                  <th data-label="Vigencia" className="d-none d-md-table-cell">
+                    Vigencia
+                  </th>
+                  <th data-label="Cupones">Cupones</th>
+                  <th data-label="Envío">Envío</th>
+                  <th data-label="Vigencia cupones" className="d-none d-md-table-cell">
+                    Vigencia cupones
+                  </th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -149,7 +167,7 @@ const GestionEmisiones = () => {
                   const estadoPred = estadoPredominante(cpe);
                   return (
                     <tr key={emision.id}>
-                      <td>
+                      <td data-label="Emisión" className="cupon-celda-larga">
                         <Link to={`/superadmin/cupones/emisiones/${emision.id}`}>
                           {emision.nombre}
                         </Link>
@@ -157,36 +175,42 @@ const GestionEmisiones = () => {
                           Creada {formatearFecha(emision.createdAt)}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Descripción" className="d-none d-md-table-cell">
                         {emision.descripcion ? (
                           <span className="text-muted small">{emision.descripcion}</span>
                         ) : (
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="fw-monospace">{textoDescuento(emision)}</td>
-                      <td className="fw-monospace text-muted small">
+                      <td data-label="Descuento" className="fw-monospace">{textoDescuento(emision)}</td>
+                      <td data-label="Fecha emisión" className="fw-monospace text-muted small d-none d-md-table-cell">
                         {formatearFecha(emision.createdAt)}
                       </td>
-                      <td className="fw-monospace text-muted small">
+                      <td data-label="Vigencia" className="fw-monospace text-muted small d-none d-md-table-cell">
                         {formatearFecha(emision.fechaInicio)} -{' '}
                         {formatearFecha(emision.fechaFin)}
                       </td>
-                      <td className="fw-monospace">
+                      <td data-label="Cupones" className="fw-monospace">
                         {emision.cantidadCupones}
                       </td>
-                      <td className="text-muted small">
-                        <span className={`text-${emision.cantidadFallidos > 0 ? 'danger' : 'success'}`}>
-                          {emision.cantidadEnviados} enviados
+                      <td data-label="Envío" className="text-muted small">
+                        {/* Todo el texto va en un solo hijo para que en modo
+                            tarjeta la etiqueta quede a la izquierda y el
+                            resultado completo a la derecha, sin repartir el
+                            separador por el ancho libre. */}
+                        <span>
+                          <span className={`text-${emision.cantidadFallidos > 0 ? 'danger' : 'success'}`}>
+                            {emision.cantidadEnviados} enviados
+                          </span>
+                          {emision.cantidadFallidos > 0 && (
+                            <>
+                              {` · `}
+                              <span className="text-danger">{emision.cantidadFallidos} fallidos</span>
+                            </>
+                          )}
                         </span>
-                        {emision.cantidadFallidos > 0 && (
-                          <>
-                            {' · '}
-                            <span className="text-danger">{emision.cantidadFallidos} fallidos</span>
-                          </>
-                        )}
                       </td>
-                      <td>
+                      <td data-label="Vigencia cupones" className="d-none d-md-table-cell">
                         <Badge bg={VARIANTE_ESTADO_CUPON[estadoPred] || 'secondary'}>
                           {estadoPred === '—'
                             ? '—'
@@ -198,7 +222,7 @@ const GestionEmisiones = () => {
                           D{cpe.DISPONIBLE || 0} · U{cpe.EN_USO || 0} · V{cpe.VENCIDO || 0}
                         </div>
                       </td>
-                      <td>
+                      <td className="cupon-columna-acciones">
                         <Button
                           variant="outline-secondary"
                           size="sm"

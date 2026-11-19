@@ -22,6 +22,7 @@ import {
   useEmisionQuery,
   useReenviarEmision,
 } from '../../hooks/queries';
+import './Cupones.css';
 
 const VARIANTE_ESTADO = {
   EN_PROCESO: 'primary',
@@ -207,22 +208,28 @@ const DetalleEmision = () => {
   const descuento = detalle.configuracionSnapshot?.descuento || {};
 
   return (
-    <Container>
+    <Container className="py-4 cupones-vista">
       <Row>
         <Col>
           <Card>
             <CardBody>
-              <CardTitle className="d-flex justify-content-between align-items-center">
-                <span>Emisión: {detalle.nombre}</span>
-                <Button variant="outline-secondary" onClick={() => navigate('/superadmin/cupones')}>
+              <CardTitle className="cupon-cabecera">
+                <span className="cupon-cabecera-titulo">
+                  Emisión: {detalle.nombre}
+                </span>
+                <Button
+                  variant="outline-secondary"
+                  className="cupon-cabecera-accion"
+                  onClick={() => navigate('/superadmin/cupones')}
+                >
                   <FaArrowLeft /> Volver a emisiones
                 </Button>
               </CardTitle>
               {reenviarError && <Alert variant="danger" role="alert">{reenviarError}</Alert>}
 
-              {/* Estado general y resumen */}
+              {/* Estado general y resumen: 2x2 en teléfono, 4 columnas en desktop */}
               <Row className="g-3 mt-4">
-                <Col md={3}>
+                <Col xs={6} md={3}>
                   <div className="text-center">
                     <div className="text-muted small">Estado</div>
                     <Badge bg={VARIANTE_ESTADO[detalle.estado] || 'secondary'}>
@@ -230,19 +237,19 @@ const DetalleEmision = () => {
                     </Badge>
                   </div>
                 </Col>
-                <Col md={3}>
+                <Col xs={6} md={3}>
                   <div className="text-center">
                     <div className="text-muted small">Clientes elegibles</div>
                     <span className="h4">{detalle.cantidadElegibles}</span>
                   </div>
                 </Col>
-                <Col md={3}>
+                <Col xs={6} md={3}>
                   <div className="text-center">
                     <div className="text-muted small">Cupones generados</div>
                     <span className="h4">{detalle.cantidadCupones}</span>
                   </div>
                 </Col>
-                <Col md={3}>
+                <Col xs={6} md={3}>
                   <div className="text-center">
                     <div className="text-muted small">Enviados / Fallidos</div>
                     <span className="h4">
@@ -261,23 +268,23 @@ const DetalleEmision = () => {
                 <FaTags className="me-2" /> Configuración original de la emisión
               </CardTitle>
               <Row className="g-3 mt-3">
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Nombre</div>
                   <div className="fw-bold">{detalle.nombre}</div>
                 </Col>
                 {detalle.descripcion && (
-                  <Col md={6}>
+                  <Col xs={12} sm={6}>
                     <div className="text-muted small">Descripción</div>
                     <div>{detalle.descripcion}</div>
                   </Col>
                 )}
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Tipo de descuento</div>
                   <div className="fw-bold">
                     {descuento.tipo || detalle.tipoDescuento}
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Valor del descuento</div>
                   <div className="fw-bold">
                     {descuento.tipo === 'PORCENTAJE'
@@ -285,7 +292,7 @@ const DetalleEmision = () => {
                       : formatearMonto(descuento.valor ?? detalle.valorDescuento)}
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Compra mínima</div>
                   <div className="fw-bold">
                     {Number(descuento.compraMinima ?? detalle.compraMinima) > 0
@@ -293,7 +300,7 @@ const DetalleEmision = () => {
                       : '—'}
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Descuento máximo</div>
                   <div className="fw-bold">
                     {descuento.maximo != null && descuento.maximo !== undefined
@@ -301,20 +308,20 @@ const DetalleEmision = () => {
                       : '—'}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Vigencia</div>
                   <div className="fw-bold">
                     {formatearFecha(descuento.fechaInicio ?? detalle.fechaInicio)} -{' '}
                     {formatearFecha(descuento.fechaFin ?? detalle.fechaFin)}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Período de análisis (días)</div>
                   <div className="fw-bold">
                     {descuento.periodoAnalisisDias ?? detalle.periodoAnalisisDias ?? '—'}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Máx. destinatarios</div>
                   <div className="fw-bold">
                     {descuento.maxDestinatarios != null && descuento.maxDestinatarios !== undefined
@@ -343,15 +350,15 @@ const DetalleEmision = () => {
                     <div>{alcance.categorias.join(', ')}</div>
                   </Col>
                 )}
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Creada por</div>
-                  <div>
+                  <div className="text-break">
                     {detalle.creadaPor
                       ? `${detalle.creadaPor.nombre} ${detalle.creadaPor.apellido || ''}`.trim()
                       : detalle.creadaPor?.email || '—'}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Fecha de creación</div>
                   <div className="fw-bold">
                     {formatearFecha(detalle.createdAt)}
@@ -408,7 +415,12 @@ const DetalleEmision = () => {
                               {estado}
                             </Badge>
                           </CardTitle>
-                          <Table striped bordered hover className="tabla-cliente shadow-sm">
+                          <Table
+                            striped
+                            bordered
+                            hover
+                            className="tabla-cliente tabla-cupones shadow-sm"
+                          >
                             <thead className="table-light">
                               <tr>
                                 <th data-label="Cliente">Cliente</th>
@@ -421,9 +433,11 @@ const DetalleEmision = () => {
                             <tbody>
                               {grupo.map((c) => (
                                 <tr key={c.id}>
-                                  <td data-label="Cliente">
+                                  <td data-label="Cliente" className="cupon-celda-larga">
                                     {c.usuario ? `${c.usuario.nombre} ${c.usuario.apellido || ''}`.trim() : '—'}
-                                    <div className="small text-muted">{c.usuario?.email || '—'}</div>
+                                    <div className="small text-muted text-break">
+                                      {c.usuario?.email || '—'}
+                                    </div>
                                   </td>
                                   <td data-label="Código">
                                     <Link to={`/superadmin/cupones/cupones/${c.id}`}>

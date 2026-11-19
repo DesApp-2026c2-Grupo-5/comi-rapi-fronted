@@ -17,6 +17,7 @@ import {
 } from 'react-bootstrap';
 import { FaArrowLeft, FaUser, FaEnvelope, FaTag, FaWallet, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 import { useCuponQuery, useCambiarActivoCupon } from '../../hooks/queries';
+import './Cupones.css';
 
 const VARIANTE_ESTADO = {
   DISPONIBLE: 'primary',
@@ -103,21 +104,27 @@ const DetalleCupon = () => {
   const usos = cupon.uso || { reservados: 0, confirmados: 0, liberados: 0 };
 
   return (
-    <Container>
+    <Container className="py-4 cupones-vista">
       <Row>
         <Col lg={8}>
           <Card>
             <CardBody>
-              <CardTitle className="d-flex justify-content-between align-items-center">
-                <span>Cupón: {cupon.codigo}</span>
-                <Button variant="outline-secondary" onClick={() => navigate('/superadmin/cupones')}>
+              <CardTitle className="cupon-cabecera">
+                <span className="cupon-cabecera-titulo">
+                  Cupón: {cupon.codigo}
+                </span>
+                <Button
+                  variant="outline-secondary"
+                  className="cupon-cabecera-accion"
+                  onClick={() => navigate('/superadmin/cupones')}
+                >
                   <FaArrowLeft /> Volver a emisiones
                 </Button>
               </CardTitle>
 
-              {/* Estado y resumen */}
+              {/* Estado y resumen: 2x2 en teléfono, 3 columnas en desktop */}
               <Row className="g-3 mt-4">
-                <Col md={4}>
+                <Col xs={6} md={4}>
                   <div className="text-center">
                     <div className="text-muted small">Estado del cupón</div>
                     <Badge bg={VARIANTE_ESTADO[cupon.estado] || 'secondary'}>
@@ -125,7 +132,7 @@ const DetalleCupon = () => {
                     </Badge>
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} md={4}>
                   <div className="text-center">
                     <div className="text-muted small">Estado del envío</div>
                     <Badge bg={VARIANTE_ENVIO[cupon.estadoEnvio] || 'secondary'}>
@@ -133,7 +140,7 @@ const DetalleCupon = () => {
                     </Badge>
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={12} md={4}>
                   <div className="text-center">
                     <div className="text-muted small">Descuento</div>
                     <span className="h4 fw-bold">{textoDescuento(cupon)}</span>
@@ -148,25 +155,25 @@ const DetalleCupon = () => {
                 <FaTag className="me-2" /> Datos del cupón
               </CardTitle>
               <Row className="g-3 mt-3">
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Código</div>
                   <div className="fw-monospace fw-bold">{cupon.codigo}</div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Tipo de descuento</div>
                   <div className="fw-bold">{cupon.tipoDescuento}</div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Valor del descuento</div>
                   <div className="fw-bold">{textoDescuento(cupon)}</div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Compra mínima</div>
                   <div className="fw-bold">
                     {Number(cupon.compraMinima) > 0 ? formatearMonto(cupon.compraMinima) : '—'}
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Descuento máximo</div>
                   <div className="fw-bold">
                     {cupon.descuentoMaximo != null && cupon.descuentoMaximo !== undefined
@@ -174,22 +181,22 @@ const DetalleCupon = () => {
                       : '—'}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Vigencia</div>
                   <div className="fw-bold">
                     {formatearFecha(cupon.fechaInicio)} -{' '}
                     {formatearFecha(cupon.fechaFin)}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Usos permitidos</div>
                   <div className="fw-bold">{cupon.usosPermitidos}</div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Emisión</div>
                   <div className="fw-bold">{cupon.emisionId || '—'}</div>
                 </Col>
-                <Col md={6}>
+                <Col xs={6} sm={6}>
                   <div className="text-muted small">Activo</div>
                   <div className="fw-bold">{cupon.activo ? 'Sí' : 'No'}</div>
                 </Col>
@@ -225,7 +232,7 @@ const DetalleCupon = () => {
                 <FaUser className="me-2" /> Cliente asignado
               </CardTitle>
               <Row className="g-3 mt-3">
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Nombre</div>
                   <div className="fw-bold">
                     {cupon.usuario
@@ -233,9 +240,9 @@ const DetalleCupon = () => {
                       : '—'}
                   </div>
                 </Col>
-                <Col md={6}>
+                <Col xs={12} sm={6}>
                   <div className="text-muted small">Email</div>
-                  <div className="fw-monospace">{cupon.usuario?.email || '—'}</div>
+                  <div className="fw-monospace text-break">{cupon.usuario?.email || '—'}</div>
                 </Col>
               </Row>
 
@@ -246,7 +253,7 @@ const DetalleCupon = () => {
                 <FaEnvelope className="me-2" /> Estado del envío
               </CardTitle>
               <Row className="g-3 mt-3">
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Estado</div>
                   <div className="fw-bold">
                     <Badge bg={VARIANTE_ENVIO[cupon.estadoEnvio] || 'secondary'}>
@@ -254,13 +261,13 @@ const DetalleCupon = () => {
                     </Badge>
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col xs={12} sm={4}>
                   <div className="text-muted small">Fecha de envío</div>
                   <div className="fw-monospace text-muted">{formatearFechaHora(cupon.enviadoEn)}</div>
                 </Col>
-                <Col md={4}>
+                <Col xs={12} sm={4}>
                   <div className="text-muted small">Error</div>
-                  <div className="text-muted small">{cupon.errorEnvio || '—'}</div>
+                  <div className="text-muted small text-break">{cupon.errorEnvio || '—'}</div>
                 </Col>
               </Row>
 
@@ -271,19 +278,19 @@ const DetalleCupon = () => {
                 <FaWallet className="me-2" /> Datos de uso
               </CardTitle>
               <Row className="g-3 mt-3">
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Reservados</div>
                   <div className="fw-monospace fw-bold">{usos.reservados}</div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Confirmados</div>
                   <div className="fw-monospace fw-bold text-success">{usos.confirmados}</div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Liberados</div>
                   <div className="fw-monospace fw-bold text-muted">{usos.liberados}</div>
                 </Col>
-                <Col md={4}>
+                <Col xs={6} sm={4}>
                   <div className="text-muted small">Restantes</div>
                   <div className="fw-monospace fw-bold">{cupon.usosRestantes ?? 0}</div>
                 </Col>

@@ -495,13 +495,12 @@ const Carrito = () => {
         </div>
       ) : (
         <Row>
-          {/* Aviso para el invitado: se puede carritoear sin cuenta, pero el
-              pedido necesita una. Se lo dice antes de que llegue al botón, con
-              los dos enlaces al login y al registro, y no con un error. */}
+          {/* Aviso para el invitado: el pedido necesita una cuenta. Se lo dice
+              antes de que llegue al botón, con los dos enlaces al login y al
+              registro, y no con un error. */}
           {!isAuthenticated && (
             <Col xs={12} className="mb-3">
               <Alert variant="warning" className="mb-0" role="status">
-                Podés armar tu pedido sin cuenta.{" "}
                 <Link
                   to="/login"
                   state={{ from: origen }}
@@ -517,7 +516,7 @@ const Carrito = () => {
                 >
                   registrate
                 </Link>{" "}
-                para confirmar la compra y elegir la dirección de entrega.
+                para confirmar la compra.
               </Alert>
             </Col>
           )}

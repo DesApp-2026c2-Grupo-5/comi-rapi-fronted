@@ -298,24 +298,23 @@ const Catalogo = () => {
 
       {/* Aviso para el visitante sin sesión. Va arriba de todo, antes de los
           filtros: la cuenta se pide recién al confirmar, pero conviene que sepa
-          desde el principio que va a necesitarla. Se usa `light` y no `warning`
-          (como el aviso del carrito) para no competir con los productos: acá es
-          información, no un paso obligatorio. */}
+          desde el principio que va a necesitarla. Mismo texto corto que el
+          aviso del carrito. Se usa `light` y no `warning` (como el del carrito)
+          para no competir con los productos: acá es información, no un paso
+          obligatorio. */}
       {!isAuthenticated && (
         <Alert
           variant="light"
           className="catalogo-aviso-invitado text-center mb-4"
         >
-          Estás viendo el catálogo sin iniciar sesión. Podés armar tu pedido
-          libremente; para confirmarlo vas a necesitar{" "}
           <Link to="/login" state={{ from: origen }} className="alert-link">
-            iniciar sesión
+            Iniciá sesión
           </Link>{" "}
           o{" "}
           <Link to="/registro" state={{ from: origen }} className="alert-link">
-            registrarte
-          </Link>
-          .
+            registrate
+          </Link>{" "}
+          para confirmar la compra.
         </Alert>
       )}
 

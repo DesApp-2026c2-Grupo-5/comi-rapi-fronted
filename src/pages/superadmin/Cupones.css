@@ -1,0 +1,165 @@
+/**
+ * Propósito: Adaptación responsive de las pantallas de cupones y emisiones
+ *            del panel del SUPERADMINISTRADOR (listado, detalle de emisión y
+ *            detalle de cupón).
+ * Contenido: Cabecera de tarjeta que envuelve título + acción en vez de
+ *            aplastarlos, y tablas que en pantallas chicas pasan a tarjetas
+ *            con la etiqueta de cada columna (mismo patrón que `.tabla-admin`
+ *            de comirapi.css).
+ * Dependencias: tokens.css y admin-theme.css (variables de superficie, borde y
+ *            texto), Bootstrap 5 (Table/Card/Button).
+ * Uso: <Container className="py-4 cupones-vista"> y
+ *      <Table className="tabla-cupones"> con atributos data-label en las celdas.
+ */
+
+/* Los enlaces de estas pantallas son datos (nombre de la emisión, código del
+   cupón), no acciones de navegación: se tiñen con la paleta del panel en vez
+   del azul por defecto de Bootstrap, que choca con el naranja del tema. */
+.cupones-vista a {
+  color: var(--color-text-brown);
+  text-decoration-thickness: 1px;
+}
+
+.cupones-vista a:hover,
+.cupones-vista a:focus-visible {
+  color: var(--color-primary-deep);
+}
+
+.cupones-vista .cupon-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+/* El título es lo único que puede encogerse: el botón conserva su ancho para
+   no partir "Volver a emisiones" en dos líneas. */
+.cupones-vista .cupon-cabecera-titulo {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cupones-vista .cupon-cabecera-accion {
+  flex: 0 0 auto;
+}
+
+/* En teléfonos la acción va abajo, a todo el ancho: un botón de 44px de alto
+   es más fácil de tocar que uno apretado contra el borde derecho. */
+@media (max-width: 575.98px) {
+  .cupones-vista .cupon-cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* En columna el `flex-basis` de 14rem se mide como alto y deja un hueco
+     enorme entre el título y el botón: se anula. */
+  .cupones-vista .cupon-cabecera-titulo {
+    flex: 0 0 auto;
+  }
+
+  .cupones-vista .cupon-cabecera-accion,
+  .cupones-vista .cupon-cabecera-accion .btn {
+    width: 100%;
+  }
+}
+
+/* ============ Tablas que se vuelven tarjetas en móvil ============ */
+
+@media (max-width: 767.98px) {
+  .cupones-vista .tabla-cupones {
+    margin-bottom: 0;
+    border: 0;
+  }
+
+  .cupones-vista .tabla-cupones thead {
+    display: none;
+  }
+
+  .cupones-vista .tabla-cupones,
+  .cupones-vista .tabla-cupones tbody,
+  .cupones-vista .tabla-cupones tr,
+  .cupones-vista .tabla-cupones td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Bootstrap dibuja los bordes de .table-bordered en cada celda; en modo
+     tarjeta el borde lo lleva la fila. */
+  .cupones-vista .tabla-cupones > :not(caption) > * > * {
+    border: 0;
+  }
+
+  /* Las franjas y el hover de Bootstrap se ven como manchas dentro de la
+     tarjeta; en móvil la separación la da el borde entre filas. */
+  .cupones-vista .tabla-cupones.table-striped tbody tr:nth-of-type(odd) > *,
+  .cupones-vista .tabla-cupones.table-hover tbody tr:hover > * {
+    --bs-table-bg-state: transparent;
+  }
+
+  .cupones-vista .tabla-cupones tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .cupones-vista .tabla-cupones tbody tr {
+    padding: 0.35rem 0.75rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-cream);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .cupones-vista .tabla-cupones tbody td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.1rem;
+    text-align: right;
+    overflow-wrap: anywhere;
+    border-bottom: 1px dashed var(--color-cream-hover);
+  }
+
+  .cupones-vista .tabla-cupones tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .cupones-vista .tabla-cupones tbody td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-weight: 700;
+    text-align: left;
+    color: var(--color-text-muted);
+  }
+
+  /* Celdas con dos líneas (nombre + email): la etiqueta arriba y el contenido
+     a todo el ancho, en vez de comprimirlo contra el borde derecho. */
+  .cupones-vista .tabla-cupones td.cupon-celda-larga {
+    display: block;
+    text-align: left;
+  }
+
+  .cupones-vista .tabla-cupones td.cupon-celda-larga::before {
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  /* Celda de acciones: sin etiqueta, botones apilados y a todo el ancho. */
+  .cupones-vista .tabla-cupones td.cupon-columna-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+  }
+
+  .cupones-vista .tabla-cupones td.cupon-columna-acciones::before {
+    content: none;
+  }
+
+  .cupones-vista .tabla-cupones td.cupon-columna-acciones .btn {
+    flex: 1 1 100%;
+  }
+}
