@@ -162,7 +162,7 @@ const EditarComponentes = ({ productos = [], componentes = [], onChange }) => {
                 type="button"
                 variant="outline-danger"
                 onClick={() => quitar(indice)}
-                aria-label={`Quitar componente ${indice + 1}`}
+                aria-label={`Dar de baja componente ${indice + 1}`}
               >
                 <FaTrashAlt aria-hidden="true" />
               </Button>

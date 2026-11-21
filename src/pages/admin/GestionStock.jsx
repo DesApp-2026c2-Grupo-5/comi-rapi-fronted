@@ -804,7 +804,7 @@ const GestionStock = () => {
                           }
                         >
                           <FaTrashAlt className="me-1" aria-hidden="true" />
-                          Quitar
+                          Dar de baja
                         </Button>
                       </td>
                     </tr>
@@ -900,13 +900,13 @@ const GestionStock = () => {
 
       <ConfirmarModal
         mostrar={Boolean(stockAEliminar)}
-        titulo="Quitar producto de la sucursal"
+        titulo="Dar de baja producto de la sucursal"
         mensaje={
           stockAEliminar
-            ? `¿Seguro que querés quitar "${stockAEliminar.producto}" del catálogo de ${stockAEliminar.sucursal}? Los pedidos que ya se hicieron no se ven afectados.`
+            ? `¿Seguro que querés dar de baja "${stockAEliminar.producto}" del catálogo de ${stockAEliminar.sucursal}? Los pedidos que ya se hicieron no se ven afectados.`
             : ''
         }
-        textoConfirmar="Sí, quitar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setStockAEliminar(null)}
@@ -914,13 +914,13 @@ const GestionStock = () => {
 
       <ConfirmarModal
         mostrar={Boolean(insumoAQuitar)}
-        titulo="Quitar insumo de la sucursal"
+        titulo="Dar de baja insumo de la sucursal"
         mensaje={
           insumoAQuitar
-            ? `¿Quitar "${insumoAQuitar.insumo}" de ${insumoAQuitar.sucursal}? Deja de ofrecerse en esta sucursal y su cantidad queda en 0. El insumo sigue existiendo en el catálogo corporativo.`
+            ? `¿Dar de baja "${insumoAQuitar.insumo}" de ${insumoAQuitar.sucursal}? Deja de ofrecerse en esta sucursal y su cantidad queda en 0. El insumo sigue existiendo en el catálogo corporativo.`
             : ''
         }
-        textoConfirmar="Sí, quitar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarQuitarInsumo}
         onCancelar={() => setInsumoAQuitar(null)}

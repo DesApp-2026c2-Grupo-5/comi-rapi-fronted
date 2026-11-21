@@ -278,7 +278,7 @@ const ListaProductos = ({ soloLectura = false }) => {
                           onClick={() => handleEliminar(producto.id, producto.nombre)}
                         >
                           <FaTrashAlt className="me-1" aria-hidden="true" />
-                          Eliminar
+                          Dar de baja
                         </Button>
                       </>
                     )}
@@ -302,13 +302,13 @@ const ListaProductos = ({ soloLectura = false }) => {
 
       <ConfirmarModal
         mostrar={Boolean(productoAEliminar)}
-        titulo="Eliminar producto"
+        titulo="Dar de baja producto"
         mensaje={
           productoAEliminar
-            ? `¿Eliminar el producto "${productoAEliminar.nombre}"?`
+            ? `¿Dar de baja el producto "${productoAEliminar.nombre}"?`
             : ''
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setProductoAEliminar(null)}
