@@ -127,6 +127,10 @@ const DetallePedido = () => {
   const [cargandoQueja, setCargandoQueja] = useState(false);
   const [mostrarQuejaModal, setMostrarQuejaModal] = useState(false);
   const [recargaQueja, setRecargaQueja] = useState(0);
+  // Pedido cuya queja ya se leyó al menos una vez. Permite distinguir la carga
+  // inicial (muestra "Cargando reclamo…") del refresco que dispara el WebSocket
+  // (silencioso, el hilo sigue en pantalla igual que en la bandeja del admin).
+  const quejaCargadaDe = useRef(null);
   const [respuestaQueja, setRespuestaQueja] = useState("");
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
   const [errorQueja, setErrorQueja] = useState("");
@@ -139,14 +143,21 @@ const DetallePedido = () => {
   // ese estado para no pedir datos que no se van a mostrar.
   useEffect(() => {
     if (!esEntregado || !pedidoId) {
+      quejaCargadaDe.current = null;
       setQueja(null);
       return undefined;
     }
     let vivo = true;
-    setCargandoQueja(true);
+    // Solo la primera lectura muestra el placeholder. Cuando el negocio responde
+    // llega `queja_actualizada` y se vuelve a leer, pero el hilo ya está en
+    // pantalla: no se desmonta ni se pierde el scroll ni el borrador.
+    if (quejaCargadaDe.current !== pedidoId) setCargandoQueja(true);
     obtenerMisQuejas(pedidoId).then((res) => {
       if (!vivo) return;
-      if (res.success) setQueja(res.data[0] || null);
+      if (res.success) {
+        setQueja(res.data[0] || null);
+        quejaCargadaDe.current = pedidoId;
+      }
       setCargandoQueja(false);
     });
     return () => {
@@ -157,7 +168,14 @@ const DetallePedido = () => {
   useEffect(() => {
     if (!esEntregado || !pedidoId) return undefined;
     const socket = conectarSocket();
-    const alActualizar = () => setRecargaQueja((valor) => valor + 1);
+    // Sólo interesa la queja de ESTE pedido: el cliente está suscripto a todos
+    // sus pedidos, así que puede llegar el aviso de otro y no hay que refrescar
+    // esta pantalla por eso.
+    const alActualizar = (payload) => {
+      if (payload?.pedidoId && Number(payload.pedidoId) !== Number(pedidoId))
+        return;
+      setRecargaQueja((valor) => valor + 1);
+    };
     socket.on(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
 
     // Suscribirse al pedido para recibir notificaciones del cliente

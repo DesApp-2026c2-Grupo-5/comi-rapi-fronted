@@ -39,12 +39,15 @@ const ConversacionQuejaCliente = ({
 }) => {
   const hiloRef = useRef(null);
 
-  // Auto-scroll al final cuando llega un mensaje nuevo o cambia el estado
+  // Auto-scroll al final cuando llega un mensaje nuevo o cambia el estado.
+  // Depende de esos datos y no del objeto: un refresco del WebSocket reemplaza
+  // el objeto sin mensajes nuevos y no debe mover el scroll si el cliente está
+  // leyendo el historial.
   useEffect(() => {
     if (hiloRef.current) {
       hiloRef.current.scrollTop = hiloRef.current.scrollHeight;
     }
-  }, [queja]);
+  }, [queja?.id, queja?.mensajes?.length, queja?.estado]);
 
   if (!queja) return null;
 

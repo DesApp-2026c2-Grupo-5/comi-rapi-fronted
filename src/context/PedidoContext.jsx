@@ -30,7 +30,6 @@ import { fetchPedidos } from '../hooks/queries/fetchers';
 import {
   alReconectar,
   conectarSocket,
-  desconectarSocket,
   EVENTOS_SOCKET,
   suscribirPedido,
 } from '../services/socket';
@@ -97,6 +96,9 @@ export const PedidoProvider = ({ children }) => {
 
   // Último estado conocido por pedido (para detectar transiciones)
   const estadosPreviosRef = useRef({});
+
+  // Número de la última consulta por pedido: descarta respuestas desordenadas.
+  const consultasPedidoRef = useRef(new Map());
 
   // Al cambiar de sesión no se comparan estados de otra cuenta: el primer
   // listado de la sesión nueva sólo arma el snapshot.
@@ -250,8 +252,15 @@ export const PedidoProvider = ({ children }) => {
   const actualizarPedidoCache = useCallback(
     async (pedidoId) => {
       if (!haySesion) return;
+      // Dos avisos seguidos (p. ej. Confirmado → En preparación) disparan dos
+      // GET: si el primero tarda más que el segundo, su respuesta vieja podía
+      // pisar la nueva y la pantalla quedaba en el estado anterior hasta el
+      // próximo evento o una recarga. Sólo se aplica la última consulta lanzada.
+      const secuencia = (consultasPedidoRef.current.get(pedidoId) || 0) + 1;
+      consultasPedidoRef.current.set(pedidoId, secuencia);
       try {
         const res = await pedidosApi.obtenerPedidoPorId(pedidoId);
+        if (consultasPedidoRef.current.get(pedidoId) !== secuencia) return;
         if (!res.success || !res.data) return;
         const actualizado =
           res.data.id === undefined || res.data.id === null
@@ -328,20 +337,9 @@ export const PedidoProvider = ({ children }) => {
     };
   }, [hydrated, emailSesion, idsPedidos, isCliente, refrescarPedidos, actualizarPedidoCache, versionSocket]);
 
-  // Track if we ever had a user session to avoid disconnecting on initial load for guests
-  const hadUserRef = useRef(false);
-  useEffect(() => {
-    if (emailSesion) hadUserRef.current = true;
-  }, [emailSesion]);
-
-  // Al cerrar sesión se cierra el canal: con otra cookie, el backend rechazaría
-  // el handshake de todas formas, y dejarlo abierto sería una conexión muerta.
-  // Solo desconecta si HABÍA usuario antes y ahora no hay (evita desconectar en carga inicial para invitados).
-  useEffect(() => {
-    if (hydrated && hadUserRef.current && !emailSesion) {
-      desconectarSocket();
-    }
-  }, [hydrated, emailSesion]);
+  // El cierre de sesión ya no destruye el socket: `AuthContext` renegocia el
+  // handshake y el canal queda como invitado (eventos públicos). Así los
+  // listeners registrados sobreviven y no hay que volver a engancharlos.
 
   // Inserta un pedido al inicio (recientes primero), sin duplicar por id
   const insertarPrimero = (lista, pedido) => [
