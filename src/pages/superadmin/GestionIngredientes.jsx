@@ -141,9 +141,11 @@ const GestionIngredientes = () => {
                     <Button
                       size="sm"
                       variant="outline-danger"
+                      className="text-nowrap"
                       onClick={() => setAEliminar(ingrediente)}
                     >
-                      <FaTrashAlt />
+                      <FaTrashAlt className="me-1" aria-hidden="true" />
+                      Dar de baja
                     </Button>
                   ) : (
                     <Button

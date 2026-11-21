@@ -48,10 +48,12 @@ const ItemResena = ({ resena, esMia, onEditar, onEliminar }) => (
           <Button
             variant="outline-danger"
             size="sm"
+            className="text-nowrap"
             onClick={() => onEliminar(resena)}
-            aria-label="Eliminar tu reseña"
+            aria-label="Quitar tu reseña"
           >
-            <FaTrashAlt aria-hidden="true" />
+            <FaTrashAlt className="me-1" aria-hidden="true" />
+            Quitar
           </Button>
         </div>
       )}

@@ -15,7 +15,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container, Row, Col, Card, CardBody, CardTitle, Button, Alert, Badge,
 } from 'react-bootstrap';
-import { FaArrowLeft, FaUser, FaEnvelope, FaTag, FaWallet, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaArrowLeft, FaUser, FaEnvelope, FaTag, FaWallet, FaToggleOn, FaTrashAlt } from 'react-icons/fa';
 import { useCuponQuery, useCambiarActivoCupon } from '../../hooks/queries';
 import './Cupones.css';
 
@@ -213,7 +213,7 @@ const DetalleCupon = () => {
                     <>
                       {cupon.activo ? (
                         <>
-                          <FaToggleOff aria-hidden="true" /> Dar de baja
+                          <FaTrashAlt aria-hidden="true" /> Dar de baja
                         </>
                       ) : (
                         <>

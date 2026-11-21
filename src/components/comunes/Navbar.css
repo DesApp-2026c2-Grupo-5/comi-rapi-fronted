@@ -280,6 +280,23 @@
   font-size: 1.3rem;
 }
 
+/* Distintivo del lado (cliente/admin) en la barra: una chapita con ícono, sin
+   texto visible. El nombre para lectores de pantalla va en el aria-label del
+   span (role="img"). Se muestra en móvil y en escritorio con la misma copia. */
+.navbar-zona-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 1px solid rgba(58, 36, 16, 0.28);
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--color-on-primary);
+  font-size: 0.95rem;
+}
+
 
 /* Acceso del invitado: "Iniciar sesión" y "Regístrate" ocupan el lugar del
    avatar y del cierre de sesión, así la barra no cambia de ancho al entrar.

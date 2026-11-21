@@ -184,7 +184,7 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
             {productoActual ? (
               <>
                 <strong>{productoActual.nombre}</strong> <Badge bg="warning" text="dark">{productoActual.categoria}</Badge> — {formatPrice(productoActual.precio)} base{' '}
-                <span className='ms-2'>{counts.total} elementos: Extra {counts.extra} ? Acompa�a {counts.acompanar} ? Condimentos {counts.condimento}</span>
+                <span className='ms-2'>{counts.total} elementos: Extra {counts.extra} ? Acompa�a {counts.acompanar} ? Condimentos {counts.condimento}</span>
               </>
             ) : (
               'Seleccioná un producto para gestionar sus 4 categorías. Los elementos varían por producto.'
@@ -260,17 +260,17 @@ const GestionPersonalizacion = ({ soloLectura = false }) => {
 
       <ConfirmarModal
         mostrar={Boolean(elementoAEliminar)}
-        titulo="Eliminar elemento"
+        titulo="Dar de baja elemento"
         mensaje={
           elementoAEliminar
             ? (() => {
                 const el = elementoAEliminar;
                 const prod = productos.find((p) => String(p.id) === String(el.productoId));
-                return `¿Eliminar "${etiquetaDe(el)}" de "${prod?.nombre || 'producto #' + el.productoId}"? Tipo: ${el.tipo === 'acompanar' ? 'Acompaña' : el.tipo === 'personalizar' ? 'Personalizar' : el.tipo === 'condimento' ? 'Condimento' : 'Extra'} — ID #${el.id}`;
+                return `¿Dar de baja "${etiquetaDe(el)}" de "${prod?.nombre || 'producto #' + el.productoId}"? Tipo: ${el.tipo === 'acompanar' ? 'Acompaña' : el.tipo === 'personalizar' ? 'Personalizar' : el.tipo === 'condimento' ? 'Condimento' : 'Extra'} — ID #${el.id}`;
               })()
             : ''
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setElementoAEliminar(null)}

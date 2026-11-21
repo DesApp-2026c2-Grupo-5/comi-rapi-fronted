@@ -300,7 +300,7 @@ const GestionPersonalizacionCategorias = () => {
 
       <ConfirmarModal
         mostrar={Boolean(plantillaAEliminar)}
-        titulo="Eliminar plantilla"
+        titulo="Dar de baja plantilla"
         mensaje={
           plantillaAEliminar
             ? (() => {
@@ -308,7 +308,7 @@ const GestionPersonalizacionCategorias = () => {
                 const cat = categorias.find(
                   (c) => String(c.id) === String(el.categoriaId)
                 );
-                return `¿Eliminar "${etiquetaDe(el)}" de la categoría "${
+                return `¿Dar de baja "${etiquetaDe(el)}" de la categoría "${
                   cat?.nombre || 'categoría #' + el.categoriaId
                 }"? Los productos ya creados no se modifican. Tipo: ${
                   el.tipo === 'acompanar'
@@ -322,7 +322,7 @@ const GestionPersonalizacionCategorias = () => {
               })()
             : ''
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setPlantillaAEliminar(null)}
