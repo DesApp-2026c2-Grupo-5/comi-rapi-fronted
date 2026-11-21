@@ -226,6 +226,13 @@ const DetallePedido = () => {
     ESTADOS_PEDIDO.EN_CAMINO,
     ESTADOS_PEDIDO.ENTREGADO,
   ].includes(pedido.estado);
+  // La sucursal todavía puede cambiar mientras el pedido se puede cancelar
+  // (confirmado) o reasignar (también en_preparación). Desde
+  // listo_para_entregar ya está comprometida con esa cocina: no va a variar.
+  const sucursalPuedeVariar = [
+    ESTADOS_PEDIDO.CONFIRMADO,
+    ESTADOS_PEDIDO.EN_PREPARACION,
+  ].includes(pedido.estado);
   // A6: solo visible en en_camino con hora estimada persistida.
   const textoLlegadaEnCamino =
     pedido.estado === ESTADOS_PEDIDO.EN_CAMINO && pedido.horaEstimadaLlegada
@@ -421,7 +428,12 @@ const DetallePedido = () => {
             </Col>
             <Col md={6}>
               <div className="detalle-info">
-                <span className="detalle-etiqueta">Sucursal asignada</span>
+                <span className="detalle-etiqueta">
+                  Sucursal seleccionada para tu pedido
+                  {sucursalPuedeVariar && (
+                    <span className="detalle-aclaracion"> (puede variar)</span>
+                  )}
+                </span>
                 <p className="detalle-valor mb-0">
                   {pedido.sucursal?.nombre || pedido.sucursal}
                 </p>

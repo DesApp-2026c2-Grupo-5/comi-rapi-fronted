@@ -62,6 +62,17 @@
   font-size: 1.05rem;
 }
 
+/* Aclaración de la sucursal mientras el pedido todavía puede cambiar. Se saca
+   del estilo de etiqueta (mayúsculas y espaciado) para que se lea como texto
+   normal, igual que en las pantallas de pago y confirmación. */
+.detalle-etiqueta .detalle-aclaracion {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .detalle-valor-secundario {
   color: var(--color-text-muted);
   font-size: 0.95rem;
