@@ -259,7 +259,7 @@ const ItemCarrito = ({ item }) => {
               onClick={abrirEditorNota}
               aria-label={`Agregar una nota para cocina en ${producto.nombre}`}
             >
-              <FaPen aria-hidden="true" size={12} className="me-1" />
+              <FaPen aria-hidden="true" size={12} />
               Agregar nota para cocina
             </Button>
           )}

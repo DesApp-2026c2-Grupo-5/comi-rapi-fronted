@@ -159,6 +159,18 @@
   text-decoration: underline;
 }
 
+/* Los dos botones con texto ("Agregar nota…" y "Editar personalización")
+   arrancan el texto en el mismo lugar: el ícono va sin márgenes y el espacio
+   lo pone `gap` en ambos. El botón que es sólo ícono no se tocó. Se incluye
+   `.btn` en el selector para ganarle al `gap`/`padding` global de Bootstrap. */
+.btn.item-carrito-nota-agregar,
+.item-carrito-personalizacion-editar .btn.item-carrito-nota-editar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+}
+
 /* ============ Responsividad ============ */
 /* Abajo de 768px el layout pasa a 2 filas (imagen+nombre / cantidad+subtotal)
    con xs={3}/xs={9} y xs={6}/xs={6}. La imagen se encoge para caber en la
