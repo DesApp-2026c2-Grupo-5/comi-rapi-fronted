@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, Row, Col, Form, Button } from "react-bootstrap";
-import { FaTrash, FaMinus, FaPlus, FaPen, FaStickyNote } from "react-icons/fa";
+import { FaTrashAlt, FaMinus, FaPlus, FaPen, FaStickyNote } from "react-icons/fa";
 import { useCarrito } from "../../hooks/useCarrito";
 import { useParametros } from "../../hooks/useParametros";
 import { formatPrice } from "../../utils/formatters";
@@ -156,12 +156,12 @@ const ItemCarrito = ({ item }) => {
                 onClick={handleDecrementar}
                 aria-label={
                   cantidad === 1
-                    ? `Eliminar ${producto.nombre} del carrito`
+                    ? `Quitar ${producto.nombre} del carrito`
                     : `Quitar una unidad de ${producto.nombre}`
                 }
               >
                 {cantidad === 1 ? (
-                  <FaTrash aria-hidden="true" size={14} />
+                  <FaTrashAlt aria-hidden="true" size={14} />
                 ) : (
                   <FaMinus aria-hidden="true" size={14} />
                 )}

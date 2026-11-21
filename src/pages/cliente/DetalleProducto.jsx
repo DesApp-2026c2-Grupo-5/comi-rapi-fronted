@@ -538,9 +538,9 @@ const DetalleProducto = () => {
 
       <ConfirmarModal
         mostrar={Boolean(resenaABorrar)}
-        titulo="Eliminar reseña"
-        mensaje="¿Querés eliminar tu reseña? Esta acción no se puede deshacer."
-        textoConfirmar="Sí, eliminar"
+        titulo="Quitar reseña"
+        mensaje="¿Querés quitar tu reseña? Esta acción no se puede deshacer."
+        textoConfirmar="Sí, quitar"
         cargando={borrandoResena}
         onConfirmar={confirmarBorradoResena}
         onCancelar={() => setResenaABorrar(null)}
