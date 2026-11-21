@@ -110,20 +110,23 @@ const ProductoCard = ({ producto, rank, promocion, variante }) => {
             {/* Pie de la tarjeta: en vertical el precio va sobre el botón; en
                 horizontal ambos comparten la fila inferior (precio a la
                 izquierda, botón circular a la derecha), así la descripción gana
-                renglones. */}
+                renglones. El original tachado queda arriba del precio final,
+                pero fuera del flujo: el precio rojo no baja cuando hay promo. */}
             <div className="producto-pie">
-              {precioConDescuento !== null ? (
-                <div className="d-flex flex-column producto-precios">
+              <div className="producto-precios">
+                {precioConDescuento !== null && (
                   <Card.Text className="text-muted text-decoration-line-through producto-precio-tachado mb-0">
                     {formatPrice(producto.precio)}
                   </Card.Text>
-                  <Card.Text className="fw-bold producto-precio">
-                    {formatPrice(precioConDescuento)}
-                  </Card.Text>
-                </div>
-              ) : (
-                <Card.Text className="fw-bold producto-precio">{formatPrice(producto.precio)}</Card.Text>
-              )}
+                )}
+                <Card.Text className="fw-bold producto-precio mb-0">
+                  {formatPrice(
+                    precioConDescuento !== null
+                      ? precioConDescuento
+                      : producto.precio
+                  )}
+                </Card.Text>
+              </div>
               {/* El nombre accesible va en aria-label: en el modo horizontal el
                   texto se oculta y el botón queda sólo con el icono. */}
               <Button

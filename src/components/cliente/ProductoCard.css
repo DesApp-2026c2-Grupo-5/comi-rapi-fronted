@@ -187,11 +187,9 @@
   /* El precio y el botón comparten la fila inferior: precio a la izquierda y
      botón circular a la derecha. `margin-left: auto` lo mantiene pegado a la
      derecha y `flex-wrap` queda como red de seguridad extrema (ventanas de menos
-     de ~290px): el botón baja de línea pero nunca se recorta. El `font-size`
-     fluido del pie y su `min-height` en `em` reservan el alto del bloque de
-     precios con descuento (tachado + final) para que las tarjetas con promo
-     midan exactamente igual que las que no la tienen, también con tipografía
-     fluida. */
+     de ~290px): el botón baja de línea pero nunca se recorta. El tachado flota
+     arriba del precio final (ver `.producto-precios`), así el precio rojo queda
+     en el mismo lugar con y sin promoción. */
   .producto-card--horizontal .producto-pie {
     flex-direction: row;
     align-items: flex-end;
@@ -252,12 +250,6 @@
    parejas y una descripción larga no estira la fila entera. El texto completo
    vive en la página del producto. */
 @media (min-width: 992px) {
-  /* Reserva el alto del pie con promoción (original tachado + precio final) para
-     que las filas con descuento no queden más altas que las que no lo tienen. */
-  .producto-card .producto-pie {
-    min-height: 5.5rem;
-  }
-
   .producto-card .producto-nombre {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -266,12 +258,28 @@
     min-height: 2.4em;
   }
 
+  /* La descripción va en el flujo normal: antes la subíamos con `top: -1.15rem`
+     para liberar el renglón del precio tachado, pero ese desplazamiento es sólo
+     visual y, cuando el nombre ocupaba 2 renglones, la primera línea de la
+     descripción se montaba sobre la última del nombre. Ahora se reserva ese
+     espacio con `margin-bottom`: el tachado flota en ese margen y el texto no
+     se sale de su caja. `min-height` en `em` mantiene parejas las tarjetas. */
   .producto-card .producto-descripcion {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     overflow: hidden;
     min-height: 4.5em;
+    margin-bottom: 1.15rem;
+  }
+
+  /* Más aire ENTRE el precio rojo y el botón "Añadir" en el card vertical de
+     escritorio. Va como margen del botón (no como padding): así el botón no
+     crece de altura y la separación aparece arriba del botón, no dentro. En el
+     horizontal (por debajo de este breakpoint) el botón es circular y no lleva
+     texto, así que no se aplica. */
+  .producto-card .producto-boton {
+    margin-top: 0.85rem;
   }
 }
 
@@ -306,13 +314,28 @@
   font-size: 0.9rem;
 }
 
+/* El precio tachado va arriba del final como en el diseño original, pero sale
+   del flujo: el precio rojo se queda en el mismo sitio haya o no descuento. El
+   renglón que necesita el tachado se reserva con el `margin-bottom` de la
+   descripción (sólo en desktop), así nunca se monta sobre el texto. */
+.producto-precios {
+  position: relative;
+  display: block;
+}
+
 .producto-precio {
   color: var(--color-danger);
   font-size: 1.2rem;
+  line-height: 1.2;
 }
 
 .producto-precio-tachado {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.1rem;
   font-size: 0.85rem;
+  line-height: 1.2;
 }
 
 .producto-boton {
