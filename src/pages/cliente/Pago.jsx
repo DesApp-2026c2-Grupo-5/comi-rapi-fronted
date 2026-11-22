@@ -240,6 +240,10 @@ const Pago = () => {
       ? disponibilidadPedido.alternativas[0] || sucursal
       : sucursal;
   const direccionSucursal = formatearDireccion(sucursalQuePrepara?.direccion);
+  // Reutiliza la disponibilidad que esta pantalla ya consultó: el backend
+  // devuelve `hayAlternativa` cuando hay otra sucursal abierta, con stock y en
+  // cobertura. No agrega ningún request ni tiempo al alta del pedido.
+  const sucursalPuedeVariar = Boolean(disponibilidadPedido?.hayAlternativa);
 
   // El total del backend ya incluye el envío
   const montoTotal = pedido.total;
@@ -290,7 +294,7 @@ const Pago = () => {
       return;
     }
     vaciarCarrito();
-    navigate('/cliente/confirmacion');
+    navigate('/cliente/confirmacion', { state: { sucursalPuedeVariar } });
   };
 
   // Cancela el pedido pendiente: pide confirmación con el modal y persiste en la API.
@@ -368,8 +372,8 @@ const Pago = () => {
           </Card>
 
           {/* Único aviso de cierre: cuando NO hay otra sucursal a la que
-              reasignar. Si hay alternativa, el panel de "Tu pedido será
-              preparado en" se actualiza solo con la sucursal nueva. */}
+              reasignar. Si hay alternativa, el panel de "Sucursal seleccionada
+              para tu pedido" se actualiza solo con la sucursal nueva. */}
           {sucursalCerradaSinAlternativa && (
             <Alert variant="danger" className="mb-4" role="status">
               <strong>La sucursal cerró.</strong>
@@ -423,7 +427,10 @@ const Pago = () => {
           {sucursalQuePrepara && (
             <div className="p-3 mb-3 panel-crema">
               <span className="panel-crema-etiqueta">
-                Tu pedido será preparado en
+                Sucursal seleccionada para tu pedido
+                {sucursalPuedeVariar && (
+                  <span className="text-muted small"> (puede variar)</span>
+                )}
               </span>
               <strong className="d-block fs-5">{sucursalQuePrepara.nombre}</strong>
               {direccionSucursal && (
@@ -437,7 +444,6 @@ const Pago = () => {
             items={pedido.productos}
             total={pedido.total}
             costoEnvio={pedido.costoEnvio ?? 0}
-            sucursal={sucursalQuePrepara}
             promociones={pedido.promociones}
             descuentoCupon={
               pedido.cupon?.descuentoAplicado

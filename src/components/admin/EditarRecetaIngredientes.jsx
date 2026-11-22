@@ -96,7 +96,7 @@ const EditarRecetaIngredientes = ({ receta = [], onChange }) => {
       size="sm"
       variant="outline-danger"
       onClick={() => quitar(indice)}
-      aria-label={`Quitar ingrediente ${indice + 1}`}
+      aria-label={`Dar de baja ingrediente ${indice + 1}`}
     >
       <FaTrashAlt aria-hidden="true" />
     </Button>

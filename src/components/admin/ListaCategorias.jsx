@@ -178,7 +178,7 @@ const ListaCategorias = ({ soloLectura = false }) => {
                     )}
                     <Button variant="danger" size="sm" onClick={() => handleEliminar(categoria.id, categoria.nombre)}>
                       <FaTrashAlt className="me-1" aria-hidden="true" />
-                      Eliminar
+                      Dar de baja
                     </Button>
                   </td>
                 )}
@@ -190,13 +190,13 @@ const ListaCategorias = ({ soloLectura = false }) => {
 
       <ConfirmarModal
         mostrar={Boolean(categoriaAEliminar)}
-        titulo="Eliminar categoría"
+        titulo="Dar de baja categoría"
         mensaje={
           categoriaAEliminar
-            ? `¿Eliminar la categoría "${categoriaAEliminar.nombre}"? La baja es lógica: no se borra de la base ni elimina sus productos.`
+            ? `¿Dar de baja la categoría "${categoriaAEliminar.nombre}"? La baja es lógica: no se borra de la base ni se eliminan sus productos.`
             : ''
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setCategoriaAEliminar(null)}

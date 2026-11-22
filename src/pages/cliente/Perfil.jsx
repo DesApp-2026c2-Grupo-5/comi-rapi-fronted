@@ -472,7 +472,7 @@ const Perfil = () => {
                     onClick={() => setDireccionAEliminar(direccion)}
                   >
                     <FaTrashAlt aria-hidden="true" />
-                    Eliminar
+                    Quitar
                   </Button>
                 </div>
               </li>
@@ -887,15 +887,15 @@ const Perfil = () => {
 
       <ConfirmarModal
         mostrar={Boolean(direccionAEliminar)}
-        titulo="Eliminar dirección"
+        titulo="Quitar dirección"
         mensaje={
           direccionAEliminar
-            ? `¿Seguro que querés eliminar "${
+            ? `¿Seguro que querés quitar "${
                 direccionAEliminar.alias || direccionAEliminar.calle
               }"?`
-            : '¿Seguro que querés eliminar esta dirección?'
+            : '¿Seguro que querés quitar esta dirección?'
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, quitar"
         textoCancelar="Volver"
         cargando={eliminandoDireccion}
         onConfirmar={confirmarEliminarDireccion}

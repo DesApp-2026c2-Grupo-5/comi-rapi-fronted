@@ -172,7 +172,7 @@ const EditorHorarios = ({
                       className="ms-auto"
                       onClick={() => quitarFranja(dia, indice)}
                       disabled={deshabilitado}
-                      aria-label={`Quitar la franja ${indice + 1} del ${dia.dia.toLowerCase()}`}
+                      aria-label={`Dar de baja la franja ${indice + 1} del ${dia.dia.toLowerCase()}`}
                     >
                       <FaTrashAlt aria-hidden="true" />
                     </Button>
