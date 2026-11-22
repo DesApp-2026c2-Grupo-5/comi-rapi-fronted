@@ -29,7 +29,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Container, Table, Button, ButtonGroup, Badge, Form, Alert, Tabs, Tab } from 'react-bootstrap';
-import { FaPlus, FaTrashAlt, FaBoxes, FaPlusCircle } from 'react-icons/fa';
+import {
+  FaPlus,
+  FaTrashAlt,
+  FaBoxes,
+  FaPlusCircle,
+  FaSlidersH,
+} from 'react-icons/fa';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { useNotificaciones } from '../../hooks/useNotificaciones';
 import { useParametros } from '../../hooks/useParametros';
@@ -43,6 +49,7 @@ import {
 import { queryKeys, useProductos, useStockIngredientesQuery, useStockQuery } from '../../hooks/queries';
 import { ESTADOS_STOCK, estadoDeStock } from '../../utils/estadoStock';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
+import AjustarStockModal from '../../components/admin/AjustarStockModal';
 import { SkeletonTabla } from '../../components/comunes/Skeleton';
 
 // Cómo se muestra cada estado en la columna "Estado". "En stock" queda como
@@ -69,6 +76,11 @@ const MENSAJE_VACIO = {
     'No hay ítems no disponibles en esta sucursal.',
 };
 
+// Los insumos se editan con enteros; los ingredientes usan DECIMAL(12,3).
+// Redondear antes de comparar evita rechazar 0.75 por el error de punto flotante.
+const tieneHastaTresDecimales = (valor) =>
+  Math.abs(valor * 1000 - Math.round(valor * 1000)) < 1e-9;
+
 const FILTROS_PRINCIPALES = [
   { clave: 'todos', etiqueta: 'Todos' },
   { clave: 'productos', etiqueta: 'Productos' },
@@ -92,7 +104,7 @@ const GestionStock = () => {
   // elegido del superadmin. El backend además acota el stock a ella, así que
   // no hay nada que elegir en la pantalla. Sin sucursal operativa (superadmin
   // sin contexto) no se carga nada: el aviso pide elegir una sucursal.
-  const { sucursalOperativa, sucursalOperativaId, versionSocket } = useSucursalOperativa();
+  const { sucursalOperativa, sucursalOperativaId } = useSucursalOperativa();
   const sucursalId = sucursalOperativaId ? String(sucursalOperativaId) : '';
 
   // Filtro de producto: va al backend (`GET /api/stock?productoId=`), por eso
@@ -198,6 +210,12 @@ const GestionStock = () => {
   const [stockAEliminar, setStockAEliminar] = useState(null);
   // Fila de insumo esperando confirmación para dejar de ofrecerse en la sucursal.
   const [insumoAQuitar, setInsumoAQuitar] = useState(null);
+  // Fila de ingrediente esperando confirmación para poner su stock en 0.
+  const [ingredienteAQuitar, setIngredienteAQuitar] = useState(null);
+  // Fila (ingrediente o insumo) abierta en el modal de ajuste de stock.
+  const [filaAAjustar, setFilaAAjustar] = useState(null);
+  const [guardandoAjuste, setGuardandoAjuste] = useState(false);
+  const [errorAjuste, setErrorAjuste] = useState('');
   const [confirmando, setConfirmando] = useState(false);
   // Pestaña activa: "stock" (el stock de la sucursal) o "nuevos" (por agregar).
   const [pestana, setPestana] = useState('stock');
@@ -398,12 +416,63 @@ const GestionStock = () => {
     if (resultado.success) {
       notificar('Stock actualizado.', 'success');
       if (resultado.data) {
-        reemplazarFilaEnCache(esInsumo ? 'insumo' : 'producto', resultado.data);
+        reemplazarFilaEnCache(
+          esInsumo ? 'insumo' : esIngrediente ? 'ingrediente' : 'producto',
+          resultado.data
+        );
       }
     } else {
       notificar(resultado.error || 'No se pudo actualizar.', 'danger');
     }
     setGuardando(false);
+  };
+
+  // Abre el modal de ajuste. Sirve para ingredientes e insumos: el modal sólo
+  // devuelve la cantidad resultante y acá se elige el endpoint.
+  const abrirAjuste = (fila) => {
+    setErrorAjuste('');
+    setFilaAAjustar(fila);
+  };
+
+  const cerrarAjuste = () => {
+    if (guardandoAjuste) return;
+    setFilaAAjustar(null);
+    setErrorAjuste('');
+  };
+
+  const aceptarAjuste = async (nuevaCantidad) => {
+    if (!filaAAjustar) return;
+    const esInsumo = filaAAjustar.clase === 'insumo';
+    const nombre = esInsumo ? filaAAjustar.insumo : filaAAjustar.ingrediente;
+
+    setGuardandoAjuste(true);
+    setErrorAjuste('');
+    let resultado;
+    try {
+      resultado = esInsumo
+        ? await actualizarStockInsumo(filaAAjustar.insumoId, {
+            cantidad: nuevaCantidad,
+          })
+        : await actualizarStockIngrediente(filaAAjustar.ingredienteId, {
+            cantidad: nuevaCantidad,
+          });
+    } finally {
+      setGuardandoAjuste(false);
+    }
+
+    if (!resultado.success) {
+      setErrorAjuste(resultado.error || 'No se pudo actualizar el stock.');
+      return;
+    }
+
+    notificar(`Stock de "${nombre}" actualizado.`, 'success');
+    if (resultado.data) {
+      reemplazarFilaEnCache(
+        esInsumo ? 'insumo' : 'ingrediente',
+        resultado.data
+      );
+    }
+    setFilaAAjustar(null);
   };
 
   const confirmarEliminar = async () => {
@@ -458,6 +527,38 @@ const GestionStock = () => {
       notificar(resultado.error || 'No se pudo quitar el insumo.', 'danger');
     }
     setInsumoAQuitar(null);
+  };
+
+  // "Quitar" un ingrediente no borra el catálogo (es corporativo) ni la fila de
+  // stock (se recrea al listar): pone la cantidad en 0 y deja `disponible`
+  // como estaba. Reutiliza el mismo PUT de la edición en línea.
+  const confirmarQuitarIngrediente = async () => {
+    if (!ingredienteAQuitar) return;
+    setConfirmando(true);
+    let resultado;
+    try {
+      resultado = await actualizarStockIngrediente(
+        ingredienteAQuitar.ingredienteId,
+        { cantidad: 0 }
+      );
+    } finally {
+      setConfirmando(false);
+    }
+    if (resultado.success) {
+      notificar(
+        `Stock de "${ingredienteAQuitar.ingrediente}" puesto en 0.`,
+        'success'
+      );
+      if (resultado.data) {
+        reemplazarFilaEnCache('ingrediente', resultado.data);
+      }
+    } else {
+      notificar(
+        resultado.error || 'No se pudo poner el stock en 0.',
+        'danger'
+      );
+    }
+    setIngredienteAQuitar(null);
   };
 
   return (
@@ -742,7 +843,12 @@ const GestionStock = () => {
                             }}
                             onBlur={(e) => {
                               const valor = Number(e.target.value);
-                              if (valor !== fila.cantidad && Number.isInteger(valor) && valor >= 0) {
+                              const valido = esIngrediente
+                                ? Number.isFinite(valor) &&
+                                  valor >= 0 &&
+                                  tieneHastaTresDecimales(valor)
+                                : Number.isInteger(valor) && valor >= 0;
+                              if (valor !== fila.cantidad && valido) {
                                 guardarFila(fila, { cantidad: valor });
                               }
                             }}
@@ -794,18 +900,34 @@ const GestionStock = () => {
                         />
                       </td>
                       <td className="columna-acciones text-nowrap">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() =>
-                            esInsumo
-                              ? setInsumoAQuitar(fila)
-                              : setStockAEliminar(fila)
-                          }
-                        >
-                          <FaTrashAlt className="me-1" aria-hidden="true" />
-                          Quitar
-                        </Button>
+                        <div className="d-flex flex-wrap gap-2 w-100">
+                          {(esIngrediente || esInsumo) && (
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => abrirAjuste(fila)}
+                              aria-label={`Ajustar stock de ${nombre}`}
+                            >
+                              <FaSlidersH
+                                className="me-1"
+                                aria-hidden="true"
+                              />
+                              Ajustar stock
+                            </Button>
+                          )}
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              if (esInsumo) setInsumoAQuitar(fila);
+                              else if (esIngrediente) setIngredienteAQuitar(fila);
+                              else setStockAEliminar(fila);
+                            }}
+                          >
+                            <FaTrashAlt className="me-1" aria-hidden="true" />
+                            Quitar
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -924,6 +1046,29 @@ const GestionStock = () => {
         cargando={confirmando}
         onConfirmar={confirmarQuitarInsumo}
         onCancelar={() => setInsumoAQuitar(null)}
+      />
+
+      <ConfirmarModal
+        mostrar={Boolean(ingredienteAQuitar)}
+        titulo="Poner stock en 0"
+        mensaje={
+          ingredienteAQuitar
+            ? `¿Poner en 0 el stock de "${ingredienteAQuitar.ingrediente}" en ${ingredienteAQuitar.sucursal}? La cantidad actual se descarta.`
+            : ''
+        }
+        textoConfirmar="Sí, poner en 0"
+        cargando={confirmando}
+        onConfirmar={confirmarQuitarIngrediente}
+        onCancelar={() => setIngredienteAQuitar(null)}
+      />
+
+      <AjustarStockModal
+        mostrar={Boolean(filaAAjustar)}
+        fila={filaAAjustar}
+        cargando={guardandoAjuste}
+        error={errorAjuste}
+        onCerrar={cerrarAjuste}
+        onAceptar={aceptarAjuste}
       />
         </>
       )}
