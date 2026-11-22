@@ -37,7 +37,6 @@ import {
   ETIQUETAS_OPCION_ESTADO,
   OPCIONES_ESTADO,
   construirHilo,
-  esEstadoFinal,
   formatFechaBurbuja,
   marcarSinResponder,
   nombreAutor,
@@ -103,7 +102,6 @@ const ConversacionQueja = ({ queja, rol, onEnviar, onVolver }) => {
   const cliente = queja.cliente;
   const nombre = nombreCliente(cliente);
   const respuestasCliente = queja.respuestasCliente ?? 0;
-  const maxRespuestas = queja.maxRespuestasCliente ?? 5;
 
   return (
     <div className="queja-conversacion" aria-label={`Reclamo de ${nombre}`}>
@@ -159,9 +157,7 @@ const ConversacionQueja = ({ queja, rol, onEnviar, onVolver }) => {
         <Dato etiqueta="Motivo">
           {ETIQUETAS_MOTIVO_QUEJA[queja.motivo] || queja.motivo}
         </Dato>
-        <Dato etiqueta="Respuestas del cliente">
-          {respuestasCliente} de {maxRespuestas}
-        </Dato>
+        <Dato etiqueta="Respuestas del cliente">{respuestasCliente}</Dato>
         {queja.respondidaEn && (
           <Dato etiqueta="Última respuesta del negocio">
             {formatDateTime(queja.respondidaEn)}
@@ -312,13 +308,6 @@ const ConversacionQueja = ({ queja, rol, onEnviar, onVolver }) => {
               )}
             </Button>
           </div>
-
-          {respuestasCliente >= maxRespuestas && !esEstadoFinal(queja.estado) && (
-            <p className="queja-compositor-aviso mb-0">
-              El cliente ya usó sus {maxRespuestas} respuestas. Puede cerrar el
-              reclamo, pero no volver a escribir.
-            </p>
-          )}
         </Form>
       )}
     </div>

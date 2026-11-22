@@ -9,7 +9,7 @@
  * Uso: Ruta "/cliente/pedido/:id" → <DetallePedido />
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -454,120 +454,131 @@ const DetallePedido = () => {
 
           <h2 className="h5 detalle-tabla-titulo mb-3">Productos</h2>
 
-          {/* Tabla de productos */}
-          <Table hover responsive className="detalle-tabla">
+          {/* Tabla de productos. Sin `responsive`: en pantallas chicas deja de
+              deslizarse en horizontal y cada producto pasa a ser una tarjeta
+              (ver DetallePedido.css). Cada producto va en su propio <tbody>
+              para que el desglose y la nota queden dentro de su tarjeta. */}
+          <Table hover className="detalle-tabla">
             <thead>
               <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Subtotal</th>
-                {esEntregado && <th>Reseña</th>}
+                <th scope="col">Producto</th>
+                <th scope="col">Cantidad</th>
+                <th scope="col">Precio</th>
+                <th scope="col">Subtotal</th>
+                {esEntregado && <th scope="col">Reseña</th>}
               </tr>
             </thead>
-            <tbody>
-              {pedido.productos.map((prod, idx) => {
-                const tieneDesglose =
-                  (prod.extras && prod.extras.length > 0) ||
-                  (prod.sin && prod.sin.length > 0) ||
-                  (prod.acompanamientos && prod.acompanamientos.length > 0) ||
-                  (prod.condimentos && prod.condimentos.length > 0);
-                return (
-                  <React.Fragment key={idx}>
-                    <tr>
-                      <td>{prod.nombre}</td>
-                      <td>{prod.cantidad}</td>
-                      <td>{formatPrice(prod.precio)}</td>
-                      <td>{formatPrice(prod.precio * prod.cantidad)}</td>
-                      {esEntregado && (
-                        <td>
-                          {prod.productoId ? (
-                            miResenaDe(prod.productoId) ? (
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() =>
-                                  setProductoAResenar({
-                                    id: prod.productoId,
-                                    nombre: prod.nombre,
-                                    resena: miResenaDe(prod.productoId),
-                                  })
-                                }
-                              >
-                                <FaPen className="me-1" aria-hidden="true" />
-                                Editar
-                              </Button>
-                            ) : esElegible(prod.productoId) ? (
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() =>
-                                  setProductoAResenar({
-                                    id: prod.productoId,
-                                    nombre: prod.nombre,
-                                    resena: null,
-                                  })
-                                }
-                              >
-                                <FaStar className="me-1" aria-hidden="true" />
-                                Calificar
-                              </Button>
-                            ) : (
-                              <span className="text-muted small">—</span>
-                            )
+            {pedido.productos.map((prod, idx) => {
+              const tieneDesglose =
+                (prod.extras && prod.extras.length > 0) ||
+                (prod.sin && prod.sin.length > 0) ||
+                (prod.acompanamientos && prod.acompanamientos.length > 0) ||
+                (prod.condimentos && prod.condimentos.length > 0);
+              return (
+                <tbody key={idx} className="detalle-grupo-item">
+                  <tr>
+                    <td
+                      data-label="Producto"
+                      className="detalle-celda-producto"
+                    >
+                      {prod.nombre}
+                    </td>
+                    <td data-label="Cantidad" className="detalle-celda-cantidad">
+                      {prod.cantidad}
+                    </td>
+                    <td data-label="Precio" className="detalle-celda-precio">
+                      {formatPrice(prod.precio)}
+                    </td>
+                    <td data-label="Subtotal" className="detalle-celda-subtotal">
+                      {formatPrice(prod.precio * prod.cantidad)}
+                    </td>
+                    {esEntregado && (
+                      <td data-label="Reseña" className="detalle-celda-resena">
+                        {prod.productoId ? (
+                          miResenaDe(prod.productoId) ? (
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={() =>
+                                setProductoAResenar({
+                                  id: prod.productoId,
+                                  nombre: prod.nombre,
+                                  resena: miResenaDe(prod.productoId),
+                                })
+                              }
+                            >
+                              <FaPen className="me-1" aria-hidden="true" />
+                              Editar
+                            </Button>
+                          ) : esElegible(prod.productoId) ? (
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() =>
+                                setProductoAResenar({
+                                  id: prod.productoId,
+                                  nombre: prod.nombre,
+                                  resena: null,
+                                })
+                              }
+                            >
+                              <FaStar className="me-1" aria-hidden="true" />
+                              Calificar
+                            </Button>
                           ) : (
                             <span className="text-muted small">—</span>
-                          )}
-                        </td>
-                      )}
+                          )
+                        ) : (
+                          <span className="text-muted small">—</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                  {tieneDesglose && (
+                    <tr>
+                      <td
+                        colSpan={esEntregado ? 5 : 4}
+                        className="small text-muted detalle-celda-desglose"
+                      >
+                        {prod.extras?.map((ex) => (
+                          <div key={ex.id}>
+                            › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
+                            {ex.cantidad}
+                          </div>
+                        ))}
+                        {prod.acompanamientos?.map((ac) => (
+                          <div key={ac.id}>
+                            › Acompañamiento: {ac.nombre} (+
+                            {formatPrice(ac.precio)}) x{ac.cantidad}
+                          </div>
+                        ))}
+                        {prod.sin?.map((s) => (
+                          <div key={s}>
+                            › <strong>Sin {s}</strong>
+                          </div>
+                        ))}
+                        {prod.condimentos?.map((c) => (
+                          <div key={c.nombre}>
+                            › {c.nombre} x{c.cantidad}{" "}
+                            <span className="text-muted">(sin costo)</span>
+                          </div>
+                        ))}
+                      </td>
                     </tr>
-                    {tieneDesglose && (
-                      <tr>
-                        <td
-                          colSpan={esEntregado ? 5 : 4}
-                          className="small text-muted bg-crema"
-                        >
-                          {prod.extras?.map((ex) => (
-                            <div key={ex.id}>
-                              › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
-                              {ex.cantidad}
-                            </div>
-                          ))}
-                          {prod.acompanamientos?.map((ac) => (
-                            <div key={ac.id}>
-                              › Acompañamiento: {ac.nombre} (+
-                              {formatPrice(ac.precio)}) x{ac.cantidad}
-                            </div>
-                          ))}
-                          {prod.sin?.map((s) => (
-                            <div key={s}>
-                              › <strong>Sin {s}</strong>
-                            </div>
-                          ))}
-                          {prod.condimentos?.map((c) => (
-                            <div key={c.nombre}>
-                              › {c.nombre} x{c.cantidad}{" "}
-                              <span className="text-muted">(sin costo)</span>
-                            </div>
-                          ))}
-                        </td>
-                      </tr>
-                    )}
-                    {prod.nota && (
-                      <tr>
-                        <td
-                          colSpan={esEntregado ? 5 : 4}
-                          className="small bg-crema"
-                        >
-                          &rsaquo; <strong>Nota para cocina:</strong>{" "}
-                          {prod.nota}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
+                  )}
+                  {prod.nota && (
+                    <tr>
+                      <td
+                        colSpan={esEntregado ? 5 : 4}
+                        className="small detalle-celda-nota"
+                      >
+                        &rsaquo; <strong>Nota para cocina:</strong> {prod.nota}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              );
+            })}
           </Table>
 
           {/* Totales (el total del backend ya incluye el envío) */}

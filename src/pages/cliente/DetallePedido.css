@@ -94,7 +94,25 @@
   padding: 0.8rem 1rem;
 }
 
-.detalle-tabla tbody tr:last-child td {
+/* Desglose de personalización y nota para cocina: ocupan la fila completa y se
+   distinguen con el fondo crema (antes venía de la utilidad `.bg-crema`, que
+   usa `!important` y no se podía neutralizar en la vista de tarjetas). */
+.detalle-tabla tbody td.detalle-celda-desglose,
+.detalle-tabla tbody td.detalle-celda-nota {
+  background-color: var(--color-cream-soft);
+}
+
+/* Cantidad y montos en una sola línea: con cinco columnas en una tablet el
+   símbolo "$" quedaba arriba y el número abajo. */
+.detalle-tabla tbody td.detalle-celda-cantidad,
+.detalle-tabla tbody td.detalle-celda-precio,
+.detalle-tabla tbody td.detalle-celda-subtotal {
+  white-space: nowrap;
+}
+
+/* Sólo la última fila de la tabla lleva el cierre grueso: con un <tbody> por
+   producto, `tr:last-child` se repetiría en cada grupo. */
+.detalle-tabla tbody:last-child tr:last-child td {
   border-bottom: 2px solid var(--color-border-card);
 }
 
@@ -189,4 +207,136 @@
   align-items: baseline;
   gap: 0.5rem;
   font-size: 0.95rem;
+}
+
+/* ============ Tabla de productos en pantallas chicas ============ */
+/* En móvil la tabla no se desliza en horizontal: cada producto pasa a ser una
+   tarjeta con la etiqueta de su columna a la izquierda (data-label). El
+   desglose de personalización y la nota para cocina quedan dentro de la misma
+   tarjeta porque cada producto se agrupa en su propio <tbody>. */
+@media (max-width: 767.98px) {
+  .detalle-tabla {
+    display: block;
+    border: 0;
+    margin-bottom: 0;
+  }
+
+  .detalle-tabla thead {
+    display: none;
+  }
+
+  /* Cada producto es una tarjeta con el mismo lenguaje que los bloques de
+     información de la página (.detalle-info): fondo crema, borde cálido y
+     esquinas de 14px. */
+  .detalle-tabla tbody {
+    display: block;
+    background-color: var(--color-cream-soft);
+    border: 2px solid var(--color-border-card);
+    border-radius: 14px;
+    padding: 0.4rem 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .detalle-tabla tbody:last-child {
+    margin-bottom: 0;
+  }
+
+  .detalle-tabla tbody tr {
+    display: block;
+  }
+
+  /* El hover de Bootstrap pintaría la fila entera dentro de la tarjeta. */
+  .detalle-tabla tbody tr:hover,
+  .detalle-tabla.table-hover > tbody > tr:hover > * {
+    --bs-table-bg-state: transparent;
+    background-color: transparent;
+  }
+
+  .detalle-tabla tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.45rem 0.1rem;
+    text-align: right;
+    border-bottom: 1px dashed var(--color-cream-hover);
+    overflow-wrap: anywhere;
+  }
+
+  /* Los bordes de Bootstrap en cada celda los reemplaza el separador punteado. */
+  .detalle-tabla > :not(caption) > * > * {
+    border-width: 0 0 1px 0;
+    border-bottom-style: dashed;
+    border-bottom-color: var(--color-cream-hover);
+  }
+
+  /* Etiqueta de columna: mismo tratamiento que .detalle-etiqueta (Cliente /
+     Sucursal asignada), en mayúsculas y naranja de marca. */
+  .detalle-tabla tbody td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--color-primary-dark);
+  }
+
+  /* Nombre del producto: etiqueta arriba y nombre a todo el ancho, porque los
+     nombres largos no entran en una fila etiqueta/valor. */
+  .detalle-tabla tbody td.detalle-celda-producto {
+    display: block;
+    padding-top: 0.55rem;
+    font-weight: 700;
+    text-align: left;
+    color: var(--color-text);
+  }
+
+  .detalle-tabla tbody td.detalle-celda-producto::before {
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+
+  /* El subtotal es el dato que el cliente busca: se destaca como en el
+     resumen del carrito. */
+  .detalle-tabla tbody td.detalle-celda-subtotal {
+    font-weight: 700;
+  }
+
+  /* Reseña: la etiqueta queda a la izquierda y el botón a la derecha, sin
+     estirarse a todo el ancho. */
+  .detalle-tabla tbody td.detalle-celda-resena .btn {
+    flex: 0 0 auto;
+  }
+
+  /* Desglose y nota: sin etiqueta y ocupando el ancho completo. */
+  .detalle-tabla tbody td.detalle-celda-desglose,
+  .detalle-tabla tbody td.detalle-celda-nota {
+    display: block;
+    text-align: left;
+    padding-top: 0.35rem;
+    padding-bottom: 0.55rem;
+    background-color: transparent;
+  }
+
+  .detalle-tabla tbody td.detalle-celda-desglose::before,
+  .detalle-tabla tbody td.detalle-celda-nota::before {
+    content: none;
+  }
+
+  .detalle-tabla tbody td.detalle-celda-nota {
+    background-color: var(--color-cream);
+    border-left: 3px solid var(--color-primary);
+    border-radius: 8px;
+    padding: 0.35rem 0.55rem;
+    margin: 0.15rem 0 0.45rem;
+  }
+
+  /* Última celda visible de cada tarjeta sin separador. */
+  .detalle-tabla tbody tr:last-child td,
+  .detalle-tabla tbody:last-child tr:last-child td {
+    border-bottom: 0;
+  }
 }

@@ -57,8 +57,7 @@ const ConversacionQuejaCliente = ({
   // Cuando el negocio resuelve o rechaza, la conversación queda cerrada:
   // el cliente ya no puede enviar más mensajes.
   const bloqueada = esCerrada || esResuelta || esRechazada;
-  const restantes = Math.max(0, (queja.maxRespuestasCliente ?? 5) - (queja.respuestasCliente ?? 0));
-  const puedeResponder = !bloqueada && restantes > 0;
+  const puedeResponder = !bloqueada;
 
   // El primer mensaje es el detalle de la queja original
   const mensajes = [
@@ -145,10 +144,7 @@ const ConversacionQuejaCliente = ({
                   <FaPaperPlane />
                 </Button>
               </div>
-              <div className="d-flex justify-content-between align-items-center mt-2">
-                <span className="text-muted" style={{ fontSize: '0.7rem' }}>
-                  Te quedan {restantes} respuestas.
-                </span>
+              <div className="d-flex justify-content-end align-items-center mt-2">
                 <Button 
                   variant="link" 
                   className="cliente-queja-btn-cerrar" 
@@ -164,9 +160,7 @@ const ConversacionQuejaCliente = ({
               <p className="text-muted small mb-2">
                 {esResuelta
                   ? 'El reclamo fue resuelto y no admite más mensajes.'
-                  : esRechazada
-                    ? 'El reclamo fue rechazado y no admite más mensajes.'
-                    : 'Llegaste al máximo de respuestas permitidas.'}
+                  : 'El reclamo fue rechazado y no admite más mensajes.'}
               </p>
               <Button 
                 variant="link" 
