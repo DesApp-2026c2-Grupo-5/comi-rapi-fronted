@@ -20,7 +20,7 @@ import {
 import {
   queryKeys,
   useElementosPersonalizacionQuery,
-  usePlantillasPersonalizacionQuery,
+  usePlantillasTodasQuery,
 } from '../hooks/queries';
 
 // El contexto y el provider conviven en el mismo archivo por cohesión.
@@ -82,7 +82,7 @@ export const PersonalizacionProvider = ({ children }) => {
     data: plantillas = LISTA_VACIA,
     refetch: refetchPlantillas,
     isStale: plantillasStale,
-  } = usePlantillasPersonalizacionQuery({ enabled: plantillasSolicitadas });
+  } = usePlantillasTodasQuery({ enabled: plantillasSolicitadas });
 
   const elementosRef = useRef(elementos);
   elementosRef.current = elementos;
