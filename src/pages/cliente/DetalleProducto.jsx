@@ -50,19 +50,19 @@ const DetalleProducto = () => {
   const [mensajeResenas, setMensajeResenas] = useState('');
   const [errorResenas, setErrorResenas] = useState('');
 
-  // Catálogo completo: de acá salen el producto, los relacionados y los combos
-  // que incluyen este producto. Comparte la caché con el bootstrap, así que
-  // si el snapshot inicial ya cargó no hay ninguna petición HTTP al entrar al
-  // detalle del producto.
+  // Catálogo completo: de acá salen los relacionados y los combos que incluyen
+  // este producto. El detalle del producto se pide aparte porque la receta sólo
+  // viaja en `GET /api/productos/:id`.
   const catalogoQuery = useProductos();
   const productoDeCatalogo = useMemo(
     () => catalogoQuery.data?.find((p) => String(p.id) === String(id)),
     [catalogoQuery.data, id]
   );
-  // Fallback: solo se consulta el detalle por ID si el producto no está en el
-  // catálogo (dado de baja, o el bootstrap no llegó a tiempo).
+  // El detalle completo (receta + personalización) sólo lo devuelve
+  // `GET /api/productos/:id`; el catálogo base no incluye la receta. Se pide
+  // siempre para que la ficha muestre los ingredientes actualizados.
   const productoQuery = useProducto(id, {
-    enabled: !productoDeCatalogo,
+    staleTime: 0,
   });
 
   const promocionesQuery = usePromociones({ incluirProductos: true });
@@ -76,14 +76,13 @@ const DetalleProducto = () => {
   const estadoResenaQuery = useEstadoResenaProducto(id, {
     enabled: puedeConsultarPropias,
   });
-  // La personalización va por separado (igual que las reseñas), pero solo se
-  // consulta si el producto vino del fallback de detalle y no trae ya su
-  // personalización. Si viene del catálogo/bootstrap, no hay llamada extra.
+  // La personalización viaja en el detalle; sólo se consulta aparte si por
+  // alguna razón no vino incluida.
   const personalizacionQuery = usePersonalizacionProducto(id, {
     enabled: productoQuery.isSuccess && !Array.isArray(productoQuery.data?.personalizacion),
   });
 
-  const producto = productoDeCatalogo || productoQuery.data || null;
+  const producto = productoQuery.data || productoDeCatalogo || null;
   const catalogo = useMemo(() => catalogoQuery.data || [], [catalogoQuery.data]);
   const personalizacion = useMemo(
     () => (Array.isArray(personalizacionQuery.data) ? personalizacionQuery.data : []),

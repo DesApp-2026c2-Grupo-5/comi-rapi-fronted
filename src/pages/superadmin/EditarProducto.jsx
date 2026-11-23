@@ -65,13 +65,13 @@ const EditarProducto = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { notificar } = useNotificaciones();
-  // `staleTime: Infinity` evita que un refetch al volver a la pestaña pise la
-  // edición en curso. Las claves se invalidan cuando el backend avisa cambios.
+  // El formulario necesita la receta actualizada: se pide el detalle completo
+  // al entrar, sin reutilizar el producto base del catálogo.
   const {
     data: producto = null,
     isPending,
     error: errorProducto,
-  } = useProducto(id, { enabled: Boolean(id), staleTime: Infinity });
+  } = useProducto(id, { enabled: Boolean(id), staleTime: 0 });
   const [errorLocal, setErrorLocal] = useState('');
   const [agregandoId, setAgregandoId] = useState(null);
   const [descartado, setDescartado] = useState(false);
