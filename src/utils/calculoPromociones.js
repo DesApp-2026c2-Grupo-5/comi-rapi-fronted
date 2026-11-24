@@ -17,7 +17,9 @@
  *   promos: [{ id, tipo, valor, productoIds: [ids alcanzados] }]
  * Salida:
  *   { descuentoTotal, porPromocion: [{ promocionId, descuento }],
- *     promocionIds: [ids con descuento > 0] }
+ *     porLinea: [{ indice, descuento }], promocionIds: [ids con descuento > 0] }
+ * `porLinea` se usa para que el backend calcule la base del cupón sobre las
+ * mismas líneas que ya recibieron descuento de promoción.
  */
 
 function precioUnitarioDe(linea) {
@@ -86,9 +88,15 @@ export function calcularDescuentoCarrito(lineas, promos) {
     promocionId,
     descuento,
   }));
+  const porLinea = [...mejorPorLinea.entries()].map(([indice, mejor]) => ({
+    indice,
+    descuento: mejor.descuento,
+  }));
+
   return {
     descuentoTotal: porPromocion.reduce((acc, item) => acc + item.descuento, 0),
     porPromocion,
+    porLinea,
     promocionIds: porPromocion.map((item) => item.promocionId),
   };
 }

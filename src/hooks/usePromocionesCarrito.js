@@ -86,6 +86,7 @@ export const usePromocionesCarrito = (items) => {
 
   return {
     descuentoTotal: preview.descuentoTotal,
+    descuentoPorLinea: preview.porLinea || [],
     promocionIds: preview.promocionIds,
     promosAplicadas,
     promosPorLinea,

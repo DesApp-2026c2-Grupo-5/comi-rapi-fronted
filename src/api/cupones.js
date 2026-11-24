@@ -67,6 +67,17 @@ export const obtenerCuponesCliente = async (opciones = {}) => {
 };
 
 /**
+ * Evalúa los cupones del cliente contra el carrito actual. El backend aplica
+ * exactamente la misma regla que al reservar el cupón en el pedido, así que acá
+ * no se reimplementa ninguna condición de elegibilidad ni de descuento.
+ */
+export const evaluarCuponesCarrito = async (datos, opciones = {}) => {
+  const result = await apiPost('/cupones/evaluar-carrito', datos, opciones);
+  if (result.success) return { success: true, data: result.data };
+  return fallo(result);
+};
+
+/**
  * Preview de destinatarios elegibles sin persistir nada.
  * Body: configuración de la emisión (nombre, descuento, productos, categorías,
  * período, máximo, etc.).

@@ -62,6 +62,7 @@ import { useNotificaciones } from "../../hooks/useNotificaciones";
 import { useParametros } from "../../hooks/useParametros";
 import { calcularCostoEnvio } from "../../services/envio";
 import { ESTADOS_PEDIDO } from "../../utils/constants";
+import { formatPrice } from "../../utils/formatters";
 import { rutaActual } from "../../utils/rutas";
 import { dentroDelAvisoDeCierre } from "../../utils/horarios";
 import ItemCarrito from "../../components/cliente/ItemCarrito";
@@ -71,10 +72,7 @@ import ContadorCierre from "../../components/comunes/ContadorCierre";
 import AvisoCierreSucursales from "../../components/comunes/AvisoCierreSucursales";
 import AvisoEstadoVacío from "../../components/comunes/AvisoEstadoVacío.jsx";
 import { consultarDisponibilidad } from "../../api/pedidos";
-import {
-  calcularDescuentoCupon,
-  cuponAlcanzaProducto,
-} from "../../utils/calculoCupones";
+import { evaluarCuponesCarrito } from "../../api/cupones";
 import "./Carrito.css";
 import { leerCupon, guardarCupon, normalizarEmail } from "../../utils/carritoStorage";
 
@@ -107,8 +105,13 @@ const productosParaDisponibilidad = (items) =>
 
 const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
-  const { descuentoTotal, promocionIds, promosAplicadas, promosPorLinea } =
-    usePromocionesCarrito(items);
+  const {
+    descuentoTotal,
+    descuentoPorLinea,
+    promocionIds,
+    promosAplicadas,
+    promosPorLinea,
+  } = usePromocionesCarrito(items);
   const [actualizando, setActualizando] = useState(false);
   const { crearPedido, pedidoActual, pedidos, cambiarEstado } = usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
@@ -155,80 +158,126 @@ const Carrito = () => {
     guardarCupon(emailParaCupon, cuponCodigo.trim());
   }, [cuponCodigo, emailParaCupon]);
 
-  // Descuento de promoción por línea, en el shape que espera el cálculo del
-  // cupón (mapa clave → monto).
-  const descuentosPromoPorLinea = useMemo(() => {
-    const mapa = new Map();
-    promosPorLinea.forEach((promo, clave) => {
-      mapa.set(clave, Number(promo?.descuento) || 0);
-    });
-    return mapa;
-  }, [promosPorLinea]);
+  /* Elegibilidad y descuento de cupones: los decide el backend con la misma
+     función que usa al reservar el cupón en el pedido. El carrito sólo envía una
+     vista previa del carrito y muestra lo que viene en la respuesta; acá no se
+     reimplementan alcance, compra mínima, vigencia ni usos. */
+  const [evaluacionCupones, setEvaluacionCupones] = useState({});
+  const [evaluandoCupones, setEvaluandoCupones] = useState(
+    () => isAuthenticated && cuponesDisponibles.length > 0 && items.length > 0
+  );
 
-  /* Vista previa del cupón: replica lib/services/cupones.js. La compra mínima y
-     la base se miden SÓLO sobre las líneas que el cupón alcanza (producto,
-     productos o categoría); el backend revalida al crear el pedido. */
-  const calculoCupon = useMemo(() => {
-    const vacio = {
-      alcanza: false,
-      motivo: null,
-      subtotalAlcanzado: 0,
-      descuentoPromocionAlcanzado: 0,
-      baseCalculo: 0,
-      monto: 0,
-      minimo: 0,
-      porLinea: new Map(),
-    };
-    if (!cuponSeleccionado) return vacio;
-    // Usos agotados: el backend lo rechaza al confirmar.
-    if ((Number(cuponSeleccionado.usosRestantes) || 0) <= 0) {
-      return { ...vacio, motivo: "sin_usos" };
+  const lineasParaCupones = useMemo(
+    () =>
+      (items || []).map((item) => {
+        const unitario = Number(
+          item.precioUnitarioPersonalizado ?? item.producto?.precio ?? 0
+        );
+        return {
+          productoId: item.producto?.id,
+          subtotal: Math.max(0, unitario * (Number(item.cantidad) || 0)),
+        };
+      }),
+    [items]
+  );
+  const codigosParaCupones = useMemo(
+    () => cuponesDisponibles.map((cupon) => cupon.codigo).filter(Boolean),
+    [cuponesDisponibles]
+  );
+  const firmaEvaluacionCupones = useMemo(
+    () =>
+      JSON.stringify({
+        codigos: codigosParaCupones,
+        lineas: lineasParaCupones,
+        descuentoPromocionesPorLinea: descuentoPorLinea,
+        subtotalItems: total,
+        descuentoPromociones: descuentoTotal,
+      }),
+    [
+      codigosParaCupones,
+      lineasParaCupones,
+      descuentoPorLinea,
+      total,
+      descuentoTotal,
+    ]
+  );
+
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      codigosParaCupones.length === 0 ||
+      items.length === 0
+    ) {
+      setEvaluacionCupones({});
+      setEvaluandoCupones(false);
+      return undefined;
     }
-    return calcularDescuentoCupon(
-      items,
-      descuentosPromoPorLinea,
-      cuponSeleccionado
-    );
-  }, [cuponSeleccionado, items, descuentosPromoPorLinea]);
+    let vivo = true;
+    setEvaluandoCupones(true);
+    evaluarCuponesCarrito(JSON.parse(firmaEvaluacionCupones))
+      .then((respuesta) => {
+        if (!vivo) return;
+        const resultados = respuesta?.data?.resultados || [];
+        setEvaluacionCupones(
+          Object.fromEntries(resultados.map((item) => [item.codigo, item]))
+        );
+      })
+      .catch(() => {
+        if (vivo) setEvaluacionCupones({});
+      })
+      .finally(() => {
+        if (vivo) setEvaluandoCupones(false);
+      });
+    return () => {
+      vivo = false;
+    };
+    // `firmaEvaluacionCupones` representa todo el body de la consulta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, firmaEvaluacionCupones]);
+
+  const evaluacionSeleccionada = evaluacionCupones[cuponCodigo.trim()];
+  const cuponNoAplicable = Boolean(
+    evaluacionSeleccionada && evaluacionSeleccionada.aplicable === false
+  );
 
   const descuentoCuponEstimado = useMemo(() => {
-    if (!cuponSeleccionado) {
+    const codigo = cuponCodigo.trim();
+    const evaluacion = evaluacionCupones[codigo];
+    if (!cuponSeleccionado || !evaluacion) {
       return { monto: 0, codigo: "", nombre: "", detalle: "" };
     }
     const detalleBase =
       cuponSeleccionado.tipoDescuento === "PORCENTAJE"
         ? `${Number(cuponSeleccionado.valorDescuento)}%`
-        : `$${Number(cuponSeleccionado.valorDescuento)}`;
-    let detalle = detalleBase;
-    if (calculoCupon.motivo === "sin_usos") {
-      detalle = "El cupón ya no tiene usos disponibles";
-    } else if (calculoCupon.motivo === "sin_alcance") {
-      detalle = "El cupón no aplica a los productos del carrito";
-    } else if (calculoCupon.motivo === "compra_minima") {
-      detalle = `Compra mínima no alcanzada ($${calculoCupon.minimo})`;
-    }
+        : formatPrice(Number(cuponSeleccionado.valorDescuento));
+    const detalle =
+      evaluacion.aplicable === false
+        ? evaluacion.mensaje || "El cupón no aplica a este carrito"
+        : detalleBase;
     return {
-      monto: calculoCupon.monto,
-      // El código se conserva para validaciones/operaciones del carrito; la
-      // vista del resumen usa sólo el nombre.
-      codigo: cuponSeleccionado.codigo,
+      monto: Number(evaluacion.descuentoEstimado) || 0,
+      codigo,
       nombre: etiquetaCupon(cuponSeleccionado),
       detalle,
     };
-  }, [cuponSeleccionado, calculoCupon]);
+  }, [cuponCodigo, cuponSeleccionado, evaluacionCupones]);
 
-  // Cupones disponibles que alcanzan a cada producto del carrito. Se usa sólo
-  // para ordenar (primero los alcanzados): el aviso vive una sola vez arriba.
-  const cuponesPorProducto = useMemo(() => {
+  // El backend devuelve el reparto por índice de línea. Se traduce a la clave
+  // del ítem para que el precio tachado siga correcto aunque se reordene la
+  // lista (los ítems con cupón se muestran primero).
+  const cuponPorLinea = useMemo(() => {
     const mapa = new Map();
-    (items || []).forEach((item) => {
-      const aplicables = cuponesDisponibles.filter((c) =>
-        cuponAlcanzaProducto(c, item.producto)
+    const porLinea = evaluacionSeleccionada?.porLinea || [];
+    (items || []).forEach((item, indice) => {
+      const descuento = porLinea.find(
+        (linea) => Number(linea.indice) === indice
       );
-      if (aplicables.length > 0) mapa.set(String(item.producto.id), aplicables);
+      if (Number(descuento?.descuento) > 0) {
+        mapa.set(String(item.idLinea || item.producto.id), descuento.descuento);
+      }
     });
     return mapa;
-  }, [items, cuponesDisponibles]);
+  }, [evaluacionSeleccionada, items]);
 
   // Productos del carrito que tienen una promoción aplicada (para el orden
   // de visualización: primero cupón, luego promoción, luego el resto).
@@ -247,25 +296,24 @@ const Carrito = () => {
     return set;
   }, [promocionIds, todasPromociones]);
 
-  // Orden de visualización del carrito: primero los ítems con cupón
-  // aplicado, luego los de promoción y finalmente el resto.
+  // Orden de visualización del carrito: primero los ítems con descuento de
+  // cupón (según el backend), luego los de promoción y finalmente el resto.
   const itemsOrdenado = useMemo(() => {
     const conCupon = [];
     const conPromo = [];
     const resto = [];
     (items || []).forEach((item) => {
-      const pid = String(item.producto.id);
-      const tieneCuponElegible = cuponesPorProducto.has(pid);
-      if (tieneCuponElegible) {
+      const clave = String(item.idLinea || item.producto.id);
+      if (cuponPorLinea.has(clave)) {
         conCupon.push(item);
-      } else if (productosConPromo.has(pid)) {
+      } else if (productosConPromo.has(String(item.producto.id))) {
         conPromo.push(item);
       } else {
         resto.push(item);
       }
     });
     return [...conCupon, ...conPromo, ...resto];
-  }, [items, cuponesPorProducto, productosConPromo]);
+  }, [items, cuponPorLinea, productosConPromo]);
 
   // Pantalla de origen para el login: se vuelve al carrito con lo elegido.
   const origen = rutaActual(location);
@@ -420,6 +468,26 @@ const Carrito = () => {
     ...(cuponCodigo.trim() ? { cuponCodigo: cuponCodigo.trim() } : {}),
   });
 
+  /* El cupón se valida antes de crear el pedido para no gastar un código que el
+     backend rechazaría de todos modos. Si la consulta aún está en vuelo tampoco
+     se confirma: la respuesta del backend es la autoridad. */
+  const cuponListoParaConfirmar = () => {
+    if (!cuponCodigo.trim()) return true;
+    if (evaluandoCupones) {
+      notificar("Estamos validando el cupón. Probá de nuevo en un momento.", "warning");
+      return false;
+    }
+    if (cuponNoAplicable) {
+      notificar(
+        evaluacionSeleccionada?.mensaje ||
+          "El cupón no aplica a los productos del carrito.",
+        "warning"
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleConfirmarPedido = async () => {
     /* Armar el carrito no pide cuenta, confirmarlo sí: hace falta una dirección
        de entrega, que es del usuario. El login se pide acá, y no en el carrito,
@@ -429,6 +497,7 @@ const Carrito = () => {
       navigate("/login", { state: { from: origen } });
       return;
     }
+    if (!cuponListoParaConfirmar()) return;
 
     // Verificar items con opciones eliminadas/desactivadas
     const itemsConRevision = items.filter(
@@ -490,6 +559,7 @@ const Carrito = () => {
       navigate("/login", { state: { from: origen } });
       return;
     }
+    if (!cuponListoParaConfirmar()) return;
 
     // Verificar items con opciones eliminadas/desactivadas
     const itemsConRevision = items.filter(
@@ -682,10 +752,11 @@ const Carrito = () => {
             {isAuthenticated && (
               <CuponeraCarrito
                 cupones={cuponesDisponibles}
-                items={items}
                 productos={productosCatalogo}
                 categorias={categoriasCatalogo}
                 cuponCodigo={cuponCodigo}
+                evaluacion={evaluacionCupones}
+                evaluando={evaluandoCupones}
                 descuento={descuentoCuponEstimado}
                 onAplicar={setCuponCodigo}
                 onQuitar={() => setCuponCodigo("")}
@@ -699,11 +770,8 @@ const Carrito = () => {
                     key={item.idLinea || item.producto.id}
                     item={item}
                     promo={promosPorLinea.get(clave) || null}
-                    descuentoCupon={calculoCupon.porLinea.get(clave) || 0}
-                    tieneCuponAplicado={
-                      calculoCupon.monto > 0 &&
-                      cuponAlcanzaProducto(cuponSeleccionado, item.producto)
-                    }
+                    descuentoCupon={cuponPorLinea.get(clave) || 0}
+                    tieneCuponAplicado={cuponPorLinea.has(clave)}
                   />
                 );
               })}

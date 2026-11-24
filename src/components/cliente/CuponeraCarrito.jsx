@@ -2,21 +2,22 @@ import { Button } from "react-bootstrap";
 import { FaCheckCircle, FaTicketAlt, FaTimes } from "react-icons/fa";
 import PropTypes from "prop-types";
 import { formatPrice } from "../../utils/formatters";
-import { cuponAlcanzaProducto } from "../../utils/calculoCupones";
 import "./CuponeraCarrito.css";
 
 /**
  * Propósito: único aviso de cupones del carrito, arriba de los productos.
  * Contenido: una fila por cupón disponible con su alcance (producto, productos
  *            o categoría), la compra mínima y la acción Aplicar / Quitar.
- * Dependencias: utils/calculoCupones.js, utils/formatters.js, react-icons.
+ * Dependencias: utils/formatters.js, react-icons. La elegibilidad y el
+ *            descuento vienen del backend en `evaluacion`; acá no se calculan.
  * Uso:
  *   <CuponeraCarrito
  *     cupones={cuponesDisponibles}
- *     items={items}
  *     productos={productos}
  *     categorias={categorias}
  *     cuponCodigo={cuponCodigo}
+ *     evaluacion={evaluacionCupones}
+ *     evaluando={evaluandoCupones}
  *     descuento={descuentoCuponEstimado}
  *     onAplicar={setCuponCodigo}
  *     onQuitar={() => setCuponCodigo("")}
@@ -51,9 +52,8 @@ const listarNombres = (nombres) => {
 };
 
 /**
- * Texto del alcance del cupón. Se prefieren los nombres congelados en el
- * snapshot sobre el catálogo actual; si no se encuentran (producto dado de
- * baja), se cae a una descripción genérica.
+ * Texto del alcance del cupón. Es sólo una explicación del snapshot congelado:
+ * la decisión de si aplica la toma el backend con el carrito definitivo.
  */
 const describirAlcance = (cupon, productosPorId, categoriasPorId) => {
   const alcance = cupon?.alcanceSnapshot;
@@ -96,10 +96,11 @@ const describirAlcance = (cupon, productosPorId, categoriasPorId) => {
 
 const CuponeraCarrito = ({
   cupones = [],
-  items = [],
   productos = [],
   categorias = [],
   cuponCodigo = "",
+  evaluacion = {},
+  evaluando = false,
   descuento = null,
   onAplicar,
   onQuitar,
@@ -113,11 +114,6 @@ const CuponeraCarrito = ({
     (categorias || []).map((categoria) => [Number(categoria.id), categoria.nombre])
   );
 
-  const lineasAlcanzadas = (cupon) =>
-    (items || []).filter((item) =>
-      cuponAlcanzaProducto(cupon, item.producto)
-    );
-
   return (
     <section className="cuponera" aria-label="Cupones disponibles">
       <div className="cuponera-cabecera">
@@ -128,16 +124,9 @@ const CuponeraCarrito = ({
       <div className="cuponera-lista">
         {cupones.map((cupon) => {
           const aplicado = cuponCodigo.trim() === cupon.codigo;
-          const alcanzadas = lineasAlcanzadas(cupon);
-          const sinAlcance = alcanzadas.length === 0;
+          const resultado = evaluacion?.[cupon.codigo];
+          const noAplicable = resultado?.aplicable === false;
           const minimo = Number(cupon.compraMinima) || 0;
-          const subtotalAlcanzado = alcanzadas.reduce((suma, item) => {
-            const unitario = Number(
-              item.precioUnitarioPersonalizado ?? item.producto?.precio ?? 0
-            );
-            return suma + Math.max(0, unitario * (Number(item.cantidad) || 0));
-          }, 0);
-          const faltaMinimo = minimo > 0 && subtotalAlcanzado < minimo;
 
           return (
             <div
@@ -163,20 +152,14 @@ const CuponeraCarrito = ({
                   {describirAlcance(cupon, productosPorId, categoriasPorId)}
                 </p>
 
-                {(minimo > 0 || sinAlcance) && (
+                {(minimo > 0 || noAplicable) && (
                   <p className="cuponera-cupon-nota">
-                    {minimo > 0 && (
-                      <span>
-                        Compra mínima {formatPrice(minimo)}
-                        {faltaMinimo && !aplicado
-                          ? ` · te faltan ${formatPrice(minimo - subtotalAlcanzado)}`
-                          : ""}
-                      </span>
+                    {minimo > 0 && !noAplicable && (
+                      <span>Compra mínima {formatPrice(minimo)}</span>
                     )}
-                    {sinAlcance && (
+                    {noAplicable && (
                       <span className="cuponera-cupon-nota--aviso">
-                        {minimo > 0 ? " · " : ""}
-                        Ningún producto de tu carrito entra en el alcance.
+                        {resultado.mensaje || "Este cupón no aplica a tu carrito."}
                       </span>
                     )}
                   </p>
@@ -199,7 +182,7 @@ const CuponeraCarrito = ({
                     variant="primary"
                     size="sm"
                     className="cuponera-aplicar rounded-pill"
-                    disabled={sinAlcance || faltaMinimo}
+                    disabled={noAplicable || evaluando}
                     onClick={() => onAplicar?.(cupon.codigo)}
                   >
                     Aplicar
@@ -217,14 +200,16 @@ const CuponeraCarrito = ({
 CuponeraCarrito.propTypes = {
   /** Cupones disponibles del cliente (estado DISPONIBLE y activos). */
   cupones: PropTypes.arrayOf(PropTypes.object),
-  /** Líneas del carrito, para saber qué alcanza cada cupón. */
-  items: PropTypes.arrayOf(PropTypes.object),
   /** Catálogo, para resolver nombres del alcance. */
   productos: PropTypes.arrayOf(PropTypes.object),
   /** Categorías, para resolver nombres del alcance. */
   categorias: PropTypes.arrayOf(PropTypes.object),
   /** Código del cupón aplicado. */
   cuponCodigo: PropTypes.string,
+  /** Evaluación del backend por código: aplicable, motivo y mensaje. */
+  evaluacion: PropTypes.objectOf(PropTypes.object),
+  /** La consulta de elegibilidad está en vuelo. */
+  evaluando: PropTypes.bool,
   /** Descuento estimado del cupón aplicado. */
   descuento: PropTypes.shape({
     monto: PropTypes.number,
