@@ -19,9 +19,9 @@
 /* Título grande del hero (COMI / RAPI) */
 .inicio-hero-titulo {
   color: var(--color-on-primary);
-  font-weight: 900;
+  font-weight: 800;
   font-size: clamp(3rem, 8vw, 5.5rem);
-  letter-spacing: 1px;
+  letter-spacing: -0.02em;
   line-height: 1;
   /* Sombra clara: con tinta oscura, la sombra negra anterior ensuciaba las
      letras en vez de separarlas del fondo. */
@@ -232,8 +232,8 @@
   color: var(--color-hero-cta-text);
   border: none;
   border-radius: 50px;
-  font-weight: 800;
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 1px;
   padding: 0.9rem 2.8rem;
   font-size: 1.1rem;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
@@ -251,8 +251,8 @@
    escalones y todo se leía con el mismo volumen. */
 .seccion-titulo {
   font-size: clamp(1.5rem, 2.6vw, 2rem);
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   line-height: 1.15;
   color: var(--color-text);
   text-align: center;
@@ -264,7 +264,8 @@
    el naranja tanto en claro como en oscuro. */
 .seccion-titulo-envio {
   font-size: clamp(1.75rem, 3.4vw, 2.5rem);
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--color-on-primary);
 }
@@ -346,8 +347,8 @@
   color: var(--color-hero-cta-text);
   border: none;
   border-radius: 50px;
-  font-weight: 800;
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 1px;
   padding: 0.9rem 2.4rem;
   font-size: 1.05rem;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);

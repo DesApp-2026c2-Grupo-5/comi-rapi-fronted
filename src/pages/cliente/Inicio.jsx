@@ -21,7 +21,7 @@
  *     con <PromocionCard />.
  *  5. Envío a domicilio: fondo naranja, título, subtítulo y botón "PIDE AHORA" con bicicleta.
  *  6. Footer oscuro: ya lo provee el componente global <Footer /> (bg-dark) en App.jsx.
- *  Extra: toda la customización visual vive en ./Inicio.css.
+ * Extra: toda la customización visual vive en ./Inicio.css.
  */
 
 import { Link } from 'react-router-dom';

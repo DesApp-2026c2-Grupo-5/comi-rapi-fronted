@@ -292,6 +292,10 @@ const ReporteNegocio = () => {
     dir: 'asc',
   });
   const [rankingActivo, setRankingActivo] = useState('masVendidos');
+  // Listas largas (sin stock / stock crítico): se muestran los primeros 5 y un
+  // botón "Ver más" despliega el resto, para no alargar el panel.
+  const [verMasSinStock, setVerMasSinStock] = useState(false);
+  const [verMasCritico, setVerMasCritico] = useState(false);
 
   // Un rango al revés no se pide al backend: se explica en pantalla.
   const rangoInvalido = desde > hasta;
@@ -965,40 +969,60 @@ const ReporteNegocio = () => {
               {datos.stock.sinStock.length === 0 ? (
                 <SinDatos>No hay productos sin stock.</SinDatos>
               ) : (
-                <Table
-                  striped
-                  bordered
-                  hover
-                  responsive
-                  className="tabla-admin mb-0"
-                >
-                  <thead className="table-dark">
-                    <tr>
-                      {esGlobal ? <th>Sucursal</th> : null}
-                      <th>Producto</th>
-                      <th>Cantidad</th>
-                      <th>Disponibilidad</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {datos.stock.sinStock.map((fila) => (
-                      <tr key={`${fila.sucursalId}-${fila.productoId}`}>
-                        {esGlobal ? (
-                          <td data-label="Sucursal">{fila.sucursal}</td>
-                        ) : null}
-                        <td data-label="Producto">{fila.producto}</td>
-                        <td data-label="Cantidad">
-                          {formatearEntero(fila.cantidad)}
-                        </td>
-                        <td data-label="Disponibilidad">
-                          <Badge bg={fila.disponible ? 'warning' : 'danger'}>
-                            {fila.disponible ? 'Sin stock' : 'No disponible'}
-                          </Badge>
-                        </td>
+                <>
+                  <Table
+                    striped
+                    bordered
+                    hover
+                    responsive
+                    className="tabla-admin mb-0"
+                  >
+                    <thead className="table-dark">
+                      <tr>
+                        {esGlobal ? <th>Sucursal</th> : null}
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Disponibilidad</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {(verMasSinStock
+                        ? datos.stock.sinStock
+                        : datos.stock.sinStock.slice(0, 5)
+                      ).map((fila) => (
+                        <tr key={`${fila.sucursalId}-${fila.productoId}`}>
+                          {esGlobal ? (
+                            <td data-label="Sucursal">{fila.sucursal}</td>
+                          ) : null}
+                          <td data-label="Producto">{fila.producto}</td>
+                          <td data-label="Cantidad">
+                            {formatearEntero(fila.cantidad)}
+                          </td>
+                          <td data-label="Disponibilidad">
+                            <Badge bg={fila.disponible ? 'warning' : 'danger'}>
+                              {fila.disponible ? 'Sin stock' : 'No disponible'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                  {datos.stock.sinStock.length > 5 ? (
+                    <div className="text-center mt-2">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="reporte-ver-mas"
+                        onClick={() => setVerMasSinStock((v) => !v)}
+                        aria-expanded={verMasSinStock}
+                      >
+                        {verMasSinStock
+                          ? 'Ver menos'
+                          : `Ver más (${datos.stock.sinStock.length - 5})`}
+                      </Button>
+                    </div>
+                  ) : null}
+                </>
               )}
             </Card.Body>
           </Card>
@@ -1051,7 +1075,10 @@ const ReporteNegocio = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {datos.stock.critico.map((fila) => (
+                      {(verMasCritico
+                        ? datos.stock.critico
+                        : datos.stock.critico.slice(0, 5)
+                      ).map((fila) => (
                         <tr key={`${fila.sucursalId}-${fila.productoId}`}>
                           {esGlobal ? (
                             <td data-label="Sucursal">{fila.sucursal}</td>
@@ -1069,6 +1096,21 @@ const ReporteNegocio = () => {
                       ))}
                     </tbody>
                   </Table>
+                  {datos.stock.critico.length > 5 ? (
+                    <div className="text-center mt-2">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="reporte-ver-mas"
+                        onClick={() => setVerMasCritico((v) => !v)}
+                        aria-expanded={verMasCritico}
+                      >
+                        {verMasCritico
+                          ? 'Ver menos'
+                          : `Ver más (${datos.stock.critico.length - 5})`}
+                      </Button>
+                    </div>
+                  ) : null}
                 </>
               )}
             </Card.Body>

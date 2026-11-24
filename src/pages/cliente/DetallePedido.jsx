@@ -375,15 +375,26 @@ const DetallePedido = () => {
           <h1 className="h4 mb-0">Pedido #{pedido.id}</h1>
           <div className="d-flex align-items-center gap-2 flex-wrap">
             {esConfirmado && (
-              <Button
-                variant="outline-primary"
-                size="sm"
+              <button
+                type="button"
+                className={`boton-recibo${
+                  descargandoRecibo ? " boton-recibo-cargando" : ""
+                }`}
                 onClick={descargarRecibo}
                 disabled={descargandoRecibo}
+                aria-busy={descargandoRecibo}
               >
-                <FaDownload className="me-1" aria-hidden="true" />
-                {descargandoRecibo ? "Generando…" : "Descargar recibo"}
-              </Button>
+                <span className="boton-recibo-ico" aria-hidden="true">
+                  {descargandoRecibo ? (
+                    <span className="boton-recibo-spinner" />
+                  ) : (
+                    <FaDownload />
+                  )}
+                </span>
+                <span className="boton-recibo-texto">
+                  {descargandoRecibo ? "Generando…" : "Descargar recibo"}
+                </span>
+              </button>
             )}
             <Badge
               bg={VARIANTE_ESTADO_PEDIDO[pedido.estado] || "secondary"}

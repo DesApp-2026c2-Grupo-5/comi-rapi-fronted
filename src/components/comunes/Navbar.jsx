@@ -274,9 +274,12 @@ const Navbar = () => {
      aria-label. La misma copia se usa en la fila superior de móvil y en la
      zona de acciones de escritorio. */
   const esPanel = isAdmin || isSuperadmin;
-  const IconoZona = esPanel ? FaUserShield : FaShoppingCart;
-  const textoZona = esPanel ? 'Panel de administración' : 'Zona cliente';
-  const distintivoZona = (
+  const IconoZona = FaUserShield;
+  const textoZona = 'Panel de administración';
+  // El distintivo de zona sólo se muestra en el panel (escudo). Para el cliente
+  // e invitado no se dibuja: su carrito junto a la campana resultaba redundante
+  // con el ícono de Carrito del menú.
+  const distintivoZona = esPanel ? (
     <span
       className="navbar-zona-icono"
       role="img"
@@ -285,7 +288,7 @@ const Navbar = () => {
     >
       <IconoZona aria-hidden="true" />
     </span>
-  );
+  ) : null;
   const destinoInicio = isAdmin
     ? '/admin/dashboard'
     : isSuperadmin

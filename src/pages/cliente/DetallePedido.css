@@ -23,8 +23,8 @@
 }
 
 .detalle-card-header h4 {
-  font-weight: 900;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -33,7 +33,7 @@
   border-radius: 50px;
   padding: 0.5em 1.1em;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -50,7 +50,7 @@
   display: block;
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary-dark);
   margin-bottom: 0.25rem;
@@ -80,7 +80,7 @@
 
 /* ============ Título de productos ============ */
 .detalle-tabla-titulo {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--color-text);
 }
 
@@ -94,7 +94,7 @@
   color: var(--color-on-fill);
   text-transform: uppercase;
   font-size: 0.75rem;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   border: none;
   padding: 0.85rem 1rem;
 }
@@ -147,7 +147,7 @@
 
 .detalle-total .text-danger {
   font-size: 1.35rem;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 /* ============ Desglose Subtotal / Envío ============ */
@@ -162,7 +162,7 @@
 
 /* ============ Estado "no encontrado" ============ */
 .detalle-no-encontrado {
-  font-weight: 900;
+  font-weight: 800;
   color: var(--color-text);
 }
 
@@ -172,7 +172,7 @@
   border: 1px solid var(--color-border-cream);
   border-radius: 50px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   padding: 0.7rem 2rem;
   box-shadow: 0 6px 16px rgba(240, 127, 16, 0.2);
 }
@@ -289,7 +289,7 @@
     flex-shrink: 0;
     font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     text-align: left;
     color: var(--color-primary-dark);
@@ -349,5 +349,91 @@
   .detalle-tabla tbody tr:last-child td,
   .detalle-tabla tbody:last-child tr:last-child td {
     border-bottom: 0;
+  }
+}
+
+/* ============ Botón "Descargar recibo" ============ */
+/* Vive en el header naranja de la tarjeta, así que toma el color de superficie
+   (no el naranja) para contrastar: pastilla clara con texto naranja oscuro, un
+   ícono en círculo y un leve levantamiento al pasar el mouse. */
+.boton-recibo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1.1rem 0.5rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50px;
+  background-color: var(--color-surface);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.boton-recibo:hover {
+  background-color: var(--color-cream);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.boton-recibo:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.14);
+}
+
+.boton-recibo:focus-visible {
+  outline: 3px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+.boton-recibo:disabled {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.boton-recibo-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  flex-shrink: 0;
+}
+
+.boton-recibo-cargando .boton-recibo-ico {
+  background-color: var(--color-primary-dark);
+}
+
+.boton-recibo-spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: var(--color-on-primary);
+  border-radius: 50%;
+  animation: boton-recibo-girar 0.7s linear infinite;
+}
+
+@keyframes boton-recibo-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boton-recibo {
+    transition: none;
+  }
+  .boton-recibo-spinner {
+    animation-duration: 1.6s;
   }
 }

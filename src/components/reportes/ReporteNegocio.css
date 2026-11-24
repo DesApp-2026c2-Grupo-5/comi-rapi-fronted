@@ -327,3 +327,20 @@
     font-size: 1.3rem;
   }
 }
+
+/* Botón "Ver más / Ver menos" de las listas de sin stock y stock crítico. */
+.reporte-ver-mas {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  text-decoration: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  transition: background-color 0.2s ease;
+}
+
+.reporte-ver-mas:hover,
+.reporte-ver-mas:focus {
+  background-color: var(--color-cream);
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}

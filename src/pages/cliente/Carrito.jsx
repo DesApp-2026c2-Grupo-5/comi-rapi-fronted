@@ -167,6 +167,16 @@ const Carrito = () => {
     () => isAuthenticated && cuponesDisponibles.length > 0 && items.length > 0
   );
 
+  // Si el código guardado ya no coincide con un cupón disponible (se agotaron
+  // sus usos o fue dado de baja), se limpia: no se reenvía al backend ni se
+  // muestra como aplicado, y el cliente puede seguir comprando sin descuento.
+  useEffect(() => {
+    if (cuponCodigo.trim() && !cuponSeleccionado) {
+      setCuponCodigo("");
+      guardarCupon(emailParaCupon, "");
+    }
+  }, [cuponSeleccionado, cuponCodigo, emailParaCupon]);
+
   const lineasParaCupones = useMemo(
     () =>
       (items || []).map((item) => {
@@ -465,7 +475,15 @@ const Carrito = () => {
     costoEnvio: costoEnvioActual,
     direccion,
     ...(promocionIds.length > 0 ? { promocionIds } : {}),
-    ...(cuponCodigo.trim() ? { cuponCodigo: cuponCodigo.trim() } : {}),
+    // Sólo se envía el código si aún corresponde a un cupón disponible del
+    // cliente. Un cupón ya usado (USADO, usosPermitidos agotados) se filtra de
+    // `cuponesDisponibles`, así que `cuponSeleccionado` queda undefined y no
+    // debe reenviarse: de lo contrario el backend rechaza todo el pedido con
+    // "El cupón ya alcanzó su límite de usos" aunque el carrito no tenga nada
+    // que ver con ese cupón.
+    ...(cuponSeleccionado && cuponCodigo.trim()
+      ? { cuponCodigo: cuponCodigo.trim() }
+      : {}),
   });
 
   /* El cupón se valida antes de crear el pedido para no gastar un código que el

@@ -22,8 +22,8 @@
   align-items: center;
   gap: 0.55rem;
   color: var(--color-on-primary) !important;
-  font-weight: 900;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   text-decoration: none;
   transition: transform 0.25s ease;
 }
@@ -153,6 +153,10 @@
   border-radius: 14px;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
   padding: 0.35rem;
+  /* Mismo fondo que la hoja del responsive (el offcanvas usa --bs-body-bg): así
+     el desplegable de escritorio se ve igual que en móvil y el texto no queda
+     sobre el blanco fijo de Bootstrap en modo oscuro. */
+  background-color: var(--bs-body-bg);
 }
 
 .navbar-comirapi .nav-submenu-enlace,
@@ -166,6 +170,8 @@
   min-height: 44px;
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
+  /* Mismo color que la hoja del responsive (.nav-hoja-enlace): --color-text-brown,
+     que en oscuro es un tono claro y se lee bien sobre el fondo oscuro. */
   color: var(--color-text-brown);
   font-weight: 600;
   text-decoration: none;
@@ -195,6 +201,29 @@
 .navbar-comirapi .nav-submenu-enlace:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
+}
+
+/* Modo oscuro del desplegable de ESCRITORIO.
+   En el offcanvas del responsive los tokens se resuelven bien, pero en el
+   Dropdown de la barra los ítems quedaban claros sobre un fondo que no contrasta
+   y no se leían. Se fijan colores concretos con !important (el CSS de Bootstrap
+   se empaqueta después de esta hoja) para garantizar el mismo look que la hoja
+   del responsive: tarjeta oscura elevada + texto claro. El estado activo se deja
+   intacto (fondo naranja + texto sobre fill). */
+:root[data-bs-theme='dark'] .navbar-comirapi .nav-submenu {
+  background-color: #2e2820 !important;
+  border-color: #6b4f2d !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55) !important;
+}
+
+:root[data-bs-theme='dark'] .navbar-comirapi .nav-submenu-enlace:not(.activo),
+:root[data-bs-theme='dark'] .navbar-comirapi .nav-submenu-enlace:not(.activo):hover,
+:root[data-bs-theme='dark'] .navbar-comirapi .nav-submenu-enlace:not(.activo):focus {
+  color: #f5ede2 !important;
+}
+
+:root[data-bs-theme='dark'] .navbar-comirapi .nav-submenu-enlace:not(.activo):hover {
+  background-color: #383026 !important;
 }
 
 /* ============ Contador del carrito ============ */
@@ -313,7 +342,7 @@
   border: 2px solid rgba(58, 36, 16, 0.32);
   font-weight: 700;
   font-size: 0.9rem;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   text-decoration: none;
   transition:

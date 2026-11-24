@@ -94,7 +94,7 @@
   --color-mp-active: #0079b8;
 
   /* ============ Tipografía ============ */
-  --font-display: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* ============ Forma: radios ============ */
@@ -215,9 +215,8 @@
 }
 
 /* ============ Tipografía base ============ */
-/* El cuerpo usa Inter (legible en tamaños chicos); los títulos y la marca
-   usan Outfit, más geométrica, con pesos fuertes. Sin Outfit cargada (offline)
-   cae a la pila del sistema sin romper el layout. */
+/* Inter para todo: una sola familia, jerarquía por peso y tamaño.
+   Sin Fraunces cargada (offline) cae a la pila del sistema sin romper el layout. */
 body {
   font-family: var(--font-body);
   color: var(--color-text);
@@ -242,17 +241,17 @@ h6,
 .seccion-titulo,
 .navbar-brand-comirapi {
   font-family: var(--font-display);
+  font-weight: 700;
 }
 
-/* Títulos grandes con tracking negativo: Outfit se lee más moderna y compacta
-   a tamaños display (el tracking positivo queda reservado a la identidad de
-   marca tipo logotipo, como .inicio-hero-titulo o .navbar-brand-comirapi). */
+/* Títulos grandes con tracking negativo: Inter se lee limpia y moderna
+   a tamaños display. El tracking ajustado evita que se vea suelto. */
 h1,
 h2,
 .display-1,
 .display-2,
 .display-3 {
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   /* Reparte las líneas para evitar viudas en títulos largos. */
   text-wrap: balance;
 }

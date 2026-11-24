@@ -24,11 +24,10 @@
   justify-content: center;
   gap: 0.5rem;
   border-radius: 999px;
-  /* Outfit en los botones: los labels son cortos y la geométrica de marca
-     hace el conjunto más propio que la Inter del cuerpo. */
+  /* Inter en los botones: coherencia total con el resto de la UI. */
   font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   /* `touch-action: manipulation` evita el retardo de doble toque al zoomear en
      móvil sin desactivar el zoom real del usuario. */
   touch-action: manipulation;
@@ -260,7 +259,7 @@
    grande. Los tres tonos elegidos pasan 4.5:1 sobre la tarjeta. */
 .panel-admin-valor {
   font-size: clamp(2.25rem, 5vw, 2.75rem);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   margin-bottom: 0;
   /* Cifras de ancho fijo: el número no baila cuando el socket actualiza el
@@ -281,7 +280,7 @@
 .panel-admin-rotulo {
   color: var(--color-text-muted);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   margin-bottom: 0.25rem;
 }

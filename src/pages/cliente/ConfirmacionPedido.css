@@ -13,8 +13,8 @@
 }
 
 .confirmacion-titulo {
-  font-weight: 900;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--color-text);
 }
 
