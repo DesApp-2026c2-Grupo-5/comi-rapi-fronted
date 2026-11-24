@@ -31,7 +31,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Container, Button, Row, Col, Alert, Form, Offcanvas } from 'react-bootstrap';
-import { FaSortAmountDown, FaFilter, FaCheck } from 'react-icons/fa';
+import { FaSortAmountDown, FaFilter, FaCheck, FaUtensils } from 'react-icons/fa';
 import {
   useCategorias,
   useProductos,
@@ -302,21 +302,37 @@ const Catalogo = () => {
           aviso del carrito. Se usa `light` y no `warning` (como el del carrito)
           para no competir con los productos: acá es información, no un paso
           obligatorio. */}
-      {!isAuthenticated && (
-        <Alert
-          variant="light"
-          className="catalogo-aviso-invitado text-center mb-4"
+{!isAuthenticated && (
+  <div className="catalogo-aviso-invitado" role="status">
+    <div className="catalogo-aviso-invitado-icono" aria-hidden="true">
+      <FaUtensils />
+    </div>
+    <div className="catalogo-aviso-invitado-contenido">
+      <p className="catalogo-aviso-invitado-titulo">
+        ¿Listo para pedir?
+      </p>
+      <p className="catalogo-aviso-invitado-texto">
+        Iniciá sesión o creá tu cuenta para confirmar la compra.
+      </p>
+      <div className="catalogo-aviso-invitado-acciones">
+        <Link
+          to="/login"
+          state={{ from: origen }}
+          className="btn btn-sm btn-primary catalogo-aviso-invitado-btn"
         >
-          <Link to="/login" state={{ from: origen }} className="alert-link">
-            Iniciá sesión
-          </Link>{" "}
-          o{" "}
-          <Link to="/registro" state={{ from: origen }} className="alert-link">
-            registrate
-          </Link>{" "}
-          para confirmar la compra.
-        </Alert>
-      )}
+          Iniciá sesión
+        </Link>
+        <Link
+          to="/registro"
+          state={{ from: origen }}
+          className="btn btn-sm btn-outline-primary catalogo-aviso-invitado-btn"
+        >
+          Creá tu cuenta
+        </Link>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Aviso de filtro por promoción (viene de "Aprovechar" en la home).
           Se quita el filtro con el botón, que limpia el query param. */}

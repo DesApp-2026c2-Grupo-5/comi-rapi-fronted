@@ -36,6 +36,85 @@
   background-color: var(--color-primary-hover);
 }
 
+/* ============ Aviso de sesión para confirmar compra ============ */
+.carrito-aviso-sesion {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border: 3px solid var(--color-primary);
+  border-radius: 16px;
+  background-color: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  animation: aviso-pulso 2s ease-in-out infinite;
+}
+
+@keyframes aviso-pulso {
+  0%, 100% { box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 12%, transparent); }
+  50% { box-shadow: 0 6px 30px color-mix(in srgb, var(--color-primary) 25%, transparent); }
+}
+
+.carrito-aviso-sesion-icono {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 1.75rem;
+  animation: icono-salto 1.5s ease-in-out infinite;
+}
+
+@keyframes icono-salto {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.carrito-aviso-sesion-contenido {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.carrito-aviso-sesion-titulo {
+  margin: 0 0 0.35rem;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--color-text);
+  letter-spacing: 0.3px;
+}
+
+.carrito-aviso-sesion-texto {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.carrito-aviso-sesion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.carrito-aviso-sesion-btn {
+  font-weight: 700;
+  border-radius: 50px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.carrito-aviso-sesion-btn:hover {
+  background-color: var(--color-primary-hover);
+  color: var(--color-on-primary);
+}
+
 /* ============ Botón gestionar direcciones ============ */
 .carrito-boton-direcciones {
   --bs-btn-bg: var(--color-surface);

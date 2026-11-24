@@ -569,28 +569,39 @@ const Carrito = () => {
           {/* Aviso para el invitado: el pedido necesita una cuenta. Se lo dice
               antes de que llegue al botón, con los dos enlaces al login y al
               registro, y no con un error. */}
-          {!isAuthenticated && (
-            <Col xs={12} className="mb-3">
-              <Alert variant="warning" className="mb-0" role="status">
-                <Link
-                  to="/login"
-                  state={{ from: origen }}
-                  className="alert-link"
-                >
-                  Iniciá sesión
-                </Link>{" "}
-                o{" "}
-                <Link
-                  to="/registro"
-                  state={{ from: origen }}
-                  className="alert-link"
-                >
-                  registrate
-                </Link>{" "}
-                para confirmar la compra.
-              </Alert>
-            </Col>
-          )}
+{!isAuthenticated && (
+  <Col xs={12} className="mb-4">
+    <div className="carrito-aviso-sesion" role="status">
+      <div className="carrito-aviso-sesion-icono" aria-hidden="true">
+        <FaUtensils />
+      </div>
+      <div className="carrito-aviso-sesion-contenido">
+        <p className="carrito-aviso-sesion-titulo">
+          Estás a un paso de confirmar tu pedido
+        </p>
+        <p className="carrito-aviso-sesion-texto">
+          Iniciá sesión o creá tu cuenta para finalizar la compra.
+        </p>
+        <div className="carrito-aviso-sesion-acciones">
+          <Link
+            to="/login"
+            state={{ from: origen }}
+            className="btn btn-primary carrito-aviso-sesion-btn"
+          >
+            Iniciá sesión
+          </Link>
+          <Link
+            to="/registro"
+            state={{ from: origen }}
+            className="btn btn-outline-primary carrito-aviso-sesion-btn"
+          >
+            Creá tu cuenta
+          </Link>
+        </div>
+      </div>
+    </div>
+  </Col>
+)}
 
           {/* Aviso: sin dirección no se puede confirmar */}
           {isAuthenticated && items.length > 0 && direcciones.length === 0 && (
