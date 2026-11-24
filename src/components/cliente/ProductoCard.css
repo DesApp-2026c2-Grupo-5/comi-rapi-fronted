@@ -68,12 +68,13 @@
 }
 
 /* Pie de la tarjeta: precio + botón. Por defecto (vertical) se apilan con el
-   botón de ancho completo; en horizontal pasan a una fila al pie de la tarjeta. */
-.producto-card .producto-pie {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-}
+    botón de ancho completo; en horizontal pasan a una fila al pie de la tarjeta. */
+  .producto-card .producto-pie {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 
 /* ============ Variante horizontal (1 y 2 columnas) ============ */
 /* Se aplica a todo lo que está por debajo de `lg`: en 1 y 2 columnas la tarjeta
@@ -195,7 +196,7 @@
     align-items: flex-end;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: 0.75rem;
     font-size: clamp(1rem, 3.9cqw, 1.4rem);
     min-height: 2.7em;
   }
@@ -242,6 +243,13 @@
 
   .producto-card--horizontal .producto-card-media {
     flex-basis: 48%;
+  }
+
+  /* En 1 columna el precio y el botón comparten la fila y el botón es circular
+     (sin texto). Con el gap anterior quedaban pegados; se les da más aire para
+     que no se toquen en pantallas angostas. */
+  .producto-card--horizontal .producto-pie {
+    gap: 1rem;
   }
 }
 

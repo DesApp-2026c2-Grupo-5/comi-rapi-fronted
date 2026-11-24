@@ -94,22 +94,9 @@
   font-size: 1.05rem;
 }
 
-/* ============ Precio con descuento ============ */
+/* ============ Subtotal con descuento ============ */
 /* Mismo tratamiento que el catálogo: el original tachado y el final destacado.
-   En el 2x1 el precio unitario no cambia, así que el tachado aparece sólo en el
-   subtotal (el ahorro depende de la cantidad, no de la unidad). */
-
-.item-carrito-precio-tachado {
-  color: var(--color-text-muted);
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-}
-
-.item-carrito-precio-final {
-  color: var(--color-text);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
+   En el 2x1 el ahorro depende de la cantidad, no de la unidad. */
 
 .item-carrito-subtotal-tachado {
   display: block;

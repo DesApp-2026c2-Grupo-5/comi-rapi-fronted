@@ -65,17 +65,12 @@ const ItemCarrito = ({
 
   /* Descuento de ESTA línea: promoción + la parte del cupón que le toca. Los
      dos importes los calcula el mismo módulo que el total del carrito, así el
-     precio que se muestra y el resumen del pedido no pueden discrepar. Un 2x1
+     subtotal que se muestra y el resumen del pedido no pueden discrepar. Un 2x1
      no baja el precio unitario —el ahorro depende de la cantidad—, así que ahí
      sólo se tacha el subtotal; el precio por unidad se muestra tal cual. */
   const descuentoPromo = Number(promo?.descuento) || 0;
   const descuentoTotalLinea =
     descuentoPromo + (Number(descuentoCupon) || 0);
-  const esDosPorUno = promo?.tipo === "DOS_POR_UNO";
-  const precioUnitarioConDescuento =
-    !esDosPorUno && descuentoTotalLinea > 0 && cantidad > 0
-      ? Math.max(0, precioUnitario - descuentoTotalLinea / cantidad)
-      : null;
   const subtotalConDescuento =
     descuentoTotalLinea > 0 ? Math.max(0, subtotal - descuentoTotalLinea) : null;
   const tienePersonalizacion =
@@ -174,25 +169,6 @@ const ItemCarrito = ({
                 {textoEtiqueta}
               </span>
             )}
-            <div className="item-carrito-precio text-muted small">
-              Precio:{" "}
-              {precioUnitarioConDescuento !== null ? (
-                <>
-                  <s className="item-carrito-precio-tachado" aria-hidden="true">
-                    {formatPrice(precioUnitario)}
-                  </s>{" "}
-                  <span className="item-carrito-precio-final">
-                    <span className="visually-hidden">con descuento: </span>
-                    {formatPrice(precioUnitarioConDescuento)}
-                  </span>
-                </>
-              ) : (
-                formatPrice(precioUnitario)
-              )}
-              {precioUnitario !== producto.precio
-                ? ` (base ${formatPrice(producto.precio)})`
-                : ""}
-            </div>
             {tienePersonalizacion && (
               <ul className="item-carrito-desglose small mt-1">
                 {personalizacion.extras?.map((ex) => (
