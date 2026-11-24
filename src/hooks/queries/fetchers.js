@@ -319,12 +319,12 @@ export const fetchPlantillasPersonalizacion = ({
   categoriaId = null,
   signal,
 } = {}) => {
-  // Nunca consultar el backend si categoriaId no es un número válido.
-  // Evita enviar [object Object], undefined o cualquier valor no numérico
-  // que provocaría HTTP 400 en /personalizacion/categorias?categoriaId=...
+  // `categoriaId` nulo significa "todas las categorías": es la lectura que usa
+  // el panel de personalización. Sólo se corta ante un valor presente pero no
+  // numérico, que provocaría un 400 en /personalizacion/categorias.
   if (
-    categoriaId === null ||
-    categoriaId === undefined ||
+    categoriaId !== null &&
+    categoriaId !== undefined &&
     !Number.isFinite(categoriaId)
   ) {
     return Promise.resolve([]);

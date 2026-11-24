@@ -142,7 +142,7 @@ const GestionSucursales = () => {
                     onClick={() => handleEliminar(sucursal.id, sucursal.nombre)}
                   >
                     <FaTrashAlt className="me-1" aria-hidden="true" />
-                    Eliminar
+                    Dar de baja
                   </Button>
                 </td>
               </tr>
@@ -153,13 +153,13 @@ const GestionSucursales = () => {
 
       <ConfirmarModal
         mostrar={Boolean(sucursalAEliminar)}
-        titulo="Eliminar sucursal"
+        titulo="Dar de baja sucursal"
         mensaje={
           sucursalAEliminar
-            ? `¿Seguro que querés eliminar la sucursal "${sucursalAEliminar.nombre}"?`
+            ? `¿Seguro que querés dar de baja la sucursal "${sucursalAEliminar.nombre}"?`
             : ''
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setSucursalAEliminar(null)}

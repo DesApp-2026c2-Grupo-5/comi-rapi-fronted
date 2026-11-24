@@ -153,18 +153,28 @@ export const forzarReconexion = () => {
   // registrados vean la marca durante este mismo evento `connect`.
   socket.once('connect', limpiarMarca);
   socket.once('connect_error', limpiarMarca);
-  if (socket.connected) {
-    socket.disconnect();
-  }
-  // socket.connect() usa la cookie actual (ya actualizada por refrescarUsuario)
+  // Siempre se descarta la conexión actual: `disconnect()` destruye el socket y
+  // cierra el Manager (es el único de la app), así el `connect()` siguiente hace
+  // un handshake HTTP nuevo y la cookie de sesión se lee otra vez. El guard
+  // `if (socket.connected)` dejaba vivo un handshake en curso con la sesión
+  // vieja (invitado), y las rooms privadas quedaban inaccesibles.
+  socket.disconnect();
+  // socket.connect() usa la cookie actual (ya actualizada por el login/logout)
   socket.connect();
   return socket;
 };
 
-/** Cierra la conexión y descarta la instancia (solo para logout). */
+/**
+ * Cierra la conexión y descarta la instancia (reset duro).
+ *
+ * No se usa al cerrar sesión: eso renegocia el handshake con
+ * `forzarReconexion` y conserva los listeners registrados (el canal queda como
+ * invitado para los eventos públicos). `removeAllListeners()` hace que esta
+ * función sólo sirva para descartar el canal por completo.
+ */
 export const desconectarSocket = () => {
   if (!socket) return;
-  socket.removeAllListeners(); // Limpio total al cerrar sesión
+  socket.removeAllListeners(); // Reset duro: descarta todos los handlers
   socket.disconnect();
   socket = null;
 };

@@ -20,6 +20,7 @@ import {
 } from '../api/auth';
 import { ROLES } from '../utils/constants';
 import { queryKeys } from '../hooks/queries/queryKeys';
+import { forzarReconexion } from '../services/socket';
 
 export const AuthContext = createContext(null);
 
@@ -130,6 +131,28 @@ export const AuthProvider = ({ children }) => {
       setHydrated(true);
     })();
   }, []);
+
+  /**
+   * El socket se conecta al cargar la app, incluso como invitado, para recibir
+   * los eventos públicos (catálogo, parámetros, sucursales). El handshake fija
+   * la sesión de ESE momento: si el usuario inicia o cierra sesión después, el
+   * canal sigue identificado con el usuario anterior (o como anónimo) y las
+   * rooms privadas —pedido, notificaciones, reclamos— quedan inaccesibles.
+   * Por eso se renegocia el handshake cuando cambia la identidad. La primera
+   * hidratación no se toca: ahí el socket ya se abre con la cookie vigente.
+   */
+  const usuarioAnteriorRef = React.useRef(undefined);
+  React.useEffect(() => {
+    if (!hydrated) return;
+    const idActual = user?.id ?? null;
+    if (usuarioAnteriorRef.current === undefined) {
+      usuarioAnteriorRef.current = idActual;
+      return;
+    }
+    if (usuarioAnteriorRef.current === idActual) return;
+    usuarioAnteriorRef.current = idActual;
+    forzarReconexion();
+  }, [hydrated, user]);
 
   const isAuthenticated = useMemo(() => user !== null, [user]);
   const isAdmin = useMemo(() => user?.rol === ROLES.ADMIN, [user]);

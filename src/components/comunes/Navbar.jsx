@@ -37,6 +37,7 @@ import {
   FaExclamationCircle,
   FaSignInAlt,
   FaChevronDown,
+  FaUserShield,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import useIndicadoresNav from '../../hooks/useIndicadoresNav';
@@ -268,6 +269,23 @@ const Navbar = () => {
   const isCliente = user?.rol === ROLES.CLIENTE;
   const isAdmin = user?.rol === ROLES.ADMIN;
   const isSuperadmin = user?.rol === ROLES.SUPERADMIN;
+  /* Distintivo del lado en que se está operando. Es sólo un ícono (sin texto
+     visible) para no quitarle espacio a la barra; el nombre accesible va en el
+     aria-label. La misma copia se usa en la fila superior de móvil y en la
+     zona de acciones de escritorio. */
+  const esPanel = isAdmin || isSuperadmin;
+  const IconoZona = esPanel ? FaUserShield : FaShoppingCart;
+  const textoZona = esPanel ? 'Panel de administración' : 'Zona cliente';
+  const distintivoZona = (
+    <span
+      className="navbar-zona-icono"
+      role="img"
+      aria-label={textoZona}
+      title={textoZona}
+    >
+      <IconoZona aria-hidden="true" />
+    </span>
+  );
   const destinoInicio = isAdmin
     ? '/admin/dashboard'
     : isSuperadmin
@@ -448,6 +466,7 @@ const Navbar = () => {
             repite el control. El perfil y el cierre de sesión tampoco están
             acá: se mudaron al menú del logo. */}
         <div className="navbar-controles-movil">
+          {distintivoZona}
           {isCliente && (
             <CampanaNotificaciones className="campana-movil" />
           )}
@@ -547,6 +566,7 @@ const Navbar = () => {
             })}
           </Nav>
           <Nav className="navbar-acciones">
+            {distintivoZona}
             {/* A0: badge de la sucursal del admin, siempre visible en el
                 panel. Se anuncia con `title`/`aria-label` para lectores de
                 pantalla; no es un enlace, es información de contexto. */}

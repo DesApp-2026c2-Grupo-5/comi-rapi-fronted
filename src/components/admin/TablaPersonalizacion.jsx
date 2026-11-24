@@ -275,7 +275,7 @@ const TablaPersonalizacion = ({
                         size="sm"
                         onClick={() => onEliminar(el)}
                       >
-                        <FaTrashAlt className="me-1" aria-hidden="true" /> Eliminar
+                        <FaTrashAlt className="me-1" aria-hidden="true" /> Dar de baja
                       </Button>
                     </>
                   )}

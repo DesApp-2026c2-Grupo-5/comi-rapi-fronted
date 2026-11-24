@@ -666,6 +666,7 @@ const Carrito = () => {
                             size="sm"
                             onClick={() => setCuponCodigo("")}
                           >
+                            <FaTrashAlt className="me-1" aria-hidden="true" />
                             Quitar
                           </Button>
                         </div>

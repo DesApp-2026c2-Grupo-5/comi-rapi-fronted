@@ -18,15 +18,13 @@
  * re-renderiza con los datos frescos.
  */
 
-import { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
+import { createContext, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   actualizarParametros as actualizarParametrosApi,
   actualizarParametro as actualizarParametroApi,
 } from '../api/parametros';
-import { desconectarSocket } from '../services/socket';
-import { useAuth } from '../hooks/useAuth';
 import { queryKeys, useParametrosQuery } from '../hooks/queries';
 
 export const ParametrosContext = createContext(null);
@@ -69,7 +67,6 @@ const aMapa = (lista) => {
  * @param {React.ReactNode} children - Componentes hijos.
  */
 export const ParametrosProvider = ({ children }) => {
-  const { user, hydrated } = useAuth();
   const queryClient = useQueryClient();
   const { data: lista = [], isLoading: loading, refetch } = useParametrosQuery();
 
@@ -121,19 +118,8 @@ export const ParametrosProvider = ({ children }) => {
     [queryClient]
   );
 
-  // Track if we ever had a user session to avoid disconnecting on initial load for guests
-  const hadUserRef = useRef(false);
-  useEffect(() => {
-    if (user) hadUserRef.current = true;
-  }, [user]);
-
-  // El socket se cierra al cerrar sesión: solo si HABÍA usuario antes y ahora no hay.
-  // Esto evita desconectar el socket en la carga inicial para invitados (sin sesión).
-  useEffect(() => {
-    if (hydrated && hadUserRef.current && !user) {
-      desconectarSocket();
-    }
-  }, [hydrated, user]);
+  // El cierre de sesión no destruye el socket: `AuthContext` renegocia el
+  // handshake y el canal queda como invitado para los eventos públicos.
 
   const value = useMemo(
     () => ({ parametros, lista, loading, recargar, actualizar, actualizarParametro }),

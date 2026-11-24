@@ -151,13 +151,12 @@ const GestionPersonalizacionCategorias = () => {
 
   const counts = useMemo(() => {
     if (!categoriaSeleccionada)
-      return { extra: 0, personalizar: 0, acompanar: 0, condimento: 0, total: 0 };
+      return { extra: 0, acompanar: 0, condimento: 0, total: 0 };
     const porCategoria = plantillas.filter(
       (p) => String(p.categoriaId) === String(categoriaSeleccionada)
     );
     return {
       extra: porCategoria.filter((p) => p.tipo === 'extra').length,
-      personalizar: porCategoria.filter((p) => p.tipo === 'personalizar').length,
       acompanar: porCategoria.filter((p) => p.tipo === 'acompanar').length,
       condimento: porCategoria.filter((p) => p.tipo === 'condimento').length,
       total: porCategoria.length,
@@ -214,8 +213,7 @@ const GestionPersonalizacionCategorias = () => {
             {categoriaActual ? (
               <>
                 <strong>{categoriaActual.nombre}</strong> — {counts.total}{' '}
-                plantillas: Extra {counts.extra} · Personalizar{' '}
-                {counts.personalizar} · Acompaña {counts.acompanar} ·
+                plantillas: Extra {counts.extra} · Acompaña {counts.acompanar} ·
                 Condimentos {counts.condimento}
                 <div className="mt-1">
                   Se copian automáticamente al crear un producto de esta
@@ -233,7 +231,6 @@ const GestionPersonalizacionCategorias = () => {
         {[
           { id: 'todos', label: 'Todos' },
           { id: TIPO_PERSONALIZACION.EXTRA, label: 'Extra' },
-          { id: TIPO_PERSONALIZACION.PERSONALIZAR, label: 'Personalizar' },
           { id: TIPO_PERSONALIZACION.ACOMPANAR, label: 'Acompaña' },
           { id: TIPO_PERSONALIZACION.CONDIMENTO, label: 'Condimentos' },
         ].map((f) => (
@@ -267,7 +264,7 @@ const GestionPersonalizacionCategorias = () => {
           <div className="small text-muted">
             {!cargandoCategorias && categorias.length === 0
               ? 'No hay categorías activas. Creá una en Gestión de Categorías.'
-              : 'Ej: Bebidas → Personalizar "Hielo" para que todo producto nuevo de Bebidas se cree con la opción "Sin Hielo".'}
+                : 'Ej: Bebidas → Extra "Crema batida" para que todo producto nuevo de Bebidas nazca con esa opción.'}
           </div>
         </div>
       )}
@@ -300,7 +297,7 @@ const GestionPersonalizacionCategorias = () => {
 
       <ConfirmarModal
         mostrar={Boolean(plantillaAEliminar)}
-        titulo="Eliminar plantilla"
+        titulo="Dar de baja plantilla"
         mensaje={
           plantillaAEliminar
             ? (() => {
@@ -308,7 +305,7 @@ const GestionPersonalizacionCategorias = () => {
                 const cat = categorias.find(
                   (c) => String(c.id) === String(el.categoriaId)
                 );
-                return `¿Eliminar "${etiquetaDe(el)}" de la categoría "${
+                return `¿Dar de baja "${etiquetaDe(el)}" de la categoría "${
                   cat?.nombre || 'categoría #' + el.categoriaId
                 }"? Los productos ya creados no se modifican. Tipo: ${
                   el.tipo === 'acompanar'
@@ -322,7 +319,7 @@ const GestionPersonalizacionCategorias = () => {
               })()
             : ''
         }
-        textoConfirmar="Sí, eliminar"
+        textoConfirmar="Sí, dar de baja"
         cargando={confirmando}
         onConfirmar={confirmarEliminar}
         onCancelar={() => setPlantillaAEliminar(null)}
@@ -333,7 +330,7 @@ const GestionPersonalizacionCategorias = () => {
           <Badge bg="warning" text="dark">
             Extra
           </Badge>{' '}
-          cobra · <Badge bg="secondary">Personalizar</Badge> no cobra ·{' '}
+          cobra ·{' '}
           <Badge bg="success">Acompaña</Badge> cobra ·{' '}
           <Badge text-bg-secondary className="border">
             Condimento

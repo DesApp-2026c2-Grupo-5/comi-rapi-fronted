@@ -136,7 +136,8 @@ export const obtenerStockInsumo = async (insumoId) =>
 
 /**
  * Ajusta cantidad y/o disponibilidad de un insumo en la sucursal operativa.
- * El `sucursalId` no viaja: sale de la sesión.
+ * El `sucursalId` no viaja: sale de la sesión. `cantidad` es el stock final
+ * (absoluto), no un delta. Para insumos debe ser un entero mayor o igual a 0.
  * @param {number|string} insumoId
  * @param {{cantidad?: number, disponible?: boolean}} cambios
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
@@ -147,5 +148,12 @@ export const actualizarStockInsumo = async (insumoId, cambios) =>
 export const obtenerStockIngredientes = async () =>
   envolver(await apiGet('/stock/ingredientes'));
 
+/**
+ * Ajusta cantidad y/o disponibilidad de un ingrediente en la sucursal operativa.
+ * `cantidad` es el stock final (absoluto), no un delta; admite hasta 3 decimales.
+ * @param {number|string} ingredienteId
+ * @param {{cantidad?: number, disponible?: boolean}} cambios
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
 export const actualizarStockIngrediente = async (ingredienteId, cambios) =>
   envolver(await apiPut(`/stock/ingredientes/${ingredienteId}`, cambios));

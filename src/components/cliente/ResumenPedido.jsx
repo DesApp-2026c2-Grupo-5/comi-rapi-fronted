@@ -1,18 +1,18 @@
 /**
- * Propósito: Resumen del pedido con subtotal, envío, total, botón confirmar
- *            y (opcional) la sucursal asignada al pedido.
+ * Propósito: Resumen del pedido con subtotal, envío, total y botón confirmar.
  * Contenido: Componente ResumenPedido usando Card y Button de Bootstrap.
  * Dependencias: react-bootstrap (Card, Button), useCarrito hook, formatters.js, ResumenPedido.css.
  * Uso:
  *   En el carrito: <ResumenPedido onConfirmar={handler} />
-   *   En la confirmación: <ResumenPedido items={productos} total={total} costoEnvio={costoEnvio} sucursal={sucursal} />
+   *   En el pago/confirmación: <ResumenPedido items={productos} total={total} costoEnvio={costoEnvio} />
    *
    * CAMBIOS REALIZADOS:
-   *  - El componente ahora acepta props opcionales (items, total, costoEnvio, sucursal). Si no se pasan,
+   *  - El componente acepta props opcionales (items, total, costoEnvio). Si no se pasan,
    *    usa los datos del carrito (comportamiento original del carrito).
    *  - Modo lectura: el total recibido del backend ya incluye el envío → usa la prop costoEnvio
    *    y muestra Subtotal = total - costoEnvio. No recalcula el envío del servicio.
-   *  - Si se recibe 'sucursal', muestra un bloque destacado con la sucursal asignada.
+   *  - La sucursal se muestra en las pantallas de pago/confirmación, no acá: dentro del
+   *    resumen quedaba duplicada justo debajo del Total.
 *  - Si no se pasa 'onConfirmar', no se renderiza el botón (modo solo lectura).
    *  - 'botonTexto' permite cambiar la etiqueta del botón (ej.: "Ir a Pagar" en el carrito).
    *  - 'fija' pega la card al scrollear en desktop. Sólo para la columna lateral del
@@ -30,7 +30,6 @@ import { useCarrito } from '../../hooks/useCarrito';
 import { useParametros } from '../../hooks/useParametros';
 import { formatPrice } from '../../utils/formatters';
 import { calcularCostoEnvio } from '../../services/envio';
-import { formatearDireccion } from '../../utils/direccion';
 import DetalleItemsPedido from '../comunes/DetalleItemsPedido';
 import './ResumenPedido.css';
 
@@ -39,7 +38,6 @@ const ResumenPedido = ({
   items: itemsProp,
   total: totalProp,
   costoEnvio: costoEnvioProp,
-  sucursal,
   botonTexto = 'Confirmar Pedido',
   descuento = 0,
   detalleDescuento = '',
@@ -158,16 +156,6 @@ const ResumenPedido = ({
           <strong className="resumen-total">{formatPrice(totalFinal)}</strong>
         </div>
 
-        {/* Sucursal asignada (visible al confirmar el pedido) */}
-        {sucursal && (
-          <div className="mt-3 p-3 panel-crema">
-            <span className="panel-crema-etiqueta">
-              Sucursal asignada
-            </span>
-            <strong className="d-block">{sucursal.nombre}</strong>
-            <span className="text-muted">{formatearDireccion(sucursal.direccion)}</span>
-          </div>
-        )}
       </Card.Body>
 
       {onConfirmar && (
@@ -194,10 +182,6 @@ ResumenPedido.propTypes = {
   items: PropTypes.array,
   total: PropTypes.number,
   costoEnvio: PropTypes.number,
-  sucursal: PropTypes.shape({
-    nombre: PropTypes.string,
-    direccion: PropTypes.object,
-  }),
   botonTexto: PropTypes.string,
   descuento: PropTypes.number,
   detalleDescuento: PropTypes.string,

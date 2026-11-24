@@ -21,7 +21,7 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Alert, ListGroup, Spinner } from 'react-bootstrap';
-import { FaTimes, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaTimes, FaMapMarkedAlt, FaSave, FaEdit } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { PROVINCIAS } from '../../utils/territorio';
@@ -429,7 +429,7 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
                   />
                 )}
 
-                {direccionApi.preview?.estado === 'unica' && (
+                {esMobile && direccionApi.preview?.estado === 'unica' && (
                   <div className="dir-form-confirmacion">
                     <ConfirmacionDireccion
                       resultado={direccionApi.preview.resultado}
@@ -437,11 +437,9 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
                       referencia={referencia.trim() || null}
                       cargando={direccionApi.guardando}
                       textoConfirmar="Guardar sucursal"
-                      onConfirmar={
-                        esMobile ? () => irAPaso(2) : direccionApi.confirmar
-                      }
+                      onConfirmar={() => irAPaso(2)}
                       onEditar={direccionApi.editarDatos}
-                      mostrarAcciones={!esMobile}
+                      mostrarAcciones={false}
                     />
                   </div>
                 )}
@@ -502,35 +500,85 @@ const FormularioSucursal = ({ sucursal, onGuardar }) => {
             )}
 
             {!esMobile && (
-              <div className="d-flex gap-2">
-                <Button
-                  variant="primary"
-                  type="submit"
-                  className="flex-fill"
-                  disabled={direccionApi.cargandoPreview}
-                >
-                  {direccionApi.cargandoPreview ? (
+              <>
+                {direccionVerificada && (
+                  <ConfirmacionDireccion
+                    resultado={direccionApi.preview.resultado}
+                    altura={direccionApi.altura}
+                    referencia={referencia.trim() || null}
+                    cargando={direccionApi.guardando}
+                    textoConfirmar="Guardar sucursal"
+                    onConfirmar={direccionApi.confirmar}
+                    onEditar={direccionApi.editarDatos}
+                    mostrarAcciones={false}
+                  />
+                )}
+                <div className="d-flex gap-2">
+                  {direccionVerificada ? (
                     <>
-                      <Spinner size="sm" className="me-1" animation="border" />
-                      Verificando…
+                      <Button
+                        variant="primary"
+                        type="button"
+                        className="flex-fill"
+                        onClick={direccionApi.confirmar}
+                        disabled={direccionApi.guardando}
+                      >
+                        {direccionApi.guardando ? (
+                          <>
+                            <Spinner size="sm" className="me-1" animation="border" />
+                            Guardando…
+                          </>
+                        ) : (
+                          <>
+                            <FaSave className="me-1" aria-hidden="true" />
+                            Guardar sucursal
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline-secondary"
+                        type="button"
+                        onClick={direccionApi.editarDatos}
+                        className="flex-fill"
+                        disabled={direccionApi.guardando}
+                      >
+                        <FaEdit className="me-1" aria-hidden="true" />
+                        Editar datos
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <FaMapMarkedAlt className="me-1" aria-hidden="true" />
-                      Verificar dirección
+                      <Button
+                        variant="primary"
+                        type="submit"
+                        className="flex-fill"
+                        disabled={direccionApi.cargandoPreview}
+                      >
+                        {direccionApi.cargandoPreview ? (
+                          <>
+                            <Spinner size="sm" className="me-1" animation="border" />
+                            Verificando…
+                          </>
+                        ) : (
+                          <>
+                            <FaMapMarkedAlt className="me-1" aria-hidden="true" />
+                            Verificar dirección
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        type="button"
+                        onClick={handleCancelar}
+                        className="flex-fill"
+                      >
+                        <FaTimes className="me-1" aria-hidden="true" />
+                        Cancelar
+                      </Button>
                     </>
                   )}
-                </Button>
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={handleCancelar}
-                  className="flex-fill"
-                >
-                  <FaTimes className="me-1" aria-hidden="true" />
-                  Cancelar
-                </Button>
-              </div>
+                </div>
+              </>
             )}
           </FormularioPasos>
         </Form>

@@ -1,14 +1,14 @@
 /**
- * Propósito: Página de confirmación de pedido exitoso que muestra la sucursal asignada
- *            automáticamente y el estado del pedido.
- * Contenido: Componente ConfirmacionPedido con check grande, número de pedido, sucursal asignada,
+ * Propósito: Página de confirmación de pedido exitoso que muestra la sucursal seleccionada
+ *            para el pedido y el estado del mismo.
+ * Contenido: Componente ConfirmacionPedido con check grande, número de pedido, sucursal seleccionada,
  *            estado actual y resumen de productos.
- * Dependencias: react-bootstrap (Container, Card, Button, Badge), react-router-dom (Link),
+ * Dependencias: react-bootstrap (Container, Card, Button, Badge), react-router-dom (Link, useLocation),
  *               hooks/usePedidos, components/cliente/ResumenPedido, utils/formatters.js.
  * Uso: Ruta "/cliente/confirmacion" → <ConfirmacionPedido />
  */
 
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Container, Card, Button, Badge, Row, Col } from 'react-bootstrap';
 import { FaUtensils, FaReceipt } from 'react-icons/fa';
 import { usePedidos } from '../../hooks/usePedidos';
@@ -30,6 +30,10 @@ const esTextoUtil = (valor) =>
 
 const ConfirmacionPedido = () => {
   const { pedidoActual } = usePedidos();
+  const location = useLocation();
+  // La pantalla de pago ya calculó si había más de una sucursal viable y lo
+  // pasa por navegación; acá sólo se lee, sin consultas nuevas.
+  const sucursalPuedeVariar = Boolean(location.state?.sucursalPuedeVariar);
 
   // Si no hay un pedido reciente (p. ej. al recargar la página), mostrar aviso
   if (!pedidoActual) {
@@ -94,11 +98,14 @@ const ConfirmacionPedido = () => {
                 </Button>
               </div>
 
-              {/* Sucursal asignada automáticamente */}
+              {/* Sucursal seleccionada al confirmar el pedido */}
               {sucursal && (
                 <div className="mt-4 p-3 text-start panel-crema">
                   <span className="panel-crema-etiqueta">
-                    Tu pedido será preparado en
+                    Sucursal seleccionada para tu pedido
+                    {sucursalPuedeVariar && (
+                      <span className="text-muted small"> (puede variar)</span>
+                    )}
                   </span>
                   <strong className="d-block fs-5">{sucursal.nombre}</strong>
                   <span className="text-muted">{formatearDireccion(sucursal.direccion)}</span>
@@ -135,7 +142,6 @@ const ConfirmacionPedido = () => {
             items={pedidoActual.productos}
             total={pedidoActual.total}
             costoEnvio={pedidoActual.costoEnvio ?? 0}
-            sucursal={sucursal}
             promociones={pedidoActual.promociones}
             descuentoCupon={
               pedidoActual.cupon?.descuentoAplicado

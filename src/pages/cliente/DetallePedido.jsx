@@ -9,7 +9,7 @@
  * Uso: Ruta "/cliente/pedido/:id" → <DetallePedido />
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -127,6 +127,10 @@ const DetallePedido = () => {
   const [cargandoQueja, setCargandoQueja] = useState(false);
   const [mostrarQuejaModal, setMostrarQuejaModal] = useState(false);
   const [recargaQueja, setRecargaQueja] = useState(0);
+  // Pedido cuya queja ya se leyó al menos una vez. Permite distinguir la carga
+  // inicial (muestra "Cargando reclamo…") del refresco que dispara el WebSocket
+  // (silencioso, el hilo sigue en pantalla igual que en la bandeja del admin).
+  const quejaCargadaDe = useRef(null);
   const [respuestaQueja, setRespuestaQueja] = useState("");
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
   const [errorQueja, setErrorQueja] = useState("");
@@ -139,14 +143,21 @@ const DetallePedido = () => {
   // ese estado para no pedir datos que no se van a mostrar.
   useEffect(() => {
     if (!esEntregado || !pedidoId) {
+      quejaCargadaDe.current = null;
       setQueja(null);
       return undefined;
     }
     let vivo = true;
-    setCargandoQueja(true);
+    // Solo la primera lectura muestra el placeholder. Cuando el negocio responde
+    // llega `queja_actualizada` y se vuelve a leer, pero el hilo ya está en
+    // pantalla: no se desmonta ni se pierde el scroll ni el borrador.
+    if (quejaCargadaDe.current !== pedidoId) setCargandoQueja(true);
     obtenerMisQuejas(pedidoId).then((res) => {
       if (!vivo) return;
-      if (res.success) setQueja(res.data[0] || null);
+      if (res.success) {
+        setQueja(res.data[0] || null);
+        quejaCargadaDe.current = pedidoId;
+      }
       setCargandoQueja(false);
     });
     return () => {
@@ -157,7 +168,14 @@ const DetallePedido = () => {
   useEffect(() => {
     if (!esEntregado || !pedidoId) return undefined;
     const socket = conectarSocket();
-    const alActualizar = () => setRecargaQueja((valor) => valor + 1);
+    // Sólo interesa la queja de ESTE pedido: el cliente está suscripto a todos
+    // sus pedidos, así que puede llegar el aviso de otro y no hay que refrescar
+    // esta pantalla por eso.
+    const alActualizar = (payload) => {
+      if (payload?.pedidoId && Number(payload.pedidoId) !== Number(pedidoId))
+        return;
+      setRecargaQueja((valor) => valor + 1);
+    };
     socket.on(EVENTOS_SOCKET.QUEJA_ACTUALIZADA, alActualizar);
 
     // Suscribirse al pedido para recibir notificaciones del cliente
@@ -225,6 +243,13 @@ const DetallePedido = () => {
     ESTADOS_PEDIDO.LISTO_PARA_ENTREGAR,
     ESTADOS_PEDIDO.EN_CAMINO,
     ESTADOS_PEDIDO.ENTREGADO,
+  ].includes(pedido.estado);
+  // La sucursal todavía puede cambiar mientras el pedido se puede cancelar
+  // (confirmado) o reasignar (también en_preparación). Desde
+  // listo_para_entregar ya está comprometida con esa cocina: no va a variar.
+  const sucursalPuedeVariar = [
+    ESTADOS_PEDIDO.CONFIRMADO,
+    ESTADOS_PEDIDO.EN_PREPARACION,
   ].includes(pedido.estado);
   // A6: solo visible en en_camino con hora estimada persistida.
   const textoLlegadaEnCamino =
@@ -421,7 +446,12 @@ const DetallePedido = () => {
             </Col>
             <Col md={6}>
               <div className="detalle-info">
-                <span className="detalle-etiqueta">Sucursal asignada</span>
+                <span className="detalle-etiqueta">
+                  Sucursal seleccionada para tu pedido
+                  {sucursalPuedeVariar && (
+                    <span className="detalle-aclaracion"> (puede variar)</span>
+                  )}
+                </span>
                 <p className="detalle-valor mb-0">
                   {pedido.sucursal?.nombre || pedido.sucursal}
                 </p>
@@ -436,120 +466,131 @@ const DetallePedido = () => {
 
           <h2 className="h5 detalle-tabla-titulo mb-3">Productos</h2>
 
-          {/* Tabla de productos */}
-          <Table hover responsive className="detalle-tabla">
+          {/* Tabla de productos. Sin `responsive`: en pantallas chicas deja de
+              deslizarse en horizontal y cada producto pasa a ser una tarjeta
+              (ver DetallePedido.css). Cada producto va en su propio <tbody>
+              para que el desglose y la nota queden dentro de su tarjeta. */}
+          <Table hover className="detalle-tabla">
             <thead>
               <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Subtotal</th>
-                {esEntregado && <th>Reseña</th>}
+                <th scope="col">Producto</th>
+                <th scope="col">Cantidad</th>
+                <th scope="col">Precio</th>
+                <th scope="col">Subtotal</th>
+                {esEntregado && <th scope="col">Reseña</th>}
               </tr>
             </thead>
-            <tbody>
-              {pedido.productos.map((prod, idx) => {
-                const tieneDesglose =
-                  (prod.extras && prod.extras.length > 0) ||
-                  (prod.sin && prod.sin.length > 0) ||
-                  (prod.acompanamientos && prod.acompanamientos.length > 0) ||
-                  (prod.condimentos && prod.condimentos.length > 0);
-                return (
-                  <React.Fragment key={idx}>
-                    <tr>
-                      <td>{prod.nombre}</td>
-                      <td>{prod.cantidad}</td>
-                      <td>{formatPrice(prod.precio)}</td>
-                      <td>{formatPrice(prod.precio * prod.cantidad)}</td>
-                      {esEntregado && (
-                        <td>
-                          {prod.productoId ? (
-                            miResenaDe(prod.productoId) ? (
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() =>
-                                  setProductoAResenar({
-                                    id: prod.productoId,
-                                    nombre: prod.nombre,
-                                    resena: miResenaDe(prod.productoId),
-                                  })
-                                }
-                              >
-                                <FaPen className="me-1" aria-hidden="true" />
-                                Editar
-                              </Button>
-                            ) : esElegible(prod.productoId) ? (
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() =>
-                                  setProductoAResenar({
-                                    id: prod.productoId,
-                                    nombre: prod.nombre,
-                                    resena: null,
-                                  })
-                                }
-                              >
-                                <FaStar className="me-1" aria-hidden="true" />
-                                Calificar
-                              </Button>
-                            ) : (
-                              <span className="text-muted small">—</span>
-                            )
+            {pedido.productos.map((prod, idx) => {
+              const tieneDesglose =
+                (prod.extras && prod.extras.length > 0) ||
+                (prod.sin && prod.sin.length > 0) ||
+                (prod.acompanamientos && prod.acompanamientos.length > 0) ||
+                (prod.condimentos && prod.condimentos.length > 0);
+              return (
+                <tbody key={idx} className="detalle-grupo-item">
+                  <tr>
+                    <td
+                      data-label="Producto"
+                      className="detalle-celda-producto"
+                    >
+                      {prod.nombre}
+                    </td>
+                    <td data-label="Cantidad" className="detalle-celda-cantidad">
+                      {prod.cantidad}
+                    </td>
+                    <td data-label="Precio" className="detalle-celda-precio">
+                      {formatPrice(prod.precio)}
+                    </td>
+                    <td data-label="Subtotal" className="detalle-celda-subtotal">
+                      {formatPrice(prod.precio * prod.cantidad)}
+                    </td>
+                    {esEntregado && (
+                      <td data-label="Reseña" className="detalle-celda-resena">
+                        {prod.productoId ? (
+                          miResenaDe(prod.productoId) ? (
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={() =>
+                                setProductoAResenar({
+                                  id: prod.productoId,
+                                  nombre: prod.nombre,
+                                  resena: miResenaDe(prod.productoId),
+                                })
+                              }
+                            >
+                              <FaPen className="me-1" aria-hidden="true" />
+                              Editar
+                            </Button>
+                          ) : esElegible(prod.productoId) ? (
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() =>
+                                setProductoAResenar({
+                                  id: prod.productoId,
+                                  nombre: prod.nombre,
+                                  resena: null,
+                                })
+                              }
+                            >
+                              <FaStar className="me-1" aria-hidden="true" />
+                              Calificar
+                            </Button>
                           ) : (
                             <span className="text-muted small">—</span>
-                          )}
-                        </td>
-                      )}
+                          )
+                        ) : (
+                          <span className="text-muted small">—</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                  {tieneDesglose && (
+                    <tr>
+                      <td
+                        colSpan={esEntregado ? 5 : 4}
+                        className="small text-muted detalle-celda-desglose"
+                      >
+                        {prod.extras?.map((ex) => (
+                          <div key={ex.id}>
+                            › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
+                            {ex.cantidad}
+                          </div>
+                        ))}
+                        {prod.acompanamientos?.map((ac) => (
+                          <div key={ac.id}>
+                            › Acompañamiento: {ac.nombre} (+
+                            {formatPrice(ac.precio)}) x{ac.cantidad}
+                          </div>
+                        ))}
+                        {prod.sin?.map((s) => (
+                          <div key={s}>
+                            › <strong>Sin {s}</strong>
+                          </div>
+                        ))}
+                        {prod.condimentos?.map((c) => (
+                          <div key={c.nombre}>
+                            › {c.nombre} x{c.cantidad}{" "}
+                            <span className="text-muted">(sin costo)</span>
+                          </div>
+                        ))}
+                      </td>
                     </tr>
-                    {tieneDesglose && (
-                      <tr>
-                        <td
-                          colSpan={esEntregado ? 5 : 4}
-                          className="small text-muted bg-crema"
-                        >
-                          {prod.extras?.map((ex) => (
-                            <div key={ex.id}>
-                              › Extra: {ex.nombre} (+{formatPrice(ex.precio)}) x
-                              {ex.cantidad}
-                            </div>
-                          ))}
-                          {prod.acompanamientos?.map((ac) => (
-                            <div key={ac.id}>
-                              › Acompañamiento: {ac.nombre} (+
-                              {formatPrice(ac.precio)}) x{ac.cantidad}
-                            </div>
-                          ))}
-                          {prod.sin?.map((s) => (
-                            <div key={s}>
-                              › <strong>Sin {s}</strong>
-                            </div>
-                          ))}
-                          {prod.condimentos?.map((c) => (
-                            <div key={c.nombre}>
-                              › {c.nombre} x{c.cantidad}{" "}
-                              <span className="text-muted">(sin costo)</span>
-                            </div>
-                          ))}
-                        </td>
-                      </tr>
-                    )}
-                    {prod.nota && (
-                      <tr>
-                        <td
-                          colSpan={esEntregado ? 5 : 4}
-                          className="small bg-crema"
-                        >
-                          &rsaquo; <strong>Nota para cocina:</strong>{" "}
-                          {prod.nota}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
+                  )}
+                  {prod.nota && (
+                    <tr>
+                      <td
+                        colSpan={esEntregado ? 5 : 4}
+                        className="small detalle-celda-nota"
+                      >
+                        &rsaquo; <strong>Nota para cocina:</strong> {prod.nota}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              );
+            })}
           </Table>
 
           {/* Totales (el total del backend ya incluye el envío) */}
