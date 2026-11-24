@@ -13,12 +13,76 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
+/* ============ Estado del ítem ============ */
+/* Un solo estado manda (cupón aplicado > promoción) y el acento vive en el
+   borde de la tarjeta y en el chip junto al nombre. La foto queda limpia:
+   antes los badges se apilaban encima de una miniatura de 72px. Los fondos se
+   mezclan sobre --color-surface para no heredar tintes claros fijos en el tema
+   oscuro. Los cupones disponibles se avisan una sola vez arriba del carrito
+   (CuponeraCarrito), no en cada tarjeta. */
+.item-carrito--aplicado,
+.item-carrito--descuento {
+  border-color: color-mix(
+    in srgb,
+    var(--color-success) 55%,
+    var(--color-border-cream)
+  );
+  background-color: color-mix(
+    in srgb,
+    var(--color-success) 5%,
+    var(--color-surface)
+  );
+}
+
+/* Chip de estado: pastilla chica y legible debajo del nombre. Los colores se
+   derivan del token semántico con color-mix, así la misma regla funciona en
+   claro y en oscuro (el texto usa el tono "active", que ya se aclara en
+   oscuro, y nunca queda verde/ámbar sobre un fondo demasiado parecido). */
+.item-carrito-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  margin-top: 0.35rem;
+  margin-bottom: 0.25rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.item-carrito-etiqueta--aplicado,
+.item-carrito-etiqueta--descuento {
+  color: var(--color-success-active);
+  background-color: color-mix(
+    in srgb,
+    var(--color-success) 14%,
+    var(--color-surface)
+  );
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.item-carrito-etiqueta-icono {
+  flex-shrink: 0;
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
 .item-carrito-imagen {
+  display: block;
   width: 90px;
   height: 90px;
   object-fit: cover;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--color-border-card);
+  /* Fondo visible sólo durante la carga de la foto; sin sombra propia, la
+     tarjeta ya declara la elevación. */
+  background-color: var(--color-cream);
 }
 
 .item-carrito-nombre {
@@ -28,6 +92,32 @@
 .item-carrito-subtotal {
   color: var(--color-danger);
   font-size: 1.05rem;
+}
+
+/* ============ Precio con descuento ============ */
+/* Mismo tratamiento que el catálogo: el original tachado y el final destacado.
+   En el 2x1 el precio unitario no cambia, así que el tachado aparece sólo en el
+   subtotal (el ahorro depende de la cantidad, no de la unidad). */
+
+.item-carrito-precio-tachado {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.item-carrito-precio-final {
+  color: var(--color-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-carrito-subtotal-tachado {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
 }
 
 /* El desglose pasó de <div> sueltos a <ul>/<li>: el lector de pantalla anuncia
@@ -181,5 +271,12 @@
   .item-carrito-imagen {
     width: 72px;
     height: 72px;
+  }
+
+  /* El chip vive en la columna del nombre (xs={9}), que a 320px de viewport
+     deja ~206px: entra en una línea con un punto menos de cuerpo. */
+  .item-carrito-etiqueta {
+    font-size: 0.72rem;
+    padding: 0.12rem 0.5rem;
   }
 }

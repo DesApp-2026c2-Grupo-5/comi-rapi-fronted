@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { Card, Row, Col, Form, Button } from "react-bootstrap";
-import { FaTrashAlt, FaMinus, FaPlus, FaPen, FaStickyNote } from "react-icons/fa";
+import {
+  FaTrashAlt,
+  FaMinus,
+  FaPlus,
+  FaPen,
+  FaStickyNote,
+  FaCheckCircle,
+  FaPercent,
+} from "react-icons/fa";
+import PropTypes from "prop-types";
 import { useCarrito } from "../../hooks/useCarrito";
 import { useParametros } from "../../hooks/useParametros";
 import { formatPrice } from "../../utils/formatters";
@@ -13,7 +22,22 @@ const ProductoPersonalizarModal = React.lazy(() =>
   import("./ProductoPersonalizarModal")
 );
 
-const ItemCarrito = ({ item }) => {
+/**
+ * Etiqueta de estado del ítem. Un solo estado manda, con esta prioridad:
+ * cupón aplicado > promoción vigente. Los cupones disponibles se avisan una
+ * sola vez arriba del carrito (CuponeraCarrito), no en cada tarjeta.
+ */
+const ETIQUETAS_ITEM = {
+  aplicado: { texto: "Cupón aplicado", Icono: FaCheckCircle },
+  descuento: { texto: "Descuento", Icono: FaPercent },
+};
+
+const ItemCarrito = ({
+  item,
+  promo = null,
+  descuentoCupon = 0,
+  tieneCuponAplicado = false,
+}) => {
   const {
     producto,
     cantidad,
@@ -38,6 +62,22 @@ const ItemCarrito = ({ item }) => {
 
   const precioUnitario = precioUnitarioPersonalizado ?? producto.precio;
   const subtotal = precioUnitario * cantidad;
+
+  /* Descuento de ESTA línea: promoción + la parte del cupón que le toca. Los
+     dos importes los calcula el mismo módulo que el total del carrito, así el
+     precio que se muestra y el resumen del pedido no pueden discrepar. Un 2x1
+     no baja el precio unitario —el ahorro depende de la cantidad—, así que ahí
+     sólo se tacha el subtotal; el precio por unidad se muestra tal cual. */
+  const descuentoPromo = Number(promo?.descuento) || 0;
+  const descuentoTotalLinea =
+    descuentoPromo + (Number(descuentoCupon) || 0);
+  const esDosPorUno = promo?.tipo === "DOS_POR_UNO";
+  const precioUnitarioConDescuento =
+    !esDosPorUno && descuentoTotalLinea > 0 && cantidad > 0
+      ? Math.max(0, precioUnitario - descuentoTotalLinea / cantidad)
+      : null;
+  const subtotalConDescuento =
+    descuentoTotalLinea > 0 ? Math.max(0, subtotal - descuentoTotalLinea) : null;
   const tienePersonalizacion =
     personalizacion &&
     ((personalizacion.extras && personalizacion.extras.length > 0) ||
@@ -86,9 +126,26 @@ const ItemCarrito = ({ item }) => {
     setEditandoNota(false);
   };
 
+  const estadoItem = tieneCuponAplicado
+    ? "aplicado"
+    : promo
+      ? "descuento"
+      : null;
+  const etiquetaItem = estadoItem ? ETIQUETAS_ITEM[estadoItem] : null;
+  // El 2x1 se anuncia con su propia etiqueta: no cambia el precio unitario y
+  // "Descuento" a secas no explicaría por qué el subtotal es el que es.
+  const textoEtiqueta =
+    estadoItem === "descuento" && promo?.tipo === "DOS_POR_UNO"
+      ? "2x1"
+      : etiquetaItem?.texto;
+
   return (
     <>
-      <Card className="item-carrito">
+      <Card
+        className={
+          "item-carrito" + (estadoItem ? ` item-carrito--${estadoItem}` : "")
+        }
+      >
         <Card.Body className="p-3">
         <Row className="align-items-center g-3">
           <Col xs={3} md={2}>
@@ -106,8 +163,32 @@ const ItemCarrito = ({ item }) => {
           </Col>
           <Col xs={9} md={4}>
             <h3 className="fw-bold item-carrito-nombre">{producto.nombre}</h3>
-            <div className="text-muted small">
-              Precio: {formatPrice(precioUnitario)}
+            {etiquetaItem && (
+              <span
+                className={`item-carrito-etiqueta item-carrito-etiqueta--${estadoItem}`}
+              >
+                <etiquetaItem.Icono
+                  aria-hidden="true"
+                  className="item-carrito-etiqueta-icono"
+                />
+                {textoEtiqueta}
+              </span>
+            )}
+            <div className="item-carrito-precio text-muted small">
+              Precio:{" "}
+              {precioUnitarioConDescuento !== null ? (
+                <>
+                  <s className="item-carrito-precio-tachado" aria-hidden="true">
+                    {formatPrice(precioUnitario)}
+                  </s>{" "}
+                  <span className="item-carrito-precio-final">
+                    <span className="visually-hidden">con descuento: </span>
+                    {formatPrice(precioUnitarioConDescuento)}
+                  </span>
+                </>
+              ) : (
+                formatPrice(precioUnitario)
+              )}
               {precioUnitario !== producto.precio
                 ? ` (base ${formatPrice(producto.precio)})`
                 : ""}
@@ -182,8 +263,19 @@ const ItemCarrito = ({ item }) => {
           </Col>
           <Col xs={6} md={3} className="text-md-end">
             <div className="text-muted small">Subtotal</div>
+            {subtotalConDescuento !== null && (
+              <s
+                className="item-carrito-subtotal-tachado"
+                aria-hidden="true"
+              >
+                {formatPrice(subtotal)}
+              </s>
+            )}
             <div className="fw-bold item-carrito-subtotal">
-              {formatPrice(subtotal)}
+              {subtotalConDescuento !== null && (
+                <span className="visually-hidden">con descuento: </span>
+              )}
+              {formatPrice(subtotalConDescuento ?? subtotal)}
             </div>
           </Col>
         </Row>
@@ -296,6 +388,35 @@ const ItemCarrito = ({ item }) => {
       )}
     </>
   );
+};
+
+ItemCarrito.propTypes = {
+  /** Ítem del carrito. */
+  item: PropTypes.shape({
+    idLinea: PropTypes.number,
+    producto: PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      nombre: PropTypes.string.isRequired,
+      categoriaId: PropTypes.number,
+      imagen: PropTypes.string,
+      precio: PropTypes.number,
+    }).isRequired,
+    cantidad: PropTypes.number,
+    personalizacion: PropTypes.object,
+    precioUnitarioPersonalizado: PropTypes.number,
+    nota: PropTypes.string,
+  }).isRequired,
+  /** Promoción aplicada a esta línea: tipo, valor, nombre y descuento. */
+  promo: PropTypes.shape({
+    tipo: PropTypes.string,
+    valor: PropTypes.number,
+    nombre: PropTypes.string,
+    descuento: PropTypes.number,
+  }),
+  /** Parte del cupón aplicado que le corresponde a esta línea. */
+  descuentoCupon: PropTypes.number,
+  /** El cupón aplicado alcanza a este producto. */
+  tieneCuponAplicado: PropTypes.bool,
 };
 
 export default ItemCarrito;

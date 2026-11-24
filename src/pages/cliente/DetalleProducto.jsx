@@ -89,19 +89,29 @@ const DetalleProducto = () => {
     [personalizacionQuery.data]
   );
 
-  // Mejor promoción activa que alcanza a este producto (misma regla que el
-  // catálogo: mayor descuento; 2x1 equivale a 50%).
-  const promocion = useMemo(() => {
-    const equiv = (promo) => (promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor));
-    return (promocionesQuery.data || [])
+  // Mapa de la mejor promoción activa que alcanza a cada producto (misma regla
+  // que el catálogo: mayor descuento; 2x1 equivale a 50%). Se usa para mostrar
+  // el precio con descuento tanto en el producto principal como en los
+  // relacionados y combos que lo incluyen.
+  const equivPromo = (promo) => (promo.tipo === 'DOS_POR_UNO' ? 50 : Number(promo.valor));
+  const promocionesPorProducto = useMemo(() => {
+    const mapa = new Map();
+    (promocionesQuery.data || [])
       .filter((promo) => promo.activa !== false)
-      .filter((promo) =>
-        (Array.isArray(promo.productos) ? promo.productos : []).some(
-          (p) => String(p.id) === String(id)
-        )
-      )
-      .sort((a, b) => equiv(b) - equiv(a))[0];
-  }, [promocionesQuery.data, id]);
+      .forEach((promo) => {
+        (Array.isArray(promo.productos) ? promo.productos : []).forEach((p) => {
+          const pid = String(p.id);
+          const actual = mapa.get(pid);
+          if (!actual || equivPromo(promo) > equivPromo(actual)) {
+            mapa.set(pid, promo);
+          }
+        });
+      });
+    return mapa;
+  }, [promocionesQuery.data]);
+
+  // Mejor promoción activa que alcanza a este producto.
+  const promocion = promocionesPorProducto.get(String(id));
 
   const resenas = resenasQuery.data;
   const cargandoResenas = resenasQuery.isLoading;
@@ -498,7 +508,10 @@ const DetalleProducto = () => {
           <Row className="g-3 mb-4">
             {combosQueLoIncluyen.map((combo) => (
               <Col key={combo.id} xs={6} md={4}>
-                <ProductoCard producto={combo} />
+                <ProductoCard
+                  producto={combo}
+                  promocion={promocionesPorProducto.get(String(combo.id))}
+                />
               </Col>
             ))}
           </Row>
@@ -511,7 +524,10 @@ const DetalleProducto = () => {
           <Row className="g-3">
             {relacionados.map((rel) => (
               <Col key={rel.id} xs={6} md={4}>
-                <ProductoCard producto={rel} />
+                <ProductoCard
+                  producto={rel}
+                  promocion={promocionesPorProducto.get(String(rel.id))}
+                />
               </Col>
             ))}
           </Row>

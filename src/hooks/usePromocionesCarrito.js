@@ -7,12 +7,17 @@
  * el carrito después del catálogo no vuelve a pedirlas. Con el carrito vacío la
  * consulta queda deshabilitada (no hay descuento que calcular).
  *
- * Uso: const { descuentoTotal, promocionIds, promosAplicadas, cargandoPromos } = usePromocionesCarrito(items);
+ * Uso: const {
+ *   descuentoTotal, promocionIds, promosAplicadas, promosPorLinea, cargandoPromos
+ * } = usePromocionesCarrito(items);
  */
 
 import { useMemo } from 'react';
 import { usePromociones } from './queries';
-import { calcularDescuentoCarrito } from '../utils/calculoPromociones';
+import {
+  calcularDescuentoCarrito,
+  calcularDescuentoLinea,
+} from '../utils/calculoPromociones';
 
 export const usePromocionesCarrito = (items) => {
   const hayItems = Array.isArray(items) && items.length > 0;
@@ -59,10 +64,31 @@ export const usePromocionesCarrito = (items) => {
     [preview, nombresPorId]
   );
 
+  // Promoción y descuento de CADA línea, indexados igual que los ítems del
+  // carrito (`idLinea` y, si falta, el producto). La tarjeta del ítem lo usa
+  // para mostrar el precio original tachado y el precio con descuento, como en
+  // el catálogo; el total del pedido sigue saliendo de `preview`.
+  const promosPorLinea = useMemo(() => {
+    const mapa = new Map();
+    (Array.isArray(items) ? items : []).forEach((item) => {
+      const resultado = calcularDescuentoLinea(item, promos);
+      if (!resultado) return;
+      const promo = nombresPorId.get(resultado.promocionId);
+      mapa.set(String(item.idLinea || item.producto?.id), {
+        tipo: promo?.tipo,
+        valor: promo?.valor,
+        nombre: promo?.nombre,
+        descuento: resultado.descuento,
+      });
+    });
+    return mapa;
+  }, [items, promos, nombresPorId]);
+
   return {
     descuentoTotal: preview.descuentoTotal,
     promocionIds: preview.promocionIds,
     promosAplicadas,
+    promosPorLinea,
     cargandoPromos: hayItems && promocionesQuery.isLoading,
   };
 };

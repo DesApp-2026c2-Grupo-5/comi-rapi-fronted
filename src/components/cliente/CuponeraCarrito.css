@@ -1,0 +1,188 @@
+/**
+ * Propósito: estilos de la cuponera del carrito (aviso único de cupones).
+ * Contenido: bloque arriba de los productos, filas por cupón, alcance, nota de
+ *            compra mínima y acción Aplicar / Quitar.
+ * Dependencias: CuponeraCarrito.jsx (se importa al final del mismo).
+ * Uso: Importado desde src/components/cliente/CuponeraCarrito.jsx.
+ */
+
+.cuponera {
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary) 35%, var(--color-border-cream));
+  border-radius: var(--radius-panel);
+  background-color: color-mix(
+    in srgb,
+    var(--color-primary) 6%,
+    var(--color-surface)
+  );
+}
+
+.cuponera-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.cuponera-cabecera-icono {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--color-primary-dark);
+}
+
+.cuponera-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.cuponera-cupon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  padding: 0.6rem 0;
+  border-top: 1px dashed
+    color-mix(in srgb, var(--color-border-card) 85%, transparent);
+}
+
+.cuponera-cupon:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.cuponera-cupon:last-child {
+  padding-bottom: 0;
+}
+
+/* La info se queda con el ancho disponible; el botón baja a su línea antes
+   que comprimir el texto a una columna de dos palabras. */
+.cuponera-cupon-info {
+  flex: 1 1 13rem;
+  min-width: 0;
+}
+
+.cuponera-cupon-titulo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Valor del cupón: pastilla propia, no el `Badge` de react-bootstrap. Ese
+   componente agrega `bg-primary`, una utilidad de Bootstrap con
+   `background-color: … !important` que pinta el azul de fábrica y gana sobre
+   el naranja del tema. */
+.cuponera-cupon-valor {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 0.3em 0.65em;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.cuponera-cupon-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-success-active);
+}
+
+.cuponera-cupon-alcance {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--color-text-brown);
+}
+
+.cuponera-cupon-nota {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.cuponera-cupon-nota--aviso {
+  color: var(--color-danger-active);
+  font-weight: 600;
+}
+
+.cuponera-cupon-accion {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.cuponera-aplicar {
+  padding: 0.3rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Quitar: misma pastilla callada que usaba la tarjeta del producto. El rojo
+   aparece sólo en hover/foco, donde sí comunica que la acción deshace algo. */
+.cuponera-quitar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid
+    color-mix(in srgb, var(--color-text-muted) 45%, transparent);
+  border-radius: var(--radius-pill);
+  background-color: transparent;
+  color: var(--color-text-brown);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.cuponera-quitar:hover {
+  color: var(--color-danger-active);
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  background-color: color-mix(in srgb, var(--color-danger) 8%, transparent);
+}
+
+.cuponera-quitar:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.cuponera-quitar-icono {
+  flex-shrink: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+}
+
+@media (max-width: 575.98px) {
+  .cuponera {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .cuponera-cupon {
+    align-items: flex-start;
+  }
+}

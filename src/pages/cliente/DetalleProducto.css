@@ -208,6 +208,8 @@
 }
 
 .detalle-producto .producto-boton {
+  width: auto;
+  max-width: 180px;
   background-color: var(--color-primary);
   border: none;
   border-radius: 50px;

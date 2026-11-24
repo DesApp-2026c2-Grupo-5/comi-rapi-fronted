@@ -1,0 +1,109 @@
+/**
+ * Propósito: Estilos del aviso de cierre de sucursales, alineados con el diseño
+ *            de Comi-Rapi. Sin bordes laterales de colores ni gradient text.
+ * Contenido: Tarjeta de aviso con icono, título en negrita y detalle directo.
+ * Dependencias: AvisoCierreSucursales.jsx.
+ * Uso: Importado desde AvisoCierreSucursales.jsx.
+ */
+
+.aviso-cierre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  background: var(--color-surface);
+}
+
+.aviso-cierre-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+/* Icono: tamaño consistente, color del tema */
+.aviso-cierre-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-cream);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* Título: negrita, color principal */
+.aviso-cierre-titulo {
+  color: var(--color-text);
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+/* Detalle: texto cuerpo, color ligeramente más suave */
+.aviso-cierre-detalle {
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-top: 0.15rem;
+}
+
+/* ============ Variantes de color ============ */
+/* Catálogo: aviso suave, crema */
+.aviso-cierre--catalogo {
+  border-color: var(--color-primary);
+  background: #fbfdff;
+}
+
+.aviso-cierre--catalogo .aviso-cierre-icono {
+  color: var(--color-primary);
+}
+
+/* Carrito: aviso de peligro, rojo muy sutil */
+.aviso-cierre--carrito {
+  border-color: var(--color-danger);
+  background: #fdf3f3;
+}
+
+.aviso-cierre--carrito .aviso-cierre-icono {
+  color: var(--color-danger);
+}
+
+/* Pago: aviso de peligro, rojo muy sutil */
+.aviso-cierre--pago {
+  border-color: var(--color-danger);
+  background: #fdf3f3;
+}
+
+.aviso-cierre--pago .aviso-cierre-icono {
+  color: var(--color-danger);
+}
+
+/* ============ Responsividad ============ */
+@media (max-width: 767.98px) {
+  .aviso-cierre {
+    padding: 0.9rem 1rem;
+  }
+
+  .aviso-cierre-fila {
+    gap: 0.7rem;
+  }
+
+  .aviso-cierre-icono {
+    width: 36px;
+    height: 36px;
+  }
+
+  .aviso-cierre-titulo {
+    font-size: 1rem;
+  }
+
+  .aviso-cierre-detalle {
+    font-size: 0.88rem;
+  }
+}

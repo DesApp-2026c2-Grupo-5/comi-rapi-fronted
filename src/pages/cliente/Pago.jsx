@@ -24,6 +24,7 @@ import { formatearDireccion } from '../../utils/direccion';
 import IconoEstado from '../../components/comunes/IconoEstado';
 import ResumenPedido from '../../components/cliente/ResumenPedido';
 import ContadorCierre from '../../components/comunes/ContadorCierre';
+import AvisoCierreSucursales from '../../components/comunes/AvisoCierreSucursales';
 import ConfirmarModal from '../../components/comunes/ConfirmarModal';
 import { obtenerDisponibilidadPedido } from '../../api/pedidos';
 import { conectarSocket, EVENTOS_SOCKET } from '../../services/socket';
@@ -375,9 +376,14 @@ const Pago = () => {
               reasignar. Si hay alternativa, el panel de "Sucursal seleccionada
               para tu pedido" se actualiza solo con la sucursal nueva. */}
           {sucursalCerradaSinAlternativa && (
-            <Alert variant="danger" className="mb-4" role="status">
-              <strong>La sucursal cerró.</strong>
-            </Alert>
+            <AvisoCierreSucursales
+              variante="pago"
+              proximaApertura={disponibilidadPedido?.proximaApertura}
+              mensaje={
+                "Lo sentimos, la sucursal asignada a tu pedido ya cerró. Volvemos a abrir en el próximo horario de atención."
+              }
+              className="mb-4"
+            />
           )}
 
           {contadorSinAlternativa && (

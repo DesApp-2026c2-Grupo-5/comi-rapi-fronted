@@ -82,6 +82,32 @@ export const limpiarCarrito = (email) => {
   }
 };
 
+/** Clave de storage para el cupón aplicado de un usuario (o invitado). */
+export const claveCupon = (email) =>
+  `${PREFIJO_CLAVE}cupon:${normalizarEmail(email) || 'invitado'}`;
+
+/** Lee el código de cupón aplicado guardado, o '' si no hay. */
+export const leerCupon = (email) => {
+  if (!almacenamientoDisponible()) return '';
+  try {
+    const raw = localStorage.getItem(claveCupon(email));
+    if (!raw) return '';
+    return String(raw || '');
+  } catch {
+    return '';
+  }
+};
+
+/** Guarda el código de cupón aplicado; nunca rompe la app. */
+export const guardarCupon = (email, codigo) => {
+  if (!almacenamientoDisponible()) return;
+  try {
+    localStorage.setItem(claveCupon(email), String(codigo || ''));
+  } catch {
+    // Cuota llena o modo privado: se sigue solo en memoria.
+  }
+};
+
 /**
  * Migra el carrito de invitado a la clave del usuario (merge por idLinea,
  * sumando cantidades; ante líneas sin idLinea compara producto+personalización

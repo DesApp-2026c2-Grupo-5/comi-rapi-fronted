@@ -46,23 +46,35 @@ function descuentoLinea(linea, promo, precioUnitario, cantidad) {
   return 0;
 }
 
+/**
+ * Descuento que corresponde a UNA línea del carrito: gana la promoción que más
+ * ahorra (misma regla que el total). Devuelve `{ promocionId, descuento }` o
+ * `null` si ninguna la alcanza. Lo usan el total del carrito y la tarjeta del
+ * ítem, que necesita el descuento de su propia línea para mostrar el precio
+ * con descuento (y no un promedio del pedido).
+ */
+export function calcularDescuentoLinea(linea, promos) {
+  const cantidad = Number(linea?.cantidad);
+  const precioUnitario = precioUnitarioDe(linea);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) return null;
+  if (Number.isNaN(precioUnitario) || precioUnitario < 0) return null;
+  const listaPromos = Array.isArray(promos) ? promos : [];
+  let mejor = null;
+  for (const promo of listaPromos) {
+    const descuento = descuentoLinea(linea, promo, precioUnitario, cantidad);
+    if (descuento > 0 && (!mejor || descuento > mejor.descuento)) {
+      mejor = { promocionId: promo.id, descuento };
+    }
+  }
+  return mejor;
+}
+
 export function calcularDescuentoCarrito(lineas, promos) {
   const lista = Array.isArray(lineas) ? lineas : [];
-  const promociones = Array.isArray(promos) ? promos : [];
   const mejorPorLinea = new Map();
 
   lista.forEach((linea, indice) => {
-    const cantidad = Number(linea?.cantidad);
-    const precioUnitario = precioUnitarioDe(linea);
-    if (!Number.isInteger(cantidad) || cantidad <= 0) return;
-    if (Number.isNaN(precioUnitario) || precioUnitario < 0) return;
-    let mejor = null;
-    for (const promo of promociones) {
-      const descuento = descuentoLinea(linea, promo, precioUnitario, cantidad);
-      if (descuento > 0 && (!mejor || descuento > mejor.descuento)) {
-        mejor = { promocionId: promo.id, descuento };
-      }
-    }
+    const mejor = calcularDescuentoLinea(linea, promos);
     if (mejor) mejorPorLinea.set(indice, mejor);
   });
 

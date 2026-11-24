@@ -1,10 +1,9 @@
 /**
  * Propósito: Aviso global del catálogo cuando NINGUNA sucursal activa está
  *            tomando pedidos.
- * Contenido: Componente AvisoSucursalesCerradas, con la próxima apertura
- *            informada por el backend.
- * Dependencias: react-bootstrap (Alert), react-icons/fa, useSucursal,
- *               utils/horarios.js.
+ * Contenido: Componente AvisoSucursalesCerradas que reutiliza el aviso
+ *            unificado de cierre de sucursales (variante "catalogo").
+ * Dependencias: react-icons/fa, useSucursal, AvisoCierreSucursales.
  * Uso: <AvisoSucursalesCerradas className="mb-4" />
  *
  * Es un aviso de catálogo: se muestra una sola vez por pantalla y no por
@@ -12,30 +11,25 @@
  * pago si la sucursal asignada ya cerró.
  */
 
-import { Alert } from 'react-bootstrap';
-import { FaRegClock } from 'react-icons/fa';
-import PropTypes from 'prop-types';
 import { useSucursal } from '../../hooks/useSucursal';
-import { formatearProximaApertura } from '../../utils/horarios';
+import AvisoCierreSucursales from './AvisoCierreSucursales';
+import PropTypes from 'prop-types';
 
 const AvisoSucursalesCerradas = ({ className = '' }) => {
   const { todasCerradas, proximaApertura } = useSucursal();
   if (!todasCerradas) return null;
 
-  const cuando = formatearProximaApertura(proximaApertura);
   return (
-    <Alert variant="warning" role="status" className={className}>
-      <FaRegClock aria-hidden="true" className="me-2" />
-      <strong>Estamos cerrados.</strong>{' '}
-      {cuando
-        ? `Volvemos a abrir ${cuando}.`
-        : 'Volvemos a abrir en el próximo horario de atención.'}
-    </Alert>
+    <AvisoCierreSucursales
+      variante="catalogo"
+      proximaApertura={proximaApertura}
+      className={className}
+    />
   );
 };
+
+export default AvisoSucursalesCerradas;
 
 AvisoSucursalesCerradas.propTypes = {
   className: PropTypes.string,
 };
-
-export default AvisoSucursalesCerradas;

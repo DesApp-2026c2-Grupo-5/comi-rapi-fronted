@@ -46,7 +46,12 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../hooks/useAuth";
 import { useCarrito } from "../../hooks/useCarrito";
-import { useCuponesClienteQuery } from "../../hooks/queries";
+import {
+  useCategorias,
+  useCuponesClienteQuery,
+  useProductos,
+  usePromociones,
+} from "../../hooks/queries";
 import { usePromocionesCarrito } from "../../hooks/usePromocionesCarrito";
 import { usePedidos } from "../../hooks/usePedidos";
 import { useDirecciones } from "../../hooks/useDirecciones";
@@ -57,19 +62,21 @@ import { useNotificaciones } from "../../hooks/useNotificaciones";
 import { useParametros } from "../../hooks/useParametros";
 import { calcularCostoEnvio } from "../../services/envio";
 import { ESTADOS_PEDIDO } from "../../utils/constants";
-import { formatPrice } from "../../utils/formatters";
 import { rutaActual } from "../../utils/rutas";
 import { dentroDelAvisoDeCierre } from "../../utils/horarios";
 import ItemCarrito from "../../components/cliente/ItemCarrito";
+import CuponeraCarrito from "../../components/cliente/CuponeraCarrito";
 import ResumenPedido from "../../components/cliente/ResumenPedido";
 import ContadorCierre from "../../components/comunes/ContadorCierre";
+import AvisoCierreSucursales from "../../components/comunes/AvisoCierreSucursales";
+import AvisoEstadoVacío from "../../components/comunes/AvisoEstadoVacío.jsx";
 import { consultarDisponibilidad } from "../../api/pedidos";
+import {
+  calcularDescuentoCupon,
+  cuponAlcanzaProducto,
+} from "../../utils/calculoCupones";
 import "./Carrito.css";
-
-const textoValorCupon = (cupon) =>
-  cupon.tipoDescuento === "PORCENTAJE"
-    ? `${Number(cupon.valorDescuento)}%`
-    : `$${Number(cupon.valorDescuento)}`;
+import { leerCupon, guardarCupon, normalizarEmail } from "../../utils/carritoStorage";
 
 /**
  * Etiqueta del cupón desde datos reales: el nombre de su emisión (o el snapshot
@@ -78,20 +85,6 @@ const textoValorCupon = (cupon) =>
 const etiquetaCupon = (cupon) => {
   const nombre = cupon?.nombre || cupon?.emision?.nombre;
   return nombre ? `Cupón ${nombre}` : "Cupón";
-};
-
-/** Describe el beneficio del cupón (porcentaje o monto fijo). */
-const textoBeneficioCupon = (cupon) =>
-  cupon.tipoDescuento === "PORCENTAJE"
-    ? `${Number(cupon.valorDescuento)}% de descuento`
-    : `$${Number(cupon.valorDescuento)} de descuento`;
-
-/** Texto de vigencia del cupón, o null si no tiene fechas. */
-const textoVigenciaCupon = (cupon) => {
-  if (!cupon.fechaInicio && !cupon.fechaFin) return null;
-  const desde = cupon.fechaInicio ? new Date(cupon.fechaInicio).toLocaleDateString() : "…";
-  const hasta = cupon.fechaFin ? new Date(cupon.fechaFin).toLocaleDateString() : "…";
-  return `Vigente del ${desde} al ${hasta}`;
 };
 
 /**
@@ -114,14 +107,14 @@ const productosParaDisponibilidad = (items) =>
 
 const Carrito = () => {
   const { items, total, vaciarCarrito } = useCarrito();
-  const { descuentoTotal, promocionIds, promosAplicadas } =
+  const { descuentoTotal, promocionIds, promosAplicadas, promosPorLinea } =
     usePromocionesCarrito(items);
   const [actualizando, setActualizando] = useState(false);
   const { crearPedido, pedidoActual, pedidos, cambiarEstado } = usePedidos();
   const { direcciones, cargarDirecciones } = useDirecciones();
   const { notificar } = useNotificaciones();
   const { parametros } = useParametros();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -136,79 +129,143 @@ const Carrito = () => {
       ),
     [cuponesCliente]
   );
-  const [cuponCodigo, setCuponCodigo] = useState("");
+  const emailParaCupon = normalizarEmail(user?.email);
+  const [cuponCodigo, setCuponCodigo] = useState(() => leerCupon(emailParaCupon));
 
-  // Descuento estimado del cupón (vista previa local; el backend es la
-  // autoridad al crear y confirmar el pedido).
-  //
-  // Fórmula del backend: base = max(0, subtotalItems - descuentoPromociones).
-  // La compra mínima se mide sobre subtotalItems (antes de descuentos).
-  // El envío nunca forma parte de la base ni se descuenta.
-  const subtotalItems = total;
-  const baseCalculo = Math.max(0, subtotalItems - descuentoTotal);
+  // Catálogo y categorías: sólo para nombrar el alcance del cupón en el aviso
+  // (vienen de la caché de TanStack Query, sin pedido extra si se visitó el
+  // catálogo). Sin ítems no hay nada que alcanzar, así que no se piden.
+  const hayItems = items.length > 0;
+  const { data: productosCatalogo = [] } = useProductos({
+    enabled: isAuthenticated && hayItems,
+  });
+  const { data: categoriasCatalogo = [] } = useCategorias({
+    enabled: isAuthenticated && hayItems,
+  });
 
-  const descuentoCuponEstimado = useMemo(() => {
-    if (!cuponCodigo.trim()) return { monto: 0, codigo: "", nombre: "", detalle: "" };
-    const cupon = cuponesDisponibles.find((c) => c.codigo === cuponCodigo.trim());
-    if (!cupon) return { monto: 0, codigo: "", nombre: "", detalle: "" };
-
-    // Verificar usos disponibles del cupón.
-    const usosRestantes = Number(cupon.usosRestantes) || 0;
-    if (usosRestantes <= 0) {
-      return {
-        monto: 0,
-        codigo: cupon.codigo,
-        nombre: etiquetaCupon(cupon),
-        detalle: `El cupón ya no tiene usos disponibles`,
-      };
-    }
-
-    // Compra mínima sobre subtotal de ítems (antes de descuentos de promos ni cupón).
-    const minimo = Number(cupon.compraMinima) || 0;
-    if (minimo > 0 && subtotalItems < minimo) {
-      return {
-        monto: 0,
-        codigo: cupon.codigo,
-        nombre: etiquetaCupon(cupon),
-        detalle: `Compra mínima no alcanzada ($${minimo})`,
-      };
-    }
-
-    // Calcular descuento sobre la base (después de promociones, antes de cupón).
-    let monto = 0;
-    if (cupon.tipoDescuento === "PORCENTAJE") {
-      monto = Math.round((baseCalculo * Number(cupon.valorDescuento)) / 100);
-    } else {
-      monto = Number(cupon.valorDescuento);
-    }
-
-    // Respetar descuento máximo y que nunca deje el subtotal negativo.
-    if (
-      cupon.descuentoMaximo !== null &&
-      cupon.descuentoMaximo !== undefined &&
-      monto > Number(cupon.descuentoMaximo)
-    ) {
-      monto = Number(cupon.descuentoMaximo);
-    }
-    monto = Math.min(monto, baseCalculo);
-
-    return {
-      monto,
-      // El código se conserva para validaciones/operaciones del carrito; la
-      // vista del resumen usa sólo el nombre.
-      codigo: cupon.codigo,
-      nombre: etiquetaCupon(cupon),
-      detalle: cupon.tipoDescuento === "PORCENTAJE" ? `${Number(cupon.valorDescuento)}%` : `$${Number(cupon.valorDescuento)}`,
-    };
-  }, [cuponCodigo, cuponesDisponibles, subtotalItems, baseCalculo]);
-
-  // Cupón actualmente seleccionado (para mostrar su detalle: nombre,
-  // beneficio y condiciones). Puede ser undefined si se ingresó un código
-  // manual que no coincide con ninguno disponible.
+  // Cupón actualmente aplicado (para el aviso, el resumen y el chip del ítem).
   const cuponSeleccionado = useMemo(
     () => cuponesDisponibles.find((c) => c.codigo === cuponCodigo.trim()),
     [cuponCodigo, cuponesDisponibles]
   );
+
+  // Persiste el cupón elegido para que sobreviva a navegaciones fuera del
+  // carrito y al volver se mantenga aplicado.
+  useEffect(() => {
+    guardarCupon(emailParaCupon, cuponCodigo.trim());
+  }, [cuponCodigo, emailParaCupon]);
+
+  // Descuento de promoción por línea, en el shape que espera el cálculo del
+  // cupón (mapa clave → monto).
+  const descuentosPromoPorLinea = useMemo(() => {
+    const mapa = new Map();
+    promosPorLinea.forEach((promo, clave) => {
+      mapa.set(clave, Number(promo?.descuento) || 0);
+    });
+    return mapa;
+  }, [promosPorLinea]);
+
+  /* Vista previa del cupón: replica lib/services/cupones.js. La compra mínima y
+     la base se miden SÓLO sobre las líneas que el cupón alcanza (producto,
+     productos o categoría); el backend revalida al crear el pedido. */
+  const calculoCupon = useMemo(() => {
+    const vacio = {
+      alcanza: false,
+      motivo: null,
+      subtotalAlcanzado: 0,
+      descuentoPromocionAlcanzado: 0,
+      baseCalculo: 0,
+      monto: 0,
+      minimo: 0,
+      porLinea: new Map(),
+    };
+    if (!cuponSeleccionado) return vacio;
+    // Usos agotados: el backend lo rechaza al confirmar.
+    if ((Number(cuponSeleccionado.usosRestantes) || 0) <= 0) {
+      return { ...vacio, motivo: "sin_usos" };
+    }
+    return calcularDescuentoCupon(
+      items,
+      descuentosPromoPorLinea,
+      cuponSeleccionado
+    );
+  }, [cuponSeleccionado, items, descuentosPromoPorLinea]);
+
+  const descuentoCuponEstimado = useMemo(() => {
+    if (!cuponSeleccionado) {
+      return { monto: 0, codigo: "", nombre: "", detalle: "" };
+    }
+    const detalleBase =
+      cuponSeleccionado.tipoDescuento === "PORCENTAJE"
+        ? `${Number(cuponSeleccionado.valorDescuento)}%`
+        : `$${Number(cuponSeleccionado.valorDescuento)}`;
+    let detalle = detalleBase;
+    if (calculoCupon.motivo === "sin_usos") {
+      detalle = "El cupón ya no tiene usos disponibles";
+    } else if (calculoCupon.motivo === "sin_alcance") {
+      detalle = "El cupón no aplica a los productos del carrito";
+    } else if (calculoCupon.motivo === "compra_minima") {
+      detalle = `Compra mínima no alcanzada ($${calculoCupon.minimo})`;
+    }
+    return {
+      monto: calculoCupon.monto,
+      // El código se conserva para validaciones/operaciones del carrito; la
+      // vista del resumen usa sólo el nombre.
+      codigo: cuponSeleccionado.codigo,
+      nombre: etiquetaCupon(cuponSeleccionado),
+      detalle,
+    };
+  }, [cuponSeleccionado, calculoCupon]);
+
+  // Cupones disponibles que alcanzan a cada producto del carrito. Se usa sólo
+  // para ordenar (primero los alcanzados): el aviso vive una sola vez arriba.
+  const cuponesPorProducto = useMemo(() => {
+    const mapa = new Map();
+    (items || []).forEach((item) => {
+      const aplicables = cuponesDisponibles.filter((c) =>
+        cuponAlcanzaProducto(c, item.producto)
+      );
+      if (aplicables.length > 0) mapa.set(String(item.producto.id), aplicables);
+    });
+    return mapa;
+  }, [items, cuponesDisponibles]);
+
+  // Productos del carrito que tienen una promoción aplicada (para el orden
+  // de visualización: primero cupón, luego promoción, luego el resto).
+  const { data: todasPromociones = [] } = usePromociones({
+    incluirProductos: true,
+    enabled: items.length > 0,
+  });
+  const productosConPromo = useMemo(() => {
+    const idsPromoAplicada = new Set(promocionIds.map(String));
+    const set = new Set();
+    todasPromociones.forEach((promo) => {
+      if (idsPromoAplicada.has(String(promo.id))) {
+        (promo.productos || []).forEach((p) => set.add(String(p.id)));
+      }
+    });
+    return set;
+  }, [promocionIds, todasPromociones]);
+
+  // Orden de visualización del carrito: primero los ítems con cupón
+  // aplicado, luego los de promoción y finalmente el resto.
+  const itemsOrdenado = useMemo(() => {
+    const conCupon = [];
+    const conPromo = [];
+    const resto = [];
+    (items || []).forEach((item) => {
+      const pid = String(item.producto.id);
+      const tieneCuponElegible = cuponesPorProducto.has(pid);
+      if (tieneCuponElegible) {
+        conCupon.push(item);
+      } else if (productosConPromo.has(pid)) {
+        conPromo.push(item);
+      } else {
+        resto.push(item);
+      }
+    });
+    return [...conCupon, ...conPromo, ...resto];
+  }, [items, cuponesPorProducto, productosConPromo]);
 
   // Pantalla de origen para el login: se vuelve al carrito con lo elegido.
   const origen = rutaActual(location);
@@ -538,17 +595,16 @@ const Carrito = () => {
           {/* Aviso: sin dirección no se puede confirmar */}
           {isAuthenticated && items.length > 0 && direcciones.length === 0 && (
             <Col xs={12} className="mb-3">
-              <Alert variant="warning" className="mb-0" role="status">
-                No tenés direcciones guardadas.{" "}
-                <Link
-                  to="/cliente/perfil#direcciones"
-                  state={{ abrirNuevaDireccion: true }}
-                  className="alert-link"
-                >
-                  Agregá una dirección
-                </Link>{" "}
-                antes de confirmar tu pedido.
-              </Alert>
+              <AvisoEstadoVacío
+                titulo="No tenés direcciones guardadas."
+                detalle="Agregá una dirección antes de confirmar tu pedido."
+                accion={{
+                  texto: 'Agregá una dirección',
+                  href: '/cliente/perfil#direcciones',
+                  state: { abrirNuevaDireccion: true },
+                  sufijo: '.',
+                }}
+              />
             </Col>
           )}
 
@@ -574,13 +630,17 @@ const Carrito = () => {
             );
           })()}
 
-          {/* Aviso de disponibilidad: ninguna sucursal puede tomar el pedido
+          {/* Aviso de disponibilidad: ninguna sucursal puede tomar el pedido */}
+          {sinSucursalViable && (
             <Col xs={12} className="mb-3">
-              <Alert variant="danger" className="mb-0" role="status">
-                <strong>No podemos tomar tu pedido ahora.</strong>{" "}
-                {disponibilidad.mensaje ||
-                  "Ninguna sucursal cercana está abierta con stock suficiente."}
-              </Alert>
+              <AvisoCierreSucursales
+                variante="carrito"
+                proximaApertura={disponibilidad?.proximaApertura}
+                mensaje={
+                  disponibilidad.mensaje ||
+                  "Lo sentimos, las sucursales cercanas ya están cerradas. Volvemos a abrir en el próximo horario de atención."
+                }
+              />
             </Col>
           )}
 
@@ -606,102 +666,36 @@ const Carrito = () => {
 
           {/* Lista de productos */}
           <Col lg={8} className="mb-4 mb-lg-0">
-            {descuentoTotal > 0 && (
-              <Alert variant="success" className="mb-3">
-                <strong>¡Tenés promociones aplicadas!</strong>{" "}
-                {promosAplicadas.map((promo) => promo.nombre).join(" · ")}.
-              </Alert>
-            )}
-
-            {/* Selector de cupón: lista los cupones asignados al cliente.
-                El backend valida al crear el pedido; acá solo se elige el
-                código a enviar. */}
-            {isAuthenticated && cuponesDisponibles.length > 0 && (
-              <Card className="shadow-sm mb-3">
-                <Card.Body>
-                  <Form.Label className="fw-bold small">Cupón de descuento</Form.Label>
-                  <Form.Select
-                    value={cuponCodigo}
-                    onChange={(e) => setCuponCodigo(e.target.value)}
-                    className="mb-2"
-                  >
-                    <option value="">Seleccioná un cupón…</option>
-                    {cuponesDisponibles.map((c) => (
-                      <option key={c.id} value={c.codigo}>
-                        {c.emision?.nombre || "Cupón"} — {textoValorCupon(c)}
-                      </option>
-                    ))}
-                  </Form.Select>
-
-                  {/* Detalle del cupón seleccionado: nombre destacado,
-                      beneficio y condiciones de uso. */}
-                  {cuponSeleccionado && (
-                    <div className="cupon-detalle p-3 mt-3 border rounded bg-light">
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div>
-                          <h6 className="mb-1 fw-bold">
-                            {cuponSeleccionado.emision?.nombre || "Cupón"}
-                          </h6>
-                          <span className="text-success fw-semibold">
-                            {textoBeneficioCupon(cuponSeleccionado)}
-                          </span>
-                          {cuponSeleccionado.compraMinima > 0 && (
-                            <div className="small text-muted mt-1">
-                              Compra mínima:{" "}
-                              {formatPrice(cuponSeleccionado.compraMinima)}
-                            </div>
-                          )}
-                          {textoVigenciaCupon(cuponSeleccionado) && (
-                            <div className="small text-muted mt-1">
-                              {textoVigenciaCupon(cuponSeleccionado)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-end">
-                          <span className="fw-monospace text-muted d-block">
-                            Código:{cuponSeleccionado.codigo}
-                          </span>
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            onClick={() => setCuponCodigo("")}
-                          >
-                            <FaTrashAlt className="me-1" aria-hidden="true" />
-                            Quitar
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {descuentoCuponEstimado.detalle && (
-                    <Form.Text className="text-muted small mt-1">
-                      {descuentoCuponEstimado.monto > 0
-                        ? `Descuento estimado: ${formatPrice(
-                            descuentoCuponEstimado.monto
-                          )} (${descuentoCuponEstimado.detalle})`
-                        : descuentoCuponEstimado.detalle
-                        ? descuentoCuponEstimado.detalle
-                        : ""
-                      }
-                    </Form.Text>
-                  )}
-                </Card.Body>
-              </Card>
-            )}
-            {isAuthenticated && cuponesDisponibles.length === 0 && (
-              <Alert variant="info" className="mb-3 small">
-                No tenés cupones disponibles. Los que te envíen por email
-                aparecerán en <Link to="/cliente/mis-cupones">Mis Cupones</Link>.
-              </Alert>
+            {/* Aviso único de cupones: arriba de los productos y visible apenas
+                se entra al carrito. Antes se repetía en cada tarjeta. */}
+            {isAuthenticated && (
+              <CuponeraCarrito
+                cupones={cuponesDisponibles}
+                items={items}
+                productos={productosCatalogo}
+                categorias={categoriasCatalogo}
+                cuponCodigo={cuponCodigo}
+                descuento={descuentoCuponEstimado}
+                onAplicar={setCuponCodigo}
+                onQuitar={() => setCuponCodigo("")}
+              />
             )}
             <div className="d-flex flex-column gap-3">
-              {items.map((item) => (
-                <ItemCarrito
-                  key={item.idLinea || item.producto.id}
-                  item={item}
-                />
-              ))}
+              {itemsOrdenado.map((item) => {
+                const clave = String(item.idLinea || item.producto.id);
+                return (
+                  <ItemCarrito
+                    key={item.idLinea || item.producto.id}
+                    item={item}
+                    promo={promosPorLinea.get(clave) || null}
+                    descuentoCupon={calculoCupon.porLinea.get(clave) || 0}
+                    tieneCuponAplicado={
+                      calculoCupon.monto > 0 &&
+                      cuponAlcanzaProducto(cuponSeleccionado, item.producto)
+                    }
+                  />
+                );
+              })}
             </div>
 
             {/* B1: acceso rápido al catálogo para seguir comprando sin
@@ -727,7 +721,8 @@ const Carrito = () => {
             </div>
           </Col>
 
-          {/* Resumen del pedido */}
+          {/* Resumen del pedido: columna lateral al lado de los productos,
+              sin fija (no se pega al hacer scroll ni se siente como modal). */}
           <Col lg={4}>
             {direcciones.length > 0 && (
               <Card className="shadow-sm mb-3">
@@ -766,9 +761,6 @@ const Carrito = () => {
               onConfirmar={
                 tienePagoPendiente ? handleIrAPagar : handleConfirmarPedido
               }
-              /* Sólo acá la card va fija: está en la columna lateral y acompaña el
-                 scroll de la lista de ítems. En /cliente/pago taparía los botones. */
-              fija
               botonTexto={
                 !isAuthenticated
                   ? "Iniciá sesión para confirmar"
