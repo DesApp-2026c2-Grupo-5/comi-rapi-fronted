@@ -1,27 +1,370 @@
-.resumen-card {
-  border: 1px solid var(--color-border-cream);
+/**
+ * Propósito: Estilos de "Mis cupones" del CLIENTE: grilla de tickets y detalle.
+ * Contenido: Tarjetas con talón de descuento, separación discontinua, notches,
+ *            etiqueta de uso único, vencimiento con hora y detalle en una sola
+ *            tarjeta, sin capas ni desplazamientos escalonados.
+ * Dependencias: tokens.css (color, tipografía, radios, sombras y easing),
+ *               Bootstrap (Nav, Badge, Button, Card, Row/Col) y ModalBase.css.
+ * Uso: Importado por MisCupones.jsx.
+ */
+
+.mis-cupones {
+  --cupon-talon: 9rem;
 }
 
-.resumen-titulo {
-  border-bottom-color: var(--color-border-cream);
+/* Con cuatro pestañas alcanza para repartir todo el ancho disponible: cada
+   ítem crece por igual y el contenido queda centrado, sin dejar un hueco a la
+   derecha. En pantallas chicas se achica el padding antes que cortar textos. */
+.mis-cupones-nav {
+  gap: 0.25rem;
+  flex-wrap: nowrap;
 }
 
-.resumen-divisor {
-  border-color: var(--color-border-cream);
-  margin-y: 1rem;
+.mis-cupones-nav .nav-item {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-.resumen-total {
-  color: var(--color-primary-dark);
-}
-
-.fw-monospace {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.text-truncate {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.mis-cupones-nav .nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding-inline: 0.4rem;
   white-space: nowrap;
+}
+
+.mis-cupones-nav .nav-link .badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+  .mis-cupones-nav .nav-link {
+    gap: 0.25rem;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .mis-cupones-nav .nav-link .badge {
+    font-size: 0.65rem;
+  }
+}
+
+.cupon-tarjeta {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border-cream);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: box-shadow 0.18s var(--ease-out);
+}
+
+.cupon-tarjeta:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.cupon-tarjeta:focus-visible {
+  outline: 3px solid var(--color-primary-soft);
+  outline-offset: 2px;
+}
+
+/* Talón: el bloque de color con el beneficio, separado por una línea punteada
+   para leerlo como un cupón imprimible. */
+.cupon-tarjeta__talon {
+  position: relative;
+  flex: 0 0 var(--cupon-talon);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  color: var(--color-on-primary);
+  background: linear-gradient(
+    155deg,
+    var(--color-primary-soft),
+    var(--color-primary)
+  );
+  border-right: 2px dashed var(--color-border-cream);
+}
+
+/* Los dos medallones en los extremos de la perforación refuerzan la forma de
+   ticket. Se recortan con el overflow de la tarjeta. */
+.cupon-tarjeta__talon::before,
+.cupon-tarjeta__talon::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bs-body-bg);
+}
+
+.cupon-tarjeta__talon::before {
+  top: -9px;
+}
+
+.cupon-tarjeta__talon::after {
+  bottom: -9px;
+}
+
+.cupon-tarjeta__marca {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.cupon-tarjeta__descuento {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.cupon-tarjeta__talon-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cupon-tarjeta__cuerpo {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+}
+
+.cupon-tarjeta__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cupon-tarjeta__uso-unico,
+.cupon-detalle__uso-unico {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.cupon-tarjeta__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+/* El código es dato, no acción: se muestra solo, sin botón ni ícono de copiado. */
+.cupon-tarjeta__codigo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.cupon-tarjeta__codigo small,
+.cupon-detalle__codigo small {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.cupon-tarjeta__codigo-valor,
+.cupon-detalle__codigo-valor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+}
+
+.cupon-tarjeta__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+  margin-top: auto;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--color-border-card);
+}
+
+.cupon-tarjeta__dato,
+.cupon-detalle__dato {
+  min-width: 0;
+}
+
+.cupon-tarjeta__dato small,
+.cupon-detalle__dato small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.cupon-tarjeta__dato span {
+  display: block;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.cupon-tarjeta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cupon-tarjeta--inactivo {
+  border-color: var(--color-border-card);
+}
+
+.cupon-tarjeta--inactivo .cupon-tarjeta__talon {
+  color: var(--color-text-brown);
+  background: var(--color-cream);
+  border-right-color: var(--color-border-card);
+}
+
+.cupon-tarjeta--inactivo .cupon-tarjeta__titulo,
+.cupon-tarjeta--inactivo .cupon-tarjeta__dato span {
+  color: var(--color-text-muted);
+}
+
+/* ============ Detalle en modal: una sola tarjeta, sin capas ============ */
+
+.cupon-detalle {
+  border: 1px solid var(--color-border-cream);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.cupon-detalle .card-body {
+  padding: 1.25rem;
+}
+
+.cupon-detalle__encabezado {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cupon-detalle__valor {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-primary-dark);
+  overflow-wrap: anywhere;
+}
+
+.cupon-detalle__seccion + .cupon-detalle__seccion {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--color-border-card);
+}
+
+.cupon-detalle__seccion h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cupon-detalle__codigo {
+  display: block;
+}
+
+.cupon-detalle__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem 1.25rem;
+}
+
+.cupon-detalle__dato strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.cupon-detalle__alcance {
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.cupon-detalle__alcance p:last-child {
+  margin-bottom: 0;
+}
+
+/* Bootstrap desplaza el diálogo al abrirlo; acá sólo se desvanece para no
+   generar apilamientos ni movimientos escalonados del contenido.
+   `dialogClassName` se aplica al .modal-dialog, no al .modal. */
+.modal.fade .modal-dialog.cupon-detalle-modal,
+.modal.show .modal-dialog.cupon-detalle-modal {
+  transform: none;
+  transition: opacity 0.15s linear;
+}
+
+/* En pantallas chicas el talón se achica y la información pasa a una columna,
+   para que ningún dato quede cortado ni el botón sea difícil de tocar. */
+@media (max-width: 575.98px) {
+  .mis-cupones {
+    --cupon-talon: 6.5rem;
+  }
+
+  .cupon-tarjeta__descuento {
+    font-size: 1.6rem;
+  }
+
+  .cupon-tarjeta__cuerpo {
+    padding: 0.85rem;
+  }
+
+  .cupon-tarjeta__titulo {
+    font-size: 1.05rem;
+  }
+
+  .cupon-tarjeta__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .cupon-tarjeta__acciones .btn {
+    width: 100%;
+  }
+
+  .cupon-detalle .card-body {
+    padding: 1rem;
+  }
+
+  .cupon-detalle__encabezado {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .cupon-detalle__datos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* La pestaña activa conserva el naranja de marca también en tema oscuro. */
+.mis-cupones-nav .nav-link.active {
+  color: var(--color-primary-dark);
 }

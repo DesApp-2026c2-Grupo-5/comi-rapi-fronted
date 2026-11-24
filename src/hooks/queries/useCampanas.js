@@ -146,7 +146,7 @@ export const usePreviewDestinatariosQuery = ({
   useQuery({
     queryKey: ['private', 'cupones', 'preview', JSON.stringify(datos)],
     queryFn: ({ signal }) =>
-      previewDestinatarios({ ...datos, signal }).then(desenvolver),
+      previewDestinatarios(datos, { signal }).then(desenvolver),
     enabled: enabled && Boolean(datos),
     staleTime: 0,
     refetchOnWindowFocus: false,
@@ -186,12 +186,15 @@ export const useCrearEmision = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (datos) => crearEmision(datos),
-    // Una emisión nueva cambia la pertenencia al listado: sólo por eso se
-    // invalidan las páginas del listado, no el resto de consultas.
+    // Una emisión nueva cambia el listado de emisiones y el de cupones (se
+    // crearon filas nuevas). No hay detalle previo que invalidar.
     onSuccess: (resultado) => {
       if (resultado?.success === false) return;
       queryClient.invalidateQueries({
         queryKey: queryKeys.private.emisionesListaPrefix,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.private.cuponesListaPrefix,
       });
     },
   });

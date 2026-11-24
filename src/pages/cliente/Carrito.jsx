@@ -71,6 +71,15 @@ const textoValorCupon = (cupon) =>
     ? `${Number(cupon.valorDescuento)}%`
     : `$${Number(cupon.valorDescuento)}`;
 
+/**
+ * Etiqueta del cupón desde datos reales: el nombre de su emisión (o el snapshot
+ * del pedido). Nunca se deriva del código; si no hay nombre, queda "Cupón".
+ */
+const etiquetaCupon = (cupon) => {
+  const nombre = cupon?.nombre || cupon?.emision?.nombre;
+  return nombre ? `Cupón ${nombre}` : "Cupón";
+};
+
 /** Describe el beneficio del cupón (porcentaje o monto fijo). */
 const textoBeneficioCupon = (cupon) =>
   cupon.tipoDescuento === "PORCENTAJE"
@@ -139,9 +148,9 @@ const Carrito = () => {
   const baseCalculo = Math.max(0, subtotalItems - descuentoTotal);
 
   const descuentoCuponEstimado = useMemo(() => {
-    if (!cuponCodigo.trim()) return { monto: 0, codigo: "", detalle: "" };
+    if (!cuponCodigo.trim()) return { monto: 0, codigo: "", nombre: "", detalle: "" };
     const cupon = cuponesDisponibles.find((c) => c.codigo === cuponCodigo.trim());
-    if (!cupon) return { monto: 0, codigo: "", detalle: "" };
+    if (!cupon) return { monto: 0, codigo: "", nombre: "", detalle: "" };
 
     // Verificar usos disponibles del cupón.
     const usosRestantes = Number(cupon.usosRestantes) || 0;
@@ -149,6 +158,7 @@ const Carrito = () => {
       return {
         monto: 0,
         codigo: cupon.codigo,
+        nombre: etiquetaCupon(cupon),
         detalle: `El cupón ya no tiene usos disponibles`,
       };
     }
@@ -159,6 +169,7 @@ const Carrito = () => {
       return {
         monto: 0,
         codigo: cupon.codigo,
+        nombre: etiquetaCupon(cupon),
         detalle: `Compra mínima no alcanzada ($${minimo})`,
       };
     }
@@ -183,7 +194,10 @@ const Carrito = () => {
 
     return {
       monto,
+      // El código se conserva para validaciones/operaciones del carrito; la
+      // vista del resumen usa sólo el nombre.
       codigo: cupon.codigo,
+      nombre: etiquetaCupon(cupon),
       detalle: cupon.tipoDescuento === "PORCENTAJE" ? `${Number(cupon.valorDescuento)}%` : `$${Number(cupon.valorDescuento)}`,
     };
   }, [cuponCodigo, cuponesDisponibles, subtotalItems, baseCalculo]);
@@ -774,8 +788,8 @@ const Carrito = () => {
                 .join(" · ")}
               descuentoCupon={descuentoCuponEstimado.monto}
               detalleDescuentoCupon={
-                descuentoCuponEstimado.codigo
-                  ? `Cupón ${descuentoCuponEstimado.codigo} (${descuentoCuponEstimado.detalle})`
+                descuentoCuponEstimado.nombre
+                  ? `${descuentoCuponEstimado.nombre} (${descuentoCuponEstimado.detalle})`
                   : ""
               }
             />

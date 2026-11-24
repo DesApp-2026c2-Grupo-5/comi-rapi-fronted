@@ -173,6 +173,7 @@ export const queryKeys = {
     // de la emisión.
     emisionesCuponesPrefix: ['private', 'emisiones', 'cupones'],
     emisionCupones: (id) => ['private', 'emisiones', 'cupones', String(id)],
+    cuponesListaPrefix: ['private', 'cupones', 'lista'],
     cupones: ({ emisionId, estado, activo, pagina, limite } = {}) => [
       'private',
       'cupones',
@@ -184,6 +185,9 @@ export const queryKeys = {
       limite === null || limite === undefined ? 'sin-limite' : String(limite),
     ],
     cuponesCliente: ['private', 'cupones', 'cliente'],
+    // Prefijo de los detalles de cupón: se invalida al reconectar para que un
+    // DetalleCupon abierto durante la caída vuelva a leer por REST.
+    cuponesDetallePrefix: ['private', 'cupones', 'detalle'],
     cupon: (id) => ['private', 'cupones', 'detalle', String(id)],
 
     // Quejas: bandeja paginada para ADMIN/SUPERADMIN y mis quejas para CLIENTE

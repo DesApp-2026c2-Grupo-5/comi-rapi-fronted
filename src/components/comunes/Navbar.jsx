@@ -29,7 +29,6 @@ import {
   FaStore,
   FaSlidersH,
   FaTags,
-  FaTag,
   FaPercent,
   FaUsers,
   FaUserTie,
@@ -54,7 +53,8 @@ import './Navbar.css';
 
 // Menú del cliente (cada enlace lleva su ícono). El perfil NO va acá: se entra
 // desde el menú de cuenta del logo. Las direcciones tampoco: se gestionan desde
-// el perfil. `badge` indica qué contador se dibuja junto al ícono.
+// el perfil. Mis Cupones vive en ese mismo menú del logo, accesible en
+// escritorio y en móvil. `badge` indica qué contador se dibuja junto al ícono.
 const enlacesCliente = [
   { to: '/cliente/inicio', etiqueta: 'Inicio', icono: FaHome },
   { to: '/cliente/catalogo', etiqueta: 'Catálogo', icono: FaUtensils },
@@ -69,11 +69,6 @@ const enlacesCliente = [
     etiqueta: 'Mis Pedidos',
     icono: FaReceipt,
     badge: 'pedidos',
-  },
-  {
-    to: '/cliente/mis-cupones',
-    etiqueta: 'Mis Cupones',
-    icono: FaTag,
   },
 ];
 

@@ -138,6 +138,9 @@ async function ejecutar(method, path, datos, { signal } = {}) {
       success: false,
       status: res.status,
       error: mensaje,
+      // Código estable del rechazo (p. ej. emisiones/cupones). Se conserva
+      // aunque no haya mensaje legible para que la UI pueda decidir qué hacer.
+      motivo: (body && body.motivo) || null,
       // Iteración 1-geo: el backend responde 409 con `opciones` cuando una
       // dirección coincide con varias ubicaciones (identidades territoriales
       // de Georef); el formulario las muestra para que el usuario elija.

@@ -26,6 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { useSucursalOperativa } from '../../hooks/useSucursalOperativa';
 import { queryKeys } from '../../hooks/queries';
+import { ROLES } from '../../utils/constants';
 import { actualizarSucursalEnCache } from '../../utils/sucursalesCache';
 import {
   obtenerStockDeProducto,
@@ -49,6 +50,64 @@ const invalidarCatalogo = (queryClient) => {
   queryClient.invalidateQueries({ queryKey: ['public', 'categorias'] });
   queryClient.invalidateQueries({ queryKey: ['public', 'promociones'] });
   queryClient.invalidateQueries({ queryKey: ['public', 'personalizacion'] });
+};
+
+/**
+ * Invalida sólo las consultas administrativas afectadas por un cambio de
+ * emisión/cupón. Los IDs del payload permiten refrescar el detalle abierto sin
+ * tocar el resto del árbol. Se usa para `emision_actualizada` (SUPERADMIN) y,
+ * sin IDs, en la resincronización al reconectar.
+ * @param {import('@tanstack/react-query').QueryClient} queryClient
+ * @param {{emisionId?: number, cuponId?: number}} [payload]
+ */
+const invalidarEmisionesCuponesAdmin = (queryClient, payload = {}) => {
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.private.emisionesListaPrefix,
+  });
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.private.cuponesListaPrefix,
+  });
+  if (payload.emisionId) {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.private.emision(payload.emisionId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.private.emisionCupones(payload.emisionId),
+    });
+  }
+  if (payload.cuponId) {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.private.cupon(payload.cuponId),
+    });
+  }
+};
+
+/**
+ * MisCupones y el carrito leen la misma clave: una sola invalidación alcanza
+ * para que ambos vean el estado nuevo del cupón del CLIENTE.
+ * @param {import('@tanstack/react-query').QueryClient} queryClient
+ */
+const invalidarCuponesCliente = (queryClient) => {
+  queryClient.invalidateQueries({ queryKey: queryKeys.private.cuponesCliente });
+};
+
+/**
+ * Detalles abiertos de emisiones/cupones. Al reconectar no hay IDs en el
+ * aviso, pero puede haber una pantalla de detalle en primer plano: invalidar
+ * los tres prefijos refresca sólo las consultas activas (TanStack Query no
+ * refetchea las inactivas) sin tocar el resto de la caché.
+ * @param {import('@tanstack/react-query').QueryClient} queryClient
+ */
+const invalidarDetallesEmisionesCuponesAdmin = (queryClient) => {
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.private.emisionesDetallePrefix,
+  });
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.private.emisionesCuponesPrefix,
+  });
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.private.cuponesDetallePrefix,
+  });
 };
 
 /**
@@ -756,6 +815,11 @@ const RealtimeBridge = () => {
 
   const emailSesion = user?.email;
   const haySesion = hydrated && Boolean(emailSesion);
+  // Los eventos de cupones van a salas distintas según el rol: `admins` para
+  // el SUPERADMIN y `usuario:{id}` para el CLIENTE. Los invitados no escuchan
+  // ninguno de los dos (sólo reciben los broadcasts públicos de arriba).
+  const esSuperadmin = haySesion && user?.rol === ROLES.SUPERADMIN;
+  const esCliente = haySesion && user?.rol === ROLES.CLIENTE;
 
   useEffect(() => {
     // Esperar a que la hidratación termine antes de conectar.
@@ -805,6 +869,13 @@ const RealtimeBridge = () => {
         );
       });
     };
+    // Emisiones/cupones: el evento llega con IDs y la verdad se relee por REST.
+    const alCambiarEmision = (payload) => {
+      invalidarEmisionesCuponesAdmin(queryClient, payload);
+    };
+    const alCambiarCupon = () => {
+      invalidarCuponesCliente(queryClient);
+    };
 
     // Registrar listeners PÚBLICOS siempre
     instancia.on(EVENTOS_SOCKET.CATALOGO_ACTUALIZADO, alCambiarCatalogo);
@@ -813,9 +884,15 @@ const RealtimeBridge = () => {
     instancia.on(EVENTOS_SOCKET.PERSONALIZACION_ACTUALIZADO, alCambiarPersonalizacion);
     instancia.on(EVENTOS_SOCKET.PERSONALIZACION_CATEGORIA_ACTUALIZADA, alCambiarPersonalizacion);
 
-    // Registrar listeners PRIVADOS solo si hay sesión
+    // Registrar listeners PRIVADOS solo si hay sesión y el rol correspondiente
     if (haySesion) {
       instancia.on(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alCambiarStock);
+    }
+    if (esSuperadmin) {
+      instancia.on(EVENTOS_SOCKET.EMISION_ACTUALIZADA, alCambiarEmision);
+    }
+    if (esCliente) {
+      instancia.on(EVENTOS_SOCKET.CUPON_ACTUALIZADO, alCambiarCupon);
     }
 
     // Una reconexión pudo perder avisos mientras el canal estaba caído: se
@@ -835,6 +912,15 @@ const RealtimeBridge = () => {
         // Reclamos: los avisos del canal caído no se recuperan solos, así que
         // al volver la conexión se relee la bandeja y el detalle.
         queryClient.invalidateQueries({ queryKey: ['private', 'quejas'] });
+        // Durante la caída del canal pudieron cambiar emisiones o los cupones
+        // propios. No hay IDs en la reconexión: se invalidan los prefijos de
+        // listado y también los de detalle, por si alguna pantalla de detalle
+        // estaba abierta cuando se perdió el canal.
+        if (esSuperadmin) {
+          invalidarEmisionesCuponesAdmin(queryClient);
+          invalidarDetallesEmisionesCuponesAdmin(queryClient);
+        }
+        if (esCliente) invalidarCuponesCliente(queryClient);
       }
     });
 
@@ -848,11 +934,25 @@ const RealtimeBridge = () => {
       if (haySesion) {
         instancia.off(EVENTOS_SOCKET.STOCK_ACTUALIZADO, alCambiarStock);
       }
+      if (esSuperadmin) {
+        instancia.off(EVENTOS_SOCKET.EMISION_ACTUALIZADA, alCambiarEmision);
+      }
+      if (esCliente) {
+        instancia.off(EVENTOS_SOCKET.CUPON_ACTUALIZADO, alCambiarCupon);
+      }
     };
     // `versionSocket` cambia cuando el superadmin elige/limpia su sucursal de
     // contexto: el socket se recrea con otra sesión y hay que registrar los
     // listeners sobre la instancia nueva.
-  }, [hydrated, haySesion, queryClient, versionSocket, actualizarSucursalOperativa]);
+  }, [
+    hydrated,
+    haySesion,
+    esSuperadmin,
+    esCliente,
+    queryClient,
+    versionSocket,
+    actualizarSucursalOperativa,
+  ]);
 
   return null;
 };

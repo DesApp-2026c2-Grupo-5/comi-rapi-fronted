@@ -44,8 +44,7 @@
   font-weight: 600;
 }
 
-.selector-multiple .item-desplegable.texto-suave {
-  color: #6c757d;
+.selector-multiple .item-desplegable.text-muted {
   font-style: italic;
 }
 
@@ -59,24 +58,4 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.selector-multiple .texto-suave {
-  font-size: 0.85rem;
-  color: #6c757d;
-}
-
-.seccion-formulario {
-  padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
-}
-
-.seccion-formulario:first-child {
-  border-top: none;
-  padding-top: 0;
-}
-
-.texto-suave {
-  font-size: 0.85rem;
-  color: #6c757d;
 }

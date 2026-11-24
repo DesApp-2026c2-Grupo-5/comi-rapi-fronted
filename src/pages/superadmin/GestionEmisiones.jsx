@@ -24,6 +24,13 @@ import './Cupones.css';
 
 const LIMITE_POR_PAGINA = 20;
 
+const VARIANTE_ESTADO_EMISION = {
+  EN_PROCESO: 'primary',
+  COMPLETADA: 'success',
+  CON_ERRORES: 'warning',
+  CANCELADA: 'dark',
+};
+
 const VARIANTE_ESTADO_CUPON = {
   DISPONIBLE: 'success',
   EN_USO: 'warning',
@@ -110,7 +117,17 @@ const GestionEmisiones = () => {
   return (
     <Container className="py-4 cupones-vista">
       <div className="cupon-cabecera mb-4">
-        <h1 className="h2 mb-0 cupon-cabecera-titulo">Emisiones de Cupones</h1>
+        <div className="cupon-cabecera-titulo">
+          <nav aria-label="Ruta de cupones" className="mb-2">
+            <ol className="breadcrumb mb-0">
+              <li className="breadcrumb-item">Cupones</li>
+              <li className="breadcrumb-item active" aria-current="page">
+                Emisiones
+              </li>
+            </ol>
+          </nav>
+          <h1 className="h2 mb-0">Emisiones de Cupones</h1>
+        </div>
         <Button
           variant="primary"
           className="cupon-cabecera-accion"
@@ -171,6 +188,11 @@ const GestionEmisiones = () => {
                         <Link to={`/superadmin/cupones/emisiones/${emision.id}`}>
                           {emision.nombre}
                         </Link>
+                        <div className="small mt-1 d-flex flex-wrap gap-1">
+                          <Badge bg={VARIANTE_ESTADO_EMISION[emision.estado] || 'secondary'}>
+                            {emision.estado}
+                          </Badge>
+                        </div>
                         <div className="small text-muted mt-1">
                           Creada {formatearFecha(emision.createdAt)}
                         </div>

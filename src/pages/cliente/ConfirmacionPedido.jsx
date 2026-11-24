@@ -144,7 +144,7 @@ const ConfirmacionPedido = () => {
             }
             detalleDescuentoCupon={
               pedidoActual.cupon
-                ? `Cupón ${pedidoActual.cupon.codigo} (${pedidoActual.cupon.tipoDescuento === 'PORCENTAJE' ? Number(pedidoActual.cupon.valorDescuento) + '%' : '$' + Number(pedidoActual.cupon.valorDescuento)})`
+                ? `${pedidoActual.cupon.nombre ? `Cupón ${pedidoActual.cupon.nombre}` : 'Cupón'} (${pedidoActual.cupon.tipoDescuento === 'PORCENTAJE' ? Number(pedidoActual.cupon.valorDescuento) + '%' : '$' + Number(pedidoActual.cupon.valorDescuento)})`
                 : ''
             }
           />

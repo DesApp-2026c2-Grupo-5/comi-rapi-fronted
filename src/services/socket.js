@@ -35,6 +35,11 @@
  *   - notificacion_creada: el usuario tiene una fila nueva en su centro de
  *     notificaciones. Va sólo a su room privada `usuario:{id}`; el listado y el
  *     contador se reconsultan por REST.
+ *   - emision_actualizada: cambió una emisión o un cupón de ella. Va sólo a
+ *     `admins` (SUPERADMINISTRADOR) y trae únicamente `{ emisionId, cuponId? }`.
+ *   - cupon_actualizado: cambió un cupón del usuario. Va sólo a su room privada
+ *     `usuario:{id}` y trae `{ cuponId, emisionId? }`. Los invitados y otros
+ *     clientes no reciben ninguno de estos dos eventos.
  * No existe aviso al crear un pedido: todo pedido nace `pendiente` y el panel
  * de administración no muestra los pendientes, así que el admin se entera
  * recién al confirmarse el pago. Para el cliente, su propio POST ya le devolvió
@@ -67,6 +72,8 @@ export const EVENTOS_SOCKET = {
   SUCURSAL_ESTADO: 'sucursal_estado',
   QUEJA_ACTUALIZADA: 'queja_actualizada',
   NOTIFICACION_CREADA: 'notificacion_creada',
+  EMISION_ACTUALIZADA: 'emision_actualizada',
+  CUPON_ACTUALIZADO: 'cupon_actualizado',
   PERSONALIZACION_ACTUALIZADO: 'personalizacion_actualizado',
   PERSONALIZACION_CATEGORIA_ACTUALIZADA: 'personalizacion_categoria_actualizada',
 };

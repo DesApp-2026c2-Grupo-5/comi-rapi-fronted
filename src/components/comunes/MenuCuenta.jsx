@@ -1,8 +1,8 @@
 /**
  * Propósito: Menú de cuenta que se despliega desde el logo de Comi-Rapi.
  * Contenido: Componente MenuCuenta con la identidad del usuario (foto, nombre y
- *            correo), las acciones de su rol (direcciones, perfil y cerrar
- *            sesión para el CLIENTE) y el interruptor de modo oscuro.
+ *            correo), las acciones de su rol (Mis Cupones, direcciones, perfil
+ *            y cerrar sesión para el CLIENTE) y el interruptor de modo oscuro.
  * Dependencias: react-dom (createPortal), react-router-dom (Link, useLocation,
  *               useNavigate), react-icons/fa, useAuth, Avatar, SelectorTema,
  *               MenuCuenta.css.
@@ -32,6 +32,7 @@ import {
   FaChevronRight,
   FaMapMarkerAlt,
   FaSignOutAlt,
+  FaTag,
   FaUserCog,
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
@@ -41,8 +42,14 @@ import Avatar from './Avatar';
 import SelectorTema from './SelectorTema';
 import './MenuCuenta.css';
 
-/** Accesos del CLIENTE sobre su cuenta. */
+/** Accesos del CLIENTE sobre su cuenta y sus cupones. */
 const ACCIONES_CLIENTE = [
+  {
+    id: 'cupones',
+    etiqueta: 'Mis Cupones',
+    to: '/cliente/mis-cupones',
+    Icono: FaTag,
+  },
   {
     id: 'direcciones',
     etiqueta: 'Editar direcciones',
@@ -212,11 +219,15 @@ const MenuCuenta = () => {
   };
 
   const nombre = nombreCompleto(user?.nombre, user?.apellido) || 'Mi cuenta';
+  const enCupones = pathname === '/cliente/mis-cupones';
   const enPerfil = pathname === '/cliente/perfil';
   const enDirecciones = enPerfil && hash === '#direcciones';
 
-  const estaActivo = (id) =>
-    id === 'direcciones' ? enDirecciones : enPerfil && !enDirecciones;
+  const estaActivo = (id) => {
+    if (id === 'cupones') return enCupones;
+    if (id === 'direcciones') return enDirecciones;
+    return enPerfil && !enDirecciones;
+  };
 
   return (
     <div className="menu-cuenta" ref={contenedorRef}>

@@ -128,7 +128,7 @@ const ResumenPedido = ({
         {descuentoCupon > 0 && (
           <div className="d-flex justify-content-between mb-3">
             <span className="text-muted">
-              Cupón{detalleDescuentoCupon ? ` (${detalleDescuentoCupon})` : ''}
+              {detalleDescuentoCupon || 'Cupón'}
             </span>
             <strong className="text-success">−{formatPrice(descuentoCupon)}</strong>
           </div>

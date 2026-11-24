@@ -446,7 +446,7 @@ const Pago = () => {
             }
             detalleDescuentoCupon={
               pedido.cupon
-                ? `Cupón ${pedido.cupon.codigo} (${pedido.cupon.tipoDescuento === 'PORCENTAJE' ? Number(pedido.cupon.valorDescuento) + '%' : '$' + Number(pedido.cupon.valorDescuento)})`
+                ? `${pedido.cupon.nombre ? `Cupón ${pedido.cupon.nombre}` : 'Cupón'} (${pedido.cupon.tipoDescuento === 'PORCENTAJE' ? Number(pedido.cupon.valorDescuento) + '%' : '$' + Number(pedido.cupon.valorDescuento)})`
                 : ''
             }
           />

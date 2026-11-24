@@ -7,22 +7,25 @@
  */
 
 export class ApiError extends Error {
-  constructor(mensaje, status) {
+  constructor(mensaje, status, motivo) {
     super(mensaje);
     this.name = 'ApiError';
     this.status = status;
+    this.motivo = motivo || null;
   }
 }
 
 /**
- * Devuelve `data` o lanza un ApiError con el mensaje del backend.
- * @param {{success: boolean, data?: any, error?: string, status?: number}} resultado
+ * Devuelve `data` o lanza un ApiError con el mensaje y el motivo del backend.
+ * @param {{success: boolean, data?: any, error?: string, status?: number,
+ *   motivo?: string}} resultado
  */
 export const desenvolver = (resultado) => {
   if (!resultado || resultado.success !== true) {
     throw new ApiError(
       resultado?.error || 'No se pudo cargar la información.',
-      resultado?.status
+      resultado?.status,
+      resultado?.motivo
     );
   }
   return resultado.data;

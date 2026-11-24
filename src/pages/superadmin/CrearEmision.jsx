@@ -11,24 +11,50 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Card, Form, Button, Alert, Table } from 'react-bootstrap';
 import {
-  Container, Row, Col, Card, CardBody, CardTitle, Form, Button,
-  Alert, Table,
-} from 'react-bootstrap';
-import {
-  FaTags, FaUsers, FaEnvelope, FaArrowLeft, FaSearch, FaTimes,
+  FaUsers, FaEnvelope, FaArrowLeft, FaSearch, FaTimes,
 } from 'react-icons/fa';
+import PaginaFormularioABM from '../../components/admin/PaginaFormularioABM';
 import {
   buscarEmisionEnCache,
   queryKeys,
   useCategorias,
+  useCrearEmision,
   useEmisionQuery,
   useProductos,
 } from '../../hooks/queries';
 import { fetchCategoria, fetchProducto } from '../../hooks/queries/fetchers';
 import { TIEMPO_CACHE_QUERY_MS } from '../../utils/constants';
-import { previewDestinatarios, crearEmision } from '../../api';
+import { previewDestinatarios } from '../../api';
+import '../../components/admin/FormularioAdmin.css';
+import '../../components/admin/FormularioABM.css';
 import './CrearEmision.css';
+
+const TIPOS_CLIENTE = [
+  {
+    id: 'NUEVO',
+    etiqueta: 'Nuevos',
+    ayuda: 'Se registraron dentro del período de análisis.',
+  },
+  {
+    id: 'ACTIVO',
+    etiqueta: 'Activos',
+    ayuda: 'Realizaron al menos un pedido entregado durante el período, sin importar qué compraron.',
+  },
+  {
+    id: 'INACTIVO',
+    etiqueta: 'Inactivos',
+    ayuda: 'No realizaron pedidos entregados durante el período, pero sí antes.',
+  },
+];
+
+const ETIQUETA_TIPO_DESTINATARIO = {
+  NUEVO: 'Nuevo',
+  ACTIVO: 'Activo',
+  INACTIVO: 'Inactivo',
+  COMPRADOR_PERIODO: 'Comprador del período',
+};
 
 /**
  * Selector múltiple con búsqueda estilo Mercado Libre.
@@ -131,7 +157,7 @@ const SelectorMultipleConBusqueda = ({
       {abierto && opciones.length > 0 && (
         <div className="lista-desplegable">
           {opcionesFiltradas.length === 0 ? (
-            <div className="item-desplegable texto-suave">
+            <div className="item-desplegable text-muted">
               No se encontraron coincidencias. Escribí y presioná Enter para agregar.
             </div>
           ) : (
@@ -162,17 +188,6 @@ const SelectorMultipleConBusqueda = ({
               <span
                 key={id}
                 className="chip-seleccionado d-inline-block me-1 mb-1"
-                style={{
-                  backgroundColor: '#e7f1ff',
-                  color: '#0d6efd',
-                  border: '1px solid #0d6efd',
-                  borderRadius: '12px',
-                  padding: '2px 8px',
-                  fontSize: '0.85rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
               >
                 {nombre}
                 <button
@@ -239,6 +254,11 @@ const formularioDesdeEmision = (e) => {
     periodoAnalisisDias: s.seleccion?.periodoAnalisisDias != null
       ? String(s.seleccion.periodoAnalisisDias)
       : (e.periodoAnalisisDias != null ? String(e.periodoAnalisisDias) : ''),
+    tiposCliente: Array.isArray(s.seleccion?.tiposCliente) &&
+      s.seleccion.tiposCliente.length > 0
+      ? [s.seleccion.tiposCliente[0]] : [],
+    minUnidadesCompradas: s.seleccion?.minUnidadesCompradas != null
+      ? String(s.seleccion.minUnidadesCompradas) : '',
     destinatariosIds: [],
   };
 };
@@ -253,7 +273,8 @@ const CrearEmision = () => {
     nombre: '', descripcion: '', tipoDescuento: 'PORCENTAJE', valorDescuento: '',
     compraMinima: '', descuentoMaximo: '', fechaInicio: '', fechaFin: '',
     productoIds: [], categoriaIds: [], maxDestinatarios: '',
-    periodoAnalisisDias: '', destinatariosIds: [],
+    periodoAnalisisDias: '', tiposCliente: [], minUnidadesCompradas: '',
+    destinatariosIds: [],
   });
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
@@ -267,6 +288,9 @@ const CrearEmision = () => {
     productos: new Set(), categorias: new Set(),
   });
   const queryClient = useQueryClient();
+  // La mutación ya invalida el listado de emisiones y el de cupones; acá no se
+  // duplican invalidaciones (el socket hace lo propio para otras pestañas).
+  const { mutateAsync: crearEmision } = useCrearEmision();
 
   const idReemitir = Number(searchParams.get('reemitirDe')) || null;
   const emisionCacheada = idReemitir
@@ -442,12 +466,19 @@ const CrearEmision = () => {
 
   if (faltaDetalle && detalleFetching && paso === 'config') {
     return (
-      <Container className="py-4">
-        <div className="text-center py-5">
-          <div className="spinner-border" role="status"></div>
-          <p className="mt-3">Cargando configuración de la emisión para reemitir…</p>
-        </div>
-      </Container>
+      <div className="crear-emision-page">
+        <PaginaFormularioABM
+          titulo="Nueva emisión de cupones"
+          descripcion="Configurá el descuento, el alcance y los clientes que recibirán los cupones."
+          volverA="/superadmin/cupones"
+          volverTexto="Volver a emisiones"
+        >
+          <div className="text-center py-5" role="status" aria-live="polite">
+            <div className="spinner-border" role="status"></div>
+            <p className="mt-3">Cargando configuración de la emisión para reemitir…</p>
+          </div>
+        </PaginaFormularioABM>
+      </div>
     );
   }
 
@@ -461,6 +492,19 @@ const CrearEmision = () => {
 
   const manejarSeleccionMultiple = (name, ids) => {
     setForm((prev) => ({ ...prev, [name]: ids }));
+  };
+
+  const manejarTipoCliente = (tipo) => {
+    setForm((prev) => ({ ...prev, tiposCliente: [tipo] }));
+  };
+
+  const validarTiposCliente = () => {
+    if (form.tiposCliente.length !== 1) {
+      throw new Error('Seleccioná un tipo de cliente: Nuevo, Inactivo o Activo.');
+    }
+    if (!form.periodoAnalisisDias) {
+      throw new Error('El período de análisis es obligatorio para clasificar clientes.');
+    }
   };
 
   const validarFechas = () => {
@@ -489,6 +533,7 @@ const CrearEmision = () => {
     setEmitirError('');
     setGenerandoPreview(true);
     try {
+      validarTiposCliente();
       validarFechas();
       const datos = { ...form };
       const resultado = await previewDestinatarios(datos);
@@ -510,6 +555,7 @@ const CrearEmision = () => {
     setEmitirError('');
     setPaso('confirmando');
     try {
+      validarTiposCliente();
       validarFechas();
       const datos = {
         ...form,
@@ -530,310 +576,417 @@ const CrearEmision = () => {
     }
   };
 
-  const esValido = Boolean(form.nombre && form.valorDescuento && form.fechaInicio && form.fechaFin);
+  const esValido = Boolean(
+    form.nombre && form.valorDescuento && form.fechaInicio && form.fechaFin &&
+      form.tiposCliente.length === 1 && form.periodoAnalisisDias
+  );
 
   if (paso === 'config') {
     return (
-      <Container>
-        <Row>
-          <Col lg={8}>
-            <Card className="shadow-sm">
-              <CardBody>
-                <CardTitle className="d-flex align-items-center gap-2 mb-3">
-                  <FaTags /> Nueva Emisión de Cupones
-                </CardTitle>
-                {reemitirDe && (
-                  <Alert variant="info" role="alert" className="mb-3">
-                    Reemitiendo la emisión <strong>#{reemitirDe}</strong>. Revisá
-                    y ajustá la configuración antes de generar la nueva
-                    previsualización.
-                  </Alert>
-                )}
-                {error && <Alert variant="danger" role="alert">{error}</Alert>}
-                <Form>
-                  {/* Sección: Información del descuento */}
-                  <div className="seccion-formulario mb-4">
-                    <h6 className="text-muted small text-uppercase mb-3">
-                      Información del descuento
-                    </h6>
-                    <Row className="g-3">
-                      <Col md={6}>
-                        <Form.Label>Nombre o descripción</Form.Label>
-                        <Form.Control
-                          name="nombre"
-                          value={form.nombre}
-                          onChange={manejarCambio}
-                          required
-                          placeholder="Ej: Descuento Leales Noviembre"
-                        />
-                      </Col>
-                      <Col md={6}>
-                        <Form.Label>Tipo de descuento</Form.Label>
-                        <Form.Select
-                          name="tipoDescuento"
-                          value={form.tipoDescuento}
-                          onChange={manejarCambio}
-                        >
-                          <option value="PORCENTAJE">Porcentaje</option>
-                          <option value="MONTO_FIJO">Importe fijo</option>
-                        </Form.Select>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Label>Valor del descuento</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="valorDescuento"
-                          value={form.valorDescuento}
-                          onChange={manejarCambio}
-                          required
-                          placeholder="Ej: 15 o 500"
-                        />
-                      </Col>
-                      <Col md={6}>
-                        <Form.Label>Compra mínima</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="compraMinima"
-                          value={form.compraMinima}
-                          onChange={manejarCambio}
-                          placeholder="0"
-                        />
-                      </Col>
-                      <Col md={6}>
-                        <Form.Label>Descuento máximo (opcional)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="descuentoMaximo"
-                          value={form.descuentoMaximo}
-                          onChange={manejarCambio}
-                          placeholder="Ej: 2000"
-                        />
-                      </Col>
-                    </Row>
+      <div className="crear-emision-page">
+        <PaginaFormularioABM
+          titulo="Nueva emisión de cupones"
+          descripcion="Configurá el descuento, el alcance y los clientes que recibirán los cupones."
+          volverA="/superadmin/cupones"
+          volverTexto="Volver a emisiones"
+          acciones={
+            <Button
+              variant="outline-secondary"
+              onClick={() => navigate('/superadmin/cupones')}
+            >
+              <FaArrowLeft /> Cancelar
+            </Button>
+          }
+        >
+          <Card className="shadow-sm formulario-admin-card">
+            <Card.Body>
+              {reemitirDe && (
+                <Alert variant="info" role="alert" className="mb-3">
+                  Reemitiendo la emisión <strong>#{reemitirDe}</strong>. Revisá
+                  y ajustá la configuración antes de generar la nueva
+                  previsualización.
+                </Alert>
+              )}
+              {error && (
+                <Alert variant="danger" role="alert" className="mb-3">
+                  {error}
+                </Alert>
+              )}
+              <Form noValidate>
+                <section className="abm-seccion">
+                  <h4 className="abm-seccion-titulo">Información del descuento</h4>
+                  <div className="abm-form-grid">
+                    <Form.Group className="mb-3" controlId="emision-nombre">
+                      <Form.Label>Nombre o descripción</Form.Label>
+                      <Form.Control
+                        name="nombre"
+                        value={form.nombre}
+                        onChange={manejarCambio}
+                        required
+                        placeholder="Ej: Descuento Leales Noviembre"
+                      />
+                    </Form.Group>
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-tipo-descuento"
+                    >
+                      <Form.Label>Tipo de descuento</Form.Label>
+                      <Form.Select
+                        name="tipoDescuento"
+                        value={form.tipoDescuento}
+                        onChange={manejarCambio}
+                      >
+                        <option value="PORCENTAJE">Porcentaje</option>
+                        <option value="MONTO_FIJO">Importe fijo</option>
+                      </Form.Select>
+                    </Form.Group>
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-valor-descuento"
+                    >
+                      <Form.Label>Valor del descuento</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="valorDescuento"
+                        value={form.valorDescuento}
+                        onChange={manejarCambio}
+                        required
+                        placeholder="Ej: 15 o 500"
+                      />
+                    </Form.Group>
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-compra-minima"
+                    >
+                      <Form.Label>Compra mínima (monto)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="compraMinima"
+                        value={form.compraMinima}
+                        onChange={manejarCambio}
+                        placeholder="0"
+                      />
+                      <Form.Text className="text-muted">
+                        Monto del carrito necesario para usar el cupón. No
+                        define a quién se lo enviamos.
+                      </Form.Text>
+                    </Form.Group>
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-descuento-maximo"
+                    >
+                      <Form.Label>Descuento máximo (opcional)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="descuentoMaximo"
+                        value={form.descuentoMaximo}
+                        onChange={manejarCambio}
+                        placeholder="Ej: 2000"
+                      />
+                    </Form.Group>
                   </div>
+                </section>
 
-                  {/* Sección: Vigencia */}
-                  <div className="seccion-formulario mb-4">
-                    <h6 className="text-muted small text-uppercase mb-3">
-                      Vigencia
-                    </h6>
-                    <Row className="g-3">
-                      <Col md={6}>
-                        <Form.Label>Fecha de inicio</Form.Label>
-                        <Form.Control
-                          type="datetime-local"
-                          name="fechaInicio"
-                          value={form.fechaInicio}
-                          onChange={manejarCambio}
-                          required
-                        />
-                      </Col>
-                      <Col md={6}>
-                        <Form.Label>Fecha de vencimiento</Form.Label>
-                        <Form.Control
-                          type="datetime-local"
-                          name="fechaFin"
-                          value={form.fechaFin}
-                          onChange={manejarCambio}
-                          required
-                        />
-                      </Col>
-                    </Row>
+                <section className="abm-seccion">
+                  <h4 className="abm-seccion-titulo">Vigencia</h4>
+                  <Form.Text className="text-muted d-block mb-3">
+                    Si la fecha de inicio es futura, los cupones quedan
+                    programados: no se envía ningún correo hasta que se
+                    activen, y entonces se envía uno solo por destinatario.
+                  </Form.Text>
+                  <div className="abm-form-grid">
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-fecha-inicio"
+                    >
+                      <Form.Label>Fecha de inicio</Form.Label>
+                      <Form.Control
+                        type="datetime-local"
+                        name="fechaInicio"
+                        value={form.fechaInicio}
+                        onChange={manejarCambio}
+                        required
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3" controlId="emision-fecha-fin">
+                      <Form.Label>Fecha de fin (vencimiento)</Form.Label>
+                      <Form.Control
+                        type="datetime-local"
+                        name="fechaFin"
+                        value={form.fechaFin}
+                        onChange={manejarCambio}
+                        required
+                      />
+                    </Form.Group>
                   </div>
+                </section>
 
-                  {/* Sección: Alcance (productos y categorías) */}
-                  <div className="seccion-formulario mb-4">
-                    <h6 className="text-muted small text-uppercase mb-3">
-                      Alcance del descuento
-                    </h6>
-                    <Row className="g-3">
-                      <Col md={6}>
-                        <SelectorMultipleConBusqueda
-                          label="Productos alcanzados"
-                          valor={form.productoIds}
-                          onChange={(ids) => manejarSeleccionMultiple('productoIds', ids)}
-                          opciones={opcionesProductos}
-                          placeholder="Buscar producto…"
-                        />
-                      </Col>
-                      <Col md={6}>
-                        <SelectorMultipleConBusqueda
-                          label="Categorías alcanzadas"
-                          valor={form.categoriaIds}
-                          onChange={(ids) => manejarSeleccionMultiple('categoriaIds', ids)}
-                          opciones={opcionesCategorias}
-                          placeholder="Buscar categoría…"
-                        />
-                      </Col>
-                    </Row>
-                    <div className="mt-2 texto-suave">
-                      Un producto seleccionado individualmente y por categoría se
-                      cuenta una sola vez. Los combos quedan excluidos.
+                <section className="abm-seccion">
+                  <h4 className="abm-seccion-titulo">Alcance del descuento</h4>
+                  <div className="abm-form-grid">
+                    <div className="mb-3">
+                      <SelectorMultipleConBusqueda
+                        label="Productos alcanzados"
+                        valor={form.productoIds}
+                        onChange={(ids) => manejarSeleccionMultiple('productoIds', ids)}
+                        opciones={opcionesProductos}
+                        placeholder="Buscar producto…"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <SelectorMultipleConBusqueda
+                        label="Categorías alcanzadas"
+                        valor={form.categoriaIds}
+                        onChange={(ids) => manejarSeleccionMultiple('categoriaIds', ids)}
+                        opciones={opcionesCategorias}
+                        placeholder="Buscar categoría…"
+                      />
                     </div>
                   </div>
+                  <Form.Text className="text-muted">
+                    Un producto seleccionado individualmente y por categoría se
+                    cuenta una sola vez. Los combos quedan excluidos.
+                  </Form.Text>
+                </section>
 
-                  {/* Sección: Selección de clientes */}
-                  <div className="seccion-formulario mb-4">
-                    <h6 className="text-muted small text-uppercase mb-3">
-                      Selección de clientes
-                    </h6>
-                    <Row className="g-3">
-                      <Col md={6}>
-                        <Form.Label>Máx. destinatarios</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="maxDestinatarios"
-                          value={form.maxDestinatarios}
-                          onChange={manejarCambio}
-                          placeholder="Ej: 50"
-                        />
-                        <div className="texto-suave">
-                          Se emitirán solo los cupones para los clientes que
-                          cumplan los criterios, aunque sean menos.
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Label>Período de análisis (días)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="periodoAnalisisDias"
-                          value={form.periodoAnalisisDias}
-                          onChange={manejarCambio}
-                          placeholder="Ej: 30"
-                        />
-                        <div className="texto-suave">
-                          Solo se cuentan pedidos ENTREGADOS en este período.
-                        </div>
-                      </Col>
-                    </Row>
+                <section className="abm-seccion">
+                  <h4 className="abm-seccion-titulo">Selección de clientes</h4>
+                  <div className="abm-form-grid">
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-max-destinatarios"
+                    >
+                      <Form.Label>Máximo de destinatarios (opcional)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="maxDestinatarios"
+                        value={form.maxDestinatarios}
+                        onChange={manejarCambio}
+                        placeholder="Ej: 50"
+                      />
+                      <Form.Text className="text-muted">
+                        Se emite hasta esa cantidad de cupones, elegidos entre
+                        los clientes que más compraron.
+                      </Form.Text>
+                    </Form.Group>
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-periodo-analisis"
+                    >
+                      <Form.Label>Período de análisis (días)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="periodoAnalisisDias"
+                        value={form.periodoAnalisisDias}
+                        onChange={manejarCambio}
+                        placeholder="Ej: 30"
+                      />
+                      <Form.Text className="text-muted">
+                        Solo se cuentan pedidos ENTREGADOS en este período. Es
+                        obligatorio porque siempre se clasifican clientes.
+                      </Form.Text>
+                    </Form.Group>
                   </div>
 
-                  <div className="d-grid gap-2 mt-4">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="lg"
-                      onClick={generarPreview}
-                      disabled={!esValido || generandoPreview}
-                    >
-                      {generandoPreview ? (
-                        <span>Procesando…</span>
-                      ) : (
-                        <>
-                          <FaUsers /> Previsualizar destinatarios
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline-secondary"
-                      type="button"
-                      onClick={() => navigate('/superadmin/cupones')}
-                    >
-                      <FaArrowLeft /> Cancelar
-                    </Button>
+                  <div className="mb-3">
+                    <Form.Label className="mb-1">Tipo de cliente</Form.Label>
+                    <div className="d-flex flex-wrap gap-3">
+                      {TIPOS_CLIENTE.map((tipo) => (
+                        <Form.Check
+                          key={tipo.id}
+                          type="radio"
+                          name="tipoCliente"
+                          id={`tipo-cliente-${tipo.id}`}
+                          label={tipo.etiqueta}
+                          title={tipo.ayuda}
+                          checked={form.tiposCliente[0] === tipo.id}
+                          onChange={() => manejarTipoCliente(tipo.id)}
+                        />
+                      ))}
+                    </div>
+                    <Form.Text className="text-muted d-block mt-1">
+                      Elegí uno solo: Nuevos, Inactivos o Activos. La actividad
+                      se mide por pedidos entregados en el período, sin importar
+                      qué producto compraron; Nuevos se decide por la fecha de
+                      registro. Un cliente nuevo con pedido es Nuevo y Activo a
+                      la vez (no se duplican destinatarios ni cupones). El orden
+                      se mantiene: primero quienes más compraron del cupón.
+                    </Form.Text>
                   </div>
-                </Form>
-              </CardBody>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+
+                  <div className="abm-form-grid">
+                    <Form.Group
+                      className="mb-3"
+                      controlId="emision-min-unidades"
+                    >
+                      <Form.Label>
+                        Compra mínima requerida en unidades (opcional)
+                      </Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="minUnidadesCompradas"
+                        value={form.minUnidadesCompradas}
+                        onChange={manejarCambio}
+                        min="0"
+                        placeholder="Ej: 3"
+                      />
+                      <Form.Text className="text-muted">
+                        Unidades de los productos o categorías seleccionados en
+                        pedidos entregados. Para <strong>Activos</strong> y{' '}
+                        <strong>Nuevos</strong> se cuentan las del período; para{' '}
+                        <strong>Inactivos</strong>, que no compraron en el
+                        período, se cuentan las compras históricas (columna
+                        «Históricas»): con 2 se elige a quien compró 2 unidades
+                        en el pasado. Quienes no lleguen no reciben el cupón.
+                      </Form.Text>
+                    </Form.Group>
+                  </div>
+                </section>
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-100"
+                  onClick={generarPreview}
+                  disabled={!esValido || generandoPreview}
+                >
+                  {generandoPreview ? (
+                    <span>Procesando…</span>
+                  ) : (
+                    <>
+                      <FaUsers className="me-1" aria-hidden="true" />
+                      Previsualizar destinatarios
+                    </>
+                  )}
+                </Button>
+              </Form>
+            </Card.Body>
+          </Card>
+        </PaginaFormularioABM>
+      </div>
     );
   }
 
   if (paso === 'preview') {
     return (
-      <Container>
-        <Row>
-          <Col lg={8}>
-            <Card className="shadow-sm">
-              <CardBody>
-                <CardTitle className="d-flex align-items-center gap-2">
-                  <FaUsers /> Previsualización de Destinatarios
-                </CardTitle>
-                {error && <Alert variant="danger" role="alert">{error}</Alert>}
-                {emitirError && <Alert variant="danger" role="alert">{emitirError}</Alert>}
+      <div className="crear-emision-page">
+        <PaginaFormularioABM
+          titulo="Previsualización de destinatarios"
+          descripcion="Revisá los clientes alcanzados antes de emitir los cupones."
+          volverA="/superadmin/cupones"
+          volverTexto="Volver a emisiones"
+          acciones={
+            <Button
+              variant="outline-secondary"
+              onClick={() => setPaso('config')}
+            >
+              <FaArrowLeft /> Volver a configuración
+            </Button>
+          }
+        >
+          <Card className="shadow-sm formulario-admin-card">
+            <Card.Body>
+              {error && (
+                <Alert variant="danger" role="alert" className="mb-3">
+                  {error}
+                </Alert>
+              )}
+              {emitirError && (
+                <Alert variant="danger" role="alert" className="mb-3">
+                  {emitirError}
+                </Alert>
+              )}
 
-                {generandoPreview ? (
-                  <div className="text-center py-4">Cargando destinatarios…</div>
-                ) : preview.total === 0 || preview.destinatarios.length === 0 ? (
-                  <Alert variant="warning" role="alert">
-                    No hay clientes que cumplan las condiciones de compra de los
-                    productos o categorías seleccionados durante el período
-                    indicado.
-                  </Alert>
-                ) : (
-                  <>
-                    <div className="mb-3">
-                      <span className="badge bg-info">{preview.total}</span>{' '}
-                      cliente(s) elegible(s){preview.truncado ? ` (mostrando ${preview.solicitados})` : ''}
-                    </div>
+              {generandoPreview ? (
+                <div className="text-center py-4" role="status">
+                  Cargando destinatarios…
+                </div>
+              ) : preview.total === 0 || preview.destinatarios.length === 0 ? (
+                <Alert variant="warning" role="alert">
+                  No hay clientes que cumplan los criterios de selección con
+                  los productos o categorías y el período indicados. Probá
+                  ajustar el período, los tipos de cliente o la compra mínima
+                  requerida.
+                </Alert>
+              ) : (
+                <>
+                  <div className="mb-3">
+                    <span className="badge bg-info">{preview.total}</span>{' '}
+                    cliente(s) elegible(s){preview.truncado ? ` (mostrando ${preview.solicitados})` : ''}
+                  </div>
 
-                    <Table striped bordered hover responsive>
-                      <thead>
-                        <tr>
-                          <th>Cliente</th>
-                          <th>Email</th>
-                          <th>Unidades compradas</th>
-                          <th>Última compra</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.destinatarios.map((d) => (
+                  <Table striped bordered hover responsive>
+                    <thead>
+                      <tr>
+                        <th>Cliente</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Unidades compradas</th>
+                        <th title="Unidades del período más las anteriores. Es la base del mínimo cuando se seleccionan clientes Inactivos; para Activos y Nuevos el mínimo usa sólo las unidades del período.">
+                          Históricas
+                        </th>
+                        <th>Última compra</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.destinatarios.map((d) => {
+                        const delPeriodo = Number(d.unidades) || 0;
+                        const previas = Number(d.unidadesPrevias) || 0;
+                        const historicas = d.unidadesHistoricas != null
+                          ? Number(d.unidadesHistoricas)
+                          : delPeriodo + previas;
+                        return (
                           <tr key={d.usuarioId}>
                             <td>{d.nombre} {d.apellido}</td>
                             <td>{d.email}</td>
-                            <td>{d.unidades}</td>
+                            <td>
+                              {ETIQUETA_TIPO_DESTINATARIO[d.tipoCliente] ||
+                                '—'}
+                            </td>
+                            <td>{delPeriodo}</td>
+                            <td data-label="Históricas">
+                              <span className="fw-semibold">{historicas}</span>
+                              {previas > 0 && (
+                                <small className="text-muted d-block">
+                                  {delPeriodo} del período + {previas} previas
+                                </small>
+                              )}
+                            </td>
                             <td>{d.ultimaCompra ? new Date(d.ultimaCompra).toLocaleDateString() : '—'}</td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                </>
+              )}
+
+              <div className="mb-3">
+                {preview.alcance && (
+                  <>
+                    <strong>Alcance:</strong>{' '}
+                    {preview.alcance.productoIdsResueltos.length}{' '}
+                    producto(s) alcanzado(s)
                   </>
                 )}
-
-                <div className="d-flex justify-content-between align-items-center mt-4">
-                  <div>
-                    {preview.alcance && (
-                      <>
-                        <strong>Alcance:</strong>{' '}
-                        {preview.alcance.productoIdsResueltos.length}{' '}
-                        producto(s) alcanzado(s)
-                      </>
-                    )}
-                  </div>
-                  <div className="d-flex gap-2">
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => {
-                        if (reemitirDe) {
-                          navigate(`/superadmin/cupones/crear?reemitirDe=${reemitirDe}`);
-                        } else {
-                          setPaso('config');
-                        }
-                      }}
-                    >
-                      <FaArrowLeft /> Volver a configuración
-                    </Button>
-                    <Button
-                      variant="primary"
-                      onClick={confirmarEmision}
-                      disabled={
-                        !preview.destinatarios ||
-                        preview.destinatarios.length === 0 ||
-                        generandoPreview
-                      }
-                    >
-                      <FaEnvelope />
-                      {reemitirDe ? 'Confirmar y reemitir cupones' : 'Confirmar y emitir cupones'}
-                    </Button>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+              </div>
+              <Button
+                variant="primary"
+                className="w-100"
+                onClick={confirmarEmision}
+                disabled={
+                  !preview.destinatarios ||
+                  preview.destinatarios.length === 0 ||
+                  generandoPreview
+                }
+              >
+                <FaEnvelope className="me-1" aria-hidden="true" />
+                {reemitirDe ? 'Confirmar y reemitir cupones' : 'Confirmar y emitir cupones'}
+              </Button>
+            </Card.Body>
+          </Card>
+        </PaginaFormularioABM>
+      </div>
     );
   }
 

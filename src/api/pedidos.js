@@ -82,6 +82,9 @@ export const mapearPedido = (p) => {
     cupon: p.cupon
       ? {
           codigo: p.cupon.codigo,
+          // Snapshot del nombre guardado por el backend: el resumen lo muestra
+          // en lugar del código, sin inferirlo ni hardcodearlo.
+          nombre: p.cupon.nombre || null,
           tipoDescuento: p.cupon.tipoDescuento,
           valorDescuento: Number(p.cupon.valorDescuento),
           compraMinima: Number(p.cupon.compraMinima),
