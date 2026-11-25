@@ -463,7 +463,7 @@
   }
 }
 /* ============ Badge de sucursal del admin (A0) ============ */
-/* Pill informativo del lado derecho: el admin siempre ve a qu� sucursal
+/* Pill informativo del lado derecho: el admin siempre ve a qué sucursal
    pertenece. No es un enlace: contextual, como el nombre del usuario. */
 .navbar-sucursal {
   display: inline-flex;
