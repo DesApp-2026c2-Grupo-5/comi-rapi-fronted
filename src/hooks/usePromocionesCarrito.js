@@ -29,10 +29,16 @@ export const usePromocionesCarrito = (items) => {
   // Se normaliza al shape que espera el cálculo: id/nombre/tipo/valor y la
   // lista de productos alcanzados. El backend la resuelve en la misma respuesta
   // (?include=productos), sin una llamada por promoción.
+  const ahora = Date.now();
   const promos = useMemo(() => {
     if (!hayItems) return [];
     return (promocionesQuery.data || [])
       .filter((promo) => promo.activa !== false)
+      .filter((promo) => {
+        if (promo.fechaInicio && new Date(promo.fechaInicio).getTime() > ahora) return false;
+        if (promo.fechaFin && new Date(promo.fechaFin).getTime() < ahora) return false;
+        return true;
+      })
       .map((promo) => ({
         id: promo.id,
         nombre: promo.nombre,
@@ -42,7 +48,7 @@ export const usePromocionesCarrito = (items) => {
           (producto) => producto.id
         ),
       }));
-  }, [hayItems, promocionesQuery.data]);
+  }, [hayItems, promocionesQuery.data, ahora]);
 
   const preview = useMemo(
     () => calcularDescuentoCarrito(items, promos),
