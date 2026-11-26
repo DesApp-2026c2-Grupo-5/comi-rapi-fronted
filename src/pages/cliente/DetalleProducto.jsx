@@ -84,10 +84,15 @@ const DetalleProducto = () => {
 
   const producto = productoQuery.data || productoDeCatalogo || null;
   const catalogo = useMemo(() => catalogoQuery.data || [], [catalogoQuery.data]);
-  const personalizacion = useMemo(
-    () => (Array.isArray(personalizacionQuery.data) ? personalizacionQuery.data : []),
-    [personalizacionQuery.data]
-  );
+  // El detalle del producto ya trae su personalización. La consulta aparte es
+  // sólo un respaldo: cuando el catálogo llega antes que el detalle, la query
+  // se dispara y su respuesta queda cacheada aunque después el detalle también
+  // traiga la lista. Priorizar el detalle evita mezclar dos versiones distintas
+  // de la misma personalización.
+  const personalizacion = useMemo(() => {
+    if (Array.isArray(producto?.personalizacion)) return producto.personalizacion;
+    return Array.isArray(personalizacionQuery.data) ? personalizacionQuery.data : [];
+  }, [producto, personalizacionQuery.data]);
 
   // Mapa de la mejor promoción activa que alcanza a cada producto (misma regla
   // que el catálogo: mayor descuento; 2x1 equivale a 50%). Se usa para mostrar
@@ -148,15 +153,33 @@ const DetalleProducto = () => {
 
   const ingredientes = useMemo(() => {
     if (!producto || esCombo) return [];
-    // Para PRODUCTO: mostrar ingredientes de la receta (origin/dev) y también
-    // los elementos de personalización tipo "personalizar" (HEAD).
-    const deReceta = Array.isArray(producto.recetaIngredientes) && producto.recetaIngredientes.length > 0
-      ? producto.recetaIngredientes.map((r) => r.nombre || `ingrediente ${r.ingredienteId}`)
+
+    // La receta es la única fuente de los ingredientes del detalle: el backend
+    // sincroniza las opciones `personalizar` ("Sin X") a partir de ella, así
+    // que sumar ambas listas duplicaba cada ingrediente. Las opciones
+    // `personalizar` quedan sólo como respaldo para productos sin receta.
+    const deReceta = Array.isArray(producto.recetaIngredientes)
+      ? producto.recetaIngredientes.map(
+          (r) => r.nombre || `ingrediente ${r.ingredienteId}`
+        )
       : [];
     const dePersonalizar = (personalizacion || [])
       .filter((e) => e.tipo === 'personalizar' && e.activo !== false)
       .map((e) => e.nombre);
-    return [...deReceta, ...dePersonalizar];
+
+    const nombres = (deReceta.length > 0 ? deReceta : dePersonalizar)
+      .map((nombre) => String(nombre ?? '').trim())
+      .filter(Boolean);
+
+    // Sin repetidos: dos filas pueden nombrar el mismo ingrediente con
+    // mayúsculas o espacios distintos.
+    const vistos = new Set();
+    return nombres.filter((nombre) => {
+      const clave = nombre.toLocaleLowerCase('es');
+      if (vistos.has(clave)) return false;
+      vistos.add(clave);
+      return true;
+    });
   }, [producto, personalizacion, esCombo]);
 
   // Mismo criterio de siempre: productos de la misma categoría, sin el actual.

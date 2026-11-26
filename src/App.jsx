@@ -5,7 +5,7 @@
  * Uso: Se renderiza en main.jsx como componente raíz.
  */
 
-import { BrowserRouter, useLocation } from 'react-router-dom';
+import { BrowserRouter, useLocation, useNavigationType } from 'react-router-dom';
 import { useLayoutEffect } from 'react';
 import { NotificacionProvider } from './context/NotificacionContext';
 import { TemaProvider } from './context/TemaContext';
@@ -46,6 +46,25 @@ function AppLayout() {
   // <main> no es el único elemento que la barra tapa.
   const conNavInferior = useMuestraNavInferior();
   const { pathname } = useLocation();
+  const navegacion = useNavigationType();
+
+  // Cada navegación a otra página arranca desde arriba. Sin esto, al entrar a un
+  // producto desde "También podrían gustarte" la ficha se abría con el scroll
+  // que tenía la página anterior y parecía que el click no había hecho nada.
+  // Sólo se aplica a navegaciones nuevas (PUSH/REPLACE): al volver atrás (POP)
+  // se respeta la posición del historial. Cambiar sólo el query string (filtros,
+  // pestañas) tampoco mueve el scroll.
+  //
+  // `behavior: 'instant'` es obligatorio: Bootstrap define
+  // `scroll-behavior: smooth` en `:root`, y con el `scrollTo(0, 0)` clásico el
+  // navegador anima todo el recorrido hasta arriba. Pisar el estilo inline no
+  // alcanza: Chrome resuelve el comportamiento cuando programa la animación, en
+  // el frame siguiente. La página nueva tiene que nacer arriba, no desplazarse.
+  useLayoutEffect(() => {
+    if (navegacion === 'POP') return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname, navegacion]);
+
   // El pie es de la tienda (horarios, contacto, redes). En el panel de
   // administración queda abajo de tablas largas sin aportar nada, así que no se
   // muestra: la regla de "/admin" vive en utils/rutas.

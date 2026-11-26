@@ -36,5 +36,13 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "playwright-core": "^1.63.0",
     "vite": "^5.4.21"
-  }
+  },
+  "description": "Interfaz de Comi-Rapi, una aplicación de delivery de comida con tres roles: cliente, administrador de sucursal y superadministrador. Consume la API de `comi-rapi-backend` y el canal de tiempo real por Socket.IO.",
+  "main": "vite.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

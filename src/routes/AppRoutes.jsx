@@ -40,9 +40,10 @@ const RootRedirect = () => {
  * escuchando el nombre de ese enlace, como si la página nueva no se hubiera
  * cargado.
  *
- * El focus() sin preventScroll resuelve además el scroll: no había ningún
- * manejo de scroll en la app, así que al navegar desde el final de un catálogo
- * largo se llegaba a la página nueva a media altura.
+ * El scroll a la parte superior lo maneja `AppLayout` (App.jsx). Antes se
+ * intentaba resolver con este `focus()` sin `preventScroll`, pero no alcanza:
+ * `#main` ocupa toda la página, así que ya está parcialmente visible y el
+ * navegador no lo desplaza.
  *
  * Se apunta a #main (el <main tabIndex={-1}> de App.jsx) y no a un elemento
  * nuevo: agregar un contenedor oculto con un <h1> propio metería un segundo
